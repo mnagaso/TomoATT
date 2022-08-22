@@ -1,0 +1,537 @@
+#ifndef MPI_FUNCS_H
+#define MPI_FUNCS_H
+
+#include <stdlib.h>
+#include <mpi.h>
+#include <cstring>
+#include <algorithm>
+#include <vector>
+#include <numeric>
+#include "utils.h"
+#include "config.h"
+
+inline void initialize_mpi();
+inline void finalize_mpi();
+
+inline void mpi_debug(char const* str);
+
+template<typename T>
+inline std::vector<size_t> node_reordering(const std::vector<T>&);
+inline int  check_total_nprocs_and_ndiv();
+inline void synchronize_all();
+inline void synchronize_all_inter_sim();
+inline void synchronize_all_sim();
+inline void synchronize_all_sub();
+inline void synchronize_all_inter();
+inline void synchronize_all_world();
+inline void send_cr(CUSTOMREAL*, int, int);
+inline void recv_cr(CUSTOMREAL*, int, int);
+inline void isend_cr(CUSTOMREAL*, int, int, MPI_Request&);
+inline void irecv_cr(CUSTOMREAL*, int, int, MPI_Request&);
+inline void send_cr_single_sim(CUSTOMREAL *cr, int dest);
+inline void recv_cr_single_sim(CUSTOMREAL *cr, int src);
+inline void allreduce_i_single(int&, int&);
+inline void allreduce_cr_single(CUSTOMREAL&, CUSTOMREAL&);
+inline void allreduce_i_inplace(int*, int);
+inline void allreduce_cr_inplace(CUSTOMREAL*, int);
+inline void allreduce_cr_sim(CUSTOMREAL*, int, CUSTOMREAL*);
+inline void allreduce_cr_sim_inplace(CUSTOMREAL*, int);
+inline void allgather_i_single(int*, int*);
+inline void allgather_cr_single(CUSTOMREAL*, CUSTOMREAL*);
+inline void broadcast_bool_single(bool&, int);
+inline void broadcast_i_single(int&, int);
+inline void broadcast_f_single(float&, int);
+inline void broadcast_cr(CUSTOMREAL* , int, int);
+inline void broadcast_cr_single(CUSTOMREAL&, int);
+inline void broadcast_cr_inter_sim(CUSTOMREAL*, int, int);
+inline void broadcast_str(std::string&, int);
+inline void broadcast_bool_single_sub(bool&, int);
+inline void broadcast_i_single_sub(int&, int);
+inline void broadcast_cr_single_sub(CUSTOMREAL&, int);
+inline void prepare_shm_array_cr(int, CUSTOMREAL*&, MPI_Win&);
+inline void prepare_shm_array_bool(int, bool*&, MPI_Win&);
+
+inline void wait_req(MPI_Request&);
+inline void shm_fence(MPI_Win&);
+
+inline void initialize_mpi(){
+    // Initialize the MPI environment
+    MPI_Init(NULL, NULL);
+    //int provided;
+    //MPI_Init_thread(NULL,NULL,MPI_THREAD_MULTIPLE,&provided); // #TODO: checkif SERIALIZED is needed
+
+    // Get the number of processes
+    MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
+    // Get the rank of the process
+    MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+
+    // temporary use those parameters for reading input file
+    nprocs = world_nprocs;
+    myrank = world_rank;
+    inter_sub_comm = MPI_COMM_WORLD;
+
+    stdout_by_main("mpi initialized.");
+}
+
+
+inline void finalize_mpi(){
+    stdout_by_main("mpi finalized.");
+
+    synchronize_all_world();
+
+    // free communicators if necessary
+    //if (sub_comm != MPI_COMM_NULL)
+    //    MPI_Comm_free(&sub_comm);
+    //if (inter_sub_comm != MPI_COMM_WORLD)
+    //    MPI_Comm_free(&inter_sub_comm);
+    //if (sim_comm != MPI_COMM_NULL)
+    //    MPI_Comm_free(&sim_comm);
+
+    // Finalize the MPI environment.
+    MPI_Finalize();
+}
+
+
+inline void mpi_debug(char const* str){
+    std::cout << "rank: " << world_rank << ", " << str << std::endl;
+    synchronize_all_world();
+}
+
+
+template<typename T>
+inline std::vector<size_t> node_reordering(const std::vector<T>& vec){
+    std::vector<size_t> ret(vec.size());
+    std::iota(ret.begin(), ret.end(), 0);
+    std::sort(ret.begin(), ret.end(), [&vec](size_t a, size_t b){
+        return vec[a] < vec[b];
+    });
+    return ret;
+}
+
+
+inline void split_mpi_comm(){
+    /*
+    This function splits MPI_COMM_WORLD into 3 layers of mpi communication groups
+    - simulation groups
+    - subdomain groups
+    - group of only the sub domain's leader
+
+    subdomain leader is selected from the first processes of each simulation group.
+    Then the later processes will be assigned to the subdomain group.
+
+    # memo
+    h5 grid file is written only by the first group of simultaneous runs
+    h5 data is written by the subdomain main processes of all the simultaneous runs.
+    xdmf file is written by only the first subdomain's subdomain main process of all the simultaneous runs.
+    */
+
+    // make a list of mpi node names and redefine the world_rank
+    std::vector<std::string> mpi_node_names, mpi_node_names_pre;
+    for (int i = 0; i < world_nprocs; i++){
+        char name[MPI_MAX_PROCESSOR_NAME];
+        int name_len;
+        MPI_Get_processor_name(name, &name_len);
+        mpi_node_names_pre.push_back(std::string(name));
+
+        // DEBUG ONLY rename mpi node names into 4 different names
+        //if (i%4 == 0)
+        //    mpi_node_names_pre[i] = "node0";
+        //else if (i%4 == 1)
+        //    mpi_node_names_pre[i] = "node1";
+        //else if (i%4 == 2)
+        //    mpi_node_names_pre[i] = "node2";
+        //else if (i%4 == 3)
+        //    mpi_node_names_pre[i] = "node3";
+
+    }
+    // sort mpi_node_names and change world rank accordingly
+    for (auto i: node_reordering(mpi_node_names_pre))
+        mpi_node_names.push_back(mpi_node_names_pre[i]);
+
+    // create communicator for this group if simultaneous run mode
+    if(n_sims > 1) {
+        // set a simultaneous run id
+        if (world_nprocs%n_sims == 0) {
+            n_procs_each_sim = static_cast<int>(world_nprocs/n_sims);
+            id_sim           = static_cast<int>(world_rank/n_procs_each_sim);
+        } else {
+            stdout_by_main("Error: requested nproc is not divisible by n_sims.");
+            finalize_mpi();
+            exit(1);
+        }
+
+        // create communicator for simulation group
+        MPI_Comm_split(MPI_COMM_WORLD, id_sim, world_rank, &sim_comm);
+        MPI_Comm_rank(sim_comm, &sim_rank);
+        MPI_Comm_size(sim_comm, &sim_nprocs);
+    } else {
+        n_procs_each_sim = static_cast<int>(world_nprocs/n_sims);
+        id_sim           = static_cast<int>(world_rank/n_procs_each_sim);
+
+        sim_comm   = MPI_COMM_WORLD;
+        sim_rank   = world_rank;
+        sim_nprocs = world_nprocs;
+    }
+
+    // inter-communicator
+    MPI_Comm_split(MPI_COMM_WORLD, sim_rank, sim_rank, &inter_sim_comm);
+    MPI_Comm_rank(inter_sim_comm, &inter_sim_rank);
+
+    n_subdomains        = ndiv_i*ndiv_j*ndiv_k;
+
+    // assign first ranks to the main node of subdomain
+    // and create a commmunicator for main processes of subdomain
+    if (sim_rank < n_subdomains) {
+        std::cout << "my sim_rank: " << sim_rank << std::endl;
+        subdom_main = true;
+        MPI_Comm_split(sim_comm, 0, sim_rank, &inter_sub_comm);
+        MPI_Comm_rank(inter_sub_comm, &inter_sub_rank);
+        MPI_Comm_size(inter_sub_comm, &inter_sub_nprocs);
+
+        // then the calculation in the sub domain will be done by only the processes
+        // with subdomom_main == true and with inter_sub_comm commmunicator
+
+        // use the rank number of inter_sub_comm as the myrank
+        myrank = inter_sub_rank;
+        nprocs = inter_sub_nprocs;
+
+    } else {
+        std::cout << "my sim_rank to sub : " << sim_rank << std::endl;
+        MPI_Comm_split(sim_comm, 1, sim_rank, &inter_sub_comm);
+
+        // assign those ranks as subprocesses of each sub domain.
+        subdom_main = false;
+        myrank = -9999;
+        nprocs = -9999;
+    }
+
+    // create communicator for intra-subdomain
+    if (sim_rank < n_subdomains)
+        id_subdomain = sim_rank;
+    else {
+        // choose the sub domain which this rank belongs to
+        id_subdomain = static_cast<int>((sim_rank-n_subdomains)%n_subdomains);
+        // # TODO : implement a function which choose the appropriate physical node group
+        // as the shared memory communication shoud be only within the node.
+
+    }
+
+    synchronize_all_sim();
+
+    MPI_Comm_split(sim_comm, id_subdomain, sim_rank, &sub_comm);
+    MPI_Comm_rank(sub_comm, &sub_rank);
+    MPI_Comm_size(sub_comm, &sub_nprocs);
+
+
+    // convert the sub_comm to shared memory available communicator
+    MPI_Comm tmp_comm;
+    MPI_Comm_split_type(sub_comm, MPI_COMM_TYPE_SHARED, id_subdomain, MPI_INFO_NULL, &tmp_comm);
+    sub_comm = tmp_comm;
+    MPI_Comm_rank(sub_comm, &sub_rank);
+    MPI_Comm_size(sub_comm, &sub_nprocs);
+
+    synchronize_all_world();
+
+    // check processors
+    for (int irank = 0; irank < world_nprocs; irank++){
+        synchronize_all_world();
+        if (irank == world_rank)
+            std::cout << "global rank: " << world_rank << ", node name: " << mpi_node_names[world_rank] \
+                                                       << " | i_simul/total: " << id_sim       << "/" << n_sims       << ", n_procs_each_sim: " << n_procs_each_sim \
+                                                       << " | i_subdom/total: " << id_subdomain << "/" << n_subdomains << ", subdom_main: "      << subdom_main \
+                                                       << ", sub_rank/total: "  << sub_rank     << "/" << sub_nprocs \
+            << std::endl;
+    }
+    synchronize_all_world();
+
+}
+
+
+inline int check_total_nprocs_and_ndiv(){
+    if (world_nprocs != (n_sims*ndiv_i*ndiv_j*ndiv_k*n_subprocs)){
+        stdout_by_main("ERROR: the number of requested processors and n_sims*ndiv_rtp[0]*ndiv_rtp[1]*ndiv_rtp[2]*nproc_sub in input_params.yml need to be the same.");
+        if (world_rank==0){
+            // print all params
+            std::cout << "n_sims: " << n_sims << std::endl;
+            std::cout << "ndiv_rtp: " << ndiv_i << " " << ndiv_j << " " << ndiv_k << std::endl;
+            std::cout << "n_subprocs: " << n_subprocs << std::endl;
+            std::cout << "nprocs should be n_sims*ndiv_p*ndiv_t*ndiv_r*n_subprocs = " << n_sims*ndiv_i*ndiv_j*ndiv_k*n_subprocs << std::endl;
+            std::cout << "but the actual nprocs = " << nprocs << std::endl;
+        }
+        finalize_mpi();
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+}
+
+
+inline void synchronize_all(){
+    MPI_Barrier(sim_comm);
+}
+
+
+inline void synchronize_all_sim(){
+    MPI_Barrier(sim_comm);
+}
+
+
+inline void synchronize_all_sub(){
+    MPI_Barrier(sub_comm);
+}
+
+
+inline void synchronize_all_inter(){
+    MPI_Barrier(inter_sub_comm);
+}
+
+
+inline void synchronize_all_world(){
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
+inline void send_cr_single_sim(CUSTOMREAL *cr, int dest){
+    const int n = 1;
+    MPI_Send(cr, n, MPI_CR, dest, MPI_DUMMY_TAG, inter_sim_comm);
+}
+
+inline void recv_cr_single_sim(CUSTOMREAL *cr, int src){
+    const int n = 1;
+    MPI_Recv(cr, n, MPI_CR, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+}
+
+
+inline void send_cr(CUSTOMREAL *cr, int n, int dest){
+    MPI_Send(cr, n, MPI_CR, dest, MPI_DUMMY_TAG, inter_sub_comm);
+}
+
+
+inline void recv_cr(CUSTOMREAL *cr, int n, int src){
+    MPI_Recv(cr, n, MPI_CR, src, MPI_DUMMY_TAG, inter_sub_comm, MPI_STATUS_IGNORE);
+}
+
+inline void isend_cr(CUSTOMREAL* buf, int count, int dest, MPI_Request& request){
+    //MPI_Request request = MPI_REQUEST_NULL;
+    //std::cout << "sending from : " << inter_sub_rank << ", to : " << dest <<", size : " << count << std::endl;
+    MPI_Isend(buf, count, MPI_CR, dest, MPI_DUMMY_TAG, inter_sub_comm, &request);
+}
+
+inline void irecv_cr(CUSTOMREAL* buf, int count, int source, MPI_Request& request){
+    //MPI_Request request = MPI_REQUEST_NULL;
+    //std::cout << "receiving by : " << inter_sub_rank << ", from : " << source << ", size : " << count << std::endl;
+    MPI_Irecv(buf, count, MPI_CR, source, MPI_DUMMY_TAG, inter_sub_comm, &request);
+}
+
+inline void allreduce_i_single(int& value, int& result){
+    int count = 1;
+    MPI_Allreduce(&value, &result, count, MPI_INT, MPI_SUM, inter_sub_comm);
+}
+
+inline void allreduce_cr_single(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){
+    int count = 1;
+    MPI_Allreduce(&loc_buf, &all_buf, count, MPI_CR, MPI_SUM, inter_sub_comm);
+}
+
+
+inline void allreduce_i_inplace(int* loc_buf, int count){
+    MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_INT, MPI_SUM, inter_sub_comm);
+}
+
+
+inline void allreduce_cr_inplace(CUSTOMREAL* loc_buf, int count){
+    MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CR, MPI_SUM, inter_sub_comm);
+}
+
+
+inline void allreduce_cr_sim(CUSTOMREAL* loc_buf, int count, CUSTOMREAL* all_buf){
+    MPI_Allreduce(loc_buf, all_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
+}
+
+inline void allreduce_cr_sim_single(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){
+    int count = 1;
+    MPI_Allreduce(&loc_buf, &all_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
+}
+
+
+inline void allreduce_cr_sim_inplace(CUSTOMREAL* loc_buf, int count){
+    MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
+}
+
+
+inline void allreduce_cr_single_max(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){
+    int count = 1;
+    MPI_Allreduce(&loc_buf, &all_buf, count, MPI_CR, MPI_MAX, inter_sub_comm);
+}
+
+inline void allgather_i_single(int* loc_buf, int* all_buf){
+    int count = 1;
+    MPI_Allgather(loc_buf, count, MPI_INT, all_buf, count, MPI_INT, inter_sub_comm);
+}
+
+inline void allgather_cr_single(CUSTOMREAL* loc_buf, CUSTOMREAL* all_buf){
+    int count = 1;
+    MPI_Allgather(loc_buf, count, MPI_CR, all_buf, count, MPI_CR, inter_sub_comm);
+}
+
+inline void allgather_bool_single(bool* loc_buf, bool* all_buf){
+    int count = 1;
+    MPI_Allgather(loc_buf, count, MPI_CXX_BOOL, all_buf, count, MPI_CXX_BOOL, inter_sub_comm);
+}
+
+inline void broadcast_bool_single(bool& value, int root){
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_CXX_BOOL, root, inter_sub_comm);
+}
+
+inline void broadcast_i_single(int& value, int root){
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_INT, root, inter_sub_comm);
+}
+
+inline void broadcast_f_single(float& value, int root){ // !!!! FOR ONLY READ PARAMETER !!!!!
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_FLOAT, root, inter_sub_comm);
+}
+
+inline void broadcast_cr_single(CUSTOMREAL& buf, int root){
+    MPI_Bcast(&buf, 1, MPI_CR, root, inter_sub_comm);
+}
+
+
+inline void broadcast_cr(CUSTOMREAL* buf, int count, int root){
+    MPI_Bcast(buf, count, MPI_CR, root, inter_sub_comm);
+}
+
+
+inline void broadcast_cr_inter_sim(CUSTOMREAL* buf, int count, int root){
+    MPI_Bcast(buf, count, MPI_CR, root, inter_sim_comm);
+}
+
+inline void broadcast_bool_single_sub(bool& value, int root){
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_CXX_BOOL, root, sub_comm);
+}
+
+inline void broadcast_i_single_sub(int& value, int root){
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_INT, root, sub_comm);
+}
+
+//inline void broadcast_f_single_sub(float& value, int root){ // !!!! FOR ONLY READ PARAMETER !!!!!
+//    int count = 1;
+//    MPI_Bcast(&value, count, MPI_FLOAT, root, sub_comm);
+//}
+
+inline void broadcast_cr_single_sub(CUSTOMREAL& buf, int root){
+    MPI_Bcast(&buf, 1, MPI_CR, root, sub_comm);
+}
+
+inline void broadcast_str(std::string& str, int root) {
+    int count = str.size();
+    MPI_Bcast(&count, 1, MPI_INT, root, inter_sub_comm);
+    char* buf = new char[count+1];
+    std::strcpy(buf, str.c_str());
+    MPI_Bcast(buf, count+1, MPI_CHAR, root, inter_sub_comm);
+    str = buf;
+    delete[] buf;
+}
+
+inline void prepare_shm_array_cr(int n_elms, CUSTOMREAL* &buf, MPI_Win& win){
+    int* model;
+    int flag;
+    MPI_Aint winsize_dummy;
+    int windisp_dummy;
+
+    // Allocate shared memory for the array on only the subdomain's main process (n_elms == 0 for the other processes)
+    MPI_Win_allocate_shared(n_elms*sizeof(CUSTOMREAL), sizeof(CUSTOMREAL), MPI_INFO_NULL, sub_comm, &buf, &win);
+    // get attribute
+    MPI_Win_get_attr(win, MPI_WIN_MODEL, &model, &flag);
+    // shared query
+    if (sub_rank != 0){
+        MPI_Win_shared_query(win, 0, &winsize_dummy, &windisp_dummy, &buf);
+    }
+
+    shm_fence(win);
+}
+
+/*
+inline void prepare_shm_single_i(int*& value, MPI_Win& win){
+    int* model;
+    int flag;
+    MPI_Aint winsize_dummy;
+    int windisp_dummy;
+    int mpi_size;
+    if (sub_rank == 0){
+        mpi_size = sizeof(int)*1;
+    } else {
+        mpi_size = 0;
+    }
+
+    // Allocate shared memory for the array on only the subdomain's main process (n_elms == 0 for the other processes)
+    MPI_Win_allocate_shared(mpi_size, sizeof(int), MPI_INFO_NULL, sub_comm, &value, &win);
+    // get attribute
+    MPI_Win_get_attr(win, MPI_WIN_MODEL, &model, &flag);
+    // shared query
+    if (sub_rank != 0){
+        MPI_Win_shared_query(win, 0, &winsize_dummy, &windisp_dummy, &value);
+    }
+
+    shm_fence(win);
+}
+*/
+/*
+inline void prepare_shm_single_cr(CUSTOMREAL*& value, MPI_Win& win){
+    int* model;
+    int flag;
+    MPI_Aint winsize_dummy;
+    int windisp_dummy;
+    int mpi_size;
+    if (sub_rank == 0){
+        mpi_size = sizeof(CUSTOMREAL)*1;
+    } else {
+        mpi_size = 0;
+    }
+
+    // Allocate shared memory for the array on only the subdomain's main process (n_elms == 0 for the other processes)
+    MPI_Win_allocate_shared(mpi_size, sizeof(CUSTOMREAL), MPI_INFO_NULL, sub_comm, &value, &win);
+    // get attribute
+    MPI_Win_get_attr(win, MPI_WIN_MODEL, &model, &flag);
+    // shared query
+    if (sub_rank != 0){
+        MPI_Win_shared_query(win, 0, &winsize_dummy, &windisp_dummy, &value);
+    }
+
+    shm_fence(win);
+}
+*/
+
+inline void prepare_shm_array_bool(int n_elms, bool* &buf, MPI_Win& win){
+    int* model;
+    int flag;
+    MPI_Aint winsize_dummy;
+    int windisp_dummy;
+
+    // Allocate shared memory for the array on only the subdomain's main process (n_elms == 0 for the other processes)
+    MPI_Win_allocate_shared(n_elms*sizeof(bool), sizeof(bool), MPI_INFO_NULL, sub_comm, &buf, &win);
+    // get attribute
+    MPI_Win_get_attr(win, MPI_WIN_MODEL, &model, &flag);
+    // shared query
+    if (sub_rank != 0){
+        MPI_Win_shared_query(win, 0, &winsize_dummy, &windisp_dummy, &buf);
+    }
+
+    shm_fence(win);
+}
+
+
+inline void wait_req(MPI_Request& req){
+    MPI_Status status;
+    MPI_Wait(&req, &status);
+}
+
+
+inline void shm_fence(MPI_Win& win){
+    MPI_Win_fence(0, win);
+}
+
+#endif // MPI_FUNCS_H

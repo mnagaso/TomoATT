@@ -1,0 +1,71 @@
+#ifndef SOURCE_H
+#define SOURCE_H
+
+// to handle circular dependency
+#pragma once
+#include "grid.fwd.h"
+#include "source.fwd.h"
+
+#include "input_params.h"
+#include "grid.h"
+#include "config.h"
+#include "mpi_funcs.h"
+
+class Source {
+public:
+    Source(InputParams &, Grid &, bool&);
+    ~Source();
+
+    //
+    // getters
+    //
+    CUSTOMREAL get_ds_lat(){return dis_src_lat;};
+    CUSTOMREAL get_ds_lon(){return dis_src_lon;};
+    CUSTOMREAL get_ds_r  (){return dis_src_r;};
+    CUSTOMREAL get_src_r(){return src_r;};
+    CUSTOMREAL get_src_t(){return src_lat;};
+    CUSTOMREAL get_src_p(){return src_lon;};
+
+    //
+    // parallel getters
+    //
+    CUSTOMREAL get_fac_at_source(CUSTOMREAL*);
+    CUSTOMREAL get_fac_at_point(CUSTOMREAL*, int, int, int);
+
+private:
+    // positions
+    CUSTOMREAL src_lat;
+    CUSTOMREAL src_lon;
+    CUSTOMREAL src_r;
+
+    // discretize source position ids (GLOBAL
+    int i_src;
+    int j_src;
+    int k_src;
+    // discretize source position ids (LOCAL)
+    int i_src_loc;
+    int j_src_loc;
+    int k_src_loc;
+
+    // discretized source position
+    CUSTOMREAL dis_src_lat;
+    CUSTOMREAL dis_src_lon;
+    CUSTOMREAL dis_src_r;
+
+    CUSTOMREAL dis_src_err_r;   // r1
+    CUSTOMREAL dis_src_err_lat; // r2
+    CUSTOMREAL dis_src_err_lon; // r3
+
+    // if source is in this subdomain
+    bool is_in_subdomain = false;
+    int  src_rank;
+    bool *src_flags;
+
+    // position error by discretization for each direction
+    CUSTOMREAL error_lon, error_lat, error_r;
+
+    // grid gaps
+    CUSTOMREAL delta_lon, delta_lat, delta_r;
+};
+
+#endif // SOURCE_H

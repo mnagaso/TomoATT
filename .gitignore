@@ -1,0 +1,20 @@
+build
+.vscode
+.DS_Store
+.python-version
+*.swp
+*.o
+*.a
+*.out
+*.h5
+*.xmf
+*.dat
+
+external_libs/hdf5*
+external_libs/openmpi*
+external_libs/local_mpi_hdf5
+
+base_proj
+
+# result for comparison
+test/inversion_2_one_src/fortran_code/ega5/output/*
