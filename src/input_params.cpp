@@ -437,6 +437,11 @@ void InputParams::parse_src_rec_file(){
             src.mag    = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
             src.n_rec  = std::stoi(tokens[11]);
             src.id_event = tokens[12];
+            // check if tokens[13] exists read weight
+            if (tokens.size() > 13)
+                src.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
+            else
+                src.weight = 1.0; // default weight
             src_points.push_back(src);
             nrec_tmp = src.n_rec;
             cc++;
@@ -452,6 +457,11 @@ void InputParams::parse_src_rec_file(){
             rec.epi_dist = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
             rec.arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
             rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // store read data
+            // check if tokens[9] exists read weight
+            if (tokens.size() > 9)
+                rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[9]));
+            else
+                rec.weight = 1.0; // default weight
             rec_points_tmp.push_back(rec);
             cc++;
 
@@ -646,13 +656,14 @@ void InputParams::write_src_rec_file() {
                 ofs << i_src << " "
                     << src_points_out[i_src].year << " " << src_points_out[i_src].month << " " << src_points_out[i_src].day << " "
                     << src_points_out[i_src].hour << " " << src_points_out[i_src].min   << " " << src_points_out[i_src].sec << " "
-                    << src_points_out[i_src].lat << " "  << src_points_out[i_src].lon   << " " << src_points_out[i_src].dep << " "
-                    << src_points_out[i_src].mag << " "  << src_points_out[i_src].n_rec << " " << src_points_out[i_src].id_event << std::endl;
+                    << src_points_out[i_src].lat  << " " << src_points_out[i_src].lon   << " " << src_points_out[i_src].dep << " "
+                    << src_points_out[i_src].mag  << " " << src_points_out[i_src].n_rec << " " << src_points_out[i_src].id_event << " "
+                    << src_points_out[i_src].weight << std::endl;
                 for (long unsigned int i_rec = 0; i_rec < rec_points_out[i_src].size(); i_rec++){
                     // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
                     ofs << i_src << " " << i_rec << " " << rec_points_out[i_src][i_rec].name_rec << " " << rec_points_out[i_src][i_rec].lat << " "
                         << rec_points_out[i_src][i_rec].lon << " " << -1.0*rec_points_out[i_src][i_rec].dep*1000.0 << " " << rec_points_out[i_src][i_rec].phase << " "
-                        << rec_points_out[i_src][i_rec].epi_dist << " " << rec_points_out[i_src][i_rec].arr_time << std::endl;
+                        << rec_points_out[i_src][i_rec].epi_dist << " " << rec_points_out[i_src][i_rec].arr_time << " " << rec_points_out[i_src][i_rec].weight << std::endl;
                 }
 
                 ofs.close();

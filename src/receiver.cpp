@@ -31,13 +31,16 @@ CUSTOMREAL Receiver::calculate_adjoint_source(InputParams& IP) {
         // get receiver positions from input parameters
         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
 
+        // get the source weight
+        CUSTOMREAL src_weight = IP.get_src_point(id_sim_src).weight;
+
         // store sum of adjoint sources for the current source as an objective function value
         CUSTOMREAL sum_adj_src = 0;
 
         // calculate the adjoint source of the receiver by interpolation
         for (auto& rec: receivers) {
             rec.t_adj = rec.arr_time - rec.arr_time_ori;
-            sum_adj_src += std::pow(rec.t_adj,2);
+            sum_adj_src += std::pow(rec.t_adj,2) * rec.weight * src_weight; // multiply by weight and
         }
 
         allsum_obj = sum_adj_src;
@@ -57,6 +60,9 @@ CUSTOMREAL Receiver::calculate_adjoint_source_teleseismic(InputParams& IP) {
     if(subdom_main){
         // get receiver positions from input parameters
         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
+
+        // get the source weight
+        CUSTOMREAL src_weight = IP.get_src_point(id_sim_src).weight;
 
         // store sum of adjoint sources for the current source as an objective function value
         CUSTOMREAL sum_adj_src = 0;
@@ -79,8 +85,8 @@ CUSTOMREAL Receiver::calculate_adjoint_source_teleseismic(InputParams& IP) {
 
                 if (std::abs(deg_diff) < DIST_SRC_DDT){
                     CUSTOMREAL DDT = (rec_i.arr_time - rec_j.arr_time) - (rec_i.arr_time_ori - rec_j.arr_time_ori);
-                    rec_i.t_adj += DDT;
-                    rec_j.t_adj -= DDT;
+                    rec_i.t_adj += DDT * rec_i.weight * rec_j.weight * src_weight;
+                    rec_j.t_adj -= DDT * rec_i.weight * rec_j.weight * src_weight;
                     sum_adj_src += std::pow(DDT,2);
                 }
             }

@@ -31,7 +31,7 @@ public:
     CUSTOMREAL arr_time;     // calculated arrival time will be stored and updated during the simulation
     CUSTOMREAL arr_time_ori; // recorded/original arrival time (written in the input file)
     CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
-    CUSTOMREAL weight=1.0;   // weight of the receiver
+    CUSTOMREAL weight=1.0;   // weight
 
     int year             = 9999;
     int month            = 99;
