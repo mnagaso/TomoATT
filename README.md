@@ -38,7 +38,6 @@ cmake .. && make -j 8
 ```
 
 ## to run an example
-in build directory,
 ``` bash
 mpirun -n 4 ./TOMOATT -i ./input_params.yml
 ```
