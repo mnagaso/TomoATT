@@ -17,17 +17,17 @@ The details of the parallelization method applied in this library are described 
 
 Regional events (sources within the global domain) and teleseismic events (sources outside the global domain) may be used for inversion.
 
-
+---
 
 ## Input files
 
 TomoATT requires 3 input files : 
-- input parameter file (setup file for simulation parameters)
-- source receiver file (source and receiver definitions and observation arrival times)
-- initial model file (3d initial model)
+1. input parameter file (setup file for simulation parameters)
+2. source receiver file (source and receiver definitions and observation arrival times)
+3. initial model file (3d initial model)
 
 
-### input parameter file
+### 1. input parameter file
 
 All the necessary parameters for setuping a calculation are described in input parameter file in [yaml format](https://en.wikipedia.org/wiki/YAML).
 
@@ -111,7 +111,7 @@ The total number of mpi processes (i.e. mpirun -n NUMBER) must be n_sims\*ndiv_r
 - `output_file_format` : `0` or `1` for selecting input and output file format. `0` is for HDF5 format, `1` is for ASCII format.
 
 
-### source receiver file
+### 2. source receiver file
 Source receiver file is a file which defines source and receiver positions and arrival times.
 
 Below is an example:
@@ -137,7 +137,7 @@ The last column of both source and receiver line is for put weight (on objective
 If the source position is out of the global domain (defined in input parameter file.), the code will flag this event as a teleseismic event and run the dedicated routine for teleseimic event. For teleseismic event, swap_src_rec will be ignored for this event (as the teleseismic case, a source is not a point but boundary surfaces).
 
 
-### initial model file
+### 3. initial model file
 
 Initial model file is used for defining parameters of input mode.
 Necessary parameters are `fun` (slowness), `eta`, `xi`, `zeta`, `fac_a`, `fac_b`, `fac_c`, `fac_f`.
@@ -167,6 +167,7 @@ The node order should be:
 
 Complete example may be found `examples/inversion_small_ASCII/make_test_model.py`.
 
+---
 
 ## Output files
 
