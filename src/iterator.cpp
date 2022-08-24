@@ -10,6 +10,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool 
         dr = grid.dr;
         dt = grid.dt;
         dp = grid.dp;
+
         if (first_init) {
             broadcast_i_single_sub(nr,0);
             broadcast_i_single_sub(nt,0);
@@ -28,12 +29,19 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool 
                 grid.dp = dp;
             }
         }
+
+        // check if teleseismic source
+        is_teleseismic = is_teleseismic_in;
+        broadcast_bool_single_sub(is_teleseismic,0);
+
         // check initialized values
         if (if_verbose){
             std::cout << "nr: " << nr << " nt: " << nt << " np: " << np << std::endl;
             std::cout << "dr: " << dr << " dt: " << dt << " dp: " << dp << std::endl;
             std::cout << "loc_I: " << loc_I << " loc_J: " << loc_J << " loc_K: " << loc_K << std::endl;
         }
+
+
     } else {
         np = loc_I;
         nt = loc_J;
@@ -41,14 +49,12 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool 
         dr = grid.dr;
         dt = grid.dt;
         dp = grid.dp;
+        is_teleseismic = is_teleseismic_in;
     }
 
     // set initial and end indices of level set
     st_level = 6;
     ed_level = nr+nt+np-3;
-
-    // check if teleseismic source
-    is_teleseismic = is_teleseismic_in;
 
     // initialize factors etc.
     initialize_arrays(IP, grid, src);
@@ -226,16 +232,13 @@ void Iterator::run_iteration_forward_teleseismic(InputParams& IP, Grid& grid, IO
                 grid.T2tau_old();
 
             // do sweeping for all direction
-            //
-            // TODO: currently teleseismic source can only be calculated without sweeping parallelization
-            //       to be implemented in the future
             for (int iswp = nswp-1; iswp > -1; iswp--) {
-                //if (IP.get_sweep_type()==0)
+                if (IP.get_sweep_type()==0)
                     do_sweep(iswp, grid, IP);
-                //else if (IP.get_sweep_type()==1)
-                //    do_sweep_level_no_load_balance(iswp, grid, IP);
-                //else if (IP.get_sweep_type()==2)
-                //    do_sweep_level(iswp, grid, IP);
+                else if (IP.get_sweep_type()==1)
+                    do_sweep_level_no_load_balance(iswp, grid, IP);
+                else if (IP.get_sweep_type()==2)
+                    do_sweep_level(iswp, grid, IP);
 
                 // copy the values of communication nodes and ghost nodes
                 if (subdom_main)
@@ -334,10 +337,8 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
     // start iteration
     while (true) {
         // do sweeping for all direction
-        //
-        // TODO: currently teleseismic source may be calculated only with legacy sweeping
         for (int iswp = 0; iswp < nswp; iswp++) {
-            if (IP.get_sweep_type()==0 || is_teleseismic)
+            if (IP.get_sweep_type()==0)
                 do_sweep_adj(iswp, grid, IP);
             else if (IP.get_sweep_type()==1)
                 do_sweep_level_no_load_balance_adj(iswp, grid, IP);
@@ -512,14 +513,24 @@ void Iterator::assign_processes_for_levels() {
     // allocate memory for process range
     std::vector<int> n_nodes_of_levels;
 
+    // teleseismic case need to iterate outermost layer
+    int st_id, st_id2;
+    if (!is_teleseismic){
+        st_id  = 2;
+        st_id2 = 1;
+    } else {
+        st_id  = 1;
+        st_id2 = 0;
+    }
+
     for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(2, level-np-nt+2);
+        int kleft  = std::max(st_id, level-np-nt+2);
         int kright = std::min(level-4, nr-1)   ;
 
         int count_n_nodes = 0;
 
         for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(2, level-kk-np+1);
+            int jleft  = std::max(st_id, level-kk-np+st_id2);
             int jright = std::min(level-kk-2, nt-1);
 
             int n_jlines = jright - jleft + 1;
@@ -533,7 +544,7 @@ void Iterator::assign_processes_for_levels() {
 
     // assign nodes on each level plane to processes
     for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(2, level-np-nt+2);
+        int kleft  = std::max(st_id, level-np-nt+2);
         int kright = std::min(level-4, nr-1)   ;
 
         std::vector< std::vector<int> > asigned_nodes_on_this_level;
@@ -549,7 +560,7 @@ void Iterator::assign_processes_for_levels() {
 
 
         for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(2, level-kk-np+1);
+            int jleft  = std::max(st_id, level-kk-np+st_id2);
             int jright = std::min(level-kk-2, nt-1);
 
             for (int jj = jleft; jj <= jright; jj++) {
@@ -748,45 +759,41 @@ void Iterator::do_sweep_level(int iswp, Grid& grid, InputParams& IP) {
         }
 
     } else { // teleseismic source
-//// #TODO:
-//        for (int i_level = st_level; i_level <= ed_level; i_level++) {
-//            for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-//                int kk = ijk.at(2);
-//                int jj = ijk.at(1);
-//                int ii = ijk.at(0);
-//
-//                //std::cout << sub_rank << ": " << i_level << " " << ii << " " << jj << " " << kk << std::endl;
-//
-//                if (r_dirc < 0) kkr = nr-kk; //kk-1;
-//                else            kkr = kk-1;  //nr-kk;
-//                if (t_dirc < 0) jjt = nt-jj; //jj-1;
-//                else            jjt = jj-1;  //nt-jj;
-//                if (p_dirc < 0) iip = np-ii; //ii-1;
-//                else            iip = ii-1; //np-ii;
-//
-//                //
-//                // calculate stencils
-//                //
-//                if (grid.is_changed[I2V(iip, jjt, kkr)]) {
-//                    if (IP.get_stencil_order() == 1) //  1st order
-//                        calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
-//                    else // 3rd order
-//                        calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
-//                } // is_changed == true
-//            } // end ijk
-//
-//            // mpi synchronization
-//            synchronize_all_sub();
-//
-//        } // end loop i_level
-//
-//        // update boundary
-//        if (subdom_main) {
-//            //calculate_boundary_nodes_maxmin(grid);
-//            calculate_boundary_nodes_tele(grid);
-//        }
-    }
+        for (int i_level = st_level; i_level <= ed_level; i_level++) {
+            for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+                int kk = ijk.at(2);
+                int jj = ijk.at(1);
+                int ii = ijk.at(0);
 
+                //std::cout << sub_rank << ": " << i_level << " " << ii << " " << jj << " " << kk << std::endl;
+
+                if (r_dirc < 0) kkr = nr-kk; //kk-1;
+                else            kkr = kk-1;  //nr-kk;
+                if (t_dirc < 0) jjt = nt-jj; //jj-1;
+                else            jjt = jj-1;  //nt-jj;
+                if (p_dirc < 0) iip = np-ii; //ii-1;
+                else            iip = ii-1; //np-ii;
+
+                //
+                // calculate stencils
+                //
+                if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+                    // calculate stencils
+                    if (IP.get_stencil_order() == 1) //  1st order
+                        calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
+                    else // 3rd order
+                        calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
+                } else {
+                    // update boundary
+                    calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
+                }
+            } // end ijk
+
+            // mpi synchronization
+            synchronize_all_sub();
+
+        } // end loop i_level
+    } // end if is_teleseismic
 }
 
 
@@ -838,47 +845,43 @@ void Iterator::do_sweep_level_no_load_balance(int iswp, Grid& grid, InputParams&
             calculate_boundary_nodes(grid);
         }
     } else { // teleseismic source
-//// #TODO:
-//         for (int level = st_level; level <= ed_level; level++) {
-//            //std::cout << "sweep " << iswp << ": " << level << std::endl;
-//            int kleft  = std::max(2, level-np-nt+2);
-//            int kright = std::min(level-4, nr-1)   ;
-//
-//            for (int kk = kleft; kk <= kright; kk++) {
-//                int jleft  = std::max(2, level-kk-np+1);
-//                int jright = std::min(level-kk-2, nt-1);
-//
-//                for (int jj = jleft; jj <= jright; jj++) {
-//                    int ii = level - kk - jj;
-//
-//                    if (r_dirc < 0) kkr = nr-kk; //kk-1;
-//                    else            kkr = kk-1;  //nr-kk;
-//                    if (t_dirc < 0) jjt = nt-jj; //jj-1;
-//                    else            jjt = jj-1;  //nt-jj;
-//                    if (p_dirc < 0) iip = np-ii; //ii-1;
-//                    else            iip = ii-1; //np-ii;
-//
-//                    //
-//                    // calculate stencils
-//                    //
-//                    if (grid.is_changed[I2V(iip, jjt, kkr)]) {
-//
-//                        if (IP.get_stencil_order() == 1) //  1st order
-//                            calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
-//                        else // 3rd order
-//                            calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
-//
-//                    } // is_changed == true
-//                } // end loop jj
-//            } // end loop kk
-//        } // end loop level
-//
-//        // update boundary
-//        if (subdom_main) {
-//            calculate_boundary_nodes_tele(grid);
-//        }
+         for (int level = st_level; level <= ed_level; level++) {
+            //std::cout << "sweep " << iswp << ": " << level << std::endl;
+            int kleft  = std::max(2, level-np-nt+2);
+            int kright = std::min(level-4, nr-1)   ;
 
-    }
+            for (int kk = kleft; kk <= kright; kk++) {
+                int jleft  = std::max(2, level-kk-np+1);
+                int jright = std::min(level-kk-2, nt-1);
+
+                for (int jj = jleft; jj <= jright; jj++) {
+                    int ii = level - kk - jj;
+
+                    if (r_dirc < 0) kkr = nr-kk; //kk-1;
+                    else            kkr = kk-1;  //nr-kk;
+                    if (t_dirc < 0) jjt = nt-jj; //jj-1;
+                    else            jjt = jj-1;  //nt-jj;
+                    if (p_dirc < 0) iip = np-ii; //ii-1;
+                    else            iip = ii-1; //np-ii;
+
+                    //
+                    // calculate stencils
+                    //
+                    if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+                        // calculate stencils
+                        if (IP.get_stencil_order() == 1) //  1st order
+                            calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
+                        else // 3rd order
+                            calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
+                    } else {
+                        // update boundary
+                        calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
+                    }
+                } // end loop jj
+            } // end loop kk
+        } // end loop level
+
+    } // end if is_teleseismic
 
 }
 
@@ -976,50 +979,12 @@ void Iterator::do_sweep_level_adj(int iswp, Grid& grid, InputParams& IP) {
 
     int iip, jjt, kkr;
 
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
-
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1; //np-ii;
-
-            //
-            // calculate stencils
-            //
-            calculate_stencil_adj(grid, iip, jjt, kkr);
-        } // end ijk
-
-        // mpi synchronization
-        synchronize_all_sub();
-
-    } // end loop i_level
-
-}
-
-
-void Iterator::do_sweep_level_no_load_balance_adj(int iswp, Grid& grid, InputParams& IP) {
-    // set sweep direction
-    set_sweep_direction(iswp);
-
-    int iip, jjt, kkr;
-
-    for (int level = st_level; level <= ed_level; level++) {
-        //std::cout << "sweep " << iswp << ": " << level << std::endl;
-        int kleft  = std::max(2, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
-
-        for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(2, level-kk-np+1);
-            int jright = std::min(level-kk-2, nt-1);
-
-            for (int jj = jleft; jj <= jright; jj++) {
-                int ii = level - kk - jj;
+    if (!is_teleseismic) {
+        for (int i_level = st_level; i_level <= ed_level; i_level++) {
+            for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+                int kk = ijk.at(2);
+                int jj = ijk.at(1);
+                int ii = ijk.at(0);
 
                 if (r_dirc < 0) kkr = nr-kk; //kk-1;
                 else            kkr = kk-1;  //nr-kk;
@@ -1032,10 +997,115 @@ void Iterator::do_sweep_level_no_load_balance_adj(int iswp, Grid& grid, InputPar
                 // calculate stencils
                 //
                 calculate_stencil_adj(grid, iip, jjt, kkr);
+            } // end ijk
 
-            } // end loop jj
-        } // end loop kk
-    } // end loop level
+            // mpi synchronization
+            synchronize_all_sub();
+
+        } // end loop i_level
+    } else { // teleseimic event
+        for (int i_level = st_level; i_level <= ed_level; i_level++) {
+            for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+                int kk = ijk.at(2);
+                int jj = ijk.at(1);
+                int ii = ijk.at(0);
+
+                if (r_dirc < 0) kkr = nr-kk; //kk-1;
+                else            kkr = kk-1;  //nr-kk;
+                if (t_dirc < 0) jjt = nt-jj; //jj-1;
+                else            jjt = jj-1;  //nt-jj;
+                if (p_dirc < 0) iip = np-ii; //ii-1;
+                else            iip = ii-1; //np-ii;
+
+                //
+                // calculate stencils
+                //
+                if (iip != 0    && jjt != 0    && kkr != 0 \
+                 && iip != np-1 && jjt != nt-1 && kkr != nr-1) {
+                    // calculate stencils
+                    calculate_stencil_adj(grid, iip, jjt, kkr);
+                } else {
+                    calculate_boundary_nodes_tele_adj(grid, iip, jjt, kkr);
+                }
+            } // end ijk
+
+            // mpi synchronization
+            synchronize_all_sub();
+
+        } // end loop i_level
+    }
+
+}
+
+
+void Iterator::do_sweep_level_no_load_balance_adj(int iswp, Grid& grid, InputParams& IP) {
+    // set sweep direction
+    set_sweep_direction(iswp);
+
+    int iip, jjt, kkr;
+
+    if (!is_teleseismic) {
+        for (int level = st_level; level <= ed_level; level++) {
+            //std::cout << "sweep " << iswp << ": " << level << std::endl;
+            int kleft  = std::max(2, level-np-nt+2);
+            int kright = std::min(level-4, nr-1)   ;
+
+            for (int kk = kleft; kk <= kright; kk++) {
+                int jleft  = std::max(2, level-kk-np+1);
+                int jright = std::min(level-kk-2, nt-1);
+
+                for (int jj = jleft; jj <= jright; jj++) {
+                    int ii = level - kk - jj;
+
+                    if (r_dirc < 0) kkr = nr-kk; //kk-1;
+                    else            kkr = kk-1;  //nr-kk;
+                    if (t_dirc < 0) jjt = nt-jj; //jj-1;
+                    else            jjt = jj-1;  //nt-jj;
+                    if (p_dirc < 0) iip = np-ii; //ii-1;
+                    else            iip = ii-1; //np-ii;
+
+                    //
+                    // calculate stencils
+                    //
+                    calculate_stencil_adj(grid, iip, jjt, kkr);
+
+                } // end loop jj
+            } // end loop kk
+        } // end loop level
+    } else { // teleseismic source
+        for (int level = st_level; level <= ed_level; level++) {
+            //std::cout << "sweep " << iswp << ": " << level << std::endl;
+            int kleft  = std::max(2, level-np-nt+2);
+            int kright = std::min(level-4, nr-1)   ;
+
+            for (int kk = kleft; kk <= kright; kk++) {
+                int jleft  = std::max(2, level-kk-np+1);
+                int jright = std::min(level-kk-2, nt-1);
+
+                for (int jj = jleft; jj <= jright; jj++) {
+                    int ii = level - kk - jj;
+
+                    if (r_dirc < 0) kkr = nr-kk; //kk-1;
+                    else            kkr = kk-1;  //nr-kk;
+                    if (t_dirc < 0) jjt = nt-jj; //jj-1;
+                    else            jjt = jj-1;  //nt-jj;
+                    if (p_dirc < 0) iip = np-ii; //ii-1;
+                    else            iip = ii-1; //np-ii;
+
+                    //
+                    // calculate stencils
+                    //
+                    if (iip != 0    && jjt != 0    && kkr != 0 \
+                         && iip != np-1 && jjt != nt-1 && kkr != nr-1) {
+                        calculate_stencil_adj(grid, iip, jjt, kkr);
+                    } else {
+                        calculate_boundary_nodes_tele_adj(grid, iip, jjt, kkr);
+                    }
+
+                } // end loop jj
+            } // end loop kk
+        } // end loop level
+    }
 
 }
 

@@ -638,8 +638,8 @@ void InputParams::write_src_rec_file() {
         if (n_sims > 1)
             gather_all_arrival_times_to_main();
 
-        // reverse the source-receiver combination if necessary
-        if (swap_src_rec) reverse_src_rec_points();
+        // store the calculated travel time to be output
+        reverse_src_rec_points();
 
         // write out source and receiver points
         for (long unsigned int i_src = 0; i_src < src_points_out.size(); i_src++){
@@ -677,9 +677,6 @@ void InputParams::write_src_rec_file() {
 
 
 void InputParams::reverse_src_rec_points(){
-
-    // separate regianl and teleseismic sources
-    //separate_region_and_tele_src();
 
     // loop swapped sources
     for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
