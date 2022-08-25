@@ -68,7 +68,8 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
         bool first_init = (i_inv == 0 && i_src==0);
 
         // initialize iterator object
-        std::unique_ptr<Iterator> It = select_iterator(IP, grid, src, io, first_init, is_teleseismic);
+        std::unique_ptr<Iterator> It;
+        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It);
 
         /////////////////////////
         // run forward simulation

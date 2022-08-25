@@ -81,7 +81,7 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     }
 
     // assign processes for each sweeping level
-    if (IP.get_sweep_type() == 2) assign_processes_for_levels();
+    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels();
 }
 
 
@@ -118,16 +118,24 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         while (true) {
 
             // store tau for comparison
-            if (subdom_main)
-                grid.tau2tau_old();
+            if (subdom_main){
+                if(!is_teleseismic)
+                    grid.tau2tau_old();
+                else
+                    grid.T2tau_old();
+            }
 
             // do sweeping for all direction
             for (int iswp = nswp-1; iswp > -1; iswp--) {
                 do_sweep(iswp, grid, IP);
 
                 // copy the values of communication nodes and ghost nodes
-                if (subdom_main)
-                    grid.send_recev_boundary_data(grid.tau_loc);
+                if (subdom_main){
+                    if (!is_teleseismic)
+                        grid.send_recev_boundary_data(grid.tau_loc);
+                    else
+                        grid.send_recev_boundary_data(grid.T_loc);
+                }
             }
 
             // calculate the objective function

@@ -148,7 +148,7 @@ private:
 
     // calculation method
     int stencil_order; // stencil order
-    int sweep_type; // sweep type (0: legacy, 1: cuthill-mckee, 2: cuthil-mckee with shm parallelization)
+    int sweep_type; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
     // parse src_rec_file
     void parse_src_rec_file();

@@ -73,10 +73,14 @@ inline const int        SWEEPING_COEFF       = 1.0; // coefficient for calculati
 
 // radious of the earth in km
 //inline CUSTOMREAL R_earth = 6378.1370;
-inline CUSTOMREAL R_earth = 6371.0; // for compatibility with fortran code
-inline const CUSTOMREAL GAMMA = 0.0;
-inline const CUSTOMREAL r_kermel_mask = 40.0;
-inline CUSTOMREAL step_size_init = 0.01; // update step size limit
+inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
+inline const CUSTOMREAL GAMMA          = 0.0;
+inline const CUSTOMREAL r_kermel_mask  = 40.0;
+inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
+
+// SWEEPING TYPE FLAG
+inline const int SWEEP_TYPE_LEGACY = 0;
+inline const int SWEEP_TYPE_LEVEL  = 1;
 
 // convert depth <-> radius
 inline CUSTOMREAL depth2radius(CUSTOMREAL depth) {

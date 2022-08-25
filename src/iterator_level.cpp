@@ -8,46 +8,35 @@ Iterator_level::Iterator_level(InputParams& IP, Grid& grid, Source& src, IO_util
 
 
 void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
-    if (subdom_main) {
 
-        // set sweep direction
-        set_sweep_direction(iswp);
+    // set sweep direction
+    set_sweep_direction(iswp);
 
-        int r_start, t_start, p_start, r_end, t_end, p_end;
+    int iip, jjt, kkr;
+    for (int i_level = st_level; i_level <= ed_level; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+            int kk = ijk.at(2);
+            int jj = ijk.at(1);
+            int ii = ijk.at(0);
 
-        // set loop range
-        if (r_dirc < 0) {
-            r_start = nr-2;
-            r_end   = 0;
-        } else {
-            r_start = 1;
-            r_end   = nr-1;
-        }
-        if (t_dirc < 0) {
-            t_start = nt-2;
-            t_end   = 0;
-        } else {
-            t_start = 1;
-            t_end   = nt-1;
-        }
-        if (p_dirc < 0) {
-            p_start = np-2;
-            p_end   = 0;
-        } else {
-            p_start = 1;
-            p_end   = np-1;
-        }
+            if (r_dirc < 0) kkr = nr-kk; //kk-1;
+            else            kkr = kk-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jj; //jj-1;
+            else            jjt = jj-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ii; //ii-1;
+            else            iip = ii-1; //np-ii;
 
-        for (int kkr = r_start; kkr != r_end; kkr+=r_dirc) {
-            for (int jjt = t_start; jjt != t_end; jjt+=t_dirc) {
-                for (int iip = p_start; iip != p_end; iip+=p_dirc) {
-                    // calculate stencils
-                    calculate_stencil_adj(grid, iip, jjt, kkr);
-                }
-            }
-        }
+            //
+            // calculate stencils
+            //
+            calculate_stencil_adj(grid, iip, jjt, kkr);
+        } // end ijk
 
-    } // end if subdom_main
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
+
 }
 
 
@@ -58,50 +47,41 @@ Iterator_level_tele::Iterator_level_tele(InputParams& IP, Grid& grid, Source& sr
 
 
 void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
-    if (subdom_main) {
+    // set sweep direction
+    set_sweep_direction(iswp);
 
-        // set sweep direction
-        set_sweep_direction(iswp);
+    int iip, jjt, kkr;
 
-        int r_start, t_start, p_start, r_end, t_end, p_end;
+    for (int i_level = st_level; i_level <= ed_level; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+            int kk = ijk.at(2);
+            int jj = ijk.at(1);
+            int ii = ijk.at(0);
 
-        // set loop range
-        if (r_dirc < 0) {
-            r_start = nr-1;
-            r_end   = -1;
-        } else {
-            r_start = 0;
-            r_end   = nr;
-        }
-        if (t_dirc < 0) {
-            t_start = nt-1;
-            t_end   = -1;
-        } else {
-            t_start = 0;
-            t_end   = nt;
-        }
-        if (p_dirc < 0) {
-            p_start = np-1;
-            p_end   = -1;
-        } else {
-            p_start = 0;
-            p_end   = np;
-        }
+            if (r_dirc < 0) kkr = nr-kk; //kk-1;
+            else            kkr = kk-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jj; //jj-1;
+            else            jjt = jj-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ii; //ii-1;
+            else            iip = ii-1; //np-ii;
 
-        for (int kkr = r_start; kkr != r_end; kkr+=r_dirc) {
-            for (int jjt = t_start; jjt != t_end; jjt+=t_dirc) {
-                for (int iip = p_start; iip != p_end; iip+=p_dirc) {
-                    if (iip != 0    && jjt != 0    && kkr != 0 \
-                     && iip != np-1 && jjt != nt-1 && kkr != nr-1) {
-                        // calculate stencils
-                        calculate_stencil_adj(grid, iip, jjt, kkr);
-                    } else {
-                        calculate_boundary_nodes_tele_adj(grid, iip, jjt, kkr);
-                    }
-                }
+            //
+            // calculate stencils
+            //
+            if (iip != 0    && jjt != 0    && kkr != 0 \
+             && iip != np-1 && jjt != nt-1 && kkr != nr-1) {
+                // calculate stencils
+                calculate_stencil_adj(grid, iip, jjt, kkr);
+            } else {
+                calculate_boundary_nodes_tele_adj(grid, iip, jjt, kkr);
             }
-        }
-    } // end if subdom_main
+        } // end ijk
+
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
+
 }
 
 
@@ -253,6 +233,14 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
+    // debug min iip jjt and kkr
+    int min_iip = 999999999;
+    int min_jjt = 999999999;
+    int min_kkr = 999999999;
+    int max_iip = 0;
+    int max_jjt = 0;
+    int max_kkr = 0;
+
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
@@ -260,14 +248,20 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
             int jj = ijk.at(1);
             int ii = ijk.at(0);
 
-            //std::cout << sub_rank << ": " << i_level << " " << ii << " " << jj << " " << kk << std::endl;
-
             if (r_dirc < 0) kkr = nr-kk; //kk-1;
             else            kkr = kk-1;  //nr-kk;
             if (t_dirc < 0) jjt = nt-jj; //jj-1;
             else            jjt = jj-1;  //nt-jj;
             if (p_dirc < 0) iip = np-ii; //ii-1;
             else            iip = ii-1; //np-ii;
+
+            // check min max index
+            if (iip < min_iip) min_iip = iip;
+            if (iip > max_iip) max_iip = iip;
+            if (jjt < min_jjt) min_jjt = jjt;
+            if (jjt > max_jjt) max_jjt = jjt;
+            if (kkr < min_kkr) min_kkr = kkr;
+            if (kkr > max_kkr) max_kkr = kkr;
 
             //
             // calculate stencils
@@ -285,4 +279,9 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
         synchronize_all_sub();
 
     } // end loop i_level
+
+    // write out min max
+//    if (subdom_main) {
+//        std::cout << "min max iip jjt kkr: " << min_iip << " " << max_iip << " " << min_jjt << " " << max_jjt << " " << min_kkr << " " << max_kkr << std::endl;
+//    }
 }
