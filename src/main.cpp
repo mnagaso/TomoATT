@@ -8,7 +8,6 @@
 #include "input_params.h"
 #include "grid.h"
 #include "io.h"
-#include "iterator.h"
 #include "source.h"
 #include "receiver.h"
 #include "kernel.h"

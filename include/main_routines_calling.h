@@ -2,13 +2,17 @@
 #define MAIN_ROUTINES_CALLING_H
 
 #include <iostream>
+#include <memory>
 #include "mpi_funcs.h"
 #include "config.h"
 #include "utils.h"
 #include "input_params.h"
 #include "grid.h"
 #include "io.h"
+#include "iterator_selector.h"
 #include "iterator.h"
+#include "iterator_legacy.h"
+#include "iterator_level.h"
 #include "source.h"
 #include "receiver.h"
 #include "kernel.h"
@@ -62,16 +66,15 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
-        Iterator It(IP, grid, src, io, first_init, is_teleseismic);
+
+        // initialize iterator object
+        std::unique_ptr<Iterator> It = select_iterator(IP, grid, src, io, first_init, is_teleseismic);
 
         /////////////////////////
         // run forward simulation
         /////////////////////////
 
-        if(!is_teleseismic)
-            It.run_iteration_forward(IP, grid, io, first_init);
-        else
-            It.run_iteration_forward_teleseismic(IP, grid, io, first_init);
+        It->run_iteration_forward(IP, grid, io, first_init);
 
         // output the result of forward simulation
         // ignored for inversion mode.
@@ -108,7 +111,7 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
             }
 
             // run iteration for adjoint field calculation
-            It.run_iteration_adjoint(IP, grid, io);
+            It->run_iteration_adjoint(IP, grid, io);
 
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
@@ -123,6 +126,7 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
             }
        }
 
+        // delete iterator object
 
     } // end loop sources
 

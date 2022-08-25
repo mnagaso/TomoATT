@@ -24,21 +24,19 @@ public:
     void run_iteration_adjoint(InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
 
     // teleseismic source (teleseismic adjoint use the same function with reginal source)
-    void run_iteration_forward_teleseismic(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
+    //void run_iteration_forward_teleseismic(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
 
     void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
 
-private:
+protected:
     void assign_processes_for_levels(); // assign intra-node processes for each sweeping level
     void set_sweep_direction(int);      // set sweep direction
     // regional source
-    void do_sweep(int, Grid&, InputParams&);                       // do sweeping with ordinal method
-    void do_sweep_level(int, Grid&, InputParams&);                 // do sweeping with level set method
-    void do_sweep_level_no_load_balance(int, Grid&, InputParams&); // do sweeping with level set method
+    virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
     void calculate_stencil_1st_order(Grid&, int&, int&, int&);     // calculate stencil for 1st order
     void calculate_stencil_3rd_order(Grid&, int&, int&, int&);     // calculate stencil for 3rd order
     void calculate_boundary_nodes(Grid&);                          // calculate boundary values
-    // teleseismic source
+//    // teleseismic source
     void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order
     void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&); // calculate stencil for 3rd order
     void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);    // calculate boundary values for teleseismic source
@@ -58,9 +56,7 @@ private:
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
-    void do_sweep_adj(int, Grid&, InputParams&);                       // do sweeping with ordinal method for adjoint field
-    void do_sweep_level_adj(int, Grid&, InputParams&);                 // do sweeping with level set method for adjoint field
-    void do_sweep_level_no_load_balance_adj(int, Grid&, InputParams&); // do sweeping with level set method for adjoint field
+    virtual void do_sweep_adj(int, Grid&, InputParams&){};                       // do sweeping with ordinal method for adjoint field
     void calculate_stencil_adj(Grid&, int&, int&, int&);               // calculate stencil for 1st order for adjoint field
 
     // grid point information
