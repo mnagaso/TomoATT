@@ -107,7 +107,7 @@ The total number of mpi processes (i.e. mpirun -n NUMBER) must be n_sims\*ndiv_r
 - `convergence_tolerance` :  convergence criterion for forward and adjoint run.
 - `max_iterations` :  number of maximum iteration for forward and adjoint run
 - `stencil_order` :  `1` or `3`. The order of stencil for sweeping.
-- `sweep_type` :  `0`, `1` or `2`. 0 is for sweeping in legacy order (threefold loops on r,t and p), 1 for cuthill-mckee ordering without parallelization, 2 for cuthill-mckee node ordering with sweeping parallelization.
+- `sweep_type` :  `0`or `1`. 0 is for sweeping in legacy order (threefold loops on r,t and p), 1 for cuthill-mckee node ordering with sweeping parallelization.
 - `output_file_format` : `0` or `1` for selecting input and output file format. `0` is for HDF5 format, `1` is for ASCII format.
 
 
