@@ -233,14 +233,6 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
-    // debug min iip jjt and kkr
-    int min_iip = 999999999;
-    int min_jjt = 999999999;
-    int min_kkr = 999999999;
-    int max_iip = 0;
-    int max_jjt = 0;
-    int max_kkr = 0;
-
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
@@ -254,14 +246,6 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
             else            jjt = jj-1;  //nt-jj;
             if (p_dirc < 0) iip = np-ii; //ii-1;
             else            iip = ii-1; //np-ii;
-
-            // check min max index
-            if (iip < min_iip) min_iip = iip;
-            if (iip > max_iip) max_iip = iip;
-            if (jjt < min_jjt) min_jjt = jjt;
-            if (jjt > max_jjt) max_jjt = jjt;
-            if (kkr < min_kkr) min_kkr = kkr;
-            if (kkr > max_kkr) max_kkr = kkr;
 
             //
             // calculate stencils
@@ -280,8 +264,4 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     } // end loop i_level
 
-    // write out min max
-//    if (subdom_main) {
-//        std::cout << "min max iip jjt kkr: " << min_iip << " " << max_iip << " " << min_jjt << " " << max_jjt << " " << min_kkr << " " << max_kkr << std::endl;
-//    }
 }
