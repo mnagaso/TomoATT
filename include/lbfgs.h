@@ -96,9 +96,9 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
-                    desc_wks_Ks[I2V(i,j,k)]   = grid.Ks_grad_store_loc[  I2VLBFGS(imax,i,j,k)];
-                    desc_wks_Keta[I2V(i,j,k)] = grid.Keta_grad_store_loc[I2VLBFGS(imax,i,j,k)];
-                    desc_wks_Kxi[I2V(i,j,k)]  = grid.Kxi_grad_store_loc[ I2VLBFGS(imax,i,j,k)];
+                    desc_wks_Ks[I2V(i,j,k)]   = grid.Ks_grad_store_loc[  I2VLBFGS(imax+1,i,j,k)];
+                    desc_wks_Keta[I2V(i,j,k)] = grid.Keta_grad_store_loc[I2VLBFGS(imax+1,i,j,k)];
+                    desc_wks_Kxi[I2V(i,j,k)]  = grid.Kxi_grad_store_loc[ I2VLBFGS(imax+1,i,j,k)];
                     wks_1_Ks[I2V(i,j,k)]   = grid.Ks_grad_store_loc[  I2VLBFGS(imax+1,i,j,k)] - grid.Ks_grad_store_loc[  I2VLBFGS(imax,i,j,k)];
                     wks_1_Keta[I2V(i,j,k)] = grid.Keta_grad_store_loc[I2VLBFGS(imax+1,i,j,k)] - grid.Keta_grad_store_loc[I2VLBFGS(imax,i,j,k)];
                     wks_1_Kxi[I2V(i,j,k)]  = grid.Kxi_grad_store_loc[ I2VLBFGS(imax+1,i,j,k)] - grid.Kxi_grad_store_loc[ I2VLBFGS(imax,i,j,k)];
@@ -109,9 +109,9 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         //calculate l2 norms
         CUSTOMREAL norm_yiter = 0.0;
 
-        norm_yiter += calc_l2norm(desc_wks_Ks,loc_I*loc_J*loc_K);
-        norm_yiter += calc_l2norm(desc_wks_Keta,loc_I*loc_J*loc_K);
-        norm_yiter += calc_l2norm(desc_wks_Kxi,loc_I*loc_J*loc_K);
+        norm_yiter += calc_l2norm(wks_1_Ks,loc_I*loc_J*loc_K);
+        norm_yiter += calc_l2norm(wks_1_Keta,loc_I*loc_J*loc_K);
+        norm_yiter += calc_l2norm(wks_1_Kxi,loc_I*loc_J*loc_K);
 
         CUSTOMREAL tmp = norm_yiter;
         allreduce_cr_single(tmp, norm_yiter);
@@ -150,7 +150,7 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
             allreduce_cr_single(tmp, ak);
             // print ak
             if(myrank== 0) std::cout << "ak gathered: " << ak << std::endl;
-            ak_store[iinv] = pk / ak;
+            ak_store[iinv] = pk_store[iinv] * ak;
 
             for (int k = 0; k < loc_K; k++) {
                 for (int j = 0; j < loc_J; j++) {
@@ -165,8 +165,7 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         } // end loop iinv
 
         // Nocedal's default preconditionning
-        int iinv = imax;
-        CUSTOMREAL pk = _1_CR / (pk_store[iinv] * norm_yiter);
+        CUSTOMREAL pk = _1_CR / (pk_store[imax] * norm_yiter);
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
@@ -241,28 +240,47 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
             }
         }
 
-        // check minimum and maximum value in grid.Ks_update_loc
-        CUSTOMREAL min_Ks_update_loc = grid.Ks_update_loc[0];
-        CUSTOMREAL max_Ks_update_loc = grid.Ks_update_loc[0];
+        // check minimum and maximum value in grid.Ks_descent_dir_loc
+        CUSTOMREAL min_Ks_descent_dir_loc = 999999999999;
+        CUSTOMREAL max_Ks_descent_dir_loc = -999999999999;
 
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
-                    if (grid.Ks_update_loc[I2V(i,j,k)] < min_Ks_update_loc) {
-                        min_Ks_update_loc = grid.Ks_update_loc[I2V(i,j,k)];
+                    if (grid.Ks_descent_dir_loc[I2V(i,j,k)] < min_Ks_descent_dir_loc) {
+                        min_Ks_descent_dir_loc = grid.Ks_descent_dir_loc[I2V(i,j,k)];
                     }
-                    if (grid.Ks_update_loc[I2V(i,j,k)] > max_Ks_update_loc) {
-                        max_Ks_update_loc = grid.Ks_update_loc[I2V(i,j,k)];
+                    if (grid.Ks_descent_dir_loc[I2V(i,j,k)] > max_Ks_descent_dir_loc) {
+                        max_Ks_descent_dir_loc = grid.Ks_descent_dir_loc[I2V(i,j,k)];
                     }
                 }
             }
         }
 
-        // print
-        if (myrank == 0) {
-            std::cout << "min_Ks_update_loc = " << min_Ks_update_loc << std::endl;
-            std::cout << "max_Ks_update_loc = " << max_Ks_update_loc << std::endl;
-        }
+        std::cout << "min_Ks_descent_dir_loc = " << min_Ks_descent_dir_loc << std::endl;
+        std::cout << "max_Ks_descent_dir_loc = " << max_Ks_descent_dir_loc << std::endl;
+
+//        CUSTOMREAL min_Ks_update_loc = grid.Ks_update_loc[0];
+//        CUSTOMREAL max_Ks_update_loc = grid.Ks_update_loc[0];
+//
+//        for (int k = 0; k < loc_K; k++) {
+//            for (int j = 0; j < loc_J; j++) {
+//                for (int i = 0; i < loc_I; i++) {
+//                    if (grid.Ks_update_loc[I2V(i,j,k)] < min_Ks_update_loc) {
+//                        min_Ks_update_loc = grid.Ks_update_loc[I2V(i,j,k)];
+//                    }
+//                    if (grid.Ks_update_loc[I2V(i,j,k)] > max_Ks_update_loc) {
+//                        max_Ks_update_loc = grid.Ks_update_loc[I2V(i,j,k)];
+//                    }
+//                }
+//            }
+//        }
+//
+//        // print
+//        if (myrank == 0) {
+//            std::cout << "min_Ks_update_loc = " << min_Ks_update_loc << std::endl;
+//            std::cout << "max_Ks_update_loc = " << max_Ks_update_loc << std::endl;
+//        }
 
         delete [] ak_store;
         delete [] pk_store;
@@ -384,6 +402,35 @@ inline void add_regularization_grad(Grid& grid) {
         delete [] tmp_arr;
 
     }
+
+}
+
+
+// compute initial guess for step length to try for line search
+void initial_guess_step(Grid& grid, CUSTOMREAL& step_size, CUSTOMREAL SC_VAL) {
+    // find the max value in descent_direction
+    CUSTOMREAL max_val = _0_CR;
+    for (int k = 0; k < loc_K; k++) {
+        for (int j = 0; j < loc_J; j++) {
+            for (int i = 0; i < loc_I; i++) {
+                if (grid.Ks_descent_dir_loc[I2V(i,j,k)] > max_val)   max_val = std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]);
+                if (grid.Keta_descent_dir_loc[I2V(i,j,k)] > max_val) max_val = std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]);
+                if (grid.Kxi_descent_dir_loc[I2V(i,j,k)] > max_val)  max_val = std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)]);
+            }
+        }
+    }
+
+    // reduce
+    allreduce_cr_single_max(max_val, max_val);
+
+    // debug print max_val
+    if (subdom_main) {
+        std::cout << "max_val: " << max_val << std::endl;
+    }
+
+    // step size
+    CUSTOMREAL max_relat_part = 0.1; // this should be in input file
+    step_size = (max_relat_part/SC_VAL) / max_val;
 
 }
 

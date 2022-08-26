@@ -15,7 +15,7 @@ model :
 
 inversion :
   do_inversion : 1 # 0 for forward simulation only, 1 for inversion
-  optim_method : 0 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs",
+  optim_method : 2 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs",
   max_iterations_inv : 100  # maximum number of inversion iterations
   step_size : 0.01  # step size for inversion
 
@@ -27,6 +27,7 @@ inversion :
   min_max_lon_inv : [22.7,27.3] # longitude in degree
 
   # parameter for halving-stepping or lbfgs
+  regularization_weight : 100.0 # regularization weight
   max_sub_iterations : 10 # maximum number of sub-iterations
 
 parallel :

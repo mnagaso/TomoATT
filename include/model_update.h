@@ -84,15 +84,14 @@ void calc_descent_direction(Grid& grid, int i_inv) {
         if (optim_method == LBFGS_MODE) {
 
             // calculate the descent direction
-            if (i_inv > 0)
+            if (i_inv > 0) {
                 calculate_descent_direction_lbfgs(grid, i_inv);
             // use gradient for the first iteration
-            else {
+            } else {
                 // sum kernels among all simultaneous runs
                 sumup_kernels(grid);
                 // smooth kernels
                 smooth_kernels(grid);
-
 
                 int n_grid = loc_I*loc_J*loc_K;
                 std::memcpy(grid.Ks_descent_dir_loc,   grid.Ks_update_loc,   n_grid*sizeof(CUSTOMREAL));
@@ -101,11 +100,11 @@ void calc_descent_direction(Grid& grid, int i_inv) {
 
 
                 //// inverse the gradient to fit the update scheme for LBFGS
-                //for (int i = 0; i < n_grid; i++){
-                //    grid.Ks_descent_dir_loc[i]   = -grid.Ks_descent_dir_loc[i];
-                //    grid.Keta_descent_dir_loc[i] = -grid.Keta_descent_dir_loc[i];
-                //    grid.Kxi_descent_dir_loc[i]  = -grid.Kxi_descent_dir_loc[i];
-                //}
+                for (int i = 0; i < n_grid; i++){
+                    grid.Ks_descent_dir_loc[i]   = -grid.Ks_descent_dir_loc[i];
+                    grid.Keta_descent_dir_loc[i] = -grid.Keta_descent_dir_loc[i];
+                    grid.Kxi_descent_dir_loc[i]  = -grid.Kxi_descent_dir_loc[i];
+                }
             }
 
         }
@@ -174,46 +173,46 @@ void set_new_model(Grid& grid, CUSTOMREAL step_size_new) {
         } else { // for LBFGS routine
 
 
-            // get the scaling factor
-            CUSTOMREAL Linf_Ks = _0_CR, Linf_Keta = _0_CR, Linf_Kxi = _0_CR;
-            CUSTOMREAL Linf_all = _0_CR;
-            for (int k = 0; k < loc_K; k++) {
-                for (int j = 0; j < loc_J; j++) {
-                    for (int i = 0; i < loc_I; i++) {
-                        Linf_Ks   = std::max(Linf_Ks,   std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]));
-                        Linf_Keta = std::max(Linf_Keta, std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]));
-                        Linf_Kxi  = std::max(Linf_Kxi,  std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)]));
-                    }
-                }
-            }
-
-            // get the maximum scaling factor among subdomains
-            CUSTOMREAL Linf_tmp;
-            allreduce_cr_single_max(Linf_Ks, Linf_tmp);   Linf_Ks   = Linf_tmp;
-            allreduce_cr_single_max(Linf_Keta, Linf_tmp); Linf_Keta = Linf_tmp;
-            allreduce_cr_single_max(Linf_Kxi, Linf_tmp);  Linf_Kxi  = Linf_tmp;
-
-            Linf_all = std::max(Linf_Ks, std::max(Linf_Keta, Linf_Kxi))*-1.0;
-            Linf_Ks = Linf_all;
-            Linf_Keta = Linf_all;
-            Linf_Kxi = Linf_all;
-
-
-            if (myrank == 0 && id_sim == 0)
-                //std::cout << "Scaring factor for all kernels: " << Linf_all << std::endl;
-                std::cout << "Scaring factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_size_new << std::endl;
+//            // get the scaling factor
+//            CUSTOMREAL Linf_Ks = _0_CR, Linf_Keta = _0_CR, Linf_Kxi = _0_CR;
+//            CUSTOMREAL Linf_all = _0_CR;
+//            for (int k = 0; k < loc_K; k++) {
+//                for (int j = 0; j < loc_J; j++) {
+//                    for (int i = 0; i < loc_I; i++) {
+//                        Linf_Ks   = std::max(Linf_Ks,   std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]));
+//                        Linf_Keta = std::max(Linf_Keta, std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]));
+//                        Linf_Kxi  = std::max(Linf_Kxi,  std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)]));
+//                    }
+//                }
+//            }
+//
+//            // get the maximum scaling factor among subdomains
+//            CUSTOMREAL Linf_tmp;
+//            allreduce_cr_single_max(Linf_Ks, Linf_tmp);   Linf_Ks   = Linf_tmp;
+//            allreduce_cr_single_max(Linf_Keta, Linf_tmp); Linf_Keta = Linf_tmp;
+//            allreduce_cr_single_max(Linf_Kxi, Linf_tmp);  Linf_Kxi  = Linf_tmp;
+//
+//            Linf_all = std::max(Linf_Ks, std::max(Linf_Keta, Linf_Kxi));
+//            Linf_Ks = Linf_all;
+//            Linf_Keta = Linf_all;
+//            Linf_Kxi = Linf_all;
+//
+//
+//            if (myrank == 0 && id_sim == 0)
+//                //std::cout << "Scaring factor for all kernels: " << Linf_all << std::endl;
+//                std::cout << "Scaring factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_size_new << std::endl;
 
             // update the model
             for (int k = 0; k < loc_K; k++) {
                 for (int j = 0; j < loc_J; j++) {
                     for (int i = 0; i < loc_I; i++) {
                         // update
-                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR -  grid.Ks_descent_dir_loc[I2V(i,j,k)]/(Linf_Ks/step_size_new));
-                        grid.xi_loc[I2V(i,j,k)]  -=           grid.Kxi_descent_dir_loc[I2V(i,j,k) ]/(Linf_Keta/step_size_new);
-                        grid.eta_loc[I2V(i,j,k)] -=           grid.Keta_descent_dir_loc[I2V(i,j,k)]/(Linf_Kxi /step_size_new);
-                        //grid.fun_loc[I2V(i,j,k)] += grid.Ks_descent_dir_loc[I2V(i,j,k)]  /(Linf_Ks/step_size_new);
-                        //grid.xi_loc[I2V(i,j,k)]  += grid.Kxi_descent_dir_loc[I2V(i,j,k)] /(Linf_Keta/step_size_new);
-                        //grid.eta_loc[I2V(i,j,k)] += grid.Keta_descent_dir_loc[I2V(i,j,k)]/(Linf_Kxi/step_size_new);
+                        //grid.fun_loc[I2V(i,j,k)] *= (_1_CR -  grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_size_new);
+                        //grid.xi_loc[I2V(i,j,k)]  -=           grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_size_new;
+                        //grid.eta_loc[I2V(i,j,k)] -=           grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_size_new;
+                        grid.fun_loc[I2V(i,j,k)] += grid.Ks_descent_dir_loc[I2V(i,j,k)]  *step_size_new;
+                        grid.xi_loc[I2V(i,j,k)]  += grid.Kxi_descent_dir_loc[I2V(i,j,k)] *step_size_new;
+                        grid.eta_loc[I2V(i,j,k)] += grid.Keta_descent_dir_loc[I2V(i,j,k)]*step_size_new;
 
                         grid.fac_b_loc[I2V(i,j,k)] = _1_CR - _2_CR * grid.xi_loc[I2V(i,j,k)];
                         grid.fac_c_loc[I2V(i,j,k)] = _1_CR + _2_CR * grid.xi_loc[I2V(i,j,k)];

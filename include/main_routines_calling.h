@@ -286,7 +286,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
     calc_descent_direction(grid, i_inv);
 
     // smooth descent direction
-    smooth_descent_direction(grid);
+    //smooth_descent_direction(grid);
 
     // regularization delta_chi -> delta_chi' = grad + coef * delta L(m)
     // add gradient of regularization term
@@ -295,7 +295,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
     v_obj_reg = add_regularization_obj(grid);
     v_obj_new += v_obj_reg;
 
-    // compute initial q_k for line search = current_gradient * descent_direction
+    // compute initial q_k for line search = initial_gradient * descent_direction
     q_k = compute_q_k(grid);
 
     // backup the initial model
@@ -321,8 +321,18 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
 
     synchronize_all_world();
 
+    //initial_guess_step(grid, step_size, 1.0);
+
     // do line search for finding a good step size
     while (optim_method == LBFGS_MODE) {
+        // decide initial step size
+        if (i_inv == 0 && subiter_count == 0) {
+            initial_guess_step(grid, step_size, 1.0);
+        }
+        else if (i_inv == 1 && subiter_count == 0) {
+            //initial_guess_step(grid, step_size, 10.0);
+            step_size *= 0.1;
+        }
 
         // update the model
         if(subdom_main) grid.restore_fun_xi_eta_bcf();
@@ -366,7 +376,8 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
 
             // store current model and gradient
             store_model_and_gradient(grid, i_inv+1);
-            //step_size_init = step_size; // use the
+
+            step_size_init = step_size; // use current step size for the next iteration
 
             goto end_of_subiteration;
         } else if (subiter_count > max_sub_iterations){
@@ -378,7 +389,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
         } else {
             // wolfe conditions not satisfied
 
-            v_obj_cur = v_obj_new;
+            //v_obj_cur = v_obj_new;
             subiter_count++;
         }
     }
