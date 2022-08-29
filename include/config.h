@@ -77,6 +77,7 @@ inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortr
 inline const CUSTOMREAL GAMMA          = 0.0;
 inline const CUSTOMREAL r_kermel_mask  = 40.0;
 inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
+inline CUSTOMREAL       step_size_lbfgs;
 
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;

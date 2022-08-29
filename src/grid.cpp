@@ -544,6 +544,10 @@ void Grid::memory_allocation() {
             Ks_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Kxi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Keta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+
 
             // initialize
             for (int i = 0; i < n_total_loc_lbfgs; i++) {
@@ -556,6 +560,9 @@ void Grid::memory_allocation() {
                 Ks_descent_dir_loc[i]   = _0_CR;
                 Kxi_descent_dir_loc[i]  = _0_CR;
                 Keta_descent_dir_loc[i] = _0_CR;
+                fun_regularization_penalty_loc[i] = _0_CR;
+                xi_regularization_penalty_loc[i]  = _0_CR;
+                eta_regularization_penalty_loc[i] = _0_CR;
                 Ks_regularization_penalty_loc[i]   = _0_CR;
                 Kxi_regularization_penalty_loc[i]  = _0_CR;
                 Keta_regularization_penalty_loc[i] = _0_CR;
@@ -844,6 +851,9 @@ void Grid::memory_deallocation() {
             free(Ks_descent_dir_loc);
             free(Kxi_descent_dir_loc);
             free(Keta_descent_dir_loc);
+            free(fun_regularization_penalty_loc);
+            free(xi_regularization_penalty_loc);
+            free(eta_regularization_penalty_loc);
             free(Ks_regularization_penalty_loc);
             free(Kxi_regularization_penalty_loc);
             free(Keta_regularization_penalty_loc);

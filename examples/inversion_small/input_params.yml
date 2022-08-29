@@ -27,8 +27,9 @@ inversion :
   min_max_lon_inv : [22.7,27.3] # longitude in degree
 
   # parameter for halving-stepping or lbfgs
-  regularization_weight : 100.0 # regularization weight
+  regularization_weight : 1.0 # regularization weight
   max_sub_iterations : 10 # maximum number of sub-iterations
+  l_smooth_rtp : [10,10,10] #
 
 parallel :
   n_sims : 1         # number of simultaneous run
