@@ -1686,7 +1686,8 @@ void Grid::send_recev_boundary_data(CUSTOMREAL* arr){
         }
     }
 
-    //synchronize_all_inter();
+    // THIS SYNCHRONIZATION IS IMPORTANT.
+    synchronize_all_inter();
 
     assign_received_data_to_ghost(arr);
 
