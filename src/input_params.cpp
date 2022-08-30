@@ -411,6 +411,9 @@ void InputParams::parse_src_rec_file(){
         if (line.at(0) == '#')
             continue; // skip comment
 
+        // erase the trailing space
+        line.erase(line.find_last_not_of(" \n\r\t")+1);
+
         // parse the line with arbitrary number of spaces
         std::stringstream ss(line);
         std::string token;
@@ -437,7 +440,7 @@ void InputParams::parse_src_rec_file(){
             src.mag    = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
             src.n_rec  = std::stoi(tokens[11]);
             src.id_event = tokens[12];
-            // check if tokens[13] exists read weight
+            // check if tokens[13] exists, then read weight
             if (tokens.size() > 13)
                 src.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
             else
