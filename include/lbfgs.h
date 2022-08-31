@@ -335,7 +335,7 @@ inline CUSTOMREAL add_regularization_obj(Grid& grid) {
         int ngrid = loc_I*loc_J*loc_K;
         for (int i = 0; i < ngrid; i++) tmp_arr[i] = _0_CR;
 
-        regularization_term += calc_l2norm(grid.fun_regularization_penalty_loc, ngrid);　
+        regularization_term += calc_l2norm(grid.fun_regularization_penalty_loc, ngrid);
         regularization_term += calc_l2norm(grid.eta_regularization_penalty_loc, ngrid);
         regularization_term += calc_l2norm(grid.xi_regularization_penalty_loc, ngrid);
 
