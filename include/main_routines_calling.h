@@ -337,7 +337,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
             step_size_lbfgs=step_size_init; // store input step length
         }
         else if (i_inv == 1 && subiter_count == 0) {
-            initial_guess_step(grid, step_size, step_size_lbfgs*0.3);
+            initial_guess_step(grid, step_size, step_size_lbfgs*LBFGS_RELATIVE_STEP_SIZE);
             //step_size *= 0.1;
         }
         //if (i_inv==0) init_bfgs=true;
