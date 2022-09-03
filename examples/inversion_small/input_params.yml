@@ -28,6 +28,8 @@ inversion :
 
   # parameter for halving-stepping or lbfgs
   max_sub_iterations : 10 # maximum number of sub-iterations
+  #regularization_weight : 0.0 # regularization weight
+  #l_smooth_rtp : [10,10,10] #
 
 parallel :
   n_sims : 1         # number of simultaneous run

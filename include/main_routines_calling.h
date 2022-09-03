@@ -281,12 +281,14 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
     CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
 
-
     // smooth kernels and calculate descent direction
     calc_descent_direction(grid, i_inv);
 
     // smooth descent direction
-    smooth_descent_direction(grid);
+    //smooth_descent_direction(grid);
+
+    // compute initial q_k for line search = initial_gradient * descent_direction
+    q_k = compute_q_k(grid);
 
     // regularization delta_chi -> delta_chi' = grad + coef * delta L(m)
     // add gradient of regularization term
@@ -295,8 +297,10 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
     v_obj_reg = add_regularization_obj(grid);
     v_obj_new += v_obj_reg;
 
-    // compute initial q_k for line search = current_gradient * descent_direction
-    q_k = compute_q_k(grid);
+    // store initial gradient
+    if (i_inv == 0) {
+        store_model_and_gradient(grid, i_inv);
+    }
 
     // backup the initial model
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
@@ -321,12 +325,26 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
 
     synchronize_all_world();
 
+    //initial_guess_step(grid, step_size, 1.0);
+    bool init_bfgs = false;
+
     // do line search for finding a good step size
     while (optim_method == LBFGS_MODE) {
+        // decide initial step size
+        if (i_inv == 0 && subiter_count == 0) {
+            initial_guess_step(grid, step_size, step_size_init);
+            init_bfgs = true;
+            step_size_lbfgs=step_size_init; // store input step length
+        }
+        else if (i_inv == 1 && subiter_count == 0) {
+            initial_guess_step(grid, step_size, step_size_lbfgs*LBFGS_RELATIVE_STEP_SIZE);
+            //step_size *= 0.1;
+        }
+        //if (i_inv==0) init_bfgs=true;
 
         // update the model
         if(subdom_main) grid.restore_fun_xi_eta_bcf();
-        set_new_model(grid, step_size);
+        set_new_model(grid, step_size, init_bfgs);
 
         // check current objective function value #BUG: strange v_obj at the first sub iteration
         v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
@@ -366,7 +384,8 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
 
             // store current model and gradient
             store_model_and_gradient(grid, i_inv+1);
-            //step_size_init = step_size; // use the
+
+            step_size_init = step_size; // use current step size for the next iteration
 
             goto end_of_subiteration;
         } else if (subiter_count > max_sub_iterations){
@@ -378,7 +397,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
         } else {
             // wolfe conditions not satisfied
 
-            v_obj_cur = v_obj_new;
+            //v_obj_cur = v_obj_new;
             subiter_count++;
         }
     }
