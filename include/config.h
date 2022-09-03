@@ -161,14 +161,18 @@ inline bool if_verbose = false;
 inline int use_gpu = 0; // 0: no, 1: yes
 
 // 2d solver parameters
-inline       CUSTOMREAL r_margin            = 0.1; // margin ratio for 2d solver
-inline       CUSTOMREAL t_margin            = 0.2;
+// use fixed domain size for all 2d simulations
+inline       CUSTOMREAL rmin_2d = 3371.0;
+inline       CUSTOMREAL rmax_2d = 6471.0;
+inline       CUSTOMREAL tmin_2d = -5.0/180.0*PI;
+inline       CUSTOMREAL tmax_2d = PI+5.0/180.0*PI;
 inline       CUSTOMREAL dr_2d               = 2.0;
 inline       CUSTOMREAL dt_2d               = PI/1000.0;
-inline const CUSTOMREAL TOL_2D_SOLVER       = 1e-4;
+inline const CUSTOMREAL TOL_2D_SOLVER       = 1e-3;
 inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 1000;
 inline const CUSTOMREAL SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
 inline const int        N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
 inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
+inline const std::string OUTPUT_DIR_2D      = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
 #endif // CONFIG_H

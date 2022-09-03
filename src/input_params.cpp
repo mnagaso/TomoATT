@@ -64,6 +64,10 @@ InputParams::InputParams(std::string& input_file){
             if (config["model"]["init_model_path"]) {
                 init_model_path = config["model"]["init_model_path"].as<std::string>();
             }
+            // model file path
+            if (config["model"]["model_1d_name"]) {
+                model_1d_name = config["model"]["model_1d_name"].as<std::string>();
+            }
         }
 
         if (config["inversion"]) {
@@ -401,7 +405,7 @@ void InputParams::parse_src_rec_file(){
     std::ifstream ifs(src_rec_file);
     std::string line;
     int cc =0; // count the number of lines
-    int nrec_tmp = 0;
+    int ndata_tmp = 0; // count the number of receivers or differential traveltime data for each source
     std::vector<SrcRec> rec_points_tmp;
     src_points.clear();
     rec_points_tmp.clear();
@@ -427,18 +431,20 @@ void InputParams::parse_src_rec_file(){
         // store values into structure
         if (cc == 0){
             SrcRec src;
-            src.id_src = std::stoi(tokens[0]);
-            src.year   = std::stoi(tokens[1]);
-            src.month  = std::stoi(tokens[2]);
-            src.day    = std::stoi(tokens[3]);
-            src.hour   = std::stoi(tokens[4]);
-            src.min    = std::stoi(tokens[5]);
-            src.sec    = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
-            src.lat    = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
-            src.lon    = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-            src.dep    = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
-            src.mag    = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
-            src.n_rec  = std::stoi(tokens[11]);
+            src.id_src     = std::stoi(tokens[0]);
+            src.year       = std::stoi(tokens[1]);
+            src.month      = std::stoi(tokens[2]);
+            src.day        = std::stoi(tokens[3]);
+            src.hour       = std::stoi(tokens[4]);
+            src.min        = std::stoi(tokens[5]);
+            src.sec        = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
+            src.lat        = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
+            src.lon        = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+            src.dep        = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
+            src.mag        = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
+            ndata_tmp      = std::stoi(tokens[11]);
+            src.n_rec      = 0;
+            src.n_rec_pair = 0;
             src.id_event = tokens[12];
             // check if tokens[13] exists, then read weight
             if (tokens.size() > 13)
@@ -446,29 +452,67 @@ void InputParams::parse_src_rec_file(){
             else
                 src.weight = 1.0; // default weight
             src_points.push_back(src);
-            nrec_tmp = src.n_rec;
-            cc++;
-        } else {
-            SrcRec rec;
-            rec.id_src   = std::stoi(tokens[0]);
-            rec.id_rec   = std::stoi(tokens[1]);
-            rec.name_rec = tokens[2];
-            rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
-            rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
-            rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
-            rec.phase    = tokens[6];
-            rec.epi_dist = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
-            rec.arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
-            rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // store read data
-            // check if tokens[9] exists read weight
-            if (tokens.size() > 9)
-                rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[9]));
-            else
-                rec.weight = 1.0; // default weight
-            rec_points_tmp.push_back(rec);
             cc++;
 
-            if (cc > nrec_tmp) {
+        } else {
+
+            // read single receiver or differential traveltime data
+            if (tokens.size() < 11) {
+
+                // read absolute traveltime
+                SrcRec rec;
+                rec.id_src   = std::stoi(tokens[0]);
+                rec.id_rec   = std::stoi(tokens[1]);
+                rec.name_rec = tokens[2];
+                rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+                rec.phase    = tokens[6];
+                rec.epi_dist = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
+                rec.arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
+                rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // store read data
+
+                // check if tokens[9] exists read weight
+                if (tokens.size() > 9)
+                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[9]));
+                else
+                    rec.weight = 1.0; // default weight
+                rec_points_tmp.push_back(rec);
+                cc++;
+                src_points.at(src_points.size()-1).n_rec++;
+
+            } else {
+
+                // read differential traveltime
+                SrcRec rec;
+                rec.id_src    = std::stoi(tokens[0]);
+                rec.id_rec1   = std::stoi(tokens[1]);
+                rec.name_rec1 = tokens[2];
+                rec.lat1      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                rec.lon1      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                rec.dep1      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+                rec.id_rec2   = std::stoi(tokens[6]);
+                rec.name_rec2 = tokens[7];
+                rec.lat2      = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                rec.lon2      = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                rec.dep2      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
+                rec.phase    = tokens[11];
+                rec.dif_arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[12]));
+                rec.dif_arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
+
+                // check if tokens[9] exists read weight
+                if (tokens.size() > 13)
+                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
+                else
+                    rec.weight = 1.0; // default weight
+                rec.is_SrcRec_pair = true;
+                rec_points_tmp.push_back(rec);
+                cc++;
+                src_points.at(src_points.size()-1).n_rec_pair++;
+
+            }
+
+            if (cc > ndata_tmp) {
                 // go to the next source
                 cc = 0;
                 rec_points.push_back(rec_points_tmp);

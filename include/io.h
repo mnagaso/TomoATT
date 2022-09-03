@@ -96,7 +96,7 @@ public:
     void write_Keta_update(Grid&, int);
 
     // 2d traveltime field for teleseismic source
-    void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, int);
+    void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
     void h5_create_and_write_dataset_2d(std::string&, int, int*, int, CUSTOMREAL*);
     void read_2d_travel_time_field(std::string&, CUSTOMREAL*, int, int);
 

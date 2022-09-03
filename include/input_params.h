@@ -19,7 +19,9 @@
 // strucutre for storing source or receiver information
 class SrcRec {
 public:
-
+    //
+    // default values, for the case of single source - receiver
+    //
     int id_src = 0;
     int id_rec = -9999;
     int n_rec  = 0;
@@ -32,6 +34,28 @@ public:
     CUSTOMREAL arr_time_ori; // recorded/original arrival time (written in the input file)
     CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
     CUSTOMREAL weight=1.0;   // weight
+
+    //
+    // another case of receiver pair (now only for teleseismicity)
+    //
+    bool is_SrcRec_pair = false;
+
+    int id_rec1 = -9999;
+    int id_rec2 = -9999;
+    int n_rec_pair = 0;
+
+    CUSTOMREAL dep1,dep2;
+    CUSTOMREAL lat1,lat2;
+    CUSTOMREAL lon1,lon2;
+
+    CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
+    CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
+    CUSTOMREAL ddt_adj;          // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
+
+    std::string name_rec1 = "rec1_name_dummy";
+    std::string name_rec2 = "rec2_name_dummy";
+
+    // common parameters for both cases
 
     int year             = 9999;
     int month            = 99;
@@ -99,6 +123,7 @@ public:
     int get_sweep_type()   {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};
+    std::string get_model_1d_name(){return model_1d_name;};
 
     int get_do_inversion()    {return do_inversion;};
     int get_n_inversion_grid(){return n_inversion_grid;};
@@ -135,6 +160,7 @@ private:
     // model input files
     std::string init_model_type; // model type
     std::string init_model_path; // model file path init
+    std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
     int do_inversion=0;                  // do inversion or not (0: no, 1: yes)
