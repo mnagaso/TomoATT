@@ -41,7 +41,7 @@ if(HDF5_FOUND)
 endif()
 
 # cuda
-find_package(CUDA)
+# find_package(CUDA)
 
 if(CUDA_FOUND) # TODO : add HIP here in the future
   message(STATUS "CUDA_FOUND: ${CUDA_FOUND}")

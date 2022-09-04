@@ -5,11 +5,11 @@
 #include <math.h>
 #include <string.h>
 #include "config.h"
-#include <filesystem>
+// #include <filesystem>
 #include <fstream>
 
 inline void create_output_dir(){
-    std::filesystem::create_directory(output_dir);
+    // std::filesystem::create_directory(output_dir);
 }
 
 

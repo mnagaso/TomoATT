@@ -542,9 +542,9 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
         std::string fname_2d_src;
 
         // create output directory for 2d solver if not exists
-        if(!std::filesystem::exists(output_dir+"/"+OUTPUT_DIR_2D)) {
-            std::filesystem::create_directory(output_dir+"/"+OUTPUT_DIR_2D);
-        }
+        // if(!std::filesystem::exists(output_dir+"/"+OUTPUT_DIR_2D)) {
+        //     std::filesystem::create_directory(output_dir+"/"+OUTPUT_DIR_2D);
+        // }
 
         if (output_format == OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
