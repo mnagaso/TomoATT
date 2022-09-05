@@ -76,11 +76,20 @@ int main(int argc, char *argv[])
     if(myrank == 0)
         std::cout << "size of src_list: " << IP.src_ids_this_sim.size() << std::endl;
 
-    // objective function value output
+    // prepare output for iteration status
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
         out_main.open("objective_function.txt");
-        out_main << "i_inv, obj_value, step_size" << std::endl;
+        if (optim_method == GRADIENT_DESCENT)
+            out_main << std::setw(6) << "iter," << std::setw(16) << "v_obj," << std::setw(16) << "step_size," << std::endl;
+        else if (optim_method == LBFGS_MODE)
+            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_size," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
+                     << std::setw(16) << "v_obj_reg," << std::setw(16) << "q_new,"  << std::setw(16) << "q_k,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
+                     << std::setw(16) << "c1*q_k,"    << std::setw(16) << "c2*q_k," << std::setw(6)  << "step ok"    << std::endl;
+        else if (optim_method == HALVE_STEPPING_MODE)
+            out_main << std::setw(6)  << "it,"       << std::setw(6)  << "subit,"     << std::setw(16) << "step_size," \
+                     << std::setw(16) << "diff_obj," << std::setw(16) << "v_obj_new," << std::setw(16) << "v_obj_old," << std::endl;
+
     }
 
     /////////////////////
@@ -114,24 +123,13 @@ int main(int argc, char *argv[])
         // output src rec file with the result arrival times
         IP.write_src_rec_file();
 
-        // change stepsize
-        if (optim_method == GRADIENT_DESCENT) {
-            if (i_inv > 0 && v_obj < old_v_obj)
-                step_size_init = std::min(0.01, step_size_init*1.03);
-            else if (i_inv > 0 && v_obj >= old_v_obj)
-                step_size_init = std::max(0.00001, step_size_init*0.97);
-        }
-
-        // output objective function
-        if (myrank==0 && id_sim==0) out_main << i_inv << ", " << v_obj << ", " << step_size_init << std::endl;
-
         ///////////////
         // model update
         ///////////////
 
         if (IP.get_do_inversion()==1){
             if (optim_method == GRADIENT_DESCENT)
-                model_optimize(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
             else if (optim_method == LBFGS_MODE)
                 model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)

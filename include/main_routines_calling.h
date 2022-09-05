@@ -144,10 +144,20 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
 }
 
 
-// do model update
-void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
+// do model update by gradient descent
+void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
+                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
 
-    CUSTOMREAL step_size = step_size_init; // step size init is global variable
+    // change stepsize
+    if (i_inv > 0 && v_obj_inout < old_v_obj)
+        step_size_init = std::min(0.01, step_size_init*1.03);
+    else if (i_inv > 0 && v_obj_inout >= old_v_obj)
+        step_size_init = std::max(0.00001, step_size_init*0.97);
+
+    // output objective function
+    if (myrank==0 && id_sim==0) out_main << std::setw(5) << i_inv \
+                                  << "," << std::setw(15) << v_obj_inout \
+                                  << "," << std::setw(15) << step_size_init << std::endl;
 
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
@@ -156,8 +166,7 @@ void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOM
     smooth_kernels(grid);
 
     // update the model with the initial step size
-    set_new_model(grid, step_size);
-
+    set_new_model(grid, step_size_init);
 
     if (subdom_main) {
         // store kernel only in the first src datafile
@@ -236,8 +245,13 @@ void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, in
         if (diff_obj > _0_CR) {
             // print status
             if(myrank == 0 && id_sim ==0)
-                out_main << "iteration: " << i_inv << " subiteration: " << sub_iter_count << " step_size: " << step_size << \
-                            " diff_obj: " << diff_obj << " v_obj_new: " << v_obj_new << " v_obj_old: " << v_obj_old << std::endl;
+                out_main \
+                           << std::setw(5) << i_inv \
+                    << "," << std::setw(5) << sub_iter_count \
+                    << "," << std::setw(15) << step_size \
+                    << "," << std::setw(15) << diff_obj \
+                    << "," << std::setw(15) << v_obj_new \
+                    << "," << std::setw(15) << v_obj_old << std::endl;
 
             if (subdom_main) grid.restore_fun_xi_eta_bcf();
             step_size /= _2_CR;
@@ -254,8 +268,13 @@ void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, in
 end_of_sub_iteration:
     // out log
     if(myrank == 0 && id_sim ==0)
-        out_main << "iteration: " << i_inv << " subiteration: " << sub_iter_count << " step_size: " << step_size << \
-                    " diff_obj: " << diff_obj << " v_obj_new: " << v_obj_new << " v_obj_old: " << v_obj_old << " accepted." << std::endl;
+        out_main \
+                << std::setw(5) << i_inv \
+         << "," << std::setw(5) << sub_iter_count \
+         << "," << std::setw(15) << step_size \
+         << "," << std::setw(15) << diff_obj \
+         << "," << std::setw(15) << v_obj_new \
+         << "," << std::setw(15) << v_obj_old << " accepted." << std::endl;
 
     v_obj_inout = v_obj_new;
 
@@ -370,13 +389,20 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
 
         // log out
         if(myrank == 0 && id_sim ==0)
-            out_main << "iteration: " << i_inv << " subiteration: " << subiter_count << " step_size: " << store_step_size << \
-                                                                                        " qpt: " << (v_obj_new-v_obj_cur)/store_step_size << \
-                                                                                        " v_obj_new: " << v_obj_new << " v_obj_reg: " << v_obj_reg << \
-                                                                                        " q_new: " << q_k_new << " q_k: " << q_k << \
-                                                                                        " td, tg: " << td << ", " << tg << \
-                                                                                        " wolfe_c1*q_k, wolfe_c2*q_k: " << wolfe_c1*q_k << ", " << wolfe_c2*q_k << \
-                                                                                        " step ok: " << wolfe_cond_ok << std::endl;
+            out_main \
+                     << std::setw(5)  << i_inv \
+              << "," << std::setw(5)  << subiter_count \
+              << "," << std::setw(15) << store_step_size \
+              << "," << std::setw(15) << (v_obj_new-v_obj_cur)/store_step_size \
+              << "," << std::setw(15) << v_obj_new \
+              << "," << std::setw(15) << v_obj_reg \
+              << "," << std::setw(15) << q_k_new \
+              << "," << std::setw(15) << q_k \
+              << "," << std::setw(15) << td \
+              << "," << std::setw(15) << tg \
+              << "," << std::setw(15) << wolfe_c1*q_k \
+              << "," << std::setw(15) << wolfe_c2*q_k \
+              << "," << std::setw(15) << wolfe_cond_ok << std::endl;
 
         if (wolfe_cond_ok) {
             // if yes, update the model and break
