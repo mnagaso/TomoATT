@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     initialize_mpi();
 
     // create output directory
-    create_output_dir();
+    create_output_dir(output_dir);
 
 #ifdef USE_CUDA
     // initialize cuda
