@@ -125,7 +125,7 @@ public:
     std::string get_init_model_path(){return init_model_path;};
     std::string get_model_1d_name(){return model_1d_name;};
 
-    int get_do_inversion()    {return do_inversion;};
+    int get_run_mode()    {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
     int get_n_inv_r()         {return n_inv_r;};
     int get_n_inv_t()         {return n_inv_t;};
@@ -163,7 +163,7 @@ private:
     std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
-    int do_inversion=0;                  // do inversion or not (0: no, 1: yes)
+    int run_mode=0;                  // do inversion or not (0: no, 1: yes)
     int n_inversion_grid=1;              // number of inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
 

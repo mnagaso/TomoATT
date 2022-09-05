@@ -72,8 +72,8 @@ InputParams::InputParams(std::string& input_file){
 
         if (config["inversion"]) {
             // do inversion or not
-            if (config["inversion"]["do_inversion"]) {
-                do_inversion = config["inversion"]["do_inversion"].as<int>();
+            if (config["inversion"]["run_mode"]) {
+                run_mode = config["inversion"]["run_mode"].as<int>();
             }
             // number of inversion grid
             if (config["inversion"]["n_inversion_grid"]) {
@@ -262,7 +262,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(src_rec_file_exist, 0);
     broadcast_str(init_model_type, 0);
     broadcast_str(init_model_path, 0);
-    broadcast_i_single(do_inversion, 0);
+    broadcast_i_single(run_mode, 0);
     broadcast_i_single(n_inversion_grid, 0);
     broadcast_i_single(n_inv_r, 0);
     broadcast_i_single(n_inv_t, 0);

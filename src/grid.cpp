@@ -216,7 +216,7 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // inversion setup
     // check if inversion grids are needed
-    if (IP.get_do_inversion()==1){
+    if (IP.get_run_mode()==1){
         inverse_flag = true;
         setup_inversion_grids(IP);
     } else {

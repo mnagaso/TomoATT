@@ -14,7 +14,7 @@ model :
   init_model_path : './test_model_init.dat' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  run_mode : 1 # 0 for forward simulation only, 1 for inversion
   optim_method : 0 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs"
   max_iterations_inv : 100  # maximum number of inversion iterations
   step_size : 0.01  # step size for inversion
