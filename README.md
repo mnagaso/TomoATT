@@ -22,7 +22,7 @@ Regional events (sources within the global domain) and teleseismic events (sourc
 ## dependency
 - MPI v3.0 or higher  
 
-below is optinal:
+optinal:
 - HDF5 (parallel IO needs to be enabled)
 - h5py (used in pre/post processes examples)
 
@@ -36,6 +36,11 @@ git clone --recursive https://github.com/mnagaso/TomoATT.git
 mkdir build && cd build
 cmake .. && make -j 8
 ```
+
+compile with cuda support
+``` bash
+cmake .. -DUSE_CUDA=True && make -j 8
+``` 
 
 ## to run an example
 ``` bash
