@@ -111,7 +111,7 @@ public:
     CUSTOMREAL           get_src_radius();
     CUSTOMREAL           get_src_lat();
     CUSTOMREAL           get_src_lon();
-    std::string          get_src_rec_file(){return src_rec_file;};
+    std::string          get_src_rec_file()      {return src_rec_file;};
     bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
     SrcRec&              get_src_point(int);  // return SrcRec object
     std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
@@ -123,14 +123,16 @@ public:
     int get_sweep_type()   {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};
-    std::string get_model_1d_name(){return model_1d_name;};
+    std::string get_model_1d_name()  {return model_1d_name;};
 
-    int get_run_mode()    {return run_mode;};
+    int get_run_mode()        {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
     int get_n_inv_r()         {return n_inv_r;};
     int get_n_inv_t()         {return n_inv_t;};
     int get_n_inv_p()         {return n_inv_p;};
     int get_max_iter_inv()    {return max_iter_inv;};
+
+    bool get_is_srcrec_swap() {return swap_src_rec;};
 
 private:
     // boundary information

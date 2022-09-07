@@ -106,6 +106,10 @@ public:
 
     // read model data
     void read_model(std::string&, const char*, CUSTOMREAL*, int, int, int);
+    // read Travel time from file for earthquake relocation
+    void read_T(Grid&);
+
+    void read_data_ascii(Grid&, std::string&);
 
 private:
     // member variables
@@ -198,6 +202,8 @@ private:
 
     template <typename T>
     void h5_read_array_simple(std::string&,  T*);
+
+    void read_data_h5(Grid&, CUSTOMREAL*, std::string, std::string);
 #endif // HDF_HDF5
 
     // utilities

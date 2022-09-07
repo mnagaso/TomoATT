@@ -11,6 +11,7 @@
 #include "io.h"
 #include "main_routines_inversion_mode.h"
 #include "model_optimization_routines.h"
+#include "main_routines_earthquake_relocation.h"
 #include "iterator_selector.h"
 #include "iterator.h"
 #include "iterator_legacy.h"
@@ -82,7 +83,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // model update
         ///////////////
 
-        if (IP.get_run_mode()==DO_INVERSION) {
+        if (IP.get_run_mode() == DO_INVERSION) {
             if (optim_method == GRADIENT_DESCENT)
                 model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
             else if (optim_method == LBFGS_MODE)
@@ -118,29 +119,17 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 // run earthquake relocation mode
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
-//    if(myrank == 0)
-//        std::cout << "size of src_list: " << IP.src_ids_this_sim.size() << std::endl;
-//
-//    // prepare output for iteration status
-//    std::ofstream out_main;
-//    if(myrank == 0 && id_sim ==0)
-//        out_main.open("objective_function.txt");
-//
-//    // calculate traveltime field with input model. (stored in grid.T_loc)
-//    bool first_src = true;
-//    int i_inv_dummy = 0;
-//    bool line_search_mode_dummy = false;
-//    CUSTOMREAL v_obj = run_simulation_one_step(IP, grid, io, i_inv_dummy, first_src, line_search_mode_dummy);
+    // calculate traveltime for each receiver (swapped from source) and write in output file
+    calculate_traveltime_for_all_src_rec(IP, grid, io);
 
-    // calculate traveltime at each receiver (swapped from source)
+    // iterate
+    while (true) {
+        // calculate gradient of objective function at sources
+        calculate_gradient_objective_function(IP, grid, io);
 
-    // calculate the approximated optimal origin time.
+        // update source location
 
-    // calculate gradient of travel time field at each source location.
-
-    // calculate gradient of objective function at each source location.
-
-    // run step-size-controlled gradient descent for searching optimal source location.
+    }
 
 }
 
