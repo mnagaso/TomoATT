@@ -328,7 +328,7 @@ void Grid::setup_inversion_grids(InputParams& IP) {
 
     n_inv_I_loc = ngrid_i_inv;
     n_inv_J_loc = ngrid_j_inv;
-    n_inv_K_loc = ngrid_j_inv;
+    n_inv_K_loc = ngrid_k_inv;
 
 }
 
