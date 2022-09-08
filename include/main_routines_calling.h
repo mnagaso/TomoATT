@@ -119,6 +119,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 // run earthquake relocation mode
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
+    Receiver recs;
+
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
 
@@ -128,9 +130,17 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         calculate_gradient_objective_function(IP, grid, io);
 
         // update source location
+        for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++){
+            id_sim_src = IP.src_ids_this_sim[i_src];
+            recs.update_source_location(IP);
+        }
 
+        break;
     }
 
+
+    // close xdmf file
+    io.finalize_data_output_file(IP.src_ids_this_sim.size());
 }
 
 

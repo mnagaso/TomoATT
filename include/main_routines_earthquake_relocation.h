@@ -83,7 +83,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 
 void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io){
 
-    // iterate over all sources ()
+    // initialize source parameters
+    Receiver recs; // here the source is swapped to receiver
+    recs.init_vars_src_reloc(IP);
+
+    // iterate over all sources for calculating optimal origin time
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
         // reset the file name to be read
@@ -95,21 +99,39 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         // load travel time field on grid.T_loc
         io.read_T(grid);
 
-        // calculate travel time
-//        Receiver recs;
-//        recs.calculate_arrival_time(IP, grid);
-//
+        // calculate travel time at the actual source location
+        recs.calculate_arrival_time(IP, grid);
 
-        // test output
-        if (subdom_main) {
-            // output T (result timetable)
-            io.write_T(grid, 999);
-        }
-
-
-
+        // calculate approximated orptimal origin time
+        recs.calculate_optimal_origin_time(IP);
     }
 
+    // TODO: receiver list is devendent on each source.
+    // thus we need to sum relocation parameters over all sources
+
+    // divide optimal origin time by summed weight
+    recs.divide_optimal_origin_time_by_summed_weight(IP);
+
+
+    // iterate over all sources for calculating gradient of objective function
+    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+
+        // reset the file name to be read
+        io.change_xdmf_obj(i_src);
+
+        // load the global id of this src
+        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+
+        // load travel time field on grid.T_loc
+        io.read_T(grid);
+
+        // calculate gradient at the actual source location
+        recs.calculate_T_gradient(IP, grid);
+
+        // calculate gradient of objective function
+        recs.calculate_grad_obj_src_reloc(IP);
+
+    }
 }
 
 

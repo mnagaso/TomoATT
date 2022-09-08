@@ -83,6 +83,13 @@ public:
     CUSTOMREAL* arr_times_bound_S; // arrival time of the receiver at the south boundary of the subdomain
     CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
     bool*       is_bound_src; // true if the source is on the boundary surface
+
+    // params for source relocation
+    CUSTOMREAL DTk, DTj, DTi; // gradient of traveltime
+    CUSTOMREAL tau_opt; // optimal origin time
+    CUSTOMREAL sum_weight; // sum of weights of all sources
+    CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
+
 };
 
 

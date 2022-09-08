@@ -198,7 +198,7 @@ private:
     void h5_write_array(std::string&, int, int*, T*, int);
 
     template <typename T>
-    void h5_read_array(std::string&, int, int*, T*, int*);
+    void h5_read_array(std::string&, int, int*, T*, int*, bool);
 
     template <typename T>
     void h5_read_array_simple(std::string&,  T*);

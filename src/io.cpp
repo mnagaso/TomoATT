@@ -974,7 +974,7 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
         // read data
         int dims_model[3] = {loc_I, loc_J, loc_K};
         int offset_model[3] = {offset_i, offset_j, offset_k};
-        h5_read_array(dset_name, 3, dims_model, f_darr, offset_model);
+        h5_read_array(dset_name, 3, dims_model, f_darr, offset_model, false);
 
         // copy values to darr
         for (int i=0; i<loc_I; i++) {
@@ -1079,30 +1079,27 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
 
 // read travel time data from file
 void IO_utils::read_T(Grid& grid) {
-
-    if (output_format == OUTPUT_FORMAT_HDF5) {
-        // read traveltime field from HDF5 file
+    if (subdom_main){
+        if (output_format == OUTPUT_FORMAT_HDF5) {
+            // read traveltime field from HDF5 file
 #ifdef USE_HDF5
-        std::string h5_dset_name = "T_res_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(0);
-        read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
-
-        // set to T_loc array from grid.vis_data
-        grid.set_array_from_vis(grid.T_loc);
+            std::string h5_dset_name = "T_res_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(0);
+            read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else
-        std::cerr << "Error: HDF5 is not enabled." << std::endl;
-        exit(1);
+            std::cerr << "Error: HDF5 is not enabled." << std::endl;
+            exit(1);
 #endif
-    } else if (output_format == OUTPUT_FORMAT_ASCII) {
-        // read traveltime field from ASCII file
-        std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
-        std::string filename = create_fname_ascii(dset_name);
+        } else if (output_format == OUTPUT_FORMAT_ASCII) {
+            // read traveltime field from ASCII file
+            std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
+            std::string filename = create_fname_ascii(dset_name);
 
-        read_data_ascii(grid, filename);
+            read_data_ascii(grid, filename);
+        }
 
         // set to T_loc array from grid.vis_data
         grid.set_array_from_vis(grid.T_loc);
     }
-
 }
 
 
@@ -1152,16 +1149,11 @@ void IO_utils::read_data_ascii(Grid& grid, std::string& fname){
 #ifdef USE_HDF5
 
 
+// read data from hdf5 file, which is in output format of TomoATT
 void IO_utils::read_data_h5(Grid& grid, CUSTOMREAL* arr, std::string h5_group_name, std::string h5_dset_name) {
     // write true solution to h5 file
     if (myrank == 0 && if_verbose)
         std::cout << "--- read data " << h5_dset_name << " from h5 file " << h5_output_fname << " ---" << std::endl;
-
-    // open h5 file
-    h5_open_file_by_group_main(h5_output_fname);
-
-    // open group
-    h5_open_group_by_group_main(h5_group_name);
 
     // open file collective
     h5_open_file_collective(h5_output_fname);
@@ -1175,7 +1167,7 @@ void IO_utils::read_data_h5(Grid& grid, CUSTOMREAL* arr, std::string h5_group_na
     int offset_this[1] = {grid.get_offset_nnodes_vis()};
 
     // read data from h5 file
-    h5_read_array(h5_dset_name, 1, dims_ngrid, arr, offset_this);
+    h5_read_array(h5_dset_name, 1, dims_ngrid, arr, offset_this, true);
 
     // close group
     h5_close_group_collective();
@@ -1496,21 +1488,21 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
 }
 
 template <typename T>
-void IO_utils::h5_read_array(std::string& dset_name, int rank, int* dims_in, T* data, int* offset_in) {
+void IO_utils::h5_read_array(std::string& dset_name, int rank, int* dims_in, T* data, int* offset_in, bool in_group) {
 
     hsize_t* offset = new hsize_t[rank];
     hsize_t* count  = new hsize_t[rank];
     hsize_t* stride = new hsize_t[rank];
     hsize_t* block  = new hsize_t[rank];
 
-    if (rank == 3){
+    if (rank == 3){ // used for reading input model
         offset[0] = offset_in[2];
         count[0]  = dims_in[2];
         offset[1] = offset_in[1];
         count[1]  = dims_in[1];
         offset[2] = offset_in[0];
         count[2]  = dims_in[0];
-    } else if (rank == 1) {
+    } else if (rank == 1) { // used for reading output data from TomoATT
         offset[0] = offset_in[0];
         count[0]  = dims_in[0];
     }
@@ -1524,7 +1516,10 @@ void IO_utils::h5_read_array(std::string& dset_name, int rank, int* dims_in, T* 
     int dtype = check_data_type(data[0]);
 
     // open dataset
-    h5_open_dataset_no_group(dset_name);
+    if (!in_group)
+        h5_open_dataset_no_group(dset_name);
+    else
+        h5_open_dataset(dset_name);
 
     // select hyperslab
     mem_dspace_id  = H5Screate_simple(rank, count, NULL);

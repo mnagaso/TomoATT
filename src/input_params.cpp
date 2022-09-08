@@ -586,10 +586,8 @@ void InputParams::do_swap_src_rec(){
             SrcRec& tmp_new_rec = src_points_back[i_src_ori];
 
             for (auto& tmp_rec_ori : rec_points_back[i_src_ori]){
-                // writeout name_rec
-
                 if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec)==0) {
-                    //if(myrank==0) std::cout << "aaaa: " << tmp_rec_ori.arr_time << " " << tmp_rec_ori.arr_time_ori << std::endl;
+                    // we can use the same arrival time for a src-rec pair by principle of reciprocity (Aki & Richards, 2002).
                     tmp_new_rec.arr_time     = tmp_rec_ori.arr_time;
                     tmp_new_rec.arr_time_ori = tmp_rec_ori.arr_time_ori;
 

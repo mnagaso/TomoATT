@@ -181,4 +181,7 @@ inline const int         N_LAYER_SRC_BOUND   = 1;           // number of layers 
 inline       CUSTOMREAL  DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
 inline const std::string OUTPUT_DIR_2D       = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
+// earthquake relocation
+inline CUSTOMREAL step_length_src_reloc = 0.1; // step length for source relocation
+
 #endif // CONFIG_H
