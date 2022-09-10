@@ -49,7 +49,7 @@ model :
   init_model_path : './test_model_init.h5' # path to initial model file
 
 inversion :
-  do_inversion : 0 # 0 for forward simulation only, 1 for inversion
+  run_mode : 0 # 0 for forward simulation only, 1 for inversion
 
 parallel :
   n_sims : 1         # number of simultaneous run
@@ -81,7 +81,7 @@ The domain category is for setting a global domain.
 - `init_model_path` : File path for initial model file. Details will be explained in the following section.
 
 #### inversion
-- `do_inversion` : `0` for running only a forward simulation. `1` for do inversion.
+- `run_mode` : `0` for running only a forward simulation. `1` for do inversion. `2` for only precalculation of 2d traveltime field for teleseismic sources. This is an optional step for teleseismic case. If 2d traveltime field is not precalculated, it will be calculated during mode `0` or `1`. This is useful for calculations on HPC as 2d eikonal solver has not been parallelized. Users can run it on a local machine beforehand to reduce CPU time on HPC. `3` run earthquake relocation.
 - `n_inversion_grid` :  the number of inversion grid.
 - `n_inv_rtp` : the numbers of inversion grids for r, t and p direction/
 - `min_max_dep_inv` :  minimum and maximum depth of inversion grid in kilo meter.

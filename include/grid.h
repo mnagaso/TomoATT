@@ -68,7 +68,7 @@ public:
     void initialize_kernels();               // fill 0 to kernels
 
     //
-    // getter
+    // getters
     //
 
     int get_ngrid_total_excl_ghost(){return loc_nnodes;};
@@ -209,7 +209,7 @@ private:
 
     // neighbors domain_id (-1 if no neighbor)
     // order of directions: -i,+i,-j,+j,-k,+k
-    std::vector<int> neighbors_id{-1, -1, -1, -1, -1, -1};
+    std::vector<int> neighbors_id{-1,-1,-1,-1,-1,-1};
     // neighbors domain_id line and point contact
     // ij plane nn, np, pn, pp
     std::vector<int> neighbors_id_ij{-1,-1,-1,-1};
@@ -243,7 +243,6 @@ private:
     int loc_nnodes_vis, loc_nelms_vis;
     int *nnodes_vis, *nelms_vis;
     int offset_nnodes_vis=0, offset_nelms_vis=0;
-    CUSTOMREAL *vis_data;
 
 public:
     // 3d arrays
@@ -273,7 +272,8 @@ public:
     CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
     CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
     CUSTOMREAL *Ks_regularization_penalty_loc, *Keta_regularization_penalty_loc, *Kxi_regularization_penalty_loc;
-
+    // tmp array for file IO
+    CUSTOMREAL *vis_data;
 
 private:
     // windows for shm arrays
@@ -285,13 +285,13 @@ private:
     MPI_Win win_xi_loc, win_eta_loc, win_zeta_loc;
     MPI_Win win_r_loc_1d, win_t_loc_1d, win_p_loc_1d;
 
-    CUSTOMREAL *x_loc_3d; // local (lon) x (global position)
-    CUSTOMREAL *y_loc_3d; // local (lat) y (global position)
-    CUSTOMREAL *z_loc_3d; // local (r  ) z (global position)
-    CUSTOMREAL *p_loc_3d; // local lon (x) (global position)
-    CUSTOMREAL *t_loc_3d; // local lat (y) (global position)
-    CUSTOMREAL *r_loc_3d; // local r   (z) (global position)
-    int        *elms_conn; // connectivity array
+    CUSTOMREAL *x_loc_3d;     // local (lon) x (global position)
+    CUSTOMREAL *y_loc_3d;     // local (lat) y (global position)
+    CUSTOMREAL *z_loc_3d;     // local (r  ) z (global position)
+    CUSTOMREAL *p_loc_3d;     // local lon (x) (global position)
+    CUSTOMREAL *t_loc_3d;     // local lat (y) (global position)
+    CUSTOMREAL *r_loc_3d;     // local r   (z) (global position)
+    int        *elms_conn;    // connectivity array
     int        *my_proc_dump; // dump process id for each node  DEBUG
 public:
     // 1d arrays for coordinates, storing only subdomain's local coordinates
@@ -398,9 +398,10 @@ private:
     void shm_memory_allocation();            // allocate memory for shared memory
     void shm_memory_deallocation();          // deallocate memory from shared memory
 
-    CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr); // get array for visualization
-
+    CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr);  // get array for visualization
 public:
+    void        set_array_from_vis(CUSTOMREAL *arr); // set vis array to local array
+
     // finalize the Time table
     void calc_T_plus_tau();
 private:

@@ -17,7 +17,7 @@ model :
   init_model_path : './test_model_init.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  run_mode : 1 # 0 for forward simulation only, 1 for inversion
   n_inversion_grid : 4  # number of inversion grid sets
   n_inv_rtp : [5,10,10] # number of the base inversion grid points
   optim_method : 0 # optimization method. 0 : "grad_descent" or 1 : "lbfgs"

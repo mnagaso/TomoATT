@@ -15,7 +15,7 @@ model :
   init_model_path : './test_model_true.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 0 # 0 for forward simulation only, 1 for inversion
+  run_mode : 0 # 0 for forward simulation only, 1 for inversion
   n_inversion_grid : 1
 
 

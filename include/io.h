@@ -96,7 +96,7 @@ public:
     void write_Keta_update(Grid&, int);
 
     // 2d traveltime field for teleseismic source
-    void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, int);
+    void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
     void h5_create_and_write_dataset_2d(std::string&, int, int*, int, CUSTOMREAL*);
     void read_2d_travel_time_field(std::string&, CUSTOMREAL*, int, int);
 
@@ -106,6 +106,10 @@ public:
 
     // read model data
     void read_model(std::string&, const char*, CUSTOMREAL*, int, int, int);
+    // read Travel time from file for earthquake relocation
+    void read_T(Grid&);
+
+    void read_data_ascii(Grid&, std::string&);
 
 private:
     // member variables
@@ -194,10 +198,12 @@ private:
     void h5_write_array(std::string&, int, int*, T*, int);
 
     template <typename T>
-    void h5_read_array(std::string&, int, int*, T*, int*);
+    void h5_read_array(std::string&, int, int*, T*, int*, bool);
 
     template <typename T>
     void h5_read_array_simple(std::string&,  T*);
+
+    void read_data_h5(Grid&, CUSTOMREAL*, std::string, std::string);
 #endif // HDF_HDF5
 
     // utilities

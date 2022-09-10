@@ -79,6 +79,12 @@ inline const CUSTOMREAL r_kermel_mask  = 40.0;
 inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
 inline CUSTOMREAL       step_size_lbfgs;
 
+// RUN MODE TYPE FLAG
+inline const int ONLY_FORWARD        = 0;
+inline const int DO_INVERSION        = 1;
+inline const int TELESEIS_PREPROCESS = 2;
+inline const int SRC_RELOCATION      = 3;
+
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
 inline const int SWEEP_TYPE_LEVEL  = 1;
@@ -161,14 +167,23 @@ inline bool if_verbose = false;
 inline int use_gpu = 0; // 0: no, 1: yes
 
 // 2d solver parameters
-inline       CUSTOMREAL r_margin            = 0.1; // margin ratio for 2d solver
-inline       CUSTOMREAL t_margin            = 0.2;
-inline       CUSTOMREAL dr_2d               = 2.0;
-inline       CUSTOMREAL dt_2d               = PI/1000.0;
-inline const CUSTOMREAL TOL_2D_SOLVER       = 1e-4;
-inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 1000;
-inline const CUSTOMREAL SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
-inline const int        N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
-inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
+// use fixed domain size for all 2d simulations
+inline       CUSTOMREAL  rmin_2d             = 3371.0;
+inline       CUSTOMREAL  rmax_2d             = 6471.0;
+inline       CUSTOMREAL  tmin_2d             = -5.0/180.0*PI;
+inline       CUSTOMREAL  tmax_2d             = PI+5.0/180.0*PI;
+inline       CUSTOMREAL  dr_2d               = 2.0;
+inline       CUSTOMREAL  dt_2d               = PI/1000.0;
+inline const CUSTOMREAL  TOL_2D_SOLVER       = 1e-3;
+inline const CUSTOMREAL  MAX_ITER_2D_SOLVER  = 1000;
+inline const CUSTOMREAL  SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
+inline const int         N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
+inline       CUSTOMREAL  DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
+inline const std::string OUTPUT_DIR_2D       = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
+
+// earthquake relocation
+inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation
+inline const int  N_ITER_MAX_SRC_RELOC = 1000;
+inline const CUSTOMREAL TOL_SRC_RELOC = 1e-2;
 
 #endif // CONFIG_H

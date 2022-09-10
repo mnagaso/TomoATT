@@ -17,7 +17,7 @@ model :
   #true_model_path : './true_model.h5'
 
 inversion :
-  do_inversion : 0 # 0 for forward simulation only, 1 for inversion
+  run_mode : 0 # 0 for forward simulation only, 1 for inversion
   n_inversion_grid : 1
   max_iterations_inv : 1
 

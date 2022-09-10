@@ -26,7 +26,7 @@ public:
     CUSTOMREAL src_r, src_t, src_p;
     CUSTOMREAL src_t_dummy;
     //CUSTOMREAL dr_2d, dt_2d; // in config.h
-    CUSTOMREAL rmin_2d, rmax_2d, tmin_2d, tmax_2d;
+    //CUSTOMREAL rmin_2d, rmax_2d, tmin_2d, tmax_2d; // in config.h
     CUSTOMREAL rmin_3d, rmax_3d, tmin_3d, tmax_3d, pmin_3d, pmax_3d;
     CUSTOMREAL max_degree;
     int nr_2d, nt_2d;
@@ -47,7 +47,8 @@ public:
     // member functions
     void allocate_arrays();
     void deallocate_arrays();
-    void load_1d_model();
+    void load_1d_model(std::string);
+    void select_1d_model(std::string);
     void calculate_stencil_2d(int&, int&);
     CUSTOMREAL eps_2d = 1e-12;
 
@@ -55,7 +56,7 @@ private:
 
     // # TODO: make id model type selectable by input file
     // 1D model used for 2D solver
-    const std::vector<std::vector<CUSTOMREAL>> model_1d_ref = model_1d_prem;
+    std::vector<std::vector<CUSTOMREAL>> model_1d_ref = model_1d_prem;
 
 
 };

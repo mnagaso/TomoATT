@@ -19,7 +19,9 @@
 // strucutre for storing source or receiver information
 class SrcRec {
 public:
-
+    //
+    // default values, for the case of single source - receiver
+    //
     int id_src = 0;
     int id_rec = -9999;
     int n_rec  = 0;
@@ -32,6 +34,28 @@ public:
     CUSTOMREAL arr_time_ori; // recorded/original arrival time (written in the input file)
     CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
     CUSTOMREAL weight=1.0;   // weight
+
+    //
+    // another case of receiver pair (now only for teleseismicity)
+    //
+    bool is_SrcRec_pair = false;
+
+    int id_rec1 = -9999;
+    int id_rec2 = -9999;
+    int n_rec_pair = 0;
+
+    CUSTOMREAL dep1,dep2;
+    CUSTOMREAL lat1,lat2;
+    CUSTOMREAL lon1,lon2;
+
+    CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
+    CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
+    CUSTOMREAL ddt_adj;          // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
+
+    std::string name_rec1 = "rec1_name_dummy";
+    std::string name_rec2 = "rec2_name_dummy";
+
+    // common parameters for both cases
 
     int year             = 9999;
     int month            = 99;
@@ -59,6 +83,15 @@ public:
     CUSTOMREAL* arr_times_bound_S; // arrival time of the receiver at the south boundary of the subdomain
     CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
     bool*       is_bound_src; // true if the source is on the boundary surface
+
+    // params for source relocation
+    CUSTOMREAL DTk, DTj, DTi;  // gradient of traveltime
+    CUSTOMREAL tau_opt;        // optimal origin time
+    CUSTOMREAL sum_weight;     // sum of weights of all sources
+    CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
+    int        id_unique_list; // id of the source in the unique list
+    CUSTOMREAL vobj_src_reloc; // value of objective function
+    CUSTOMREAL vobj_grad_norm_src_reloc; // norm of gradient of objective function
 };
 
 
@@ -87,7 +120,7 @@ public:
     CUSTOMREAL           get_src_radius();
     CUSTOMREAL           get_src_lat();
     CUSTOMREAL           get_src_lon();
-    std::string          get_src_rec_file(){return src_rec_file;};
+    std::string          get_src_rec_file()      {return src_rec_file;};
     bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
     SrcRec&              get_src_point(int);  // return SrcRec object
     std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
@@ -99,13 +132,16 @@ public:
     int get_sweep_type()   {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};
+    std::string get_model_1d_name()  {return model_1d_name;};
 
-    int get_do_inversion()    {return do_inversion;};
+    int get_run_mode()        {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
     int get_n_inv_r()         {return n_inv_r;};
     int get_n_inv_t()         {return n_inv_t;};
     int get_n_inv_p()         {return n_inv_p;};
     int get_max_iter_inv()    {return max_iter_inv;};
+
+    bool get_is_srcrec_swap() {return swap_src_rec;};
 
 private:
     // boundary information
@@ -135,9 +171,10 @@ private:
     // model input files
     std::string init_model_type; // model type
     std::string init_model_path; // model file path init
+    std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
-    int do_inversion=0;                  // do inversion or not (0: no, 1: yes)
+    int run_mode=0;                  // do inversion or not (0: no, 1: yes)
     int n_inversion_grid=1;              // number of inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
 

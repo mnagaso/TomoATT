@@ -18,7 +18,7 @@ model :
   init_model_path : './test_model_init.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  run_mode : 1 # 0 for forward simulation only, 1 for inversion
   optim_method : 0 # optimization method. 0 : "grad_descent", 2 : "lbfgs", 1 : "halve-stepping"
   smooth_method : 0 # 0: multigrid parametrization, 1: laplacian smoothing with CG
   max_iterations_inv : 100  # maximum number of inversion iterations

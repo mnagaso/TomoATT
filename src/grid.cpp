@@ -216,7 +216,7 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // inversion setup
     // check if inversion grids are needed
-    if (IP.get_do_inversion()==1){
+    if (IP.get_run_mode()==1){
         inverse_flag = true;
         setup_inversion_grids(IP);
     } else {
@@ -1097,6 +1097,31 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
     }
 
     return vis_data;
+}
+
+
+// set visualization array to local array
+void Grid::set_array_from_vis(CUSTOMREAL* arr) {
+
+    for (int k_r = 0; k_r < loc_K; k_r++) {
+        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+                 if (i_start_vis <= i_lon && i_lon <= i_end_vis \
+                  && j_start_vis <= j_lat && j_lat <= j_end_vis \
+                  && k_start_vis <= k_r   && k_r   <= k_end_vis) {
+                    int i_loc_tmp = i_lon - i_start_vis;
+                    int j_loc_tmp = j_lat - j_start_vis;
+                    int k_loc_tmp = k_r   - k_start_vis;
+
+                    arr[I2V(i_lon,j_lat,k_r)] = vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)];
+                 }
+            }
+        }
+    }
+
+    // set values to ghost layer
+    send_recev_boundary_data(arr);
+
 }
 
 

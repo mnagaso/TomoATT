@@ -12,14 +12,31 @@ class AttArrival:
         self.epi_dist = epi_dist
         self.arr_time = arr_time
 
+    def __str__(self):
+        outstr = "AttArrival class object: \n"
+        outstr += "id_src: " + str(self.id_src) + "\n"
+        outstr += "id_rec: " + str(self.id_rec) + "\n"
+        outstr += "name_rec: " + str(self.name_rec) + "\n"
+        outstr += "lat: " + str(self.lat) + "\n"
+        outstr += "lon: " + str(self.lon) + "\n"
+        outstr += "dep: " + str(self.dep) + "\n"
+        outstr += "phase: " + str(self.phase) + "\n"
+        outstr += "epi_dist: " + str(self.epi_dist) + "\n"
+        outstr += "arr_time: " + str(self.arr_time) + "\n"
+        return outstr
+
+    def __repr__(self):
+        return self.__str__()
+
+
 class AttEvent:
-    def __init__(self, _id, year, month, day, hour, _min, sec, lat, lon, dep, mag, nrec, id_event):
+    def __init__(self, _id, year, month, day, hour, _minute, sec, lat, lon, dep, mag, nrec, id_event):
         self.id = _id
         self.year = year
         self.month = month
         self.day = day
         self.hour = hour
-        self.min = _min
+        self.minute = _minute
         self.sec = sec
         self.lat = lat
         self.lon = lon
@@ -32,8 +49,29 @@ class AttEvent:
     def add_rec(self, rec):
         self.rec_list.append(rec)
 
-# read file
+    def __str__(self):
+        outstr = "AttEvent class object: \n"
+        outstr += "id: " + str(self.id) + "\n"
+        outstr += "year: " + str(self.year) + "\n"
+        outstr += "month: " + str(self.month) + "\n"
+        outstr += "day: " + str(self.day) + "\n"
+        outstr += "hour: " + str(self.hour) + "\n"
+        outstr += "minute: " + str(self.minute) + "\n"
+        outstr += "sec: " + str(self.sec) + "\n"
+        outstr += "lat: " + str(self.lat) + "\n"
+        outstr += "lon: " + str(self.lon) + "\n"
+        outstr += "dep: " + str(self.dep) + "\n"
+        outstr += "mag: " + str(self.mag) + "\n"
+        outstr += "nrec: " + str(self.nrec) + "\n"
+        outstr += "id_event: " + str(self.id_event) + "\n"
+        #outstr += "rec_list: " + str(self.rec_list) + "\n"
+        return outstr
 
+    def __repr__(self):
+        return self.__str__()
+
+
+# read file
 def read_src_rec_file(fpath):
     #fpath = "./src_rec_test_out.dat"
 
@@ -58,7 +96,7 @@ def read_src_rec_file(fpath):
                     src_month = int(ll[2])
                     src_day   = int(ll[3])
                     src_hour  = int(ll[4])
-                    src_min   = int(ll[5])
+                    src_minute= int(ll[5])
                     src_sec   = float(ll[6])
                     src_lat   = float(ll[7])
                     src_lon   = float(ll[8])
@@ -71,7 +109,7 @@ def read_src_rec_file(fpath):
 
                     # store source
                     if nrec_tmp != 0:
-                        src = AttEvent(src_id, src_year, src_month, src_day, src_hour, src_min, src_sec, src_lat, src_lon, src_dep, src_mag, src_nrec, src_id_event)
+                        src = AttEvent(src_id, src_year, src_month, src_day, src_hour, src_minute, src_sec, src_lat, src_lon, src_dep, src_mag, src_nrec, src_id_event)
                         event_list.append(src)
                         cc+=1
                     else:
@@ -106,7 +144,24 @@ def read_src_rec_file(fpath):
     return event_list
 
 
-if __name__ is "__main__":
+def write_event_list(event_list, fpath):
+    with open(fpath, "w") as f:
+        for i, ev in enumerate(event_list):
+            # write source
+            line = [ev.id, ev.year, ev.month, ev.day, ev.hour, ev.minute, ev.sec, ev.lat, ev.lon, ev.dep, ev.mag, ev.nrec, ev.id_event]
+
+            for l in line:
+                f.write(str(l) + " ")
+            f.write("\n")
+
+            # write recs
+            for rec in ev.rec_list:
+                line = [rec.id_src, rec.id_rec, rec.name_rec, rec.lat, rec.lon, rec.dep, rec.phase, rec.epi_dist, rec.arr_time]
+                for l in line:
+                    f.write(str(l) + " ")
+                f.write("\n")
+
+if __name__ == "__main__":
     event_list = read_src_rec_file("./src_rec_test_out.dat")
     print(event_list[0].rec_list[0].name_rec)
     print(event_list[0].rec_list[0].epi_dist)
