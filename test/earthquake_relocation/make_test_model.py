@@ -176,8 +176,8 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-n_src = 1
-n_rec = [1 for x in range(n_src)]
+n_src = 100
+n_rec = [4 for x in range(n_src)]
 
 
 lines = []
@@ -185,21 +185,34 @@ lines = []
 pos_src=[]
 pos_rec=[]
 
-dep_srcs=[12.902894]
-lon_srcs=[16.794572]
-lat_srcs=[37.503373]
+nij_src = math.sqrt(n_src)
+nij_rec = math.sqrt(n_rec[0])
 
-elev_recs = [0.0]
-lon_recs = [29.812050]
-lat_recs = [36.472809]
+# create receiver coordinates
+elev_recs=[]
+lon_recs=[]
+lat_recs=[]
+rec_names=[]
+for i in range(n_rec[0]):
+    rec_names.append("sta_"+str(i))
+    # regularly
+    elev_recs.append(0.0)
+    tmp_ilon = i%nij_rec
+    tmp_ilat = int(i/nij_rec)
+    lon_recs.append(pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_rec)
+    lat_recs.append(tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_rec)
+
 
 
 # create dummy src
 for i_src in range(n_src):
     # define one point in the domain (rr1 bottom, rr2 top)
-    dep = dep_srcs[i_src]
-    lon = lon_srcs[i_src]
-    lat = lat_srcs[i_src]
+    dep = (R_earth-rr1)*0.9
+    tmp_ilon = i_src%nij_src
+    tmp_ilat = int(i_src/nij_src)
+    lon = pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_src
+    lat = tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_src
+
 
     src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
     lines.append(src)
@@ -238,5 +251,8 @@ for i_src in range(n_src):
 # plot receivers
 for i_rec in range(n_rec[0]):
     plt.scatter(pos_rec[i_rec][1],pos_rec[i_rec][0],c='b',marker='o')
+
+# %%
+
 
 

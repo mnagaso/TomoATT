@@ -81,11 +81,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 }
 
 
-void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io){
+void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, std::vector<SrcRec>& unique_rec_list){
 
     // initialize source parameters
     Receiver recs; // here the source is swapped to receiver
-    recs.init_vars_src_reloc(IP);
+    recs.init_vars_src_reloc(IP, unique_rec_list);
 
     // iterate over all sources for calculating optimal origin time
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
@@ -103,15 +103,11 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         recs.calculate_arrival_time(IP, grid);
 
         // calculate approximated orptimal origin time
-        recs.calculate_optimal_origin_time(IP);
+        recs.calculate_optimal_origin_time(IP, unique_rec_list);
     }
 
-    // TODO: receiver list is devendent on each source.
-    // thus we need to sum relocation parameters over all sources
-
     // divide optimal origin time by summed weight
-    recs.divide_optimal_origin_time_by_summed_weight(IP);
-
+    recs.divide_optimal_origin_time_by_summed_weight(IP, unique_rec_list);
 
     // iterate over all sources for calculating gradient of objective function
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
@@ -129,11 +125,54 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         recs.calculate_T_gradient(IP, grid);
 
         // calculate gradient of objective function
-        recs.calculate_grad_obj_src_reloc(IP);
+        recs.calculate_grad_obj_src_reloc(IP, unique_rec_list);
 
     }
 }
 
 
+std::vector<SrcRec> create_unique_rec_list(InputParams& IP) {
+
+    // unique vector of SrcRec objects
+    std::vector<SrcRec> unique_rec_list;
+
+    // loop over all sources
+    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+        // load the global id of this src
+        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+
+        // get receiver (swapped source) list for this source
+        std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
+
+        // loop over all receivers
+        for (auto& rec : receivers) {
+            // first element
+            if (unique_rec_list.size() == 0){
+                rec.id_unique_list = 0;
+                unique_rec_list.push_back(rec);
+            } else {
+                bool if_exists = false;
+                for (long unsigned int i_rec = 0; i_rec < unique_rec_list.size(); i_rec++) {
+                    if (unique_rec_list[i_rec].id_src == rec.id_src) {
+                        if_exists = true;
+                        // store the element id on the unique list
+                        rec.id_unique_list = i_rec;
+                        break;
+                    }
+                }
+
+                // add element to unique list if the same station name is not exist
+                if (!if_exists) {
+                    rec.id_unique_list = unique_rec_list.size();
+                    unique_rec_list.push_back(rec);
+                }
+            }
+        }
+
+    }
+
+    return unique_rec_list;
+
+}
 
 #endif // MAIN_ROUTINES_EARTHQUAKE_RELOCATION_H

@@ -85,11 +85,13 @@ public:
     bool*       is_bound_src; // true if the source is on the boundary surface
 
     // params for source relocation
-    CUSTOMREAL DTk, DTj, DTi; // gradient of traveltime
-    CUSTOMREAL tau_opt; // optimal origin time
-    CUSTOMREAL sum_weight; // sum of weights of all sources
+    CUSTOMREAL DTk, DTj, DTi;  // gradient of traveltime
+    CUSTOMREAL tau_opt;        // optimal origin time
+    CUSTOMREAL sum_weight;     // sum of weights of all sources
     CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
-
+    int        id_unique_list; // id of the source in the unique list
+    CUSTOMREAL vobj_src_reloc; // value of objective function
+    CUSTOMREAL vobj_grad_norm_src_reloc; // norm of gradient of objective function
 };
 
 

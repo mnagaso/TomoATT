@@ -397,6 +397,7 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 
 //
 // functions for processing src_rec_file
+// #TODO: functions concerinng SrcRec object may be moved to another file
 //
 
 void InputParams::parse_src_rec_file(){
@@ -736,6 +737,13 @@ void InputParams::reverse_src_rec_points(){
 
                 // store calculated arrival time in backuped receiver list
                 rec_points_back[id_src_orig][id_rec_orig].arr_time = rec_points[i_src][i_rec].arr_time;
+
+                // update relocated source positions
+                if (run_mode == SRC_RELOCATION) {
+                    src_points_back[id_src_orig].lat = rec_points[i_src][i_rec].lat;
+                    src_points_back[id_src_orig].lon = rec_points[i_src][i_rec].lon;
+                    src_points_back[id_src_orig].dep = rec_points[i_src][i_rec].dep;
+                }
             }
         } else {
             // teleseismic events are not swapped

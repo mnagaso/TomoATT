@@ -119,25 +119,70 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 // run earthquake relocation mode
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
+    // this routine is not supporting simultaneous run
+    if (n_sims > 1) {
+        std::cout << "Earthquake relocation mode is not supporting simultaneous run" << std::endl;
+        exit(1);
+    }
+
     Receiver recs;
 
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
 
+    // create a unique receiver list among all sources
+    // while creating this list, each receiver object stores the id of correspoinding receiver in this unique list
+    std::vector<SrcRec> unique_rec_list = create_unique_rec_list(IP);
+
+    // objective function and its gradient
+    CUSTOMREAL v_obj = 0.0, v_obj_old = 0.0;
+    CUSTOMREAL v_obj_grad = 0.0;
+    int i_iter = 0;
+
     // iterate
     while (true) {
+
+        v_obj_old = v_obj;
+        v_obj = 0.0;
+        v_obj_grad = 0.0;
+
         // calculate gradient of objective function at sources
-        calculate_gradient_objective_function(IP, grid, io);
+        calculate_gradient_objective_function(IP, grid, io, unique_rec_list);
 
         // update source location
         for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++){
             id_sim_src = IP.src_ids_this_sim[i_src];
-            recs.update_source_location(IP);
+            recs.update_source_location(IP, grid, unique_rec_list);
         }
 
-        break;
+        // calculate sum of objective function and gradient
+        for (auto& rec : unique_rec_list) {
+            v_obj      += rec.vobj_src_reloc;
+            v_obj_grad += rec.vobj_grad_norm_src_reloc;
+        }
+
+        // write objective functions
+        if(myrank == 0){
+            // write objective function
+            std::cout << "iteration: " << i_iter << " objective function: " << v_obj \
+                                                 << " v_obj_grad: " << v_obj_grad \
+                                                 << " v_obj/n_src: " << v_obj/unique_rec_list.size() \
+                                                 << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
+        }
+
+
+        // check convergence
+        if (i_iter > N_ITER_MAX_SRC_RELOC || v_obj/unique_rec_list.size() < TOL_SRC_RELOC)
+            break;
+
+        i_iter++;
     }
 
+    // modify the receiver's location
+
+
+    // write out new src_rec_file
+    IP.write_src_rec_file();
 
     // close xdmf file
     io.finalize_data_output_file(IP.src_ids_this_sim.size());

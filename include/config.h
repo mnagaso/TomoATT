@@ -182,6 +182,8 @@ inline       CUSTOMREAL  DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshol
 inline const std::string OUTPUT_DIR_2D       = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
 // earthquake relocation
-inline CUSTOMREAL step_length_src_reloc = 0.1; // step length for source relocation
+inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation
+inline const int  N_ITER_MAX_SRC_RELOC = 1000;
+inline const CUSTOMREAL TOL_SRC_RELOC = 1e-2;
 
 #endif // CONFIG_H

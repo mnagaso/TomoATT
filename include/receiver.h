@@ -18,15 +18,15 @@ public:
     // Gradient of traveltime
     void calculate_T_gradient(InputParams&, Grid&);
     // initialize variables for source relocation
-    void init_vars_src_reloc(InputParams&);
+    void init_vars_src_reloc(InputParams&, std::vector<SrcRec>&);
     // approximated optimal origin time
-    void calculate_optimal_origin_time(InputParams&);
+    void calculate_optimal_origin_time(InputParams&, std::vector<SrcRec>&);
     // divide optimal origin time by summed weight
-    void divide_optimal_origin_time_by_summed_weight(InputParams&);
+    void divide_optimal_origin_time_by_summed_weight(InputParams&, std::vector<SrcRec>&);
     // Gradient of objective function
-    void calculate_grad_obj_src_reloc(InputParams&);
+    void calculate_grad_obj_src_reloc(InputParams&, std::vector<SrcRec>&);
     // update source location
-    void update_source_location(InputParams&);
+    void update_source_location(InputParams&, Grid&, std::vector<SrcRec>&);
 
 private:
     void interpolate_travel_time(Grid&, SrcRec&);

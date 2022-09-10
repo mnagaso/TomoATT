@@ -229,18 +229,28 @@ void Receiver::interpolate_travel_time(Grid& grid, SrcRec& rec) {
 }
 
 
-void Receiver::init_vars_src_reloc(InputParams& IP){
+void Receiver::init_vars_src_reloc(InputParams& IP,std::vector<SrcRec>& unique_rec_list){
     if (subdom_main) {
         // get list of receivers from input parameters
         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
 
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto& rec: receivers) {
-            rec.tau_opt = _0_CR;
+            rec.tau_opt    = _0_CR;
             rec.grad_chi_i = _0_CR;
             rec.grad_chi_j = _0_CR;
             rec.grad_chi_k = _0_CR;
             rec.sum_weight = _0_CR;
+
+            // initialize on unique list
+            int target_id = rec.id_unique_list;
+            unique_rec_list[target_id].tau_opt                  = _0_CR;
+            unique_rec_list[target_id].grad_chi_i               = _0_CR;
+            unique_rec_list[target_id].grad_chi_j               = _0_CR;
+            unique_rec_list[target_id].grad_chi_k               = _0_CR;
+            unique_rec_list[target_id].sum_weight               = _0_CR;
+            unique_rec_list[target_id].vobj_src_reloc           = _0_CR;
+            unique_rec_list[target_id].vobj_grad_norm_src_reloc = _0_CR;
         }
 
     }
@@ -349,35 +359,35 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRec& rec){
         }
 
         CUSTOMREAL Ti, Tip, Tj, Tjp, Tk, Tkp;
-        Tk =      (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]   \
-                +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]   \
-                + (_1_CR - e_lon) *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)]   \
-                +          e_lon  *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)];
+        Tk =      (_1_CR - e_lon) * (_1_CR - e_lat) * _1_CR         * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]   \
+                +          e_lon  * (_1_CR - e_lat) * _1_CR         * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]   \
+                + (_1_CR - e_lon) *          e_lat  * _1_CR         * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)]   \
+                +          e_lon  *          e_lat  * _1_CR         * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)];
 
-        Tkp =     (_1_CR - e_lon) * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] \
-                +          e_lon  * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)] \
-                + (_1_CR - e_lon) *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)] \
-                +          e_lon  *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
+        Tkp =     (_1_CR - e_lon) * (_1_CR - e_lat) * _1_CR         * grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] \
+                +          e_lon  * (_1_CR - e_lat) * _1_CR         * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)] \
+                + (_1_CR - e_lon) *          e_lat  * _1_CR         * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)] \
+                +          e_lon  *          e_lat  * _1_CR         * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
 
-        Tj =      (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]    \
-                +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]    \
-                + (_1_CR - e_lon) * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] \
-                +          e_lon  * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)];
+        Tj =      (_1_CR - e_lon) * _1_CR           * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]    \
+                +          e_lon  * _1_CR           * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]    \
+                + (_1_CR - e_lon) * _1_CR           *          e_r  * grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] \
+                +          e_lon  * _1_CR           *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)];
 
-        Tjp =     (_1_CR - e_lon) *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)]    \
-                +          e_lon  *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)]    \
-                + (_1_CR - e_lon) *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)] \
-                +          e_lon  *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
+        Tjp =     (_1_CR - e_lon) * _1_CR           * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)]    \
+                +          e_lon  * _1_CR           * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)]    \
+                + (_1_CR - e_lon) * _1_CR           *          e_r  * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)] \
+                +          e_lon  * _1_CR           *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
 
-        Ti =      (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]    \
-                + (_1_CR - e_lon) *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)]    \
-                + (_1_CR - e_lon) * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] \
-                + (_1_CR - e_lon) *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)];
+        Ti =      _1_CR           * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]    \
+                + _1_CR           *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)]    \
+                + _1_CR           * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] \
+                + _1_CR           *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)];
 
-        Tip =              e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]    \
-                +          e_lon  *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)]    \
-                +          e_lon  * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)] \
-                +          e_lon  *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
+        Tip =     _1_CR           * (_1_CR - e_lat) * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]    \
+                + _1_CR           *          e_lat  * (_1_CR - e_r) * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)]    \
+                + _1_CR           * (_1_CR - e_lat) *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)] \
+                + _1_CR           *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
 
         DTk = (Tkp - Tk) / delta_r;
         DTj = (Tjp - Tj) / delta_lat;
@@ -404,7 +414,7 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRec& rec){
 
 
 // approximated optimal origin time
-void Receiver::calculate_optimal_origin_time(InputParams& IP){
+void Receiver::calculate_optimal_origin_time(InputParams& IP, std::vector<SrcRec>& unique_rec_list){
     if (subdom_main) {
         // get list of receivers from input parameters
         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
@@ -414,28 +424,31 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP){
 
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto& rec: receivers) {
-                rec.tau_opt    += (rec.arr_time_ori - rec.arr_time) * rec.weight;
-                rec.sum_weight += rec.weight * src_weight;
+            SrcRec& rec_unique = unique_rec_list[rec.id_unique_list];
+            rec_unique.tau_opt    += (rec.arr_time_ori - rec.arr_time) * rec.weight;
+            rec_unique.sum_weight += rec.weight * src_weight;
+
+            // calculate objective function value
+            rec_unique.vobj_src_reloc += rec.weight / _2_CR * std::pow((rec.arr_time - rec.arr_time_ori), 2);
+
+            // calculate grad norm of objective function value
+            rec_unique.vobj_grad_norm_src_reloc += std::sqrt(rec.DTk*rec.DTk + rec.DTj*rec.DTj + rec.DTi*rec.DTi);
         }
     }
 }
 
 
-void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
-
-        // get list of receivers from input parameters
-        std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
-
-        // calculate gradient of travel time at each receiver (swapped source)
-        for (auto& rec: receivers) {
-            rec.tau_opt /= rec.sum_weight;
+void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP, std::vector<SrcRec>& unique_rec_list) {
+    if (subdom_main) {
+        for (auto& rec_unique: unique_rec_list) {
+            rec_unique.tau_opt /= rec_unique.sum_weight;
         }
-
+    }
 }
 
 
 // calculate the gradient of the objective function
-void Receiver::calculate_grad_obj_src_reloc(InputParams& IP){
+void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, std::vector<SrcRec>& unique_rec_list) {
 
     if(subdom_main){
         // get list of receivers from input parameters
@@ -446,25 +459,50 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP){
 
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto& rec: receivers) {
-            rec.grad_chi_k += (rec.arr_time - rec.arr_time_ori + rec.tau_opt) * rec.DTk * rec.weight * src_weight;
-            rec.grad_chi_j += (rec.arr_time - rec.arr_time_ori + rec.tau_opt) * rec.DTj * rec.weight * src_weight;
-            rec.grad_chi_i += (rec.arr_time - rec.arr_time_ori + rec.tau_opt) * rec.DTi * rec.weight * src_weight;
+            SrcRec& rec_unique = unique_rec_list[rec.id_unique_list];
+
+            rec_unique.grad_chi_k += (rec.arr_time - rec.arr_time_ori + rec_unique.tau_opt) * rec.DTk * rec.weight * src_weight;
+            rec_unique.grad_chi_j += (rec.arr_time - rec.arr_time_ori + rec_unique.tau_opt) * rec.DTj * rec.weight * src_weight;
+            rec_unique.grad_chi_i += (rec.arr_time - rec.arr_time_ori + rec_unique.tau_opt) * rec.DTi * rec.weight * src_weight;
+
+            //// debug
+            //if (myrank == 0){
+            //    std::cout << "DTijk " << rec.DTi << " " << rec.DTj << " " << rec.DTk << std::endl;
+            //    std::cout << "tau_opt, grad_chi_i, grad_chi_j, grad_chi_k: " << rec_unique.tau_opt << ", " << rec_unique.grad_chi_i << ", " << rec_unique.grad_chi_j << ", " << rec_unique.grad_chi_k << std::endl;
+
+            //}
         }
     }
 
 }
 
 
-void Receiver::update_source_location(InputParams& IP) {
+void Receiver::update_source_location(InputParams& IP, Grid& grid, std::vector<SrcRec>& unique_rec_list) {
 
     if (subdom_main) {
         // get list of receivers from input parameters
         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
 
         for (auto& rec: receivers) {
-            rec.dep += radius2depth(rec.grad_chi_k * step_length_src_reloc);
-            rec.lat += rec.grad_chi_j * step_length_src_reloc*RAD2DEG;
-            rec.lon += rec.grad_chi_i * step_length_src_reloc*RAD2DEG;
-        }
+            SrcRec& rec_unique = unique_rec_list[rec.id_unique_list];
+            rec.dep -= rec_unique.grad_chi_k * step_length_src_reloc;
+            rec.lat -= rec_unique.grad_chi_j * step_length_src_reloc;
+            rec.lon -= rec_unique.grad_chi_i * step_length_src_reloc;
+
+            // check if the new receiver position is within the domain
+            // if not then set the receiver position to the closest point on the domain
+            if (rec.lon < IP.get_min_lon()*RAD2DEG)
+                rec.lon = IP.get_min_lon()*RAD2DEG;
+            if (rec.lon > IP.get_max_lon()*RAD2DEG)
+                rec.lon = IP.get_max_lon()*RAD2DEG;
+            if (rec.lat < IP.get_min_lat()*RAD2DEG)
+                rec.lat = IP.get_min_lat()*RAD2DEG;
+            if (rec.lat > IP.get_max_lat()*RAD2DEG)
+                rec.lat = IP.get_max_lat()*RAD2DEG;
+            if (rec.dep < IP.get_min_dep())
+                rec.dep = IP.get_min_dep();
+            if (rec.dep > IP.get_max_dep())
+                rec.dep = IP.get_max_dep();
+       }
     }
 }
