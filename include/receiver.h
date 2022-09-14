@@ -11,13 +11,14 @@ public:
     ~Receiver();
 
     void calculate_arrival_time(InputParams&, Grid&);
-    // regional source
+    
+    // adjoint source
     CUSTOMREAL calculate_adjoint_source(InputParams&);
-    // teleseismic source
-    CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&);
 
 private:
     void interpolate_travel_time(Grid&, SrcRec&);
+
+    void interpolate_differential_travel_time(Grid&, SrcRec&);
 };
 
 #endif // RECEIVER_H

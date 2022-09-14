@@ -57,7 +57,11 @@ int main(int argc, char *argv[])
     // initialize compute grids
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
 
-    // initialize inversion grids
+    // output inversion grid file (by main process)
+
+    grid.write_inversion_grid_file();
+
+    // initialize inversion grids (by other process)
     grid.setup_inversion_grids(IP);
 
     if (subdom_main) {
@@ -79,9 +83,18 @@ int main(int argc, char *argv[])
     // objective function value output
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
-        out_main.open("objective_function.txt");
+        out_main.open(output_dir+"objective_function.txt");
         out_main << "i_inv, obj_value, step_size" << std::endl;
     }
+    
+    // output initial model
+    // std::cout << "checker point 0, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain 
+    //           << ", subdom_main:" << subdom_main << ", world_rank: " << world_rank << std::endl;
+    if (subdom_main && id_sim==0 && IP.get_is_output_model_dat()==1) {
+        io.write_concerning_parameters(grid, 0);
+    }
+    
+    synchronize_all_world();
 
     /////////////////////
     // loop for inversion
@@ -93,7 +106,9 @@ int main(int argc, char *argv[])
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
 
     for (int i_inv = 0; i_inv < IP.get_max_iter_inv(); i_inv++) {
-
+        if(myrank == 0 && id_sim ==0){
+            std::cout << "iteration " << i_inv << " starting ... " << std::endl;
+        }
         old_v_obj = v_obj;
 
         ///////////////////////////////////////////////////////
@@ -107,12 +122,11 @@ int main(int argc, char *argv[])
         } else {
             v_obj = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
         }
-
         // wait for all processes to finish
         synchronize_all_world();
-
+        
         // output src rec file with the result arrival times
-        IP.write_src_rec_file();
+        IP.write_src_rec_file(i_inv);
 
         // change stepsize
         if (optim_method == GRADIENT_DESCENT) {
@@ -140,25 +154,33 @@ int main(int argc, char *argv[])
 
         // output updated model
         if (subdom_main && id_sim==0) {
-            io.change_xdmf_obj(0); // change xmf file for next src
-
-            // write out model info
-            io.write_fun(grid, i_inv);
-            io.write_xi(grid, i_inv);
-            io.write_eta(grid, i_inv);
-            io.write_b(grid, i_inv);
-            io.write_c(grid, i_inv);
-            io.write_f(grid, i_inv);
+            if (IP.get_is_output_source_field() == 1){      // I want to only ignore the output of out_dat_sim_X, but failed. So, I temporarily do not output any data.
+                io.change_xdmf_obj(0); // change xmf file for next src 
+                // write out model info
+                io.write_fun(grid, i_inv);
+                io.write_xi(grid, i_inv);
+                io.write_eta(grid, i_inv);
+                io.write_b(grid, i_inv);
+                io.write_c(grid, i_inv);
+                io.write_f(grid, i_inv);
+            }
+            if (IP.get_is_output_model_dat()==1)        // output model_parameters_inv_0000.dat
+                io.write_concerning_parameters(grid, i_inv + 1);
         }
 
         // writeout temporary xdmf file
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+        if (IP.get_is_output_source_field() == 1){
+            io.update_xdmf_file(IP.src_ids_this_sim.size());
+        }
+   
+        synchronize_all_world();
 
     } // end loop inverse
 
     // close xdmf file
-    io.finalize_data_output_file(IP.src_ids_this_sim.size());
-
+    if (IP.get_is_output_source_field() == 1){
+        io.finalize_data_output_file(IP.src_ids_this_sim.size());
+    }
     // finalize cuda
 #ifdef USE_CUDA
     if (use_gpu) finalize_cuda();

@@ -26,7 +26,7 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
 
     // initialize kernel arrays
     if (IP.get_do_inversion()==1)
-        grid.initialize_kernels();
+        grid.initialize_kernels();   // let Ks_loc, Kxi_loc, Keta_loc = 0
 
     // reinitialize factors
     grid.reinitialize_abcf();
@@ -40,13 +40,15 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
 
-        if (i_inv == 0 && !line_search_mode)
+        std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
+        if (i_inv == 0 && !line_search_mode && IP.get_is_output_source_field()==1)
             io.init_data_output_file(); // initialize data output file
 
-        io.change_xdmf_obj(i_src); // change xmf file for next src
+        if (IP.get_is_output_source_field()==1)
+            io.change_xdmf_obj(i_src); // change xmf file for next src
 
         // output initial field
-        if(first_src) {
+        if(first_src && IP.get_is_output_source_field()==1) {
             if (subdom_main) {
                 // write true solution
                 if (if_test){
@@ -79,7 +81,7 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
 
         // output the result of forward simulation
         // ignored for inversion mode.
-        if (subdom_main && !line_search_mode) { // && IP.get_do_inversion()!=1) {
+        if (subdom_main && !line_search_mode && IP.get_is_output_source_field()==1) { // && IP.get_do_inversion()!=1) {
             // output T0v
             io.write_T0v(grid,i_inv); // initial Timetable
             // output u (true solution)
@@ -97,19 +99,14 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
         // calculate the arrival times at each receivers
         Receiver recs;
         recs.calculate_arrival_time(IP, grid);
-
+        
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
 
         if (IP.get_do_inversion()==1){
-            if (!is_teleseismic) {// for regional source
-                // calculate adjoint source
-                v_obj += recs.calculate_adjoint_source(IP);
-           } else { // for teleseismic source
-                // calculate adjoint source
-                v_obj += recs.calculate_adjoint_source_teleseismic(IP);
-            }
+            // calculate adjoint source
+            v_obj += recs.calculate_adjoint_source(IP);
 
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
@@ -117,7 +114,7 @@ CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, in
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
 
-            if (!line_search_mode){
+            if (!line_search_mode && IP.get_is_output_source_field()==1){
                 // adjoint field will be output only at the end of subiteration
                 // output the result of adjoint simulation
                 if (subdom_main) {
@@ -153,13 +150,13 @@ void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOM
     sumup_kernels(grid);
 
     // smooth kernels
-    smooth_kernels(grid);
+    smooth_kernels(grid, IP);
 
     // update the model with the initial step size
     set_new_model(grid, step_size);
 
 
-    if (subdom_main) {
+    if (subdom_main && IP.get_is_output_source_field() == 1) {
         // store kernel only in the first src datafile
         io.change_xdmf_obj(0); // change xmf file for next src
 
@@ -175,8 +172,10 @@ void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOM
     }
 
     // writeout temporary xdmf file
-    io.update_xdmf_file(IP.src_ids_this_sim.size());
-
+    if (IP.get_is_output_source_field() == 1){
+        io.update_xdmf_file(IP.src_ids_this_sim.size());
+    }
+        
     synchronize_all_world();
 
 
@@ -196,7 +195,7 @@ void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, in
     sumup_kernels(grid);
 
     // smooth kernels
-    smooth_kernels(grid);
+    smooth_kernels(grid, IP);
 
     // backup the initial model
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
@@ -282,7 +281,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
 
     // smooth kernels and calculate descent direction
-    calc_descent_direction(grid, i_inv);
+    calc_descent_direction(grid, i_inv, IP);
 
     // smooth descent direction
     //smooth_descent_direction(grid);
@@ -353,7 +352,7 @@ void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, 
         sumup_kernels(grid);
 
         // smooth kernels
-        smooth_kernels(grid);
+        smooth_kernels(grid, IP);
 
         // add gradient of regularization term
         add_regularization_grad(grid);
