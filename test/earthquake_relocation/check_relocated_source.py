@@ -34,6 +34,7 @@ ax.set_title("Earthquake Relocation")
 ax.set_ylabel("latitude")
 ax.set_xlabel("longitude")
 
+plt.show()
 
 # %%
 
