@@ -1,0 +1,66 @@
+version : 2
+
+domain :
+  min_max_dep : [-29.0, 821.0] # depth in km with R = 6371.0
+  min_max_lat : [11.5,21.5]    # latitude in degree
+  min_max_lon : [96.5,106.5]    # longitude in degree
+  n_rtp : [101,101,101]           # number of nodes
+
+source :
+  src_rec_file : 'INPUT_FILES/src_rec_checkerboard.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
+  swap_src_rec : 1                      # swap source and receiver
+
+model :
+  init_model_path : 'INPUT_FILES/model_init.h5' # path to initial model file (ignored if init_model_type is '1d_*')
+  model_1d_name : 'iasp91' # the name of 1d model for teleseismic tomography
+
+inversion :
+  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  optim_method : 0 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs"
+  n_inversion_grid : 5  # number of inversion grid sets
+  # n_inv_rtp : [11,10,10] # number of the base inversion grid points
+  # min_max_dep_inv : [-29.0, 301.0] # depth in km with R = 6371.0
+  # min_max_lat_inv : [30.0,50.0] # latitude in degree
+  # min_max_lon_inv : [15.0,40.0] # longitude in degree
+  n_inv_dep : 13
+  min_max_dep_inv : [-25.0, 850.0]
+  type_dep_inv : 0  # 0: uniform inversion grid (above),  2: flexible grid, manually designed (following)
+  dep_inv : [-25.0, 0.0, 25.0, 50.0, 100.0, 150.0, 225.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0]
+  
+  n_inv_lat : 12
+  min_max_lat_inv : [11.0, 22.0]
+  type_lat_inv : 0  # 0: uniform inversion grid (above),  2: flexible grid, manually designed (following)
+  lat_inv : [11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0]
+
+  n_inv_lon : 12
+  min_max_lon_inv : [96.0, 107.0]
+  type_lon_inv : 0  # 0: uniform inversion grid (above),  2: flexible grid, manually designed (following)
+  lon_inv : [96.0, 97.0, 98.0, 99.0,100.0,101.0,102.0,103.0,104.0,105.0,106.0,107.0]
+
+  max_sub_iterations : 100 # maximum number of sub-iterations
+  max_iterations_inv : 20  # maximum number of inversion iterations
+  step_size : 0.01  # step size for inversion
+
+inv_strategy :
+  is_inv_slowness : 1   # update slowness (velocity) or not.              1 for yes; 0 for no;  default: 1
+  is_inv_azi_ani  : 0   # update azimuthal anisotropy (xi, eta) or not.   1 for yes; 0 for no;  default: 0
+  is_inv_rad_ani  : 0   # update radial anisotropy (in future) or not.    1 for yes; 0 for no;  default: 0
+  kernel_taper : [50.0, 100.0]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+
+
+parallel :
+  n_sims : 8         # number of simultaneous run
+  ndiv_rtp : [1,1,1] # number of subdomains
+  nproc_sub : 1      # number of subprocess used for each subdomain
+
+calculation :
+  convergence_tolerance : 1e-3
+  max_iterations : 100
+  stencil_order : 3 # 1 or 3
+  sweep_type : 0    # 0: legacy, 1: cuthill-mckee. 2: cuthill-mckee with shm parallelization
+  output_file_format : 0 # 0: hdf5, 1: ascii
+
+output_setting :
+  is_output_source_field : 0      # output out_data_sim_X.h or not.                 1 for yes; 0 for no;  default: 1
+  is_output_model_dat : 1         # output model_parameters_inv_0000.dat or not.    1 for yes; 0 for no;  default: 1
+
