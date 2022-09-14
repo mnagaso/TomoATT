@@ -326,9 +326,10 @@ void Grid::setup_inversion_grids(InputParams& IP) {
     ngrid_j_inv = IP.get_n_inv_t();
     ngrid_k_inv = IP.get_n_inv_r();
 
-    n_inv_I_loc = ngrid_i_inv;
-    n_inv_J_loc = ngrid_j_inv;
-    n_inv_K_loc = ngrid_k_inv;
+    // +1 grid is added here for placing the inversion grid homogeneousily at the end of the domain
+    n_inv_I_loc = ngrid_i_inv+1;
+    n_inv_J_loc = ngrid_j_inv+1;
+    n_inv_K_loc = ngrid_k_inv+1;
 
 }
 
