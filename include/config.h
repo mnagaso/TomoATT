@@ -66,10 +66,11 @@ inline const CUSTOMREAL _3_CR     = 3.0;
 inline const CUSTOMREAL _4_CR     = 4.0;
 inline const CUSTOMREAL _8_CR     = 8.0;
 inline const CUSTOMREAL TAU_INITIAL_VAL = 1.0;
+inline const int        SWEEPING_COEFF  = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
+
 // ASCII output precision
 typedef std::numeric_limits< CUSTOMREAL > dbl;
 inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
-inline const int        SWEEPING_COEFF       = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
 
 // radious of the earth in km
 //inline CUSTOMREAL R_earth = 6378.1370;
@@ -165,6 +166,10 @@ inline bool if_verbose = false;
 
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
+
+// heavy output mode (if true, traveltime field for all sources will be output)
+// this flag effects only for forward and inversion mode but not earthquake relocation mode.
+inline bool heavily_output = false;
 
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
