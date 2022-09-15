@@ -34,7 +34,7 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
             // } else {
             //     weight = _1_CR;
             // }
-            
+
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
                     // distance between the source and grid point
@@ -59,10 +59,10 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
                             // Kernel w r t slowness s
                             grid.Ks_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] * std::pow(grid.fun_loc[I2V(iip,jjt,kkr)],2);
                         } else {
-                            grid.Ks_loc[I2V(iip,jjt,kkr)] = _0_CR; 
+                            grid.Ks_loc[I2V(iip,jjt,kkr)] = _0_CR;
                         }
 
-                        if (IP.get_is_inv_azi_ani()==1){      // we need to update azimuthal anisotropy
+                        if (IP.get_is_inv_azi_ani()){      // we need to update azimuthal anisotropy
                             // Kernel w r t anisotrophy xi
                             if (isZero(std::sqrt(std::pow(grid.xi_loc[I2V(iip,jjt,kkr)],2)+std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2)))) {
                                 grid.Kxi_loc[I2V(iip,jjt,kkr)]  += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \

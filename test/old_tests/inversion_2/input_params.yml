@@ -20,7 +20,7 @@ model :
   init_model_path : './test_model_init.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  run_mode : 1 # 0 for forward simulation only, 1 for inversion
   optim_method : 2 # optimization method. 0 : "grad_descent", 1 : "lbfgs", 2 : "halve-stepping"
   smooth_method : 0 # 0: multigrid parametrization, 1: laplacian smoothing with CG
   max_iterations_inv : 100  # maximum number of inversion iterations
@@ -28,7 +28,7 @@ inversion :
 
   # parameters for multiparametric inversion
   n_inversion_grid : 5  # number of inversion grid sets
-  n_inv_rtp : [11,10,10] # number of the base inversion grid points
+  n_inv_dep_lat_lon : [11,10,10] # number of the base inversion grid points
   min_max_dep_inv : [-29.0, 301.0] # depth in km with R = 6371.0
   min_max_lat_inv : [30.0,50.0] # latitude in degree
   min_max_lon_inv : [15.0,40.0] # longitude in degree

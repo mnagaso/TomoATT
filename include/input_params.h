@@ -20,7 +20,7 @@
 class SrcRec {
 public:
 
-    
+
     //
     // default values, for the case of single source - receiver
     //
@@ -28,7 +28,7 @@ public:
     int id_rec = -9999;
     int n_rec  = 0;
     int n_data = 0;  // = n_rec + n_rec_pair
-    
+
     CUSTOMREAL dep; // stored as depth (km), so need to depth2radious function when using it in other part of the code
     CUSTOMREAL lat; // stored in degree, but convarted to radian when passed through get_src_* function
     CUSTOMREAL lon; // stored in degree, but convarted to radian when passed through get_src_* function
@@ -52,7 +52,7 @@ public:
     std::vector<std::string> name_rec_pair    = std::vector<std::string>(2);
     // name_rec_pair[0] = "rec1_name_dummy";
     // name_rec_pair[1] = "rec2_name_dummy";
-    
+
     CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
     CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
 
@@ -85,6 +85,15 @@ public:
     CUSTOMREAL* arr_times_bound_S; // arrival time of the receiver at the south boundary of the subdomain
     CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
     bool*       is_bound_src; // true if the source is on the boundary surface
+
+    // params for source relocation
+    CUSTOMREAL DTk, DTj, DTi;  // gradient of traveltime
+    CUSTOMREAL tau_opt;        // optimal origin time
+    CUSTOMREAL sum_weight;     // sum of weights of all sources
+    CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
+    int        id_unique_list; // id of the source in the unique list
+    CUSTOMREAL vobj_src_reloc; // value of objective function
+    CUSTOMREAL vobj_grad_norm_src_reloc; // norm of gradient of objective function
 };
 
 
@@ -106,7 +115,7 @@ public:
     CUSTOMREAL           get_src_radius();
     CUSTOMREAL           get_src_lat();
     CUSTOMREAL           get_src_lon();
-    std::string          get_src_rec_file(){return src_rec_file;};
+    std::string          get_src_rec_file()      {return src_rec_file;};
     bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
     SrcRec&              get_src_point(int);  // return SrcRec object
     std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
@@ -118,11 +127,11 @@ public:
     int get_sweep_type()   {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};
-    std::string get_model_1d_name(){return model_1d_name;};
+    std::string get_model_1d_name()  {return model_1d_name;};
 
-    int get_do_inversion()    {return do_inversion;};
+    int get_run_mode()        {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
-    
+
     int get_type_dep_inv()         {return type_dep_inv;};
     int get_type_lat_inv()         {return type_lat_inv;};
     int get_type_lon_inv()         {return type_lon_inv;};
@@ -144,16 +153,18 @@ public:
     CUSTOMREAL * get_dep_inv(){return dep_inv;};
     CUSTOMREAL * get_lat_inv(){return lat_inv;};
     CUSTOMREAL * get_lon_inv(){return lon_inv;};
-    
+
     int get_max_iter_inv()    {return max_iter_inv;};
 
-    int get_is_output_source_field() {return is_output_source_field;};
-    int get_is_output_model_dat() {return is_output_model_dat;};
+    bool get_is_srcrec_swap() {return swap_src_rec;};
 
-    int get_is_inv_slowness() {return is_inv_slowness;};
-    int get_is_inv_azi_ani() {return is_inv_azi_ani;};
-    int get_is_inv_rad_ani() {return is_inv_rad_ani;};
-    CUSTOMREAL * get_kernel_taper() {return kernel_taper;};
+    bool get_is_output_source_field() {return is_output_source_field;};
+    bool get_is_output_model_dat()    {return is_output_model_dat;};
+
+    bool get_is_inv_slowness()        {return is_inv_slowness;};
+    bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
+    bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
+    CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
 private:
     // boundary information
     CUSTOMREAL min_dep; // minimum depth in km
@@ -162,7 +173,7 @@ private:
     CUSTOMREAL max_lat; // maximum latitude in degree
     CUSTOMREAL min_lon; // minimum longitude in degree
     CUSTOMREAL max_lon; // maximum longitude in degree
-    
+
     // source information
     CUSTOMREAL src_dep;              // source depth in km
     CUSTOMREAL src_lat;              // source latitude in degrees
@@ -177,10 +188,10 @@ private:
     std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
-    int do_inversion=0;                  // do inversion or not (0: no, 1: yes)
+    int run_mode=0;                  // do inversion or not (0: no, 1: yes)
     int n_inversion_grid=1;              // number of inversion grid
     int type_dep_inv=0, type_lat_inv=0, type_lon_inv=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
-    // type = 0: 
+    // type = 0: uniform inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
     // inversion grid
     CUSTOMREAL min_dep_inv=-99999; // minimum depth in km
@@ -189,9 +200,10 @@ private:
     CUSTOMREAL max_lat_inv=-99999; // maximum latitude
     CUSTOMREAL min_lon_inv=-99999; // minimum longitude
     CUSTOMREAL max_lon_inv=-99999; // maximum longitude
-    // type = 1: 
+    // type = 1: flexible inversion grid
     CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;   // flexibly designed inversion grid
     int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1; // number of flexibly designed inversion grid in r, t, p direction
+    bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
     // convergence setting
     CUSTOMREAL conv_tol;       // convergence tolerance
@@ -244,15 +256,15 @@ public:
 
 private:
     // output setting
-    int is_output_source_field = 1;     // output out_data_sim_X.h or not.                  1 for yes; 0 for no;  default: 1
-    int is_output_model_dat = 1;        // output model_parameters_inv_0000.dat or not.     1 for yes; 0 for no;  default: 1
+    bool is_output_source_field = true; // output out_data_sim_X.h or not.
+    bool is_output_model_dat    = true; // output model_parameters_inv_0000.dat or not.
 
     // inversion setting
-    int is_inv_slowness = 1;   // update slowness (velocity) or not.              1 for yes; 0 for no;  default: 1
-    int is_inv_azi_ani  = 0;   // update azimuthal anisotropy (xi, eta) or not.   1 for yes; 0 for no;  default: 0
-    int is_inv_rad_ani  = 0;   // update radial anisotropy (in future) or not.    1 for yes; 0 for no;  default: 0
+    bool is_inv_slowness = true;  // update slowness (velocity) or not.
+    bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
+    bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
 
-    CUSTOMREAL * kernel_taper;   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+    CUSTOMREAL kernel_taper[2];   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
 };
 
 

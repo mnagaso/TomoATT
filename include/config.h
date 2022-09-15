@@ -66,10 +66,11 @@ inline const CUSTOMREAL _3_CR     = 3.0;
 inline const CUSTOMREAL _4_CR     = 4.0;
 inline const CUSTOMREAL _8_CR     = 8.0;
 inline const CUSTOMREAL TAU_INITIAL_VAL = 1.0;
+inline const int        SWEEPING_COEFF  = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
+
 // ASCII output precision
 typedef std::numeric_limits< CUSTOMREAL > dbl;
 inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
-inline const int        SWEEPING_COEFF       = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
 
 // radious of the earth in km
 //inline CUSTOMREAL R_earth = 6378.1370;
@@ -78,6 +79,12 @@ inline const CUSTOMREAL GAMMA          = 0.0;
 inline const CUSTOMREAL r_kermel_mask  = 40.0;
 inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
 inline CUSTOMREAL       step_size_lbfgs;
+
+// RUN MODE TYPE FLAG
+inline const int ONLY_FORWARD        = 0;
+inline const int DO_INVERSION        = 1;
+inline const int TELESEIS_PREPROCESS = 2;
+inline const int SRC_RELOCATION      = 3;
 
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
@@ -161,19 +168,28 @@ inline bool if_verbose = false;
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
 
+// heavy output mode (if true, traveltime field for all sources will be output)
+// this flag effects only for forward and inversion mode but not earthquake relocation mode.
+inline bool heavily_output = false;
+
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
-inline       CUSTOMREAL rmin_2d = 3370.5;
-inline       CUSTOMREAL rmax_2d = 6471.5;
-inline       CUSTOMREAL tmin_2d = -5.0/180.0*PI;
-inline       CUSTOMREAL tmax_2d = 120.0/180.0*PI;
+inline       CUSTOMREAL rmin_2d             = 3370.5;
+inline       CUSTOMREAL rmax_2d             = 6471.5;
+inline       CUSTOMREAL tmin_2d             = -5.0/180.0*PI;
+inline       CUSTOMREAL tmax_2d             = 120.0/180.0*PI;
 inline       CUSTOMREAL dr_2d               = 2.0;
 inline       CUSTOMREAL dt_2d               = PI/1000.0;
 inline const CUSTOMREAL TOL_2D_SOLVER       = 1e-4;
-inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 2000;
+inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 4000;
 inline const CUSTOMREAL SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
 inline const int        N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
 inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
 inline const std::string OUTPUT_DIR_2D      = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
+
+// earthquake relocation
+inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation
+inline const int  N_ITER_MAX_SRC_RELOC  = 1000;
+inline const CUSTOMREAL TOL_SRC_RELOC   = 1e-2;
 
 #endif // CONFIG_H

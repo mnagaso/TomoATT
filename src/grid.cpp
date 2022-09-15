@@ -216,7 +216,7 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // inversion setup
     // check if inversion grids are needed
-    if (IP.get_do_inversion()==1){
+    if (IP.get_run_mode()==1){
         inverse_flag = true;
         setup_inversion_grids(IP);
     } else {
@@ -322,6 +322,7 @@ void Grid::init_decomposition(InputParams& IP) {
 void Grid::setup_inversion_grids(InputParams& IP) {
 
     n_inv_grids = IP.get_n_inversion_grid();
+
     if(IP.get_type_dep_inv() == 0){
         ngrid_k_inv = IP.get_n_inv_r();
     } else if (IP.get_type_dep_inv() == 1) {
@@ -349,9 +350,11 @@ void Grid::setup_inversion_grids(InputParams& IP) {
         exit(1);
     }
 
-    n_inv_I_loc = ngrid_i_inv;
-    n_inv_J_loc = ngrid_j_inv;
-    n_inv_K_loc = ngrid_k_inv;
+    // +1 grid is added here for placing the inversion grid homogeneousily at the end of the domain
+    // TODO : check if new inv grid type accept this +1
+    n_inv_I_loc = ngrid_i_inv+1;
+    n_inv_J_loc = ngrid_j_inv+1;
+    n_inv_K_loc = ngrid_k_inv+1;
 
 }
 
@@ -1048,7 +1051,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 
 
 void Grid::setup_inv_grid_params(InputParams& IP) {
-    
+
     // inversion grid for depth
     if(IP.get_type_dep_inv() == 0){     // uniform inversion grid for depth
         CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
@@ -1063,7 +1066,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
         }
     } else {            // flexibly designed inversion grid for depth
-        CUSTOMREAL* dep_inv = IP.get_dep_inv(); 
+        CUSTOMREAL* dep_inv = IP.get_dep_inv();
 
         for (int k = 0; k < n_inv_K_loc; k++){
             if(k < n_inv_K_loc - 1)
@@ -1071,7 +1074,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             else
                 dinv_lr = (depth2radius(dep_inv[n_inv_K_loc-1]) - depth2radius(dep_inv[n_inv_K_loc-2]))/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++) 
+            for (int l = 0; l < n_inv_grids; l++)
                 r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = depth2radius(dep_inv[k]) + l*dinv_lr;
         }
     }
@@ -1090,7 +1093,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_min_inv + j*dinv_t - l*dinv_lt;
         }
     } else {                // flexibly designed inversion grid for latitude
-        CUSTOMREAL* lat_inv = IP.get_lat_inv(); 
+        CUSTOMREAL* lat_inv = IP.get_lat_inv();
 
         for (int j = 0; j < n_inv_J_loc; j++){
             if(j < n_inv_J_loc - 1)
@@ -1098,7 +1101,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             else
                 dinv_lt = (lat_inv[n_inv_J_loc-1] - lat_inv[n_inv_J_loc-2])*DEG2RAD/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++) 
+            for (int l = 0; l < n_inv_grids; l++)
                 t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_inv[j]*DEG2RAD - l*dinv_lt;
         }
     }
@@ -1117,7 +1120,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_min_inv + i*dinv_p - l*dinv_lp;
         }
     } else {
-        CUSTOMREAL* lon_inv = IP.get_lon_inv(); 
+        CUSTOMREAL* lon_inv = IP.get_lon_inv();
 
         for (int i = 0; i < n_inv_I_loc; i++){
             if(i < n_inv_I_loc - 1)
@@ -1125,7 +1128,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             else
                 dinv_lp = (lon_inv[n_inv_I_loc-1] - lon_inv[n_inv_I_loc-2])*DEG2RAD/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++) 
+            for (int l = 0; l < n_inv_grids; l++)
                 p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_inv[i]*DEG2RAD - l*dinv_lp;
         }
     }
@@ -1175,6 +1178,31 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
     }
 
     return vis_data;
+}
+
+
+// set visualization array to local array
+void Grid::set_array_from_vis(CUSTOMREAL* arr) {
+
+    for (int k_r = 0; k_r < loc_K; k_r++) {
+        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+                 if (i_start_vis <= i_lon && i_lon <= i_end_vis \
+                  && j_start_vis <= j_lat && j_lat <= j_end_vis \
+                  && k_start_vis <= k_r   && k_r   <= k_end_vis) {
+                    int i_loc_tmp = i_lon - i_start_vis;
+                    int j_loc_tmp = j_lat - j_start_vis;
+                    int k_loc_tmp = k_r   - k_start_vis;
+
+                    arr[I2V(i_lon,j_lat,k_r)] = vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)];
+                 }
+            }
+        }
+    }
+
+    // set values to ghost layer
+    send_recev_boundary_data(arr);
+
 }
 
 
@@ -2292,17 +2320,17 @@ void Grid::write_inversion_grid_file(){
             ofs << l << " " << ngrid_k_inv << " " << ngrid_j_inv << " " << ngrid_i_inv << std::endl;    // number of ivnersion grid
             // inversion grid of depth
             for(int k =0; k < ngrid_k_inv; k++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') 
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
                     << radius2depth(r_loc_inv[I2V_INV_GRIDS_1DK(k,l)]) << " ";
             ofs << std::endl;
             for(int j =0; j < ngrid_j_inv; j++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') 
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
                     << t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)]*RAD2DEG << " ";
-            ofs << std::endl;        
+            ofs << std::endl;
             for(int i =0; i < ngrid_i_inv; i++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') 
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
                     << p_loc_inv[I2V_INV_GRIDS_1DI(i,l)]*RAD2DEG << " ";
-            ofs << std::endl;        
+            ofs << std::endl;
         }
     }
 

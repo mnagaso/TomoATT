@@ -4,12 +4,18 @@
 #include <iostream>
 #include <math.h>
 #include <string.h>
-#include "config.h"
-// #include <filesystem>
 #include <fstream>
+#include <sys/stat.h>
+#include <iomanip>
 
-inline void create_output_dir(){
-    // std::filesystem::create_directory(output_dir);
+#include "config.h"
+
+
+inline void create_output_dir(std::string dir_path){
+    // create output directory
+    if (mkdir(dir_path.c_str(), 0777) == -1){
+        std::cout << "Error :  " << dir_path << " directory can not be created." << std::endl;
+    }
 }
 
 
@@ -182,5 +188,14 @@ inline T calc_l2norm(T const* const a, int const& n){
     }
     return result;
 }
+
+
+inline std::string int2string_zero_fill(int i) {
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(4) << i;
+    return ss.str();
+}
+
+
 
 #endif // UTILS_H

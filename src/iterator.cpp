@@ -107,7 +107,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
             if (myrank==0)
                 std::cout << "initial err values L1, inf: " << ini_err_L1 << ", " << ini_err_Linf << std::endl;
         }
-        
+
         if (subdom_main) {
             grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
             if (myrank==0 && if_verbose)
@@ -230,18 +230,18 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
     // initialize delta and Tadj_loc (here we use the array tau_old instead of delta for memory saving)
     if (subdom_main)
         init_delta_and_Tadj(grid, IP);
-    if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain 
+    if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
                << ", subdom_main:" << subdom_main << ", world_rank: " << world_rank << std::endl;
     // fix the boundary of the adjoint field
     if (subdom_main){
         fix_boundary_Tadj(grid);
     }
-    
+
     // start timer
     std::string iter_str = "iteration_adjoint";
     Timer timer_iter(iter_str);
     if(if_verbose) stdout_by_main("--- adjoint fast sweeping ... ---");
-    
+
     // start iteration
     while (true) {
         // do sweeping for all direction
@@ -323,7 +323,7 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
         CUSTOMREAL delta_lon = grid.get_delta_lon();
         CUSTOMREAL delta_lat = grid.get_delta_lat();
         CUSTOMREAL delta_r   = grid.get_delta_r();
-        
+
         if(!rec.is_rec_pair){        // absolute travel time
             // get positions
             CUSTOMREAL rec_lon = rec.lon*DEG2RAD;
@@ -402,7 +402,7 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
                     grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec_adj*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
                     grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec_adj*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
                     grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec_adj*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-                
+
                 }
             }
 

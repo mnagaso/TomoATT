@@ -541,23 +541,22 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
 
         std::string fname_2d_src;
 
-        // create output directory for 2d solver if not exists
-        // if(!std::filesystem::exists(output_dir+"/"+OUTPUT_DIR_2D)) {
-        //     std::filesystem::create_directory(output_dir+"/"+OUTPUT_DIR_2D);
-        // }
+        // create output directory for 2d solver
+        std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
+        create_output_dir(dir_2d);
 
         if (output_format == OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
             // add the depth of the source to the file name
             // to share the travel time field if sources have the same depth of hypocenter
             auto str = std::to_string(src.dep);
-            fname_2d_src = output_dir + "/" + OUTPUT_DIR_2D + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".h5";
+            fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".h5";
 #else
             std::cout << "HDF5 is not enabled. Please recompile with HDF5" << std::endl;
 #endif
         } else if (output_format == OUTPUT_FORMAT_ASCII) {
             auto str = std::to_string(src.dep);
-            fname_2d_src = output_dir + "/" + OUTPUT_DIR_2D + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".dat";
+            fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".dat";
         }
 
         if (is_file_exist(fname_2d_src.c_str())) {

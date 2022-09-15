@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14)
 
 # set the project name
 set(CMAKE_PROJECT_NAME "TOMOATT")
-project(${CMAKE_PROJECT_NAME} C CXX CUDA)
+project(${CMAKE_PROJECT_NAME} C CXX)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -40,8 +40,14 @@ if(HDF5_FOUND)
   add_definitions(-DUSE_HDF5)
 endif()
 
-# cuda
-# find_package(CUDA)
+# find cuda package if USE_CUDA is defined
+if(USE_CUDA)
+  message(STATUS "Running CMAKE FindCUDA.cmake...")
+  enable_language(CUDA)
+  find_package(CUDA)
+else()
+  message(STATUS "TomoATT is compiled without cuda, because -DUSE_CUDA=True is not defined")
+endif()
 
 if(CUDA_FOUND) # TODO : add HIP here in the future
   message(STATUS "CUDA_FOUND: ${CUDA_FOUND}")
@@ -59,10 +65,10 @@ if(CUDA_FOUND) # TODO : add HIP here in the future
   #
   # for debugging
   set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -O0 -gencode arch=compute_61,code=sm_61")
-
   set(CMAKE_CUDA_STANDARD "11")
+  message(STATUS, "TomoATT will be compiled with cuda.")
 else()
-  message(STATUS "CUDA not found. This library is compiled without CUDA.")
+  message(STATUS "TomoATT will be compiled without cuda, because cuda is not found or -DUSE_CUDA=True was not specified.")
 endif()
 
 

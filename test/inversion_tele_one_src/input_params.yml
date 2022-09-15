@@ -10,7 +10,7 @@ domain :
 source :
   #src_dep_lat_lon : [5.0,40.0,24.0] # source depth in km, latitude, longitude in degree
   #src_dep_lat_lon : [5750.6370,46.0,36.0] # source depth in km, latitude, longitude in degree
-  src_rec_file : 'src_rec_test_out.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file : 'OUTPUT_FILES/src_rec_file_forward.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec : 0 # swap source and receiver
 
 model :
@@ -18,9 +18,9 @@ model :
   init_model_path : './test_model_init.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  run_mode : 1 # 0 for forward simulation only, 1 for inversion
   n_inversion_grid : 5  # number of inversion grid sets
-  n_inv_rtp : [11,10,10] # number of the base inversion grid points
+  n_inv_dep_lat_lon : [11,10,10] # number of the base inversion grid points
   min_max_dep_inv : [-29.0, 301.0] # depth in km with R = 6371.0
   min_max_lat_inv : [30.0,50.0] # latitude in degree
   min_max_lon_inv : [15.0,40.0] # longitude in degree
