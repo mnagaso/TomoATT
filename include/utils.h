@@ -14,7 +14,7 @@
 inline void create_output_dir(std::string dir_path){
     // create output directory
     if (mkdir(dir_path.c_str(), 0777) == -1){
-        std::cout << "Error :  " << dir_path << " directory can not be created." << std::endl;
+        std::cout << "Warning : directory " << dir_path << " can not be created. Maybe already exists (no problem in this case)." << std::endl;
     }
 }
 
