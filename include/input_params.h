@@ -257,14 +257,14 @@ public:
 private:
     // output setting
     bool is_output_source_field = true; // output out_data_sim_X.h or not.
-    bool is_output_model_dat    = true; // output model_parameters_inv_0000.dat or not.
+    bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
 
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.
     bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
     bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
 
-    CUSTOMREAL kernel_taper[2];   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+    CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
 };
 
 

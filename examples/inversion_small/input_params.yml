@@ -7,7 +7,7 @@ domain :
   n_rtp : [10,50,50]          # number of nodes
 
 source :
-  src_rec_file : 'src_rec_test_out.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file : 'OUTPUT_FILES/src_rec_file_forward.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec : 1                      # swap source and receiver (1: yes, 0: no)
 
 model :
@@ -42,4 +42,7 @@ calculation :
   stencil_order : 3 # 1 or 3
   sweep_type : 1    # 0: legacy, 1: cuthill-mckee with shm parallelization
 
+output_setting :
+  is_output_source_field : 1      # output out_data_sim_X.h or not.                 1 for yes; 0 for no;  default: 1
+  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.    1 for yes; 0 for no;  default: 1
 
