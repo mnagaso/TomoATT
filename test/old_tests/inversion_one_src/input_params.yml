@@ -19,7 +19,7 @@ model :
 inversion :
   run_mode : 1 # 0 for forward simulation only, 1 for inversion
   n_inversion_grid : 4  # number of inversion grid sets
-  n_inv_rtp : [5,10,10] # number of the base inversion grid points
+  n_inv_dep_lat_lon : [5,10,10] # number of the base inversion grid points
   optim_method : 0 # optimization method. 0 : "grad_descent" or 1 : "lbfgs"
   max_iterations_inv : 2  # maximum number of inversion iterations
   step_size : 0.01  # initial step size for inversion

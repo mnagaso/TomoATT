@@ -6,13 +6,13 @@ sys.path.append('../../utils')
 from src_rec_file_helper import *
 
 # read file
-fpath_true = "./src_rec_test_out.dat"
+fpath_true = "./OUTPUT_FILES/src_rec_file_forward.dat"
 event_list_true = read_src_rec_file(fpath_true)
 
 fpath_mod = "./src_rec_test_out_modified.dat"
 event_list_mod = read_src_rec_file(fpath_mod)
 
-fpath_res = "./src_rec_test_out_modified_out.dat"
+fpath_res = "./OUTPUT_FILES/src_rec_file_src_reloc.dat"
 event_list_res = read_src_rec_file(fpath_res)
 
 # %%
@@ -34,7 +34,6 @@ ax.set_title("Earthquake Relocation")
 ax.set_ylabel("latitude")
 ax.set_xlabel("longitude")
 
-plt.show()
 
 # %%
 

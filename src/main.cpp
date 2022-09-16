@@ -57,7 +57,11 @@ int main(int argc, char *argv[])
     // initialize compute grids
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
 
-    // initialize inversion grids
+    // output inversion grid file (by main process)
+
+    grid.write_inversion_grid_file();
+
+    // initialize inversion grids (by other process)
     grid.setup_inversion_grids(IP);
 
     if (subdom_main) {

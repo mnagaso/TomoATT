@@ -6,7 +6,7 @@ sys.path.append('../../utils')
 from src_rec_file_helper import *
 
 # read file
-fpath = "./src_rec_test_out.dat"
+fpath = "./OUTPUT_FILES/src_rec_file_forward.dat"
 event_list = read_src_rec_file(fpath)
 
 # %%
@@ -61,5 +61,8 @@ plt.show()
 # write out
 fpath="src_rec_test_out_modified.dat"
 write_event_list(event_list, fpath)
+
+# %%
+
 
 

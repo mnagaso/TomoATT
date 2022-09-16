@@ -578,6 +578,89 @@ void IO_utils::write_velocity_model_h5(Grid& grid) {
     }
 }
 
+std::vector<CUSTOMREAL> IO_utils::get_grid_data(CUSTOMREAL* data) {
+
+    std::vector<CUSTOMREAL> parameter(loc_K_vis * loc_J_vis * loc_I_vis);
+
+    for (int k = 0; k < loc_K_vis; k++){
+        for (int j = 0; j < loc_J_vis; j++){
+            for (int i = 0; i < loc_I_vis; i++){
+                int idx = I2V_VIS(i,j,k);
+                parameter[idx] = data[idx];
+            }
+        }
+    }
+    return parameter;
+}
+
+void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
+    std::string dset_name = "model_parameters_inv_" + int2string_zero_fill(i_inv);
+    std::string fname = create_fname_ascii_model(dset_name);
+
+    if (myrank == 0 )
+        std::cout << "--- write data to ascii file " << fname << " ---" << std::endl;
+
+    // collective write
+    for (int i_rank = 0; i_rank < n_subdomains; i_rank++) {
+        if (i_rank == myrank){
+            std::ofstream fout;
+            if (i_rank == 0){
+                fout.open(fname.c_str());
+                fout<< std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "depth" << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "latitude" << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "longitude" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
+                    // << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "T" << " "
+                    // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
+                    // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
+                    << std::endl;
+            } else
+                fout.open(fname.c_str(), std::ios_base::app); // append
+            if (!fout.is_open()) {
+                std::cout << "ERROR: cannot open file " << fname << std::endl;
+                exit(1);
+            }
+
+            // iterate over nodes skipping the last layer for ignoring gap filling nodes for h5 output
+
+            CUSTOMREAL* nodes_coords_p = grid.get_nodes_coords_p();     // dep,lat,lon
+            CUSTOMREAL* nodes_coords_t = grid.get_nodes_coords_t();
+            CUSTOMREAL* nodes_coords_r = grid.get_nodes_coords_r();
+            std::vector<CUSTOMREAL> slowness = get_grid_data(grid.get_fun());
+            std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
+            std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
+
+            for (int k = 0; k < loc_K_vis; k++){
+                for (int j = 0; j < loc_J_vis; j++){
+                    for (int i = 0; i < loc_I_vis; i++){
+                        int idx = I2V_VIS(i,j,k);
+                        fout<< std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << radius2depth(nodes_coords_r[idx]) << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_t[idx] << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_p[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
+                            // << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << T[idx] << " "
+                            // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << Ks[idx] << " "
+                            // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << Tadj[idx] << " "
+                            << std::endl;
+                    }
+                }
+            }
+            fout.close();
+        }
+
+
+    } // end for i_rank
+
+    // synchronize
+    synchronize_all_inter();
+}
+
 
 void IO_utils::write_T0v(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
@@ -918,13 +1001,6 @@ void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
         std::string fname = create_fname_ascii_model(dset_name);
         write_data_ascii(grid, fname, grid.get_Keta_update());
     }
-}
-
-
-std::string IO_utils::int2string_zero_fill(int i) {
-    std::stringstream ss;
-    ss << std::setfill('0') << std::setw(4) << i;
-    return ss.str();
 }
 
 

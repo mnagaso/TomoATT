@@ -83,7 +83,7 @@ The domain category is for setting a global domain.
 #### inversion
 - `run_mode` : `0` for running only a forward simulation. `1` for do inversion. `2` for only precalculation of 2d traveltime field for teleseismic sources. This is an optional step for teleseismic case. If 2d traveltime field is not precalculated, it will be calculated during mode `0` or `1`. This is useful for calculations on HPC as 2d eikonal solver has not been parallelized. Users can run it on a local machine beforehand to reduce CPU time on HPC. `3` run earthquake relocation.
 - `n_inversion_grid` :  the number of inversion grid.
-- `n_inv_rtp` : the numbers of inversion grids for r, t and p direction/
+- `n_inv_dep_lat_lon` : the numbers of inversion grids for r, t and p direction.
 - `min_max_dep_inv` :  minimum and maximum depth of inversion grid in kilo meter.
 - `min_max_lat_inv` :  minimum and maximum latitude of inversion grid in degree.
 - `min_max_lon_inv` :  minimum and maximum longitude of inversion grid in degree.

@@ -28,7 +28,7 @@ inversion :
 
   # parameters for multiparametric inversion
   n_inversion_grid : 5  # number of inversion grid sets
-  n_inv_rtp : [11,10,10] # number of the base inversion grid points
+  n_inv_dep_lat_lon : [11,10,10] # number of the base inversion grid points
   min_max_dep_inv : [-29.0, 301.0] # depth in km with R = 6371.0
   min_max_lat_inv : [30.0,50.0] # latitude in degree
   min_max_lon_inv : [15.0,40.0] # longitude in degree

@@ -163,6 +163,7 @@ inline bool if_test = false;
 
 // verboose mode
 inline bool if_verbose = false;
+// inline bool if_verbose = true;
 
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
@@ -173,22 +174,22 @@ inline bool heavily_output = false;
 
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
-inline       CUSTOMREAL  rmin_2d             = 3371.0;
-inline       CUSTOMREAL  rmax_2d             = 6471.0;
-inline       CUSTOMREAL  tmin_2d             = -5.0/180.0*PI;
-inline       CUSTOMREAL  tmax_2d             = PI+5.0/180.0*PI;
-inline       CUSTOMREAL  dr_2d               = 2.0;
-inline       CUSTOMREAL  dt_2d               = PI/1000.0;
-inline const CUSTOMREAL  TOL_2D_SOLVER       = 1e-3;
-inline const CUSTOMREAL  MAX_ITER_2D_SOLVER  = 1000;
-inline const CUSTOMREAL  SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
-inline const int         N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
-inline       CUSTOMREAL  DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
-inline const std::string OUTPUT_DIR_2D       = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
+inline       CUSTOMREAL rmin_2d             = 3370.5;
+inline       CUSTOMREAL rmax_2d             = 6471.5;
+inline       CUSTOMREAL tmin_2d             = -5.0/180.0*PI;
+inline       CUSTOMREAL tmax_2d             = 120.0/180.0*PI;
+inline       CUSTOMREAL dr_2d               = 2.0;
+inline       CUSTOMREAL dt_2d               = PI/1000.0;
+inline const CUSTOMREAL TOL_2D_SOLVER       = 1e-4;
+inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 4000;
+inline const CUSTOMREAL SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
+inline const int        N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
+inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
+inline const std::string OUTPUT_DIR_2D      = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
 // earthquake relocation
 inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation
-inline const int  N_ITER_MAX_SRC_RELOC = 1000;
-inline const CUSTOMREAL TOL_SRC_RELOC = 1e-2;
+inline const int  N_ITER_MAX_SRC_RELOC  = 1000;
+inline const CUSTOMREAL TOL_SRC_RELOC   = 1e-2;
 
 #endif // CONFIG_H

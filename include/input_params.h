@@ -19,12 +19,15 @@
 // strucutre for storing source or receiver information
 class SrcRec {
 public:
+
+
     //
     // default values, for the case of single source - receiver
     //
     int id_src = 0;
     int id_rec = -9999;
     int n_rec  = 0;
+    int n_data = 0;  // = n_rec + n_rec_pair
 
     CUSTOMREAL dep; // stored as depth (km), so need to depth2radious function when using it in other part of the code
     CUSTOMREAL lat; // stored in degree, but convarted to radian when passed through get_src_* function
@@ -38,22 +41,21 @@ public:
     //
     // another case of receiver pair (now only for teleseismicity)
     //
-    bool is_SrcRec_pair = false;
-
-    int id_rec1 = -9999;
-    int id_rec2 = -9999;
+    bool is_rec_pair = false;
     int n_rec_pair = 0;
 
-    CUSTOMREAL dep1,dep2;
-    CUSTOMREAL lat1,lat2;
-    CUSTOMREAL lon1,lon2;
+    std::vector<int> id_rec_pair         = std::vector<int>(2);
+    std::vector<CUSTOMREAL> dep_pair     = std::vector<CUSTOMREAL>(2);
+    std::vector<CUSTOMREAL> lat_pair     = std::vector<CUSTOMREAL>(2);
+    std::vector<CUSTOMREAL> lon_pair     = std::vector<CUSTOMREAL>(2);
+    std::vector<CUSTOMREAL> ddt_adj_pair = std::vector<CUSTOMREAL>(2);    // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
+    std::vector<std::string> name_rec_pair    = std::vector<std::string>(2);
+    // name_rec_pair[0] = "rec1_name_dummy";
+    // name_rec_pair[1] = "rec2_name_dummy";
 
     CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
     CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
-    CUSTOMREAL ddt_adj;          // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
 
-    std::string name_rec1 = "rec1_name_dummy";
-    std::string name_rec2 = "rec2_name_dummy";
 
     // common parameters for both cases
 
@@ -110,13 +112,6 @@ public:
     CUSTOMREAL get_min_lon(){return min_lon*DEG2RAD;};
     CUSTOMREAL get_max_lon(){return max_lon*DEG2RAD;};
 
-    CUSTOMREAL get_min_dep_inv(){return min_dep_inv;};
-    CUSTOMREAL get_max_dep_inv(){return max_dep_inv;};
-    CUSTOMREAL get_min_lat_inv(){return min_lat_inv*DEG2RAD;};
-    CUSTOMREAL get_max_lat_inv(){return max_lat_inv*DEG2RAD;};
-    CUSTOMREAL get_min_lon_inv(){return min_lon_inv*DEG2RAD;};
-    CUSTOMREAL get_max_lon_inv(){return max_lon_inv*DEG2RAD;};
-
     CUSTOMREAL           get_src_radius();
     CUSTOMREAL           get_src_lat();
     CUSTOMREAL           get_src_lon();
@@ -136,13 +131,40 @@ public:
 
     int get_run_mode()        {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
+
+    int get_type_dep_inv()         {return type_dep_inv;};
+    int get_type_lat_inv()         {return type_lat_inv;};
+    int get_type_lon_inv()         {return type_lon_inv;};
+    // type = 0:
     int get_n_inv_r()         {return n_inv_r;};
     int get_n_inv_t()         {return n_inv_t;};
     int get_n_inv_p()         {return n_inv_p;};
+    CUSTOMREAL get_min_dep_inv(){return min_dep_inv;};
+    CUSTOMREAL get_max_dep_inv(){return max_dep_inv;};
+    CUSTOMREAL get_min_lat_inv(){return min_lat_inv*DEG2RAD;};
+    CUSTOMREAL get_max_lat_inv(){return max_lat_inv*DEG2RAD;};
+    CUSTOMREAL get_min_lon_inv(){return min_lon_inv*DEG2RAD;};
+    CUSTOMREAL get_max_lon_inv(){return max_lon_inv*DEG2RAD;};
+
+    // type = 1:
+    int get_n_inv_r_flex()         {return n_inv_r_flex;};
+    int get_n_inv_t_flex()         {return n_inv_t_flex;};
+    int get_n_inv_p_flex()         {return n_inv_p_flex;};
+    CUSTOMREAL * get_dep_inv(){return dep_inv;};
+    CUSTOMREAL * get_lat_inv(){return lat_inv;};
+    CUSTOMREAL * get_lon_inv(){return lon_inv;};
+
     int get_max_iter_inv()    {return max_iter_inv;};
 
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
+    bool get_is_output_source_field() {return is_output_source_field;};
+    bool get_is_output_model_dat()    {return is_output_model_dat;};
+
+    bool get_is_inv_slowness()        {return is_inv_slowness;};
+    bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
+    bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
+    CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
 private:
     // boundary information
     CUSTOMREAL min_dep; // minimum depth in km
@@ -151,14 +173,6 @@ private:
     CUSTOMREAL max_lat; // maximum latitude in degree
     CUSTOMREAL min_lon; // minimum longitude in degree
     CUSTOMREAL max_lon; // maximum longitude in degree
-    // inversion grid
-    CUSTOMREAL min_dep_inv=-99999; // minimum depth in km
-    CUSTOMREAL max_dep_inv=-99999; // maximum depth in km
-    CUSTOMREAL min_lat_inv=-99999; // minimum latitude
-    CUSTOMREAL max_lat_inv=-99999; // maximum latitude
-    CUSTOMREAL min_lon_inv=-99999; // minimum longitude
-    CUSTOMREAL max_lon_inv=-99999; // maximum longitude
-
 
     // source information
     CUSTOMREAL src_dep;              // source depth in km
@@ -176,7 +190,20 @@ private:
     // inversion
     int run_mode=0;                  // do inversion or not (0: no, 1: yes)
     int n_inversion_grid=1;              // number of inversion grid
+    int type_dep_inv=0, type_lat_inv=0, type_lon_inv=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
+    // type = 0: uniform inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
+    // inversion grid
+    CUSTOMREAL min_dep_inv=-99999; // minimum depth in km
+    CUSTOMREAL max_dep_inv=-99999; // maximum depth in km
+    CUSTOMREAL min_lat_inv=-99999; // minimum latitude
+    CUSTOMREAL max_lat_inv=-99999; // maximum latitude
+    CUSTOMREAL min_lon_inv=-99999; // minimum longitude
+    CUSTOMREAL max_lon_inv=-99999; // maximum longitude
+    // type = 1: flexible inversion grid
+    CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;   // flexibly designed inversion grid
+    int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1; // number of flexibly designed inversion grid in r, t, p direction
+    bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
     // convergence setting
     CUSTOMREAL conv_tol;       // convergence tolerance
@@ -225,8 +252,19 @@ public:
     // src points for this sim group
     std::vector<int> src_ids_this_sim;
     // write out src_rec_file
-    void write_src_rec_file();
+    void write_src_rec_file(int);
 
+private:
+    // output setting
+    bool is_output_source_field = true; // output out_data_sim_X.h or not.
+    bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
+
+    // inversion setting
+    bool is_inv_slowness = true;  // update slowness (velocity) or not.
+    bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
+    bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
+
+    CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
 };
 
 

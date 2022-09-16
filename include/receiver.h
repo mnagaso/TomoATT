@@ -11,7 +11,8 @@ public:
     ~Receiver();
 
     void calculate_arrival_time(InputParams&, Grid&);
-    // regional source
+
+    // adjoint source
     CUSTOMREAL calculate_adjoint_source(InputParams&);
     // teleseismic source
     CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&);
@@ -31,6 +32,7 @@ public:
 private:
     void interpolate_travel_time(Grid&, SrcRec&);
     void calculate_T_gradient_one_rec(Grid&, SrcRec&);
+    void interpolate_differential_travel_time(Grid&, SrcRec&);
 };
 
 #endif // RECEIVER_H

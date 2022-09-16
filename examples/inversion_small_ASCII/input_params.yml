@@ -7,7 +7,7 @@ domain :
   n_rtp : [10,50,50]          # number of nodes
 
 source :
-  src_rec_file : 'src_rec_test_out.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file : 'OUTPUT_FILES/src_rec_file_forward.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec : 1 # swap source and receiver (1: yes, 0: no)
 
 model :
@@ -21,7 +21,7 @@ inversion :
 
   # parameters for multiparametric inversion
   n_inversion_grid : 5  # number of inversion grid sets
-  n_inv_rtp : [5,10,10] # number of the base inversion grid points
+  n_inv_dep_lat_lon : [5,10,10] # number of the base inversion grid points
   min_max_dep_inv : [-10.0, 10.0] # depth in km with R = 6371.0
   min_max_lat_inv : [37.7,42.3] # latitude in degree
   min_max_lon_inv : [22.7,27.3] # longitude in degree
@@ -41,5 +41,6 @@ calculation :
   sweep_type : 1         # 0: legacy, 1: cuthill-mckee with shm parallelization
   output_file_format : 1 # 0: hdf5, 1: ascii
 
-
-
+output_setting :
+  is_output_source_field : 1      # output out_data_sim_X.h or not.                 1 for yes; 0 for no;  default: 1
+  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.    1 for yes; 0 for no;  default: 1

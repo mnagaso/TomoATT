@@ -10,7 +10,7 @@
 
 
 // K*_loc -> K*_update_loc
-void smooth_kernels(Grid& grid) {
+void smooth_kernels(Grid& grid, InputParams& IP) {
     if (subdom_main){
         // initiaize update params
         for (int k = 0; k < loc_K; k++) {
@@ -27,7 +27,7 @@ void smooth_kernels(Grid& grid) {
 
             if (smooth_method == 0) {
                 // grid based smoothing
-                smooth_inv_kernels_orig(grid);
+                smooth_inv_kernels_orig(grid, IP);
             } else if (smooth_method == 1) {
                 // CG smoothing
                 smooth_inv_kernels_CG(grid, smooth_lr, smooth_lt, smooth_lp);
@@ -76,7 +76,7 @@ void smooth_descent_direction(Grid& grid){
 }
 
 
-void calc_descent_direction(Grid& grid, int i_inv) {
+void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
 
     if (subdom_main) {
 
@@ -91,7 +91,7 @@ void calc_descent_direction(Grid& grid, int i_inv) {
                 // sum kernels among all simultaneous runs
                 sumup_kernels(grid);
                 // smooth kernels
-                smooth_kernels(grid);
+                smooth_kernels(grid, IP);
 
                 int n_grid = loc_I*loc_J*loc_K;
                 std::memcpy(grid.Ks_descent_dir_loc,   grid.Ks_update_loc,   n_grid*sizeof(CUSTOMREAL));

@@ -166,7 +166,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
             // debug store temporal T fields
             //io.write_tmp_tau_h5(grid, iter_count);
 
-            if (cur_diff_L1 < IP.get_conv_tol()) {
+            if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) {
                 //stdout_by_main("--- iteration converged. ---");
                 goto iter_end;
             } else if (IP.get_max_iter() <= iter_count) {
@@ -230,7 +230,8 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
     // initialize delta and Tadj_loc (here we use the array tau_old instead of delta for memory saving)
     if (subdom_main)
         init_delta_and_Tadj(grid, IP);
-
+    if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
+               << ", subdom_main:" << subdom_main << ", world_rank: " << world_rank << std::endl;
     // fix the boundary of the adjoint field
     if (subdom_main){
         fix_boundary_Tadj(grid);
@@ -239,6 +240,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
     // start timer
     std::string iter_str = "iteration_adjoint";
     Timer timer_iter(iter_str);
+    if(if_verbose) stdout_by_main("--- adjoint fast sweeping ... ---");
 
     // start iteration
     while (true) {
@@ -322,43 +324,90 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
         CUSTOMREAL delta_lat = grid.get_delta_lat();
         CUSTOMREAL delta_r   = grid.get_delta_r();
 
-        // get positions
-        CUSTOMREAL rec_lon = rec.lon*DEG2RAD;
-        CUSTOMREAL rec_lat = rec.lat*DEG2RAD;
-        CUSTOMREAL rec_r = depth2radius(rec.dep);
+        if(!rec.is_rec_pair){        // absolute travel time
+            // get positions
+            CUSTOMREAL rec_lon = rec.lon*DEG2RAD;
+            CUSTOMREAL rec_lat = rec.lat*DEG2RAD;
+            CUSTOMREAL rec_r = depth2radius(rec.dep);
 
-        // check if the receiver is in this subdomain
-        if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
-            grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
-            grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
+            // check if the receiver is in this subdomain
+            if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
+                grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
+                grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
 
-            DEBUG_REC_COUNT++;
+                DEBUG_REC_COUNT++;
 
-            // descretize receiver position (LOCAL ID)
-            int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
-            int j_rec_loc =  std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
-            int k_rec_loc =  std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
+                // descretize receiver position (LOCAL ID)
+                int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
+                int j_rec_loc =  std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
+                int k_rec_loc =  std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
 
-            // discretized receiver position
-            CUSTOMREAL dis_rec_lon = grid.p_loc_1d[i_rec_loc];
-            CUSTOMREAL dis_rec_lat = grid.t_loc_1d[j_rec_loc];
-            CUSTOMREAL dis_rec_r   = grid.r_loc_1d[k_rec_loc];
+                // discretized receiver position
+                CUSTOMREAL dis_rec_lon = grid.p_loc_1d[i_rec_loc];
+                CUSTOMREAL dis_rec_lat = grid.t_loc_1d[j_rec_loc];
+                CUSTOMREAL dis_rec_r   = grid.r_loc_1d[k_rec_loc];
 
-            // relative position errors
-            CUSTOMREAL e_lon = std::min(_1_CR,(rec_lon - dis_rec_lon)/delta_lon);
-            CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
-            CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
+                // relative position errors
+                CUSTOMREAL e_lon = std::min(_1_CR,(rec_lon - dis_rec_lon)/delta_lon);
+                CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
+                CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
 
-            // set delta values
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += rec.t_adj*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += rec.t_adj*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += rec.t_adj*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += rec.t_adj*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += rec.t_adj*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec.t_adj*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec.t_adj*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec.t_adj*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                // set delta values
+                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += rec.t_adj*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += rec.t_adj*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += rec.t_adj*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += rec.t_adj*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += rec.t_adj*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec.t_adj*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec.t_adj*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec.t_adj*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+            }
+        } else {        // differential travel time
+
+            for(int index_rec = 0; index_rec < 2; index_rec++){
+                // get positions
+                CUSTOMREAL rec_lon = rec.lon_pair[index_rec]*DEG2RAD;
+                CUSTOMREAL rec_lat = rec.lat_pair[index_rec]*DEG2RAD;
+                CUSTOMREAL rec_r = depth2radius(rec.dep_pair[index_rec]);
+                CUSTOMREAL rec_adj = rec.ddt_adj_pair[index_rec];
+
+                // check if the receiver is in this subdomain
+                if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
+                    grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
+                    grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
+
+                    DEBUG_REC_COUNT++;
+
+                    // descretize receiver position (LOCAL ID)
+                    int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
+                    int j_rec_loc =  std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
+                    int k_rec_loc =  std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
+
+                    // discretized receiver position
+                    CUSTOMREAL dis_rec_lon = grid.p_loc_1d[i_rec_loc];
+                    CUSTOMREAL dis_rec_lat = grid.t_loc_1d[j_rec_loc];
+                    CUSTOMREAL dis_rec_r   = grid.r_loc_1d[k_rec_loc];
+
+                    // relative position errors
+                    CUSTOMREAL e_lon = std::min(_1_CR,(rec_lon - dis_rec_lon)/delta_lon);
+                    CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
+                    CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
+
+                    // set delta values
+                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += rec_adj*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += rec_adj*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += rec_adj*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += rec_adj*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += rec_adj*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec_adj*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec_adj*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec_adj*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*std::pow(rec_r,2.0)*std::cos(rec_lat));
+
+                }
+            }
+
         }
+
     }
 
     // communicate tau_old_loc to all processors
@@ -1031,6 +1080,12 @@ void Iterator::calculate_stencil_3rd_order_tele(Grid& grid, int& iip, int& jjt, 
     grid.T_loc[I2V(iip,jjt,kkr)] += coe * (grid.fun_loc[I2V(iip,jjt,kkr)] - Htau) \
         + coe * (sigr*(pr2-pr1)/_2_CR + sigt*(pt2-pt1)/_2_CR + sigp*(pp2-pp1)/_2_CR);
 
+    // check value
+    // if(kkr==1 && jjt==1 && iip==1){
+    //     std::cout   << sigr << " " << sigt << " " << sigp << " " << coe << " "
+    //                 << grid.fun_loc[I2V(iip,jjt,kkr)] << " " << Htau << " " << grid.T_loc[I2V(iip,jjt,kkr)] << " "
+    //                 << std::endl;
+    // }
 }
 
 

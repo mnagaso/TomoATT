@@ -58,7 +58,7 @@ Iterator_legacy_tele::Iterator_legacy_tele(InputParams& IP, Grid& grid, Source& 
 
 void Iterator_legacy_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
     if (subdom_main) {
-
+        if(if_verbose) std::cout << "sweeping: " << iswp << std::endl;
         // set sweep direction
         set_sweep_direction(iswp);
 

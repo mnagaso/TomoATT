@@ -170,10 +170,13 @@ phase_dummy = 'P'
 dist_dummy = 100.0
 arriv_t_dummy = 0.0
 
-tt1deg = tt1 * 180.0/math.pi
-tt2deg = tt2 * 180.0/math.pi
-pp1deg = pp1 * 180.0/math.pi
-pp2deg = pp2 * 180.0/math.pi
+mergin_rate = 5.0/100.0
+
+
+tt1deg = tt1 * 180.0/math.pi + (tt2-tt1)*180.0/math.pi*mergin_rate
+tt2deg = tt2 * 180.0/math.pi - (tt2-tt1)*180.0/math.pi*mergin_rate
+pp1deg = pp1 * 180.0/math.pi + (pp2-pp1)*180.0/math.pi*mergin_rate
+pp2deg = pp2 * 180.0/math.pi - (pp2-pp1)*180.0/math.pi*mergin_rate
 
 
 n_src = 100
@@ -208,7 +211,7 @@ for i in range(n_rec[0]):
 for i_src in range(n_src):
     # define one point in the domain (rr1 bottom, rr2 top)
     dep = (R_earth-rr1)*0.9
-    tmp_ilon = i_src%nij_src
+    tmp_ilon = int(i_src%nij_src)
     tmp_ilat = int(i_src/nij_src)
     lon = pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_src
     lat = tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_src
@@ -239,6 +242,9 @@ with open(fname, 'w') as f:
             f.write('{} '.format(elem))
         f.write('\n')
 
+
+# %%
+tt2deg
 
 # %%
 # draw src and rec positions

@@ -24,7 +24,7 @@ parallel :
 
 calculation :
   convergence_tolerance : 1e-4
-  max_iterations : 200
+  max_iterations : 500
   stencil_order : 3 # 1 or 3
   sweep_type : 1    # 0: legacy, 1: cuthill-mckee with shm parallelization
 

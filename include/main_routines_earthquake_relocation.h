@@ -28,8 +28,8 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     }
 
     // initialize kernel arrays
-    if (IP.get_run_mode() == DO_INVERSION)
-        grid.initialize_kernels();
+    //if (IP.get_run_mode() == DO_INVERSION)
+    //    grid.initialize_kernels();
 
     // reinitialize factors
     grid.reinitialize_abcf();

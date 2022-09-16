@@ -41,12 +41,12 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     sumup_kernels(grid);
 
     // smooth kernels
-    smooth_kernels(grid);
+    smooth_kernels(grid, IP);
 
     // update the model with the initial step size
     set_new_model(grid, step_size_init);
 
-    if (subdom_main) {
+    if (subdom_main && IP.get_is_output_source_field()) {
         // store kernel only in the first src datafile
         io.change_xdmf_obj(0); // change xmf file for next src
 
@@ -62,7 +62,8 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     }
 
     // writeout temporary xdmf file
-    io.update_xdmf_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_output_source_field())
+        io.update_xdmf_file(IP.src_ids_this_sim.size());
 
     synchronize_all_world();
 
@@ -83,7 +84,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     sumup_kernels(grid);
 
     // smooth kernels
-    smooth_kernels(grid);
+    smooth_kernels(grid, IP);
 
     // backup the initial model
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
@@ -92,7 +93,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     set_new_model(grid, step_size);
 
 
-    if (subdom_main) {
+    if (subdom_main && IP.get_is_output_source_field()) {
         // store kernel only in the first src datafile
         io.change_xdmf_obj(0); // change xmf file for next src
 
@@ -108,7 +109,8 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     }
 
     // writeout temporary xdmf file
-    io.update_xdmf_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_output_source_field())
+        io.update_xdmf_file(IP.src_ids_this_sim.size());
 
     synchronize_all_world();
 
@@ -158,7 +160,7 @@ end_of_sub_iteration:
 
     // write adjoint field
     int next_i_inv = i_inv + 1;
-    if (subdom_main)
+    if (subdom_main && IP.get_is_output_source_field())
         io.write_adjoint_field(grid,next_i_inv);
 
 
@@ -179,7 +181,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
 
     // smooth kernels and calculate descent direction
-    calc_descent_direction(grid, i_inv);
+    calc_descent_direction(grid, i_inv, IP);
 
     // smooth descent direction
     //smooth_descent_direction(grid);
@@ -218,7 +220,8 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     }
 
     // writeout temporary xdmf file
-    io.update_xdmf_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_output_source_field())
+        io.update_xdmf_file(IP.src_ids_this_sim.size());
 
     synchronize_all_world();
 
@@ -250,7 +253,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         sumup_kernels(grid);
 
         // smooth kernels
-        smooth_kernels(grid);
+        smooth_kernels(grid, IP);
 
         // add gradient of regularization term
         add_regularization_grad(grid);

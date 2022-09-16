@@ -21,8 +21,20 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
         CUSTOMREAL src_lat = IP.get_src_lat();
         CUSTOMREAL src_r   = IP.get_src_radius();
 
+        CUSTOMREAL weight   = _1_CR;
+        // CUSTOMREAL * taper  = IP.get_kernel_taper();
+
         // inner points
         for (int kkr = 1; kkr < nr-1; kkr++) {
+            // CUSTOMREAL depth = radius2depth(grid.r_loc_1d[kkr]);
+            // if (depth < taper[0]) {     // weight = 0;
+            //     weight = _0_CR;
+            // } else if (depth < taper[1]) {
+            //     weight = (_1_CR - std::cos(PI*(depth - taper[0])/(taper[1] - taper[0]))) / _2_CR;
+            // } else {
+            //     weight = _1_CR;
+            // }
+
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
                     // distance between the source and grid point
@@ -43,28 +55,37 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
                         CUSTOMREAL Ttheta = (grid.T_loc[I2V(iip,jjt+1,kkr)] - grid.T_loc[I2V(iip,jjt-1,kkr)]) / (_2_CR * dt);
                         CUSTOMREAL Tphi   = (grid.T_loc[I2V(iip+1,jjt,kkr)] - grid.T_loc[I2V(iip-1,jjt,kkr)]) / (_2_CR * dp);
 
-                        // Kernel w r t slowness s
-                        grid.Ks_loc[I2V(iip,jjt,kkr)] += grid.Tadj_loc[I2V(iip,jjt,kkr)] * std::pow(grid.fun_loc[I2V(iip,jjt,kkr)],2);
-
-                        // Kernel w r t anisotrophy xi
-                        if (isZero(std::sqrt(std::pow(grid.xi_loc[I2V(iip,jjt,kkr)],2)+std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2)))) {
-                            grid.Kxi_loc[I2V(iip,jjt,kkr)]  += grid.Tadj_loc[I2V(iip,jjt,kkr)] \
-                                                            * (std::pow(Ttheta,2) / std::pow(grid.r_loc_1d[kkr],2) \
-                                                             - std::pow(Tphi,  2) /(std::pow(grid.r_loc_1d[kkr],2)*std::pow(std::cos(grid.t_loc_1d[jjt]),2)));
-
-                            grid.Keta_loc[I2V(iip,jjt,kkr)] += grid.Tadj_loc[I2V(iip,jjt,kkr)] \
-                                                            * ( -_2_CR * Ttheta * Tphi / (std::pow(grid.r_loc_1d[kkr],2)*std::cos(grid.t_loc_1d[jjt])));
+                        if (IP.get_is_inv_slowness()==1){      // we need to update slowness
+                            // Kernel w r t slowness s
+                            grid.Ks_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] * std::pow(grid.fun_loc[I2V(iip,jjt,kkr)],2);
                         } else {
-                            grid.Kxi_loc[I2V(iip,jjt,kkr)]  += grid.Tadj_loc[I2V(iip,jjt,kkr)] \
-                                                        * ((- GAMMA * grid.xi_loc[I2V(iip,jjt,kkr)] / \
-                                                                    std::sqrt(std::pow(grid.xi_loc[ I2V(iip,jjt,kkr)],2) + std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2))) * std::pow(Tr,2) \
-                                                            + std::pow(Ttheta,2) / std::pow(grid.r_loc_1d[kkr],2) \
-                                                            - std::pow(Tphi,2)   /(std::pow(grid.r_loc_1d[kkr],2)*std::pow(std::cos(grid.t_loc_1d[jjt]),2)));
+                            grid.Ks_loc[I2V(iip,jjt,kkr)] = _0_CR;
+                        }
 
-                            grid.Keta_loc[I2V(iip,jjt,kkr)] += grid.Tadj_loc[I2V(iip,jjt,kkr)] \
-                                                           * (( - GAMMA * grid.eta_loc[I2V(iip,jjt,kkr)]/ \
-                                                                        std::sqrt(std::pow(grid.xi_loc[I2V(iip,jjt,kkr)],2) + std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2))) * std::pow(Tr,2) \
-                                                                - _2_CR * Ttheta * Tphi / (std::pow(grid.r_loc_1d[kkr],2)*std::cos(grid.t_loc_1d[jjt])));
+                        if (IP.get_is_inv_azi_ani()){      // we need to update azimuthal anisotropy
+                            // Kernel w r t anisotrophy xi
+                            if (isZero(std::sqrt(std::pow(grid.xi_loc[I2V(iip,jjt,kkr)],2)+std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2)))) {
+                                grid.Kxi_loc[I2V(iip,jjt,kkr)]  += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \
+                                                                * (std::pow(Ttheta,2) / std::pow(grid.r_loc_1d[kkr],2) \
+                                                                - std::pow(Tphi,  2) /(std::pow(grid.r_loc_1d[kkr],2)*std::pow(std::cos(grid.t_loc_1d[jjt]),2)));
+
+                                grid.Keta_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \
+                                                                * ( -_2_CR * Ttheta * Tphi / (std::pow(grid.r_loc_1d[kkr],2)*std::cos(grid.t_loc_1d[jjt])));
+                            } else {
+                                grid.Kxi_loc[I2V(iip,jjt,kkr)]  += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \
+                                                            * ((- GAMMA * grid.xi_loc[I2V(iip,jjt,kkr)] / \
+                                                                        std::sqrt(std::pow(grid.xi_loc[ I2V(iip,jjt,kkr)],2) + std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2))) * std::pow(Tr,2) \
+                                                                + std::pow(Ttheta,2) / std::pow(grid.r_loc_1d[kkr],2) \
+                                                                - std::pow(Tphi,2)   /(std::pow(grid.r_loc_1d[kkr],2)*std::pow(std::cos(grid.t_loc_1d[jjt]),2)));
+
+                                grid.Keta_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \
+                                                            * (( - GAMMA * grid.eta_loc[I2V(iip,jjt,kkr)]/ \
+                                                                            std::sqrt(std::pow(grid.xi_loc[I2V(iip,jjt,kkr)],2) + std::pow(grid.eta_loc[I2V(iip,jjt,kkr)],2))) * std::pow(Tr,2) \
+                                                                    - _2_CR * Ttheta * Tphi / (std::pow(grid.r_loc_1d[kkr],2)*std::cos(grid.t_loc_1d[jjt])));
+                            }
+                        } else {
+                            grid.Kxi_loc[I2V(iip,jjt,kkr)]  = _0_CR;
+                            grid.Keta_loc[I2V(iip,jjt,kkr)] = _0_CR;
                         }
                     }
                 }

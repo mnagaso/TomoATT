@@ -152,9 +152,9 @@ public:
     int get_offset_k_excl_gl()           {return offset_k;};
 
 
-    CUSTOMREAL get_delta_lon_inv() {return dinv_p;}
-    CUSTOMREAL get_delta_lat_inv() {return dinv_t;}
-    CUSTOMREAL get_delta_r_inv()   {return dinv_r;}
+    // CUSTOMREAL get_delta_lon_inv() {return dinv_p;}
+    // CUSTOMREAL get_delta_lat_inv() {return dinv_t;}
+    // CUSTOMREAL get_delta_r_inv()   {return dinv_r;}
 
     // return index of the first node excluding ghost layer
     int get_k_start_loc()        {return k_start_loc;};
@@ -180,6 +180,12 @@ public:
     void back_up_fun_xi_eta_bcf();
     // restore fun xi eta
     void restore_fun_xi_eta_bcf();
+
+    // write out inversion grid file
+    void write_inversion_grid_file();
+
+private:
+    std::string inversion_grid_file_out;     // inversion grid file to be output
 
 private:
     //

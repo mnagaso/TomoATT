@@ -172,10 +172,10 @@ void smooth_inv_kernels_CG(Grid& grid, CUSTOMREAL lr, CUSTOMREAL lt, CUSTOMREAL 
 
 
 // original method for smoothing kernels
-inline void smooth_inv_kernels_orig(Grid& grid){
+inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
     // necessary params
     CUSTOMREAL r_r, r_t, r_p;
-    int kdr, jdt, idp;
+    int kdr = 0, jdt = 0, idp = 0;
 
     int k_start = 0; //grid.get_k_start_loc();
     int j_start = 0; //grid.get_j_start_loc();
@@ -183,6 +183,9 @@ inline void smooth_inv_kernels_orig(Grid& grid){
     int k_end   = ngrid_k; //grid.get_k_end_loc();
     int j_end   = ngrid_j; //grid.get_j_end_loc();
     int i_end   = ngrid_i; //grid.get_i_end_loc();
+
+    CUSTOMREAL weight   = _1_CR;
+    CUSTOMREAL * taper  = IP.get_kernel_taper();
 
     //
     // sum the kernel values on the inversion grid
@@ -205,13 +208,13 @@ inline void smooth_inv_kernels_orig(Grid& grid){
             CUSTOMREAL r_glob = grid.get_r_min() + k*grid.get_delta_r(); // global coordinate of r
             r_r = -_1_CR;
             for (int ii_invr = 0; ii_invr < n_inv_K_loc-1; ii_invr++){
-                if (r_glob > grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)] && r_glob <= grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) {
+                // increasing or decreasing order
+                if ((r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) * (r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) <= 0) {
                     kdr = ii_invr;
                     r_r = (r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) / (grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]);
                     break;
                 }
             }
-
             // continue if r is out of the inversion grid
             if (r_r < 0) continue;
 
@@ -219,7 +222,7 @@ inline void smooth_inv_kernels_orig(Grid& grid){
                 CUSTOMREAL t_glob = grid.get_lat_min() + j*grid.get_delta_lat();
                 r_t = -_1_CR;
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc-1; ii_invt++){
-                    if (t_glob > grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)] && t_glob <= grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)]) {
+                    if ((t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]) * (t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)]) <= 0) {
                         jdt = ii_invt;
                         r_t = (t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]) / (grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]);
                         break;
@@ -233,7 +236,7 @@ inline void smooth_inv_kernels_orig(Grid& grid){
                     CUSTOMREAL p_glob = grid.get_lon_min() + i*grid.get_delta_lon();
                     r_p = -_1_CR;
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc-1; ii_invp++){
-                        if (p_glob > grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)] && p_glob <= grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)]) {
+                        if ((p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]) * (p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)]) <= 0) {
                             idp = ii_invp;
                             r_p = (p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]) / (grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]);
                             break;
@@ -302,11 +305,21 @@ inline void smooth_inv_kernels_orig(Grid& grid){
             CUSTOMREAL r_glob = grid.get_r_min() + k*grid.get_delta_r(); // global coordinate of r
             r_r = -_1_CR;
             for (int ii_invr = 0; ii_invr < n_inv_K_loc-1; ii_invr++){
-                if (r_glob > grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)] && r_glob <= grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) {
+                if ((r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) * (r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) <= 0) {
                     kdr = ii_invr;
                     r_r = (r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) / (grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]);
                     break;
                 }
+            }
+
+            // depth model update taper
+            CUSTOMREAL depth = radius2depth(r_glob);
+            if (depth < taper[0]) {     // weight = 0;
+                weight = _0_CR;
+            } else if (depth < taper[1]) {
+                weight = (_1_CR - std::cos(PI*(depth - taper[0])/(taper[1] - taper[0]))) / _2_CR;
+            } else {
+                weight = _1_CR;
             }
 
             // continue if r is out of the inversion grid
@@ -316,7 +329,7 @@ inline void smooth_inv_kernels_orig(Grid& grid){
                 CUSTOMREAL t_glob = grid.get_lat_min() + j*grid.get_delta_lat();
                 r_t = -_1_CR;
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc-1; ii_invt++){
-                    if (t_glob > grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)] && t_glob <= grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)]) {
+                    if ((t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]) * (t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)]) <= 0) {
                         jdt = ii_invt;
                         r_t = (t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]) / (grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]);
                         break;
@@ -330,7 +343,7 @@ inline void smooth_inv_kernels_orig(Grid& grid){
                     CUSTOMREAL p_glob = grid.get_lon_min() + i*grid.get_delta_lon();
                     r_p = -_1_CR;
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc-1; ii_invp++){
-                        if (p_glob > grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)] && p_glob <= grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)]) {
+                        if ((p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]) * (p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)]) <= 0) {
                             idp = ii_invp;
                             r_p = (p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]) / (grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]);
                             break;
@@ -388,9 +401,11 @@ inline void smooth_inv_kernels_orig(Grid& grid){
 
 
                     // update para
-                    grid.Ks_update_loc[  I2V(i_loc,j_loc,k_loc)] += pert_Ks;
-                    grid.Keta_update_loc[I2V(i_loc,j_loc,k_loc)] += pert_Keta;
-                    grid.Kxi_update_loc[ I2V(i_loc,j_loc,k_loc)] += pert_Kxi;
+                    grid.Ks_update_loc[  I2V(i_loc,j_loc,k_loc)] += weight * pert_Ks;
+                    grid.Keta_update_loc[I2V(i_loc,j_loc,k_loc)] += weight * pert_Keta;
+                    grid.Kxi_update_loc[ I2V(i_loc,j_loc,k_loc)] += weight * pert_Kxi;
+
+
 
 
                 } // end for i
@@ -399,8 +414,10 @@ inline void smooth_inv_kernels_orig(Grid& grid){
 
     } // end i_grid
 
-}
+    
 
+
+}
 
 
 #endif

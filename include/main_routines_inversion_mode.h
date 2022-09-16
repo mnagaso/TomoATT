@@ -41,13 +41,17 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
 
-        if (i_inv == 0 && !line_search_mode)
+        if (myrank == 0)
+            std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
+
+        if (i_inv == 0 && !line_search_mode && IP.get_is_output_source_field())
             io.init_data_output_file(); // initialize data output file
 
-        io.change_xdmf_obj(i_src); // change xmf file for next src
+        if (IP.get_is_output_source_field())
+            io.change_xdmf_obj(i_src); // change xmf file for next src
 
         // output initial field
-        if(first_src) {
+        if(first_src && IP.get_is_output_source_field()) {
             if (subdom_main) {
                 // write true solution
                 if (if_test){
@@ -80,7 +84,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
 
         // output the result of forward simulation
         // ignored for inversion mode.
-        if (subdom_main && !line_search_mode) { // && IP.get_run_mode()!=1) {
+        if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
 
             // output T (result timetable)
             if (heavily_output || (i_inv == 0 && i_src == 0) )
@@ -106,14 +110,9 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         // run adjoint simulation
         /////////////////////////
 
-        if (IP.get_run_mode()==1){
-            if (!is_teleseismic) {// for regional source
-                // calculate adjoint source
-                v_obj += recs.calculate_adjoint_source(IP);
-           } else { // for teleseismic source
-                // calculate adjoint source
-                v_obj += recs.calculate_adjoint_source_teleseismic(IP);
-            }
+        if (IP.get_run_mode()==DO_INVERSION){
+            // calculate adjoint source
+            v_obj += recs.calculate_adjoint_source(IP);
 
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
@@ -121,7 +120,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
 
-            if (!line_search_mode){
+            if (!line_search_mode && IP.get_is_output_source_field()) {
                 // adjoint field will be output only at the end of subiteration
                 // output the result of adjoint simulation
                 if (subdom_main) {

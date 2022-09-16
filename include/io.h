@@ -94,6 +94,10 @@ public:
     void write_Kxi_update(Grid&, int);
     // Keta_update
     void write_Keta_update(Grid&, int);
+    // write all concerning parameters
+    std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
+    void write_concerning_parameters(Grid&, int);
+
 
     // 2d traveltime field for teleseismic source
     void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
@@ -207,7 +211,6 @@ private:
 #endif // HDF_HDF5
 
     // utilities
-    std::string int2string_zero_fill(int);
     std::string create_fname_ascii(std::string&);
     std::string create_fname_ascii_model(std::string&);
 

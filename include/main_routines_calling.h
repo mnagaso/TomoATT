@@ -35,7 +35,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     // prepare output for iteration status
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
-        out_main.open("objective_function.txt");
+        out_main.open(output_dir + "objective_function.txt");
         if (optim_method == GRADIENT_DESCENT)
             out_main << std::setw(6) << "iter," << std::setw(16) << "v_obj," << std::setw(16) << "step_size," << std::endl;
         else if (optim_method == LBFGS_MODE)
@@ -48,6 +48,12 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     }
 
+    if (subdom_main && id_sim==0 && IP.get_is_output_model_dat()==1) {
+        io.write_concerning_parameters(grid, 0);
+    }
+
+    synchronize_all_world();
+
     /////////////////////
     // loop for inversion
     /////////////////////
@@ -58,6 +64,10 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
 
     for (int i_inv = 0; i_inv < IP.get_max_iter_inv(); i_inv++) {
+
+        if(myrank == 0 && id_sim ==0){
+            std::cout << "iteration " << i_inv << " starting ... " << std::endl;
+        }
 
         old_v_obj = v_obj;
 
@@ -77,7 +87,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         synchronize_all_world();
 
         // output src rec file with the result arrival times
-        IP.write_src_rec_file();
+        IP.write_src_rec_file(i_inv);
 
         ///////////////
         // model update
@@ -94,24 +104,31 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         // output updated model
         if (subdom_main && id_sim==0) {
-            io.change_xdmf_obj(0); // change xmf file for next src
+            if (IP.get_is_output_source_field()){
+                io.change_xdmf_obj(0); // change xmf file for next src
 
-            // write out model info
-            io.write_fun(grid, i_inv);
-            io.write_xi(grid, i_inv);
-            io.write_eta(grid, i_inv);
-            io.write_b(grid, i_inv);
-            io.write_c(grid, i_inv);
-            io.write_f(grid, i_inv);
+                // write out model info
+                io.write_fun(grid, i_inv);
+                io.write_xi(grid, i_inv);
+                io.write_eta(grid, i_inv);
+                io.write_b(grid, i_inv);
+                io.write_c(grid, i_inv);
+                io.write_f(grid, i_inv);
+            }
+
+            if (IP.get_is_output_model_dat())        // output model_parameters_inv_0000.dat
+                io.write_concerning_parameters(grid, i_inv + 1);
         }
 
         // writeout temporary xdmf file
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+        if (IP.get_is_output_source_field())
+            io.update_xdmf_file(IP.src_ids_this_sim.size());
 
     } // end loop inverse
 
     // close xdmf file
-    io.finalize_data_output_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_output_source_field())
+        io.finalize_data_output_file(IP.src_ids_this_sim.size());
 
 }
 
@@ -182,10 +199,11 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
 
     // write out new src_rec_file
-    IP.write_src_rec_file();
+    IP.write_src_rec_file(0);
 
     // close xdmf file
-    io.finalize_data_output_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_output_source_field())
+        io.finalize_data_output_file(IP.src_ids_this_sim.size());
 }
 
 
