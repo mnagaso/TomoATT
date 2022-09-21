@@ -230,6 +230,8 @@ void PlainGrid::select_1d_model(std::string model_1d_name){
         model_1d_ref = model_1d_iasp91;
     } else if (model_1d_name.compare("ak135")==0) {
         model_1d_ref = model_1d_ak135;
+    } else if (model_1d_name.compare("user_defined")==0) {
+        model_1d_ref = model_1d_prem;
     } else {
         model_1d_ref = model_1d_prem;
     }
