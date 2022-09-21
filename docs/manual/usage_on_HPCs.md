@@ -3,9 +3,23 @@
 
 ## Fugaku
 
+### 0. start interactive job on Fugaku (for accessing arch64 environment)
 
-### 1. Load necessary modules  
-`module load mpi`  
+```
+
+```bash 
+pjsub --interact -g hp220155 -L "node=1" -L "rscgrp=int" -L "elapse=1:00:00" --sparam "wait-time=600" -x PJM_LLIO_GFSCACHE=/vol0004│17640
+ --no-check-directory     
+```
+
+
+### 1. Load necessary modules 
+```bash
+# prepare spack env
+. /vol0004/apps/oss/spack/share/spack/setup-env.sh
+# load gcc 11.2.0 and Fujitsu mpi
+spack load /nphnrhl /cvur4ou
+```
 
 
 ### 2. Download hdf5 source code and compile it
