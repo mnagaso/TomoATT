@@ -508,6 +508,7 @@ void InputParams::parse_src_rec_file(){
     std::ifstream ifs(src_rec_file);
     std::string line;
     int cc =0; // count the number of lines
+    int i_src_now = 0; // count the number of srcs
     int ndata_tmp = 0; // count the number of receivers or differential traveltime data for each source
     std::vector<SrcRec> rec_points_tmp;
     src_points.clear();
@@ -515,8 +516,9 @@ void InputParams::parse_src_rec_file(){
     rec_points.clear();
 
     while (std::getline(ifs, line)) {
-        if (line.at(0) == '#')
-            continue; // skip comment
+        // skip comment and empty lines
+        if (line[0] == '#' || line.empty())
+            continue;
 
         // erase the trailing space
         line.erase(line.find_last_not_of(" \n\r\t")+1);
@@ -534,7 +536,8 @@ void InputParams::parse_src_rec_file(){
         // store values into structure
         if (cc == 0){
             SrcRec src;
-            src.id_src     = std::stoi(tokens[0]);
+            //src.id_src     = std::stoi(tokens[0]);
+            src.id_src     = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
             src.year       = std::stoi(tokens[1]);
             src.month      = std::stoi(tokens[2]);
             src.day        = std::stoi(tokens[3]);
@@ -565,7 +568,8 @@ void InputParams::parse_src_rec_file(){
 
                 // read absolute traveltime
                 SrcRec rec;
-                rec.id_src   = std::stoi(tokens[0]);
+                //rec.id_src   = std::stoi(tokens[0]);
+                rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
                 rec.id_rec   = std::stoi(tokens[1]);
                 rec.name_rec = tokens[2];
                 rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
@@ -589,7 +593,8 @@ void InputParams::parse_src_rec_file(){
 
                 // read differential traveltime
                 SrcRec rec;
-                rec.id_src    = std::stoi(tokens[0]);
+                //rec.id_src    = std::stoi(tokens[0]);
+                rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
                 rec.id_rec_pair[0] = std::stoi(tokens[1]);
                 rec.name_rec_pair[0] = tokens[2];
                 rec.lat_pair[0] = static_cast<CUSTOMREAL>(std::stod(tokens[3]));        // in degree
@@ -622,6 +627,7 @@ void InputParams::parse_src_rec_file(){
                 cc = 0;
                 rec_points.push_back(rec_points_tmp);
                 rec_points_tmp.clear();
+                i_src_now++;
             }
         }
 
