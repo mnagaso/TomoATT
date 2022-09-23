@@ -233,6 +233,9 @@ inline void split_mpi_comm(){
     mpi_node_names = mpi_node_names_sorted;
     mpi_node_ids   = mpi_node_ids_sorted;
 
+    // renumbering this process's rank
+    world_rank = node_reorder[world_rank];
+
     // debug out
 //    if (world_rank == 0){
 //        for (int irank = 0; irank < world_nprocs; irank++){
