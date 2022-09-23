@@ -38,6 +38,7 @@ inline void allreduce_cr_sim(CUSTOMREAL*, int, CUSTOMREAL*);
 inline void allreduce_cr_sim_inplace(CUSTOMREAL*, int);
 inline void allgather_i_single(int*, int*);
 inline void allgather_cr_single(CUSTOMREAL*, CUSTOMREAL*);
+inline void allgather_node_name(std::string, std::vector<std::string>&);
 inline void broadcast_bool_single(bool&, int);
 inline void broadcast_i_single(int&, int);
 inline void broadcast_f_single(float&, int);
@@ -100,12 +101,63 @@ inline void mpi_debug(char const* str){
 
 template<typename T>
 inline std::vector<size_t> node_reordering(const std::vector<T>& vec){
-    std::vector<size_t> ret(vec.size());
-    std::iota(ret.begin(), ret.end(), 0);
-    std::sort(ret.begin(), ret.end(), [&vec](size_t a, size_t b){
-        return vec[a] < vec[b];
-    });
-    return ret;
+    // reordering the nodes in the order of the number of particles
+    // the first node has the most particles
+    std::vector<size_t> idx(vec.size());
+    std::iota(idx.begin(), idx.end(), 0);
+    std::sort(idx.begin(), idx.end(), [&vec](size_t i1, size_t i2) {return vec[i1] > vec[i2];});
+    return idx;
+}
+
+
+
+inline void allgather_node_name(std::string this_name, std::vector<std::string>& list_name){
+    for (int i=0; i<world_nprocs; i++){
+        // send to i rank
+        if (i == world_rank){
+            for (int j=0; j<world_nprocs; j++){
+                if (j == world_rank){
+                    list_name[j] = this_name;
+                } else {
+                    MPI_Send(this_name.c_str(), this_name.size()+1, MPI_CHAR, j, 0, MPI_COMM_WORLD);
+                }
+            }
+        } else {
+            MPI_Status status;
+            MPI_Probe(i, 0, MPI_COMM_WORLD, &status);
+            int count;
+            MPI_Get_count(&status, MPI_CHAR, &count);
+            char* buf = new char[count];
+            MPI_Recv(buf, count, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            list_name[i] = std::string(buf);
+            delete[] buf;
+        }
+    }
+}
+
+
+inline std::vector<int> define_node_ids(std::vector<std::string>& mpi_node_names_pre){
+    std::vector<int> mpi_node_ids(world_nprocs);
+    std::vector<std::string> mpi_node_names_unique = mpi_node_names_pre;
+    std::sort(mpi_node_names_unique.begin(), mpi_node_names_unique.end());
+    mpi_node_names_unique.erase(std::unique(mpi_node_names_unique.begin(), mpi_node_names_unique.end()), mpi_node_names_unique.end());
+    for (int irank = 0; irank < world_nprocs; irank++){
+        for (long unsigned int i = 0; i < mpi_node_names_unique.size(); i++){
+            if (mpi_node_names_pre[irank] == mpi_node_names_unique[i]){
+                mpi_node_ids[irank] = i;
+                break;
+            }
+        }
+    }
+    return mpi_node_ids;
+}
+
+
+inline int count_number_conpute_nodes(std::vector<std::string> mpi_node_names) {
+    std::vector<std::string> mpi_node_names_unique = mpi_node_names;
+    std::sort(mpi_node_names_unique.begin(), mpi_node_names_unique.end());
+    mpi_node_names_unique.erase(std::unique(mpi_node_names_unique.begin(), mpi_node_names_unique.end()), mpi_node_names_unique.end());
+    return mpi_node_names_unique.size();
 }
 
 
@@ -126,34 +178,94 @@ inline void split_mpi_comm(){
     */
 
     // make a list of mpi node names and redefine the world_rank
-    std::vector<std::string> mpi_node_names, mpi_node_names_pre;
-    for (int i = 0; i < world_nprocs; i++){
-        char name[MPI_MAX_PROCESSOR_NAME];
-        int name_len;
-        MPI_Get_processor_name(name, &name_len);
-        mpi_node_names_pre.push_back(std::string(name));
+    std::vector<std::string> mpi_node_names(world_nprocs, "not_initialized"), mpi_node_names_pre(world_nprocs, "not_initialized");
+    std::vector<int> mpi_node_ids(world_nprocs, -1);  // we put id for each node
 
-        // DEBUG ONLY rename mpi node names into 4 different names
-        //if (i%4 == 0)
-        //    mpi_node_names_pre[i] = "node0";
-        //else if (i%4 == 1)
-        //    mpi_node_names_pre[i] = "node1";
-        //else if (i%4 == 2)
-        //    mpi_node_names_pre[i] = "node2";
-        //else if (i%4 == 3)
-        //    mpi_node_names_pre[i] = "node3";
+    // get processor name of this process
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
+    MPI_Get_processor_name(processor_name, &name_len);
+    mpi_node_names_pre[world_rank] = std::string(processor_name);
 
-    }
+//
+// DEBUG ONLY rename mpi node names into 4 different names
+//
+//    if (world_nprocs != 32){
+//        std::cout << "ERROR: world_nprocs is not 64. (for processor assignment test)" << std::endl;
+//        exit(1);
+//    }
+//    if (world_rank %4 == 0) {
+//        mpi_node_names_pre[world_rank] = "node_inu";
+//    } else if (world_rank % 4 == 1) {
+//        mpi_node_names_pre[world_rank] = "node_neko";
+//    } else if (world_rank % 4 == 2) {
+//        mpi_node_names_pre[world_rank] = "node_kani";
+//    } else {
+//        mpi_node_names_pre[world_rank] = "node_usagi";
+//    }
+//
+//    // debug out
+//    if (world_rank == 0){
+//        for (int irank = 0; irank < world_nprocs; irank++){
+//                std::cout << "rank: " << irank << ", node name: " << mpi_node_names_pre[irank] << std::endl;
+//        }
+//    }
+//
+//    synchronize_all_world();
+//
+// DEBUG node fake name assignment done
+//
+
+    // gather all the node names in std::vector
+    allgather_node_name(mpi_node_names_pre[world_rank], mpi_node_names_pre);
+
+    // define node id for each nodea
+    mpi_node_ids = define_node_ids(mpi_node_names_pre);
+
     // sort mpi_node_names and change world rank accordingly
-    for (auto i: node_reordering(mpi_node_names_pre))
-        mpi_node_names.push_back(mpi_node_names_pre[i]);
+    std::vector<size_t>      node_reorder = node_reordering(mpi_node_names_pre);
+    std::vector<std::string> mpi_node_names_sorted(world_nprocs);
+    std::vector<int>         mpi_node_ids_sorted(world_nprocs);
+    for (int irank = 0; irank < world_nprocs; irank++){
+        mpi_node_names_sorted[irank] = mpi_node_names_pre[node_reorder[irank]];
+        mpi_node_ids_sorted[irank]   = mpi_node_ids[node_reorder[irank]];
+    }
+    mpi_node_names = mpi_node_names_sorted;
+    mpi_node_ids   = mpi_node_ids_sorted;
+
+    // debug out
+//    if (world_rank == 0){
+//        for (int irank = 0; irank < world_nprocs; irank++){
+//                std::cout << "apres rank: " << irank << ", node name: " << mpi_node_names[irank] << ", node id : " << mpi_node_ids[irank] << std::endl;
+//        }
+//    }
+//    synchronize_all_world();
+
+    // total number of nodes (unique)
+    int n_compute_nodes = count_number_conpute_nodes(mpi_node_names);
+
+    // show node name and number summary
+    if (world_rank == 0){
+        std::cout << "\n\n Node name summary\n" << std::endl;
+
+        std::cout << "Total number of compute nodes: " << n_compute_nodes << std::endl;
+
+        for (long unsigned int i = 0; i < mpi_node_names.size(); i++){
+            // only one show for  each node name
+            if (i == 0 || mpi_node_names[i] != mpi_node_names[i-1]){
+                std::cout << "node name: " << mpi_node_names[i] << ", number: " << std::count(mpi_node_names.begin(), mpi_node_names.end(), mpi_node_names[i]) << std::endl;
+            }
+        }
+        std::cout << "\n" << std::endl;
+    }
 
     // create communicator for this group if simultaneous run mode
     if(n_sims > 1) {
         // set a simultaneous run id
         if (world_nprocs%n_sims == 0) {
             n_procs_each_sim = static_cast<int>(world_nprocs/n_sims);
-            id_sim           = static_cast<int>(world_rank/n_procs_each_sim);
+            id_sim           = std::floor(world_rank/n_procs_each_sim);
+            //id_sim           = static_cast<int>(world_rank/n_procs_each_sim);
         } else {
             stdout_by_main("Error: requested nproc is not divisible by n_sims.");
             finalize_mpi();
@@ -164,9 +276,27 @@ inline void split_mpi_comm(){
         MPI_Comm_split(MPI_COMM_WORLD, id_sim, world_rank, &sim_comm);
         MPI_Comm_rank(sim_comm, &sim_rank);
         MPI_Comm_size(sim_comm, &sim_nprocs);
+
+        // recreate node_names and node_ids for this simulation group
+        std::vector<std::string> mpi_node_names_tmp(sim_nprocs);
+        std::vector<int> mpi_node_ids_tmp(sim_nprocs);
+
+        for (int irank = 0; irank < sim_nprocs; irank++){
+            mpi_node_names_tmp[irank] = mpi_node_names[n_procs_each_sim*id_sim + irank];
+            mpi_node_ids_tmp[irank]   = mpi_node_ids[  n_procs_each_sim*id_sim + irank];
+        }
+
+        // re-assign node_names and node_ids
+        mpi_node_names = mpi_node_names_tmp;
+        mpi_node_ids   = mpi_node_ids_tmp;
+
+        // count the number of compute nodes (unique) again
+        n_compute_nodes = count_number_conpute_nodes(mpi_node_names);
+
     } else {
-        n_procs_each_sim = static_cast<int>(world_nprocs/n_sims);
-        id_sim           = static_cast<int>(world_rank/n_procs_each_sim);
+        // this is not a simultaneous run
+        n_procs_each_sim = world_nprocs;
+        id_sim           = 0;
 
         sim_comm   = MPI_COMM_WORLD;
         sim_rank   = world_rank;
@@ -177,11 +307,24 @@ inline void split_mpi_comm(){
     MPI_Comm_split(MPI_COMM_WORLD, sim_rank, sim_rank, &inter_sim_comm);
     MPI_Comm_rank(inter_sim_comm, &inter_sim_rank);
 
-    n_subdomains        = ndiv_i*ndiv_j*ndiv_k;
+    // number of subdomains
+    n_subdomains = ndiv_i*ndiv_j*ndiv_k;
+
+    // check if the number of compute node is multiple of n_subdomains
+    if (n_subdomains % n_compute_nodes != 0){
+        std::cout << "ERROR: n_compute_nodes is not multiple of n_subdomains" << std::endl;
+        exit(1);
+    }
+
+    // number of subdomains per node
+    //int n_subdomains_per_node = static_cast<int>(n_subdomains/n_compute_nodes);
+    int n_procs_per_subdomain = static_cast<int>(sim_nprocs/n_subdomains);
+    id_subdomain              = std::floor(sim_rank/n_procs_per_subdomain);
+    int id_proc_in_subdomain  = sim_rank - id_subdomain*n_procs_per_subdomain;
 
     // assign first ranks to the main node of subdomain
     // and create a commmunicator for main processes of subdomain
-    if (sim_rank < n_subdomains) {
+    if (id_proc_in_subdomain == 0) {
         std::cout << "my sim_rank: " << sim_rank << std::endl;
         subdom_main = true;
         MPI_Comm_split(sim_comm, 0, sim_rank, &inter_sub_comm);
@@ -203,17 +346,6 @@ inline void split_mpi_comm(){
         subdom_main = false;
         myrank = -9999;
         nprocs = -9999;
-    }
-
-    // create communicator for intra-subdomain
-    if (sim_rank < n_subdomains)
-        id_subdomain = sim_rank;
-    else {
-        // choose the sub domain which this rank belongs to
-        id_subdomain = static_cast<int>((sim_rank-n_subdomains)%n_subdomains);
-        // # TODO : implement a function which choose the appropriate physical node group
-        // as the shared memory communication shoud be only within the node.
-
     }
 
     synchronize_all_sim();
