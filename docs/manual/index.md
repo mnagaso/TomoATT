@@ -69,10 +69,10 @@ If a category tag or sub-category tag is missing from the input parameter file, 
 
 #### domain :
 The domain category is for setting a global domain of the simulation.
-- `min_max_dep` : [dep1, dep2] minimum and maximum depth of the domain in kilo meter
-- `min_max_lat` : [lat1, lat2] minimum and maximum latitude in degree
-- `min_max_lon` : [lon1, lon2] minimum and maximum longitude in degree
-- `n_rtp` : [nr, nt, np] number of computation nodes for r (depth),t (latitude) and p (longitude) direction
+- `min_max_dep` : `[dep1, dep2]` minimum and maximum depth of the domain in kilo meter
+- `min_max_lat` : `[lat1, lat2]` minimum and maximum latitude in degree
+- `min_max_lon` : `[lon1, lon2]` minimum and maximum longitude in degree
+- `n_rtp` : `[nr, nt, np]` number of computation nodes for r (depth),t (latitude) and p (longitude) direction
 
 #### source :
 Source category is used for setting about source and receiver definitions.
@@ -90,42 +90,42 @@ Source category is used for setting about source and receiver definitions.
   - `3` run earthquake relocation. For using this mode, `sources : swap_src_rec` need to be set to 1. Otherwise the program will exit with an error message.
 - `n_inversion_grid` :  the number of inversion grid.
 - `n_inv_dep_lat_lon` : the numbers of inversion grids for r, t and p direction.
-- `min_max_dep_inv` : [dep1, dep2] minimum and maximum depth of inversion grid in kilo meter.
-- `min_max_lat_inv` : [lat1, lat2] minimum and maximum latitude of inversion grid in degree.
-- `min_max_lon_inv` : [lon1, lon2] minimum and maximum longitude of inversion grid in degree.
+- `min_max_dep_inv` : `[dep1, dep2]` minimum and maximum depth of inversion grid in kilo meter.
+- `min_max_lat_inv` : `[lat1, lat2]` minimum and maximum latitude of inversion grid in degree.
+- `min_max_lon_inv` : `[lon1, lon2]` minimum and maximum longitude of inversion grid in degree.
 
 Currently, TomoATT provide two ways for defining the inversion grid. One is a regular grid (even intervals for all axis) type and another uses used defined intervals for each axis.
 
 For setting the user defined intervals, please use the flags below. 
-- type_dep_inv : 0 for regular grid (default), 1 for user defined intervals.
-- type_lat_inv : 0 for regular grid (default), 1 for user defined intervals.
-- type_lon_inv : 0 for regular grid (default), 1 for user defined intervals.
+- `type_dep_inv` : `0` for regular grid (default), `1` for user defined intervals.
+- `type_lat_inv` : `0` for regular grid (default), `1` for user defined intervals.
+- `type_lon_inv` : `0` for regular grid (default), `1` for user defined intervals.
 
 and the coordinates where the main inversion grids are placed,
-- dep_inv : [z1,z2,z3,...] for user defined intervals.
-- lat_inv : [y1,y2,y3,...] for user defined intervals.
-- lon_inv : [x1,x2,x3,...] for user defined intervals.
+- `dep_inv` : `[z1,z2,z3,...]` for user defined intervals.
+- `lat_inv` : `[y1,y2,y3,...]` for user defined intervals.
+- `lon_inv` : `[x1,x2,x3,...]` for user defined intervals.
 
 other parameers for inversion seetting.
 - `max_iterations_inv` :  The limit of iteration number for inversion.
 - `step_size` :  Maximum step size ratio for updating model.
 - `smooth_method` : `0` or `1`. 0 for multigrid parametrization ([Ping Tong 2019](https://doi.org/10.1093/gji/ggz151)). 1 for laplacian smoothing with CG method.
-- `l_smooth_rtp` :  smoothing coefficients for laplacian smoothing on r,t and p direction.
+- `l_smooth_rtp` : `[lr, lt, lp]` smoothing coefficients for laplacian smoothing on r,t and p direction.
 - `optim_method` : `0`, `1` or `2`. 0 for gradient descent, 1 for gradient descent with halve-stepping, 2 for L-BFGS (THIS MODE IS EXPERIMENTAL AND CURRENTLY NOT WORKING.).
 - `regularization_weight`: regularization weight, USED ONLY L-BFGS mode.
 - `max_sub_iterations` : maximum number of sub iteration. Used for optim_method 1 and 2.
 
 #### parallel :
 - `n_sims` : number of simulutaneous run
-- `ndiv_rtp` : [ndiv_r, ndiv_t, ndiv_p]  number of domain decomposition on r, t and p direction
+- `ndiv_rtp` : `[ndiv_r, ndiv_t, ndiv_p]`  number of domain decomposition on r, t and p direction
 - `nproc_sub` : number of processes used for sweeping parallelization
 - `use_gpu` :  `0` or `1`. Set 1 for using GPU. (Currently gpu mode is used only for a forward simulation. n_sims, ndiv_rtp and nproc_sub need to be 1.)
 
 The total number of mpi processes (i.e. mpirun -n NUMBER) must be n_sims\*ndiv_r\*ndiv_t\*ndiv_p\*nproc_sub, otherwise the code will stop instantly.
 
 #### calculation :
-- `convergence_tolerance` : 1e-4 convergence criterion for forward and adjoint run.
-- `max_iterations` : 1000  number of maximum iteration for forward and adjoint run
+- `convergence_tolerance` : convergence criterion for forward and adjoint run.
+- `max_iterations` : number of maximum iteration for forward and adjoint run
 - `stencil_order` :  `1` or `3`. The order of stencil for sweeping.
 - `sweep_type` :  `0`or `1`. 0 is for sweeping in legacy order (threefold loops on r,t and p), 1 for cuthill-mckee node ordering with sweeping parallelization.
 - `output_file_format` : `0` or `1` for selecting input and output file format. `0` is for HDF5 format, `1` is for ASCII format.
