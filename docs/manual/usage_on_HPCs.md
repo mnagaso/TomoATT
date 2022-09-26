@@ -6,8 +6,7 @@
 ### 0. start interactive job on Fugaku (for accessing arch64 environment)
 
 ```bash 
-pjsub --interact -g hp220155 -L "node=1" -L "rscgrp=int" -L "elapse=1:00:00" --sparam "wait-time=600" -x PJM_LLIO_GFSCACHE=/vol0004│17640
- --no-check-directory     
+pjsub --interact -g hp220155 -L "node=1" -L "rscgrp=int" -L "elapse=1:00:00" --sparam "wait-time=600" -x PJM_LLIO_GFSCACHE=/vol0004 --no-check-directory     
 ```
 
 
@@ -30,11 +29,10 @@ cd ./external_libs
 mkdir local_mpi_hdf5
 
 # download hdf5 source
-#wget https://gamma.hdfgroup.org/ftp/pub/outgoing/hdf5/snapshots/v112/hdf5-1.12.2-1.tar.gz
+wget https://gamma.hdfgroup.org/ftp/pub/outgoing/hdf5/snapshots/v112/hdf5-1.12.2-1.tar.gz
 
 #Extract the downloaded directory
-#tar -xvf hdf5-1.12.2-1.tar.gz && cd hdf5-1.12.2-1
-cd hdf5-1.12.2-1
+tar -xvf hdf5-1.12.2-1.tar.gz && cd hdf5-1.12.2-1
 
 # Configure the code. (the pathes to mpicc, mpicxx should vary on the environment)
 CC=mpicc CXX=mpic++ ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
