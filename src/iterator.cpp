@@ -129,14 +129,27 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
             for (int iswp = nswp-1; iswp > -1; iswp--) {
                 do_sweep(iswp, grid, IP);
 
-                // copy the values of communication nodes and ghost nodes
+#ifndef FREQ_SYNC_GHOST
+                // synchronize ghost cells everytime after sweeping of each direction
                 if (subdom_main){
                     if (!is_teleseismic)
                         grid.send_recev_boundary_data(grid.tau_loc);
                     else
                         grid.send_recev_boundary_data(grid.T_loc);
                 }
+#endif
             }
+
+#ifndef FREQ_SYNC_GHOST
+            // synchronize ghost cells everytime after sweeping of all directions
+            // as the same method with Detrixhe2016
+            if (subdom_main){
+                if (!is_teleseismic)
+                    grid.send_recev_boundary_data(grid.tau_loc);
+                else
+                    grid.send_recev_boundary_data(grid.T_loc);
+            }
+#endif
 
             // calculate the objective function
             // if converged, break the loop
@@ -174,7 +187,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
                 goto iter_end;
             } else {
                 if(myrank==0 && if_verbose)
-                    std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+                    std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
                 iter_count++;
             }
         }
@@ -248,10 +261,18 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
         for (int iswp = 0; iswp < nswp; iswp++) {
             do_sweep_adj(iswp, grid, IP);
 
+#ifdef FREQ_SYNC_GHOST
             // copy the values of communication nodes and ghost nodes
             if (subdom_main)
                 grid.send_recev_boundary_data(grid.tau_loc);
+#endif
         }
+
+#ifndef FREQ_SYNC_GHOST
+        // copy the values of communication nodes and ghost nodes
+        if (subdom_main)
+            grid.send_recev_boundary_data(grid.tau_loc);
+#endif
 
         // calculate the objective function
         // if converged, break the loop
