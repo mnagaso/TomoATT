@@ -509,6 +509,7 @@ void InputParams::parse_src_rec_file(){
     std::string line;
     int cc =0; // count the number of lines
     int i_src_now = 0; // count the number of srcs
+    int i_rec_now = 0; // count the number of receivers
     int ndata_tmp = 0; // count the number of receivers or differential traveltime data for each source
     std::vector<SrcRec> rec_points_tmp;
     src_points.clear();
@@ -570,7 +571,8 @@ void InputParams::parse_src_rec_file(){
                 SrcRec rec;
                 //rec.id_src   = std::stoi(tokens[0]);
                 rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
-                rec.id_rec   = std::stoi(tokens[1]);
+                //rec.id_rec   = std::stoi(tokens[1]);
+                rec.id_rec   = i_rec_now; // MNMN: here use id_rec of active receiver lines order of src rec file, which allow to comment out bad stations.
                 rec.name_rec = tokens[2];
                 rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
                 rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
@@ -628,6 +630,9 @@ void InputParams::parse_src_rec_file(){
                 rec_points.push_back(rec_points_tmp);
                 rec_points_tmp.clear();
                 i_src_now++;
+                i_rec_now = 0;
+            } else {
+                i_rec_now++;
             }
         }
 
@@ -889,7 +894,7 @@ void InputParams::reverse_src_rec_points(){
     for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
 
         // swapped only the regional events
-        if (src_points[i_src].is_teleseismic == false){
+        if (src_points[i_src].is_teleseismic == false && swap_src_rec ) {
 
             int id_rec_orig = src_points[i_src].id_rec;
             // loop swapped receivers
