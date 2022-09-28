@@ -17,6 +17,10 @@ set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops")
 # for debugging
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -funroll-loops") # debug
+#
+# for vtune profiling
+#
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -O2 -shared-libgcc -funroll-loops") # debug
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 
