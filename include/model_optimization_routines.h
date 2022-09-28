@@ -75,10 +75,10 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
 
     CUSTOMREAL step_size = step_size_init; // step size init is global variable
-    CUSTOMREAL diff_obj = - 9999999999;
+    CUSTOMREAL diff_obj  = - 9999999999;
     CUSTOMREAL v_obj_old = v_obj_inout;
-    CUSTOMREAL v_obj_new;
-    int sub_iter_count = 0;
+    CUSTOMREAL v_obj_new = 0.0;
+    int sub_iter_count   = 0;
 
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
