@@ -37,6 +37,10 @@ public:
         time_back = std::clock();
         return (double) tmp_delta / CLOCKS_PER_SEC;
     };
+
+    double get_t() {
+        return (double) (std::clock() - start) / CLOCKS_PER_SEC;
+    };
 };
 
 

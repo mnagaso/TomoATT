@@ -11,12 +11,28 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_rtp", type=int, nargs=3, default=[55,55,55])
+    # n_sweep
+    parser.add_argument("--n_sweep", type=int, default=1)
+    # ndiv_rtp
+    parser.add_argument("--ndiv_rtp", type=int, nargs=3, default=[1,1,1])
+
 
     n_rtp = parser.parse_args().n_rtp
+    n_sweep = parser.parse_args().n_sweep
+    ndiv_rtp = parser.parse_args().ndiv_rtp
 
-    # grid
+
+    #
+    # create model file if not exists
+    #
+
+    # filename
+    str_nrtp = str(n_rtp[0])+"-"+str(n_rtp[1])+"-"+str(n_rtp[2])
+    fname_init = 'test_model_init_{}.h5'.format(str_nrtp)
+    fname_true = 'test_model_true_{}.h5'.format(str_nrtp)
+
+    # grid params
     R_earth = 6371.0 #6378.1370
-
     rr1=6070
     rr2=6400
     tt1=(30.0-1.5)/180*math.pi
@@ -24,133 +40,137 @@ if __name__ == "__main__":
     pp1=(15.0-1.5)/180*math.pi
     pp2=(40.0+1.5)/180*math.pi
 
-    #n_rtp = [55,55,55]
-    dr = (rr2-rr1)/(n_rtp[0]-1)
-    dt = (tt2-tt1)/(n_rtp[1]-1)
-    dp = (pp2-pp1)/(n_rtp[2]-1)
-    rr = np.array([rr1 + x*dr for x in range(n_rtp[0])])
-    tt = np.array([tt1 + x*dt for x in range(n_rtp[1])])
-    pp = np.array([pp1 + x*dp for x in range(n_rtp[2])])
+    import os
+    if not os.path.exists(fname_true):
 
-    # initial model
-    gamma = 0.0
-    #s0 = 1.0/6.0
-    slow_p=0.04
-    ani_p=0.03
+        #n_rtp = [55,55,55]
+        dr = (rr2-rr1)/(n_rtp[0]-1)
+        dt = (tt2-tt1)/(n_rtp[1]-1)
+        dp = (pp2-pp1)/(n_rtp[2]-1)
+        rr = np.array([rr1 + x*dr for x in range(n_rtp[0])])
+        tt = np.array([tt1 + x*dt for x in range(n_rtp[1])])
+        pp = np.array([pp1 + x*dp for x in range(n_rtp[2])])
 
-    eta_init = np.zeros(n_rtp)
-    xi_init  = np.zeros(n_rtp)
-    zeta_init = np.zeros(n_rtp)
-    fun_init = np.zeros(n_rtp)
-    vel_init = np.zeros(n_rtp)
-    a_init = np.zeros(n_rtp)
-    b_init = np.zeros(n_rtp)
-    c_init = np.zeros(n_rtp)
-    f_init = np.zeros(n_rtp)
+        # initial model
+        gamma = 0.0
+        #s0 = 1.0/6.0
+        slow_p=0.04
+        ani_p=0.03
 
-    # true model
-    eta_true = np.zeros(n_rtp)
-    xi_true  = np.zeros(n_rtp)
-    zeta_true = np.zeros(n_rtp)
-    fun_true = np.zeros(n_rtp)
-    vel_true = np.zeros(n_rtp)
-    a_true = np.zeros(n_rtp)
-    b_true = np.zeros(n_rtp)
-    c_true = np.zeros(n_rtp)
-    f_true = np.zeros(n_rtp)
+        eta_init = np.zeros(n_rtp)
+        xi_init  = np.zeros(n_rtp)
+        zeta_init = np.zeros(n_rtp)
+        fun_init = np.zeros(n_rtp)
+        vel_init = np.zeros(n_rtp)
+        a_init = np.zeros(n_rtp)
+        b_init = np.zeros(n_rtp)
+        c_init = np.zeros(n_rtp)
+        f_init = np.zeros(n_rtp)
 
-    c=0
-    for ir in range(n_rtp[2]):
-        for it in range(n_rtp[1]):
-            for ip in range(n_rtp[0]):
-                #eta_init[ir,it,ip] = 0.0
-                #xi_init[ir,it,ip]  = 0.0
-                zeta_init[ir,it,ip] = gamma*math.sqrt(eta_init[ir,it,ip]**2 + xi_init[ir,it,ip]**2)
+        # true model
+        eta_true = np.zeros(n_rtp)
+        xi_true  = np.zeros(n_rtp)
+        zeta_true = np.zeros(n_rtp)
+        fun_true = np.zeros(n_rtp)
+        vel_true = np.zeros(n_rtp)
+        a_true = np.zeros(n_rtp)
+        b_true = np.zeros(n_rtp)
+        c_true = np.zeros(n_rtp)
+        f_true = np.zeros(n_rtp)
 
-                if (rr[ir]>6351):
-                    fun_init[ir,it,ip] = 1.0/(5.8+(6371-rr[ir])/20.0*0.7)
-                elif (rr[ir]>6336):
-                    fun_init[ir,it,ip] = 1.0/(6.5+(6351-rr[ir])/15.0*0.6)
-                elif (rr[ir]>5961):
-                    fun_init[ir,it,ip] = 1.0/(8.0+(6336-rr[ir])/375.0*1)
-                else:
-                    fun_init[ir,it,ip] = 1.0/9.0
+        c=0
+        for ir in range(n_rtp[2]):
+            for it in range(n_rtp[1]):
+                for ip in range(n_rtp[0]):
+                    #eta_init[ir,it,ip] = 0.0
+                    #xi_init[ir,it,ip]  = 0.0
+                    zeta_init[ir,it,ip] = gamma*math.sqrt(eta_init[ir,it,ip]**2 + xi_init[ir,it,ip]**2)
 
-                vel_init[ir,it,ip] = 1.0/fun_init[ir,it,ip]
-                a_init[ir,it,ip] = 1.0 + 2.0*zeta_init[ir,it,ip]
-                b_init[ir,it,ip] = 1.0 - 2.0*xi_init[ir,it,ip]
-                c_init[ir,it,ip] = 1.0 + 2.0*xi_init[ir,it,ip]
-                f_init[ir,it,ip] = -2.0 * eta_init[ir,it,ip]
+                    if (rr[ir]>6351):
+                        fun_init[ir,it,ip] = 1.0/(5.8+(6371-rr[ir])/20.0*0.7)
+                    elif (rr[ir]>6336):
+                        fun_init[ir,it,ip] = 1.0/(6.5+(6351-rr[ir])/15.0*0.6)
+                    elif (rr[ir]>5961):
+                        fun_init[ir,it,ip] = 1.0/(8.0+(6336-rr[ir])/375.0*1)
+                    else:
+                        fun_init[ir,it,ip] = 1.0/9.0
 
-                # true model
-                if (tt[it] >= 30.0/180.0*math.pi and tt[it] <= 50.0/180.0*math.pi \
-                and pp[ip] >= 15.0/180.0*math.pi and pp[ip] <= 40.0/180.0*math.pi \
-                and rr[ir] >= 6211.0             and rr[ir] <= 6371.0):
-                    c+=1
-                    sigma = math.sin(4.0*math.pi*(tt[it]-30.0/180.0*math.pi)/(20.0/180.0*math.pi)) \
-                           *math.sin(4.0*math.pi*(pp[ip]-15.0/180.0*math.pi)/(25.0/180.0*math.pi)) \
-                           *math.sin(2.0*math.pi*(rr[ir]-6211.0)/160.0)
-                else:
-                    sigma = 0.0
+                    vel_init[ir,it,ip] = 1.0/fun_init[ir,it,ip]
+                    a_init[ir,it,ip] = 1.0 + 2.0*zeta_init[ir,it,ip]
+                    b_init[ir,it,ip] = 1.0 - 2.0*xi_init[ir,it,ip]
+                    c_init[ir,it,ip] = 1.0 + 2.0*xi_init[ir,it,ip]
+                    f_init[ir,it,ip] = -2.0 * eta_init[ir,it,ip]
 
-                if sigma < 0:
-                    psi = 60.0/180.0*math.pi
-                elif sigma > 0:
-                    psi = 150.0/180.0*math.pi
-                else:
-                    psi = 0.0
+                    # true model
+                    if (tt[it] >= 30.0/180.0*math.pi and tt[it] <= 50.0/180.0*math.pi \
+                    and pp[ip] >= 15.0/180.0*math.pi and pp[ip] <= 40.0/180.0*math.pi \
+                    and rr[ir] >= 6211.0             and rr[ir] <= 6371.0):
+                        c+=1
+                        sigma = math.sin(4.0*math.pi*(tt[it]-30.0/180.0*math.pi)/(20.0/180.0*math.pi)) \
+                               *math.sin(4.0*math.pi*(pp[ip]-15.0/180.0*math.pi)/(25.0/180.0*math.pi)) \
+                               *math.sin(2.0*math.pi*(rr[ir]-6211.0)/160.0)
+                    else:
+                        sigma = 0.0
 
-                eta_true[ir,it,ip] = ani_p*abs(sigma)*math.sin(2.0*psi)
-                xi_true[ir,it,ip]  = ani_p*abs(sigma)*math.cos(2.0*psi)
-                zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
-                fun_true[ir,it,ip] = fun_init[ir,it,ip]/(1.0+sigma*slow_p)
-                vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
-                a_true[ir,it,ip] = 1.0 + 2.0*zeta_true[ir,it,ip]
-                b_true[ir,it,ip] = 1.0 - 2.0*xi_true[ir,it,ip]
-                c_true[ir,it,ip] = 1.0 + 2.0*xi_true[ir,it,ip]
-                f_true[ir,it,ip] = -2.0 * eta_true[ir,it,ip]
+                    if sigma < 0:
+                        psi = 60.0/180.0*math.pi
+                    elif sigma > 0:
+                        psi = 150.0/180.0*math.pi
+                    else:
+                        psi = 0.0
 
-
-
-    r_earth = R_earth #6378.1370
-    print("depminmax {} {}".format(r_earth-rr1,r_earth-rr2))
-    print(c)
+                    eta_true[ir,it,ip] = ani_p*abs(sigma)*math.sin(2.0*psi)
+                    xi_true[ir,it,ip]  = ani_p*abs(sigma)*math.cos(2.0*psi)
+                    zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
+                    fun_true[ir,it,ip] = fun_init[ir,it,ip]/(1.0+sigma*slow_p)
+                    vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
+                    a_true[ir,it,ip] = 1.0 + 2.0*zeta_true[ir,it,ip]
+                    b_true[ir,it,ip] = 1.0 - 2.0*xi_true[ir,it,ip]
+                    c_true[ir,it,ip] = 1.0 + 2.0*xi_true[ir,it,ip]
+                    f_true[ir,it,ip] = -2.0 * eta_true[ir,it,ip]
 
 
-    # %%
-    # write out
-    import h5py
 
-    # n_rtp to storing
-    str_nrtp = str(n_rtp[0])+"-"+str(n_rtp[1])+"-"+str(n_rtp[2])
-    fout_init = h5py.File('test_model_init_{}.h5'.format(str_nrtp), 'w')
-    fout_true = h5py.File('test_model_true_{}.h5'.format(str_nrtp), 'w')
+        r_earth = R_earth #6378.1370
+        print("depminmax {} {}".format(r_earth-rr1,r_earth-rr2))
+        print(c)
 
-    # write out the arrays eta_init, xi_init, zeta_init, fun_init, a_init, b_init, c_init, f_init
-    fout_init.create_dataset('eta',  data=eta_init)
-    fout_init.create_dataset('xi',    data=xi_init)
-    fout_init.create_dataset('zeta',data=zeta_init)
-    fout_init.create_dataset('fun',  data=fun_init)
-    fout_init.create_dataset('fac_a',  data=a_init)
-    fout_init.create_dataset('fac_b',  data=b_init)
-    fout_init.create_dataset('fac_c',  data=c_init)
-    fout_init.create_dataset('fac_f',  data=f_init)
-    fout_init.create_dataset('vel',  data=vel_init)
 
-    # writeout the arrays eta_true, xi_true, zeta_true, fun_true, a_true, b_true, c_true, f_true
-    fout_true.create_dataset('eta',  data=eta_true)
-    fout_true.create_dataset('xi',    data=xi_true)
-    fout_true.create_dataset('zeta',data=zeta_true)
-    fout_true.create_dataset('fun',  data=fun_true)
-    fout_true.create_dataset('fac_a',  data=a_true)
-    fout_true.create_dataset('fac_b',  data=b_true)
-    fout_true.create_dataset('fac_c',  data=c_true)
-    fout_true.create_dataset('fac_f',  data=f_true)
-    fout_true.create_dataset('vel',  data=vel_true)
+        # %%
+        # write out
+        import h5py
 
-    fout_init.close()
-    fout_true.close()
+        # n_rtp to storing
+        fout_init = h5py.File(fname_init, 'w')
+        fout_true = h5py.File(fname_true, 'w')
 
+        # write out the arrays eta_init, xi_init, zeta_init, fun_init, a_init, b_init, c_init, f_init
+        fout_init.create_dataset('eta',  data=eta_init)
+        fout_init.create_dataset('xi',    data=xi_init)
+        fout_init.create_dataset('zeta',data=zeta_init)
+        fout_init.create_dataset('fun',  data=fun_init)
+        fout_init.create_dataset('fac_a',  data=a_init)
+        fout_init.create_dataset('fac_b',  data=b_init)
+        fout_init.create_dataset('fac_c',  data=c_init)
+        fout_init.create_dataset('fac_f',  data=f_init)
+        fout_init.create_dataset('vel',  data=vel_init)
+
+        # writeout the arrays eta_true, xi_true, zeta_true, fun_true, a_true, b_true, c_true, f_true
+        fout_true.create_dataset('eta',  data=eta_true)
+        fout_true.create_dataset('xi',    data=xi_true)
+        fout_true.create_dataset('zeta',data=zeta_true)
+        fout_true.create_dataset('fun',  data=fun_true)
+        fout_true.create_dataset('fac_a',  data=a_true)
+        fout_true.create_dataset('fac_b',  data=b_true)
+        fout_true.create_dataset('fac_c',  data=c_true)
+        fout_true.create_dataset('fac_f',  data=f_true)
+        fout_true.create_dataset('vel',  data=vel_true)
+
+        fout_init.close()
+        fout_true.close()
+
+    #
+    # create src rec file
 
     # %% [markdown]
     # # prepare src station file
@@ -164,8 +184,8 @@ if __name__ == "__main__":
     # ```
 
     # %%
-    import random
-    random.seed(123456789)
+    #import random
+    #random.seed(123456789)
 
     # dummys
     year_dummy = 1998
@@ -268,7 +288,7 @@ source :
 
 model :
   init_model_type : '' # 'fd' (input file) or '1d_ak135'
-  init_model_path : './test_model_true.h5' # path to initial model file (ignored if init_model_type is '1d_*')
+  init_model_path : './test_model_true_{}-{}-{}.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
   run_mode : 0 # 0 for forward simulation only, 1 for inversion
@@ -277,8 +297,8 @@ inversion :
 
 parallel :
   n_sims : 1 # number of simultaneous run
-  ndiv_rtp : [1,2,2] # number of subdomains
-  nproc_sub : 2      # number of subprocess used for each subdomain
+  ndiv_rtp : [{},{},{}] # number of subdomains
+  nproc_sub : {}      # number of subprocess used for each subdomain
 
 calculation :
   convergence_tolerance : 1e-4
@@ -286,11 +306,12 @@ calculation :
   stencil_order : 3 # 1 or 3
   sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
 
-""".format(n_rtp[0],n_rtp[1],n_rtp[2])
+""".format(n_rtp[0],n_rtp[1],n_rtp[2],n_rtp[0],n_rtp[1],n_rtp[2], ndiv_rtp[0],ndiv_rtp[1],ndiv_rtp[2], n_sweep)
 
+str_nsweep_ndiv_rtp = str(n_sweep) + '-' + str(ndiv_rtp[0]) + '-' + str(ndiv_rtp[1]) + '-' + str(ndiv_rtp[2])
 
 # write out
-with open('input_params_{}.yml'.format(str_nrtp), 'w') as f:
+with open('input_params_{}_{}.yml'.format(str_nrtp, str_nsweep_ndiv_rtp), 'w') as f:
     f.write(str_input_file)
 
 

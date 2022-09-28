@@ -32,10 +32,10 @@ make -j16 && make install
 cd ../
 
 # download hdf5 source
-wget https://gamma.hdfgroup.org/ftp/pub/outgoing/hdf5/snapshots/v112/hdf5-1.12.2-1.tar.gz
+wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz
 
 #Extract the downloaded directory
-tar -xvf hdf5-1.12.2-1.tar.gz && cd hdf5-1.12.2-1
+tar -xvf hdf5-1.13.2.tar.gz && cd hdf5-1.13.2
 
 # Configure the code. (the pathes to mpicc, mpicxx should vary on the environment)
 CC=$(pwd)/../local_mpi_hdf5/bin/mpicc CXX=$(pwd)/../local_mpi_hdf5/bin/mpicxx ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5

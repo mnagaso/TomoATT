@@ -194,8 +194,9 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 
     iter_end:
         if (myrank==0){
-            if (if_verbose)
+            if (if_verbose){
                 std::cout << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+            }
             if (if_test)
                 std::cout << "errors at iteration " << iter_count << ": " << cur_err_L1 << ", " << cur_err_Linf << std::endl;
         }
@@ -228,7 +229,15 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
     }
 
     // check the time for iteration
-    if (inter_sub_rank==0 && subdom_main) timer_iter.stop_timer();
+    if (inter_sub_rank==0 && subdom_main) {
+        timer_iter.stop_timer();
+
+        // output time in file
+        std::ofstream ofs;
+        ofs.open("time.txt", std::ios::app);
+        ofs << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", time[s] : " << timer_iter.get_t() << std::endl;
+
+    }
 
 
 }
