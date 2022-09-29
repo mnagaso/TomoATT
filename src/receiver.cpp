@@ -42,11 +42,11 @@ CUSTOMREAL Receiver::calculate_adjoint_source(InputParams& IP) {
         for (auto& rec: receivers) {
             if(!rec.is_rec_pair){
                 rec.t_adj = rec.arr_time - rec.arr_time_ori;
-                sum_adj_src += std::pow(rec.t_adj,2) * rec.weight * src_weight; // multiply by weight and
+                sum_adj_src += my_square(rec.t_adj) * rec.weight * src_weight; // multiply by weight and
             } else {
                 rec.ddt_adj_pair[0] = rec.dif_arr_time - rec.dif_arr_time_ori;
                 rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
-                sum_adj_src += std::pow(rec.ddt_adj_pair[0],2) * rec.weight * src_weight;
+                sum_adj_src += my_square(rec.ddt_adj_pair[0]) * rec.weight * src_weight;
             }
         }
 
@@ -94,7 +94,7 @@ CUSTOMREAL Receiver::calculate_adjoint_source_teleseismic(InputParams& IP) {
                     CUSTOMREAL DDT = (rec_i.arr_time - rec_j.arr_time) - (rec_i.arr_time_ori - rec_j.arr_time_ori);
                     rec_i.t_adj += DDT * rec_i.weight * rec_j.weight * src_weight;
                     rec_j.t_adj -= DDT * rec_i.weight * rec_j.weight * src_weight;
-                    sum_adj_src += std::pow(DDT,2);
+                    sum_adj_src += my_square(DDT);
                 }
             }
         }
@@ -567,7 +567,7 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, std::vector<SrcRec
             rec_unique.sum_weight += rec.weight * src_weight;
 
             // calculate objective function value
-            rec_unique.vobj_src_reloc += rec.weight / _2_CR * std::pow((rec.arr_time - rec.arr_time_ori), 2);
+            rec_unique.vobj_src_reloc += rec.weight / _2_CR * my_square(rec.arr_time - rec.arr_time_ori);
 
             // calculate grad norm of objective function value
             rec_unique.vobj_grad_norm_src_reloc += std::sqrt(rec.DTk*rec.DTk + rec.DTj*rec.DTj + rec.DTi*rec.DTi);

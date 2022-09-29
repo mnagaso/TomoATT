@@ -70,6 +70,15 @@ inline int check_data_type(T const& data){
 }
 
 
+template <typename T>
+inline T my_square(T const& a){
+    return a * a;
+}
+
+// defined function is more than 2 times slower than inline function
+//#define my_square(a) (a * a)
+
+
 inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL& x, CUSTOMREAL& y, CUSTOMREAL& z){
     /*
     lon : longitude in radian
@@ -94,8 +103,8 @@ inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL
 inline void Epicentral_distance_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
                                        CUSTOMREAL lat2, CUSTOMREAL lon2, \
                                        CUSTOMREAL& dist) {
-    if (isZero(std::pow((lat1-lat2),2) \
-     &&      + std::pow((lon1-lon2),2))){
+    if (isZero(my_square((lat1-lat2)) \
+     &&      + my_square((lon1-lon2)))){
         dist = _0_CR;
     } else {
         dist = acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1));
@@ -108,8 +117,8 @@ inline void Azimuth_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
                              CUSTOMREAL lat2, CUSTOMREAL lon2, \
                              CUSTOMREAL& azi) {
 
-    if (isZero(std::pow((lat1-lat2),2) \
-        &&   + std::pow((lon1-lon2),2))){
+    if (isZero(my_square((lat1-lat2)) \
+        &&   + my_square((lon1-lon2)))){
         azi = _0_CR;
     } else {
         azi = atan2(sin(lon2-lon1)*cos(lat2), \

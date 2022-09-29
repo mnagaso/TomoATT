@@ -133,7 +133,7 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
     for (int ir = 0; ir < nr_2d; ir++){
         for (int it = 0; it < nt_2d; it++){
             fac_a_2d[ir*nt_2d+it] = _1_CR;
-            fac_b_2d[ir*nt_2d+it] = _1_CR/std::pow(r_2d[ir], 2.0);
+            fac_b_2d[ir*nt_2d+it] = _1_CR/my_square(r_2d[ir]);
             u_2d[ir*nt_2d+it] = _0_CR;
             T_2d[ir*nt_2d+it] = _0_CR;
         }
@@ -167,15 +167,15 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
         for (int it = 0; it < nt_2d; it++){
 
             int irt = ir*nt_2d+it;
-            T0v_2d[irt] = fun0 * std::sqrt((_1_CR/a0) * std::pow((r_2d[ir]-src_r),2.0)
-                                          + _1_CR/b0  * std::pow((t_2d[it]-src_t_dummy),2.0));
+            T0v_2d[irt] = fun0 * std::sqrt((_1_CR/a0) * my_square((r_2d[ir]-src_r))
+                                          + _1_CR/b0  * my_square((t_2d[it]-src_t_dummy)));
 
             if (isZero(T0v_2d[irt])) {
                 T0r_2d[irt] = _0_CR;
                 T0t_2d[irt] = _0_CR;
             } else {
-                T0r_2d[irt] = std::pow(fun0,2.0) * (_1_CR/a0 * (r_2d[ir]-src_r))       / T0v_2d[irt];
-                T0t_2d[irt] = std::pow(fun0,2.0) * (_1_CR/b0 * (t_2d[it]-src_t_dummy)) / T0v_2d[irt];
+                T0r_2d[irt] = my_square(fun0) * (_1_CR/a0 * (r_2d[ir]-src_r))       / T0v_2d[irt];
+                T0t_2d[irt] = my_square(fun0) * (_1_CR/b0 * (t_2d[it]-src_t_dummy)) / T0v_2d[irt];
             }
 
             if (std::abs((r_2d[ir]-src_r)/dr_2d)       <= _2_CR \
@@ -440,57 +440,57 @@ void PlainGrid::calculate_stencil_2d(int& ir, int& it){
 
     if(ir==1){
         px1=(tau_2d[ii]-tau_2d[ii_nr])/dr_2d;
-        wx2=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr]),2 )),2));
+        wx2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]     - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r])) \
+                                       /  (eps_2d +my_square(tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr] ))));
         px2=(_1_CR-wx2)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pr]-tau_2d[ii_p2r])/_2_CR/dr_2d;
 
     }
     else if (ir == nr_2d-2){
-        wx1=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr]),2 )),2));
+        wx1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr] ))));
         px1=(_1_CR-wx1)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nr]+tau_2d[ii_n2r])/_2_CR/dr_2d;
         px2=(tau_2d[ii_pr]-tau_2d[ii_nr])/dr_2d;
     }
     else {
-        wx1=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr]),2 )),2));
+        wx1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr] ))));
         px1=(_1_CR-wx1)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nr]+tau_2d[ii_n2r])/_2_CR/dr_2d;
-        wx2=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr]),2 )),2));
+        wx2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r])) \
+                                        / (eps_2d+my_square(tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr] ))));
         px2=(_1_CR-wx2)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pr]-tau_2d[ii_p2r])/_2_CR/dr_2d;
     }
 
     if(it==1){
         py1=(tau_2d[ii]-tau_2d[ii_nt])/dt_2d;
-        wy2=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt]),2 )),2));
+        wy2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt] ))));
         py2=(_1_CR-wy2)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pt]-tau_2d[ii_p2t])/_2_CR/dt_2d;
     }
     else if (it == nt_2d-2){
-        wy1=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt]),2 )),2));
+        wy1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt] ))));
         py1=(_1_CR-wy1)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nt]+tau_2d[ii_n2t])/_2_CR/dt_2d;
         py2=(tau_2d[ii_pt]-tau_2d[ii])/dt_2d;
     }
     else {
-        wy1=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt]),2 )),2));
+        wy1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt] ))));
         py1=(_1_CR-wy1)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nt]+tau_2d[ii_n2t])/_2_CR/dt_2d;
-        wy2=_1_CR/(_1_CR+_2_CR*std::pow( (eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt]),2 )),2));
+        wy2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt] ))));
         py2=(_1_CR-wy2)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pt]-tau_2d[ii_p2t])/_2_CR/dt_2d;
     }
 
-    CUSTOMREAL Htau = std::sqrt(fac_a_2d[ii]*std::pow((T0r_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(px1+px2)/_2_CR),2) \
-                               +fac_b_2d[ii]*std::pow((T0t_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(py1+py2)/_2_CR),2));
+    CUSTOMREAL Htau = std::sqrt(fac_a_2d[ii]*my_square(T0r_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(px1+px2)/_2_CR) \
+                               +fac_b_2d[ii]*my_square(T0t_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(py1+py2)/_2_CR));
 
     tau_2d[ii] = coe * ( (fun_2d[ii] - Htau) + (sigr*(px2-px1)/_2_CR + sigt*(py2-py1)/_2_CR) ) + tau_2d[ii];
 

@@ -1213,9 +1213,9 @@ void Grid::reinitialize_abcf(){
                 for (int i_lon = 0; i_lon < loc_I; i_lon++) {
                     // initialize arrays
                     fac_a_loc[I2V(i_lon,j_lat,k_r)] = fac_a_loc[I2V(i_lon,j_lat,k_r)];
-                    fac_b_loc[I2V(i_lon,j_lat,k_r)] = fac_b_loc[I2V(i_lon,j_lat,k_r)]/ std::pow(r_loc_1d[k_r],2);
-                    fac_c_loc[I2V(i_lon,j_lat,k_r)] = fac_c_loc[I2V(i_lon,j_lat,k_r)]/(std::pow(r_loc_1d[k_r],2)*std::pow(std::cos(t_loc_1d[j_lat]),2));
-                    fac_f_loc[I2V(i_lon,j_lat,k_r)] = fac_f_loc[I2V(i_lon,j_lat,k_r)]/(std::pow(r_loc_1d[k_r],2)*         std::cos(t_loc_1d[j_lat]));
+                    fac_b_loc[I2V(i_lon,j_lat,k_r)] = fac_b_loc[I2V(i_lon,j_lat,k_r)]/ my_square(r_loc_1d[k_r]);
+                    fac_c_loc[I2V(i_lon,j_lat,k_r)] = fac_c_loc[I2V(i_lon,j_lat,k_r)]/(my_square(r_loc_1d[k_r])*my_square(std::cos(t_loc_1d[j_lat])));
+                    fac_f_loc[I2V(i_lon,j_lat,k_r)] = fac_f_loc[I2V(i_lon,j_lat,k_r)]/(my_square(r_loc_1d[k_r])*          std::cos(t_loc_1d[j_lat]));
                 }
             }
         }
@@ -1255,9 +1255,9 @@ void Grid::initialize_fields(Source& src){
                 CUSTOMREAL dt_from_src = t_loc_1d[j_lat] - src_t;
                 CUSTOMREAL dp_from_src = p_loc_1d[i_lon] - src_p;
 
-                T0v_loc[I2V(i_lon,j_lat,k_r)] = fun0 * std::sqrt( _1_CR/a0                  *std::pow((dr_from_src),2) \
-                                                                + c0/(c0b0_minus_f0f0)      *std::pow((dt_from_src),2) \
-                                                                + b0/(c0b0_minus_f0f0)      *std::pow((dp_from_src),2) \
+                T0v_loc[I2V(i_lon,j_lat,k_r)] = fun0 * std::sqrt( _1_CR/a0                  *my_square(dr_from_src) \
+                                                                + c0/(c0b0_minus_f0f0)      *my_square(dt_from_src) \
+                                                                + b0/(c0b0_minus_f0f0)      *my_square(dp_from_src) \
                                                                 + _2_CR*f0/(c0b0_minus_f0f0)*dt_from_src*dp_from_src);
 
                 is_changed[I2V(i_lon,j_lat,k_r)] = true;
@@ -1267,9 +1267,9 @@ void Grid::initialize_fields(Source& src){
                     T0t_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
                     T0p_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
                 } else {
-                    T0r_loc[I2V(i_lon,j_lat,k_r)] = std::pow(fun0,2)*(_1_CR/a0*dr_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
-                    T0t_loc[I2V(i_lon,j_lat,k_r)] = std::pow(fun0,2)*(c0/(c0b0_minus_f0f0)*dt_from_src+f0/(c0b0_minus_f0f0)*dp_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
-                    T0p_loc[I2V(i_lon,j_lat,k_r)] = std::pow(fun0,2)*(b0/(c0b0_minus_f0f0)*dp_from_src+f0/(c0b0_minus_f0f0)*dt_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0r_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(_1_CR/a0*dr_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0t_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(c0/(c0b0_minus_f0f0)*dt_from_src+f0/(c0b0_minus_f0f0)*dp_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0p_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(b0/(c0b0_minus_f0f0)*dp_from_src+f0/(c0b0_minus_f0f0)*dt_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
                 }
 
                 if (std::abs(dr_from_src/dr) <= _2_CR \
