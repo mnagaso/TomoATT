@@ -805,8 +805,7 @@ void Iterator::calculate_stencil_3rd_order(Grid& grid, int& iip, int& jjt, int&k
     Htau = calc_LF_Hamiltonian(grid, pp1, pp2, pt1, pt2, pr1, pr2, iip, jjt, kkr);
 
     // update tau
-    grid.tau_loc[I2V(iip,jjt,kkr)] += coe * (grid.fun_loc[I2V(iip,jjt,kkr)] - Htau) \
-        + coe * (sigr*(pr2-pr1)/_2_CR + sigt*(pt2-pt1)/_2_CR + sigp*(pp2-pp1)/_2_CR);
+    grid.tau_loc[I2V(iip,jjt,kkr)] += coe * ((grid.fun_loc[I2V(iip,jjt,kkr)] - Htau) + (sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
 
 }
 
