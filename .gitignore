@@ -19,3 +19,8 @@ base_proj
 
 # result for comparison
 test/inversion_2_one_src/fortran_code/ega5/output/*
+
+# vtune results
+test/*/tomoatt*
+test/solver_performance/time*
+test/solver_performance/input_params_*
