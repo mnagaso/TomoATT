@@ -278,8 +278,8 @@ InputParams::InputParams(std::string& input_file){
         std::cout << "min_max_dep: " << min_dep << " " << max_dep << std::endl;
         std::cout << "min_max_lat: " << min_lat << " " << max_lat << std::endl;
         std::cout << "min_max_lon: " << min_lon << " " << max_lon << std::endl;
-        std::cout << "n_rtp: " << ngrid_i << " " << ngrid_j << " " << ngrid_k << std::endl;
-        std::cout << "ndiv_rtp: " << ndiv_i << " " << ndiv_j << " " << ndiv_k << std::endl;
+        std::cout << "n_rtp: "    << ngrid_k << " " << ngrid_j << " " << ngrid_i << std::endl;
+        std::cout << "ndiv_rtp: " << ndiv_k << " "  << ndiv_j  << " " << ndiv_i << std::endl;
         std::cout << "n_subprocs: " << n_subprocs << std::endl;
         std::cout << "n_sims: " << n_sims << std::endl;
 

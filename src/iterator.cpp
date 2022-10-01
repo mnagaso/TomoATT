@@ -129,7 +129,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
             for (int iswp = nswp-1; iswp > -1; iswp--) {
                 do_sweep(iswp, grid, IP);
 
-#ifndef FREQ_SYNC_GHOST
+#ifdef FREQ_SYNC_GHOST
                 // synchronize ghost cells everytime after sweeping of each direction
                 if (subdom_main){
                     if (!is_teleseismic)
@@ -235,7 +235,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         // output time in file
         std::ofstream ofs;
         ofs.open("time.txt", std::ios::app);
-        ofs << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", time[s] : " << timer_iter.get_t() << std::endl;
+        ofs << "Converged at iteration " << iter_count << ", L1 " << cur_diff_L1 << ", Linf " << cur_diff_Linf << ", total time[s] " << timer_iter.get_t() << std::endl;
 
     }
 

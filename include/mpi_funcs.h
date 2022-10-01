@@ -388,7 +388,7 @@ inline int check_total_nprocs_and_ndiv(){
         if (world_rank==0){
             // print all params
             std::cout << "n_sims: " << n_sims << std::endl;
-            std::cout << "ndiv_rtp: " << ndiv_i << " " << ndiv_j << " " << ndiv_k << std::endl;
+            std::cout << "ndiv_rtp: " << ndiv_k << " " << ndiv_j << " " << ndiv_i << std::endl;
             std::cout << "n_subprocs: " << n_subprocs << std::endl;
             std::cout << "nprocs should be n_sims*ndiv_p*ndiv_t*ndiv_r*n_subprocs = " << n_sims*ndiv_i*ndiv_j*ndiv_k*n_subprocs << std::endl;
             std::cout << "but the actual nprocs = " << nprocs << std::endl;
