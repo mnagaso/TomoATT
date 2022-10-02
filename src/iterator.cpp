@@ -179,7 +179,8 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
             // debug store temporal T fields
             //io.write_tmp_tau_h5(grid, iter_count);
 
-            if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) {
+            //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
+            if (cur_diff_L1 < IP.get_conv_tol()) {
                 //stdout_by_main("--- iteration converged. ---");
                 goto iter_end;
             } else if (IP.get_max_iter() <= iter_count) {
