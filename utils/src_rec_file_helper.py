@@ -1,135 +1,247 @@
 # class for storing one event data
 
-class AttArrival:
-    def __init__(self, id_src,id_rec,name_rec,lat,lon,dep,phase,epi_dist,arr_time):
-        self.id_src = id_src
-        self.id_rec = id_rec
-        self.name_rec = name_rec
-        self.lat = lat
-        self.lon = lon
-        self.dep = dep
-        self.phase = phase
-        self.epi_dist = epi_dist
-        self.arr_time = arr_time
 
-    def __str__(self):
-        outstr = "AttArrival class object: \n"
-        outstr += "id_src: " + str(self.id_src) + "\n"
-        outstr += "id_rec: " + str(self.id_rec) + "\n"
-        outstr += "name_rec: " + str(self.name_rec) + "\n"
-        outstr += "lat: " + str(self.lat) + "\n"
-        outstr += "lon: " + str(self.lon) + "\n"
-        outstr += "dep: " + str(self.dep) + "\n"
-        outstr += "phase: " + str(self.phase) + "\n"
-        outstr += "epi_dist: " + str(self.epi_dist) + "\n"
-        outstr += "arr_time: " + str(self.arr_time) + "\n"
-        return outstr
+class AttSrcRec:
+    _id_src      = None
+    _id_rec      = None
+    _year        = None
+    _month       = None
+    _day         = None
+    _hour        = None
+    _min         = None
+    _sec         = None
+    _lat         = None
+    _lon         = None
+    _dep         = None
+    _mag         = None
+    _nrec        = None
+    _id_event    = None
+    _data_source = None
+    _phase       = None
+    _epi_dist    = None
+    _arr_time    = None
+    _name_rec    = None
 
-    def __repr__(self):
-        return self.__str__()
+    def __init__(self,
+                id_src     = None,
+                id_rec     = None,
+                year       = None,
+                month      = None,
+                day        = None,
+                hour       = None,
+                _min       = None,
+                sec        = None,
+                lat        = None,
+                lon        = None,
+                dep        = None,
+                mag        = None,
+                nrec       = None,
+                id_event   = None,
+                data_source= None,
+                phase      = None,
+                epi_dist   = None,
+                arr_time   = None,
+                name_rec   = None):
 
 
-class AttEvent:
-    def __init__(self, _id, year, month, day, hour, _minute, sec, lat, lon, dep, mag, nrec, id_event):
-        self.id = _id
-        self.year = year
-        self.month = month
-        self.day = day
-        self.hour = hour
-        self.minute = _minute
-        self.sec = sec
-        self.lat = lat
-        self.lon = lon
-        self.dep = dep
-        self.mag = mag
-        self.nrec = nrec
-        self.id_event = id_event
-        self.rec_list = []
+        self._id_src      = id_src
+        self._id_rec      = id_rec
+        self._year        = year
+        self._month       = month
+        self._day         = day
+        self._hour        = hour
+        self._min         = _min
+        self._sec         = sec
+        self._lat         = lat
+        self._lon         = lon
+        self._dep         = dep
+        self._mag         = mag
+        self._nrec        = nrec
+        self._id_event    = id_event
+        self._data_source = data_source
+        self._phase       = phase
+        self._epi_dist    = epi_dist
+        self._arr_time    = arr_time
+        self._name_rec    = name_rec
 
-    def add_rec(self, rec):
-        self.rec_list.append(rec)
 
-    def __str__(self):
-        outstr = "AttEvent class object: \n"
-        outstr += "id: " + str(self.id) + "\n"
-        outstr += "year: " + str(self.year) + "\n"
-        outstr += "month: " + str(self.month) + "\n"
-        outstr += "day: " + str(self.day) + "\n"
-        outstr += "hour: " + str(self.hour) + "\n"
-        outstr += "minute: " + str(self.minute) + "\n"
-        outstr += "sec: " + str(self.sec) + "\n"
-        outstr += "lat: " + str(self.lat) + "\n"
-        outstr += "lon: " + str(self.lon) + "\n"
-        outstr += "dep: " + str(self.dep) + "\n"
-        outstr += "mag: " + str(self.mag) + "\n"
-        outstr += "nrec: " + str(self.nrec) + "\n"
-        outstr += "id_event: " + str(self.id_event) + "\n"
-        #outstr += "rec_list: " + str(self.rec_list) + "\n"
-        return outstr
+def convert_to_pandas_df(event_list):
+    # conveert event_list to pandas dataframe
+    import pandas as pd
+    import datetime
 
-    def __repr__(self):
-        return self.__str__()
+    df_ev = pd.DataFrame()
 
+    list_id_src     = []
+    list_id_rec     = []
+    list_year       = []
+    list_month      = []
+    list_day        = []
+    list_hour       = []
+    list__min       = []
+    list_sec        = []
+    list_lat        = []
+    list_lon        = []
+    list_dep        = []
+    list_mag        = []
+    list_nrec       = []
+    list_id_event   = []
+    list_data_source= []
+    list_phase      = []
+    list_epi_dist   = []
+    list_arr_time   = []
+    list_name_rec   = []
+    list_datetime   = []
+
+    for ev in event_list:
+        list_id_src.append(ev._id_src)
+        list_id_rec.append(ev._id_rec)
+        list_year.append(ev._year)
+        list_month.append(ev._month)
+        list_day.append(ev._day)
+        list_hour.append(ev._hour)
+        list__min.append(ev._min)
+        list_sec.append(ev._sec)
+        list_lat.append(ev._lat)
+        list_lon.append(ev._lon)
+        list_dep.append(ev._dep)
+        list_mag.append(ev._mag)
+        list_nrec.append(ev._nrec)
+        list_id_event.append(ev._id_event)
+        list_data_source.append(ev._data_source)
+        list_phase.append(ev._phase)
+        list_epi_dist.append(ev._epi_dist)
+        list_arr_time.append(ev._arr_time)
+        list_name_rec.append(ev._name_rec)
+        try:
+            date_this = datetime.datetime(ev._year, ev._month, ev._day, ev._hour, ev._min, int(ev._sec))
+        except:
+            date_this = None
+
+        list_datetime.append(date_this)
+
+    # convert all the lists to pandas series
+    df_ev['id_src']     = pd.Series(list_id_src)
+    df_ev['id_rec']     = pd.Series(list_id_rec)
+    df_ev['year']       = pd.Series(list_year)
+    df_ev['month']      = pd.Series(list_month)
+    df_ev['day']        = pd.Series(list_day)
+    df_ev['hour']       = pd.Series(list_hour)
+    df_ev['min']        = pd.Series(list__min)
+    df_ev['sec']        = pd.Series(list_sec)
+    df_ev['lat']        = pd.Series(list_lat)
+    df_ev['lon']        = pd.Series(list_lon)
+    df_ev['dep']        = pd.Series(list_dep)
+    df_ev['mag']        = pd.Series(list_mag)
+    df_ev['nrec']       = pd.Series(list_nrec)
+    df_ev['id_event']   = pd.Series(list_id_event)
+    df_ev['data_source']= pd.Series(list_data_source)
+    df_ev['phase']      = pd.Series(list_phase)
+    df_ev['epi_dist']   = pd.Series(list_epi_dist)
+    df_ev['arr_time']   = pd.Series(list_arr_time)
+    df_ev['name_rec']   = pd.Series(list_name_rec)
+    df_ev['datetime']   = pd.Series(list_datetime)
+
+    return df_ev
 
 # read file
-def read_src_rec_file(fpath):
+
+def read_src_rec_file(fpath, two_station_names=False, data_source_flag=0, id_src_offset=0):
     #fpath = "./src_rec_test_out.dat"
 
+    print ("read file: ", fpath)
     event_list = []
+    rec_list   = []
 
     with open(fpath, "r") as f:
         lines = f.readlines()
 
         cc = 0
+        nc = 0
         i_src = 0
 
         # parse
-        for line in lines:
+        for iline, line in enumerate(lines):
+            #print(line)
+
             if line.startswith("#"):
                 continue
             else:
                 if cc == 0:
-                    # firstly source line is read
-                    ll = line.split()
-                    src_id    = int(ll[0])
-                    src_year  = int(ll[1])
-                    src_month = int(ll[2])
-                    src_day   = int(ll[3])
-                    src_hour  = int(ll[4])
-                    src_minute= int(ll[5])
-                    src_sec   = float(ll[6])
-                    src_lat   = float(ll[7])
-                    src_lon   = float(ll[8])
-                    src_dep   = float(ll[9])
-                    src_mag   = float(ll[10])
-                    src_nrec  = int(ll[11])
-                    src_id_event = ll[12]
+                    try:
+                        # firstly source line is read
+                        ll = line.split()
 
-                    nrec_tmp = src_nrec
+                        #src_id    = int(ll[0])
+                        src_id = i_src + id_src_offset
+                        src_year  = int(ll[1])
+                        src_month = int(ll[2])
+                        src_day   = int(ll[3])
+                        src_hour  = int(ll[4])
+                        src_min   = int(ll[5])
+                        src_sec   = float(ll[6])
+                        src_lat   = float(ll[7])
+                        src_lon   = float(ll[8])
+                        src_dep   = float(ll[9])
+                        src_mag   = float(ll[10])
+                        src_nrec  = int(ll[11])
+                        src_id_event = ll[12]
 
-                    # store source
-                    if nrec_tmp != 0:
-                        src = AttEvent(src_id, src_year, src_month, src_day, src_hour, src_minute, src_sec, src_lat, src_lon, src_dep, src_mag, src_nrec, src_id_event)
-                        event_list.append(src)
-                        cc+=1
-                    else:
+
+                        nrec_tmp = src_nrec
+
+                        # store source
+                        if (nrec_tmp != 0):
+
+                            #src = AttEvent(src_id, src_year, src_month, src_day, src_hour, src_min, src_sec, src_lat, src_lon, src_dep, src_mag, src_nrec, src_id_event, data_source_flag)
+
+                            src = AttSrcRec(src_id, None, src_year, src_month, src_day, src_hour, src_min, src_sec, src_lat, src_lon, src_dep, src_mag, src_nrec, src_id_event, data_source_flag, None, None, None, None)
+                            event_list.append(src)
+
+                            cc+=1
+                        else:
+                            pass
+                    except:
                         pass
                 else:
-                    # read rec line
-                    ll = line.split()
-                    src_id   = int(ll[0])
-                    rec_id   = int(ll[1])
-                    rec_name = ll[2]
-                    rec_lat  = float(ll[3])
-                    rec_lon  = float(ll[4])
-                    rec_dep  = float(ll[5])
-                    rec_phase = ll[6]
-                    rec_epi_dist = float(ll[7])
-                    rec_arr_time = float(ll[8])
+                    try:
+                        # read rec line
+                        ll = line.split()
 
-                    # store rec
-                    rec = AttArrival(src_id, rec_id, rec_name, rec_lat, rec_lon, rec_dep, rec_phase, rec_epi_dist, rec_arr_time)
-                    event_list[i_src].add_rec(rec)
+                        if(not two_station_names):
+                            #src_id   = int(ll[0])
+                            src_id = i_src + id_src_offset
+                            rec_id   = int(ll[1])
+                            rec_name = ll[2]
+                            rec_lat  = float(ll[3])
+                            rec_lon  = float(ll[4])
+                            rec_elev  = float(ll[5])
+                            rec_phase = ll[6]
+                            rec_epi_dist = float(ll[7])
+                            rec_arr_time = float(ll[8])
+                        else:
+                            #src_id   = int(ll[0])
+                            src_id = i_src + id_src_offset
+                            rec_id   = int(ll[1])
+                            rec_name = ll[2] + "_" + ll[3]
+                            rec_lat  = float(ll[4])
+                            rec_lon  = float(ll[5])
+                            rec_elev  = float(ll[6])
+                            rec_phase = ll[7]
+                            rec_epi_dist = float(ll[8])
+                            rec_arr_time = float(ll[9])
+
+                        # store rec
+                        #rec = AttArrival(src_id, rec_id, rec_name, rec_lat, rec_lon, rec_elev, rec_phase, rec_epi_dist, rec_arr_time)
+                        #event_list[i_src].add_rec(rec)
+                        rec = AttSrcRec(src_id, rec_id, None, None, None, None, None, None, rec_lat, rec_lon, rec_elev, None, None, None, data_source_flag, rec_phase, rec_epi_dist, rec_arr_time, rec_name)
+                        rec_list.append(rec)
+
+                        nc+=1
+                    except:
+                        print("error in line: ", iline)
+                        print("error in line: " + line)
+                        #return None
 
                     cc+=1
 
@@ -137,29 +249,25 @@ def read_src_rec_file(fpath):
                         cc = 0
                         i_src += 1
 
+                        if nc == 0:
+                            print("error: no rec found")
+                            # erase last event
+                            event_list.pop()
+                            i_src -= 1
+
+                        nc = 0
+
 
     # return length of event_list
     print("number of events: ", len(event_list))
+    print("number of recs: ", len(rec_list))
 
-    return event_list
+    df_ev = convert_to_pandas_df(event_list)
+    df_rec = convert_to_pandas_df(rec_list)
 
 
-def write_event_list(event_list, fpath):
-    with open(fpath, "w") as f:
-        for i, ev in enumerate(event_list):
-            # write source
-            line = [ev.id, ev.year, ev.month, ev.day, ev.hour, ev.minute, ev.sec, ev.lat, ev.lon, ev.dep, ev.mag, ev.nrec, ev.id_event]
+    return df_ev, df_rec
 
-            for l in line:
-                f.write(str(l) + " ")
-            f.write("\n")
-
-            # write recs
-            for rec in ev.rec_list:
-                line = [rec.id_src, rec.id_rec, rec.name_rec, rec.lat, rec.lon, rec.dep, rec.phase, rec.epi_dist, rec.arr_time]
-                for l in line:
-                    f.write(str(l) + " ")
-                f.write("\n")
 
 if __name__ == "__main__":
     event_list = read_src_rec_file("./src_rec_test_out.dat")
