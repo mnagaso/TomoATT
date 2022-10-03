@@ -12,16 +12,20 @@ endif()
 #
 # for production
 #
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -Ofast -funroll-loops")
 #
 # for debugging
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -funroll-loops") # debug
 #
-# for vtune profiling
+# for scorep profiling
 #
-#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -O2 -shared-libgcc -funroll-loops") # debug
-
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -O2 -funroll-loops") # debug
+#
+# for FUGAKU (use clang mode)
+#
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Nclang -Ofast -std=c++17")
+#
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 
 # find installed MPI
