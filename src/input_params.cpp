@@ -990,7 +990,7 @@ void InputParams::check_contradictions(){
 
         if (sweep_type != SWEEP_TYPE_LEVEL || n_subprocs != 1){
             if(world_rank == 0) {
-                std::cout << "ERROR: In GPU mode, sweep_type must be 2 and n_subprocs must be 1." << std::endl;
+                std::cout << "ERROR: In GPU mode, sweep_type must be 1 and n_subprocs must be 1." << std::endl;
                 std::cout << "Abort." << std::endl;
             }
             MPI_Finalize();
