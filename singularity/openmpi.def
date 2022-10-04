@@ -1,0 +1,48 @@
+Bootstrap: docker
+From: ubuntu:latest
+
+%files
+    #mpitest.c /opt
+
+%environment
+    export PKG_DIR=/opt/ompi
+    export SINGULARITY_PKG_DIR=$PKG_DIR
+    export SINGULARITYENV_APPEND_PATH=$PKG_DIR/bin
+    export SINGULAIRTYENV_APPEND_LD_LIBRARY_PATH=$PKG_DIR/lib
+
+%post
+    echo "Installing required packages..."
+    apt-get update && apt-get install -y wget git bash gcc gfortran g++ make file
+
+
+    export PKG_DIR=/opt/packages
+    export NPROC=4
+
+    echo "Installing Open MPI"
+    export OMPI_VERSOIN_MAJOR=3.0
+    export OMPI_VERSION_FULL=3.0.1
+    export OMPI_URL="https://download.open-mpi.org/release/open-mpi/v$OMPI_VERSOIN_MAJOR/openmpi-$OMPI_VERSION_FULL.tar.gz"
+    mkdir -p /tmp/ompi
+    mkdir -p /opt
+    # Download
+    cd /tmp/ompi && wget -O openmpi-$OMPI_VERSION_FULL.tar.gz $OMPI_URL && tar -xvf openmpi-$OMPI_VERSION_FULL.tar.gz
+    # Compile and install
+    cd /tmp/ompi/openmpi-$OMPI_VERSION_FULL && ./configure --prefix=$PKG_DIR && make -j$NPROC install
+    # Set env variables so we can compile our application
+    export PATH=$PKG_DIR/bin:$PATH
+    export LD_LIBRARY_PATH=$PKG_DIR/lib:$LD_LIBRARY_PATH
+    export MANPATH=$PKG_DIR/share/man:$MANPATH
+
+    echo "openmpi installed."
+
+    echo "Compiling hdf5"
+
+    export HDF5_VERSION_MAJOR=1.13
+    export HDF5_VERSION_FULL=1.13.2
+    export HDF5_URL="https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-$HDF5_VERSION_MAJOR/hdf5-$HDF5_VERSION_FULL/src/hdf5-$HDF5_VERSION_FULL.tar.gz"
+    mkdir -p /tmp/hdf5
+    cd /tmp/hdf5 && wget -O hdf5-$HDF5_VERSION_FULL.tar.gz $HDF5_URL && tar -xvf hdf5-$HDF5_VERSION_FULL.tar.gz && cd hdf5-$HDF5_VERSION_FULL
+    tar -xvf hdf5-$HDF5_VERSION_FULL.tar.gz && cd hdf5-$HDF5_VERSION_FULL
+    ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$PKG_DIR && make -j$NPROC && make install
+
+    echo "hdf5 installed."
