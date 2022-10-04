@@ -10,6 +10,7 @@ build
 *.xmf
 *.dat
 *.pyc
+*.sif
 
 external_libs/hdf5*
 external_libs/openmpi*
