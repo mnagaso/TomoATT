@@ -33,6 +33,6 @@
 //inline cudaDeviceProp deviceProp;
 
 // do not use level-unified-kernel (currently set as true for strange block synchronization behavior)
-#define FORCE_UNUSE_UNIFIED_KERNEL false
+#define FORCE_UNUSE_UNIFIED_KERNEL true
 
 #endif // CUDA_CONSTANTS_H

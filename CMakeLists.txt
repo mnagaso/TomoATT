@@ -69,10 +69,10 @@ if(CUDA_FOUND) # TODO : add HIP here in the future
   # cuda flag
   #
   # for production
-  #set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
+  set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
   #
   # for debugging
-  set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -O0 -gencode arch=compute_61,code=sm_61")
+  #set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -O0 -gencode arch=compute_61,code=sm_61")
   set(CMAKE_CUDA_STANDARD "11")
   message(STATUS, "TomoATT will be compiled with cuda.")
 else()
