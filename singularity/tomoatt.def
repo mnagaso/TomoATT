@@ -1,18 +1,23 @@
 Bootstrap: docker
 From: ubuntu:latest
 
+%help
+This is a test container.
+
 %files
-    #mpitest.c /opt
+    ../../TomoATT /opt/TomoATT
 
 %environment
     export PKG_DIR=/opt/ompi
     export SINGULARITY_PKG_DIR=$PKG_DIR
     export SINGULARITYENV_APPEND_PATH=$PKG_DIR/bin
     export SINGULAIRTYENV_APPEND_LD_LIBRARY_PATH=$PKG_DIR/lib
+    export PATH=$PKG_DIR/bin:$PATH
+    export PATH=/opt/TomoATT/build:$PATH
 
 %post
     echo "Installing required packages..."
-    apt-get update && apt-get install -y wget git bash gcc gfortran g++ make file
+    apt-get update && apt-get install -y wget git bash gcc gfortran g++ make file cmake
 
 
     export PKG_DIR=/opt/packages
@@ -27,7 +32,7 @@ From: ubuntu:latest
     # Download
     cd /tmp/ompi && wget -O openmpi-$OMPI_VERSION_FULL.tar.gz $OMPI_URL && tar -xvf openmpi-$OMPI_VERSION_FULL.tar.gz
     # Compile and install
-    cd /tmp/ompi/openmpi-$OMPI_VERSION_FULL && ./configure --prefix=$PKG_DIR && make -j$NPROC install
+    cd /tmp/ompi/openmpi-$OMPI_VERSION_FULL && ./configure --prefix=$PKG_DIR && make -j$NPROC && make install
     # Set env variables so we can compile our application
     export PATH=$PKG_DIR/bin:$PATH
     export LD_LIBRARY_PATH=$PKG_DIR/lib:$LD_LIBRARY_PATH
@@ -43,6 +48,19 @@ From: ubuntu:latest
     mkdir -p /tmp/hdf5
     cd /tmp/hdf5 && wget -O hdf5-$HDF5_VERSION_FULL.tar.gz $HDF5_URL && tar -xvf hdf5-$HDF5_VERSION_FULL.tar.gz && cd hdf5-$HDF5_VERSION_FULL
     tar -xvf hdf5-$HDF5_VERSION_FULL.tar.gz && cd hdf5-$HDF5_VERSION_FULL
-    ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$PKG_DIR && make -j$NPROC && make install
+    CC=mpicc CXX=mpic++ ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$PKG_DIR && make -j$NPROC && make install
 
     echo "hdf5 installed."
+
+    cd /opt/TomoATT
+    mkdir -p build && cd build && rm -rf ./*
+    cmake .. -DCMAKE_PREFIX_PATH=$PKG_DIR
+    make -j$NPROC
+
+    echo "TomoATT installed."
+
+%labels
+
+    Maintainer MasaruNagaso
+
+    Version v1.0
