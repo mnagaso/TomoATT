@@ -30,17 +30,17 @@ int main(int argc, char *argv[])
     // create output directory
     create_output_dir(output_dir);
 
-#ifdef USE_CUDA
-    // initialize cuda
-    if(use_gpu) initialize_cuda();
-#endif
-
     stdout_by_main("------------------------------------------------------");
     stdout_by_main("start TOMOATT solver.");
     stdout_by_main("------------------------------------------------------");
 
     // read input file
     InputParams IP(input_file);
+
+#ifdef USE_CUDA
+    // initialize cuda
+    if(use_gpu) initialize_cuda();
+#endif
 
     // check the number of mpi processes and ndiv setting is consistent
     check_total_nprocs_and_ndiv();

@@ -1,6 +1,30 @@
 #include "iterator_wrapper.cuh"
 
 
+//__device__ void warpReduce(volatile CUSTOMREAL *sdata, unsigned int tid) {
+//    if (CUDA_L1_BLOCK_SIZE >= 64) sdata[tid] += sdata[tid + 32];
+//    if (CUDA_L1_BLOCK_SIZE >= 32) sdata[tid] += sdata[tid + 16];
+//    if (CUDA_L1_BLOCK_SIZE >= 16) sdata[tid] += sdata[tid + 8];
+//    if (CUDA_L1_BLOCK_SIZE >= 8) sdata[tid] += sdata[tid + 4];
+//    if (CUDA_L1_BLOCK_SIZE >= 4) sdata[tid] += sdata[tid + 2];
+//    if (CUDA_L1_BLOCK_SIZE >= 2) sdata[tid] += sdata[tid + 1];
+//}
+//
+//__global__ void L1_reduce_kernel(CUSTOMREAL* g_idata, CUSTOMREAL* g_odata, int n)
+//{
+//    extern __shared__ CUSTOMREAL sdata[];
+//    unsigned int tid = threadIdx.x;
+//    unsigned int i = blockIdx.x*(CUDA_L1_BLOCK_SIZE*2) + tid;
+//    unsigned int gridSize = CUDA_L1_BLOCK_SIZE*2*gridDim.x;
+//    sdata[tid] = 0;
+//    while (i < n) { sdata[tid] += g_idata[i] + g_idata[i+CUDA_L1_BLOCK_SIZE]; i += gridSize; }
+//    __syncthreads();
+//    if (CUDA_L1_BLOCK_SIZE >= 512) { if (tid < 256) { sdata[tid] += sdata[tid + 256]; } __syncthreads(); }
+//    if (CUDA_L1_BLOCK_SIZE >= 256) { if (tid < 128) { sdata[tid] += sdata[tid + 128]; } __syncthreads(); }
+//    if (CUDA_L1_BLOCK_SIZE >= 128) { if (tid < 64)  { sdata[tid] += sdata[tid + 64]; } __syncthreads(); }
+//    if (tid < 32) warpReduce(sdata, tid);
+//    if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+//}
 
 __global__ void L1_reduce_kernel(CUSTOMREAL* d_in, CUSTOMREAL* g_out, int n)
 {
@@ -94,7 +118,7 @@ void cuda_calculate_L1(Grid_on_device* grid_on_dv){
                                               grid_on_dv->loc_I_host, grid_on_dv->loc_J_host, grid_on_dv->loc_K_host, \
                                               grid_on_dv->n_ghost_layers_host, \
                                               &(grid_on_dv->L1_host));
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize(); // not needed
 
     //printf("nblocks %d\n", nblocks);
 
@@ -198,9 +222,9 @@ __device__ CUSTOMREAL cuda_calc_LF_Hamiltonian( \
 
     // LF Hamiltonian for T = T0 * tau
     return sqrt(
-              fac_a_loc[i_j_k_] * pow((T0r_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pr1+pr2)/2.0),2.0) \
-    +         fac_b_loc[i_j_k_] * pow((T0t_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pt1+pt2)/2.0),2.0) \
-    +         fac_c_loc[i_j_k_] * pow((T0p_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pp1+pp2)/2.0),2.0) \
+              fac_a_loc[i_j_k_] * (T0r_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pr1+pr2)/2.0) * (T0r_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pr1+pr2)/2.0)\
+    +         fac_b_loc[i_j_k_] * (T0t_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pt1+pt2)/2.0) * (T0t_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pt1+pt2)/2.0)\
+    +         fac_c_loc[i_j_k_] * (T0p_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pp1+pp2)/2.0) * (T0p_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pp1+pp2)/2.0)\
     -     2.0*fac_f_loc[i_j_k_] * (T0t_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pt1+pt2)/2.0) \
                                 * (T0p_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pp1+pp2)/2.0) \
     );
