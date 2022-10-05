@@ -1203,8 +1203,8 @@ void cuda_run_iterate_forward(Grid_on_device* grid_on_dv, \
         } else if (iter_count >= max_iter) {
             goto iter_end;
         } else {
-            if (grid_on_dv->myrank_host== 0)
-                printf("iter_count, L1 , tolerance : %d, %5.16f, %5.16f\n", iter_count, grid_on_dv->L1_host, tolerance);
+            //if (grid_on_dv->myrank_host== 0)
+            //    printf("iter_count, L1 , tolerance : %d, %5.16f, %5.16f\n", iter_count, grid_on_dv->L1_host, tolerance);
             iter_count++;
         }
     }
