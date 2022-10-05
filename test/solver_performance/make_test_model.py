@@ -15,12 +15,14 @@ if __name__ == "__main__":
     parser.add_argument("--n_sweep", type=int, default=1)
     # ndiv_rtp
     parser.add_argument("--ndiv_rtp", type=int, nargs=3, default=[1,1,1])
+    # use_gpu
+    parser.add_argument("--use_gpu", type=int, default=0)
 
 
     n_rtp = parser.parse_args().n_rtp
     n_sweep = parser.parse_args().n_sweep
     ndiv_rtp = parser.parse_args().ndiv_rtp
-
+    use_gpu = parser.parse_args().use_gpu
 
     #
     # create model file if not exists
@@ -299,6 +301,7 @@ parallel :
   n_sims : 1 # number of simultaneous run
   ndiv_rtp : [{},{},{}] # number of subdomains
   nproc_sub : {}      # number of subprocess used for each subdomain
+  use_gpu : {}
 
 calculation :
   convergence_tolerance : 1e-4
@@ -306,7 +309,7 @@ calculation :
   stencil_order : 3 # 1 or 3
   sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
 
-""".format(n_rtp[0],n_rtp[1],n_rtp[2],n_rtp[0],n_rtp[1],n_rtp[2], ndiv_rtp[0],ndiv_rtp[1],ndiv_rtp[2], n_sweep)
+""".format(n_rtp[0],n_rtp[1],n_rtp[2],n_rtp[0],n_rtp[1],n_rtp[2], ndiv_rtp[0],ndiv_rtp[1],ndiv_rtp[2], n_sweep, use_gpu)
 
 str_nsweep_ndiv_rtp = str(n_sweep) + '-' + str(ndiv_rtp[0]) + '-' + str(ndiv_rtp[1]) + '-' + str(ndiv_rtp[2])
 
