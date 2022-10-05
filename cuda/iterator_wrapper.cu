@@ -299,22 +299,22 @@ __device__ void cuda_calculate_stencil_3rd_order( \
                                             CUSTOMREAL* T0v_loc, \
                                             CUSTOMREAL* tau_loc, \
                                             CUSTOMREAL* fun_loc, \
-                                            CUSTOMREAL dr, CUSTOMREAL dt, CUSTOMREAL dp, \
-                                            int i_j_k_, \
-                                            int ipj_k_, \
-                                            int imj_k_, \
-                                            int i_jpk_, \
-                                            int i_jmk_, \
-                                            int i_j_kp, \
-                                            int i_j_km, \
-                                            int ip2j_k_, \
-                                            int im2j_k_, \
-                                            int i_jp2k_, \
-                                            int i_jm2k_, \
-                                            int i_j_kp2, \
-                                            int i_j_km2, \
-                                            int i, int j, int k, \
-                                            int loc_I, int loc_J, int loc_K){
+                                            CUSTOMREAL& dr, CUSTOMREAL& dt, CUSTOMREAL& dp, \
+                                            int& i_j_k_, \
+                                            int& ipj_k_, \
+                                            int& imj_k_, \
+                                            int& i_jpk_, \
+                                            int& i_jmk_, \
+                                            int& i_j_kp, \
+                                            int& i_j_km, \
+                                            int& ip2j_k_, \
+                                            int& im2j_k_, \
+                                            int& i_jp2k_, \
+                                            int& i_jm2k_, \
+                                            int& i_j_kp2, \
+                                            int& i_j_km2, \
+                                            int& i, int& j, int& k, \
+                                            int& loc_I, int& loc_J, int& loc_K){
 
     CUSTOMREAL sigr = 1.0*sqrt(fac_a_loc[i_j_k_])*T0v_loc[i_j_k_];
     CUSTOMREAL sigt = 1.0*sqrt(fac_b_loc[i_j_k_])*T0v_loc[i_j_k_];
@@ -324,7 +324,7 @@ __device__ void cuda_calculate_stencil_3rd_order( \
     CUSTOMREAL pp1, pp2, pt1, pt2, pr1, pr2;
     CUSTOMREAL wp1, wp2, wt1, wt2, wr1, wr2;
 
-    CUSTOMREAL eps = 1.0e-12;
+    const CUSTOMREAL eps = 1.0e-12;
 
     // direction p
     if (i == 1) {
@@ -994,10 +994,12 @@ void cuda_do_sweep_level(int iswp, Grid_on_device* grid_on_dv) {
                                     &(grid_on_dv->T0p_loc_dev  ), \
                                     &(grid_on_dv->is_changed_dev) \
                                     };
+
+            int id_stream = i_level % CUDA_MAX_NUM_STREAMS;
             if (grid_on_dv->stencil_order_host == 3)
-                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_on_dv->level_streams[i_level]), 30001);
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_on_dv->level_streams[id_stream]), 30001);
             else if (grid_on_dv->stencil_order_host == 1)
-                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_on_dv->level_streams[i_level]), 30002);
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_on_dv->level_streams[id_stream]), 30002);
 
             id_start += grid_on_dv->n_points_per_level_host[i_level];
 
@@ -1140,10 +1142,10 @@ void initialize_sweep_params(Grid_on_device* grid_on_dv) {
         // allocate level_streams
         // required only for kernel launching for each level
         //
-        int n_levels = grid_on_dv->ed_level_host - grid_on_dv->st_level_host + 1;
-        grid_on_dv->level_streams = (cudaStream_t*)malloc(n_levels*sizeof(cudaStream_t));
+        //int n_levels = grid_on_dv->ed_level_host - grid_on_dv->st_level_host + 1;
+        grid_on_dv->level_streams = (cudaStream_t*)malloc(CUDA_MAX_NUM_STREAMS*sizeof(cudaStream_t));
         // spawn streams
-        for (int i = 0; i < n_levels; i++) {
+        for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
             cudaStreamCreate(&(grid_on_dv->level_streams[i]));
         }
         grid_on_dv->use_unified_kernel_host = false;
@@ -1187,9 +1189,10 @@ void cuda_run_iterate_forward(Grid_on_device* grid_on_dv, \
         for (int iswp = nswp-1; iswp > -1; iswp--) {
             // do sweeping
             cuda_do_sweep_level(iswp, grid_on_dv);
-            // copy the values of communication nodes to the ghost nodes of adjacent subdomains
-            cuda_send_recev_boundary_data(grid_on_dv);
         }
+
+        // copy the values of communication nodes to the ghost nodes of adjacent subdomains
+        cuda_send_recev_boundary_data(grid_on_dv);
 
         // calculate the obj for this subdomain and mpi reduce
         cuda_calculate_L1(grid_on_dv);
@@ -1200,8 +1203,8 @@ void cuda_run_iterate_forward(Grid_on_device* grid_on_dv, \
         } else if (iter_count >= max_iter) {
             goto iter_end;
         } else {
-            //if (grid_on_dv->myrank_host== 0)
-            //    printf("iter_count, L1 , tolerance : %d, %5.16f, %5.16f\n", iter_count, grid_on_dv->L1_host, tolerance);
+            if (grid_on_dv->myrank_host== 0)
+                printf("iter_count, L1 , tolerance : %d, %5.16f, %5.16f\n", iter_count, grid_on_dv->L1_host, tolerance);
             iter_count++;
         }
     }
