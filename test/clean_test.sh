@@ -7,8 +7,7 @@ if [ -z $TARGET_DIR ]; then
 fi
 
 if [ ! -d $TARGET_DIR ]; then
-    echo "Target directory $TARGET_DIR does not exist"
-    exit 1
+    echo "Target directory $TARGET_DIR does not exist" exit 1
 fi
 
 # .h5 files
@@ -27,4 +26,9 @@ find $TARGET_DIR/fortran_code/ega5/output -name "*" -exec rm {} \;
 find $TARGET_DIR/fortran_code/a.out -name "*" -exec rm {} \;
 # erase files in fortran_code/ega5/output/tele_traveltime_field
 find $TARGET_DIR/fortran_code/ega5/output/tele_traveltime_field -name "*" -exec rm {} \;
-
+# erase cuda_device_info.txt
+find $TARGET_DIR -name "cuda_device_info.txt" -exec rm {} \;
+# erase error_message_*.txt
+find $TARGET_DIR -name "error_message_*.txt" -exec rm {} \;
+# erase time*.txt
+find $TARGET_DIR -name "time*.txt" -exec rm {} \;
