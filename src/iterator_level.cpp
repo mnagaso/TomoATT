@@ -15,16 +15,13 @@ void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     int iip, jjt, kkr;
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
 
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1; //np-ii;
+            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
+            else            kkr = ijk.at(2)-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
+            else            jjt = ijk.at(1)-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
+            else            iip = ijk.at(0)-1;  //np-ii;
 
             //
             // calculate stencils
@@ -54,16 +51,13 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
 
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1; //np-ii;
+            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
+            else            kkr = ijk.at(2)-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
+            else            jjt = ijk.at(1)-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
+            else            iip = ijk.at(0)-1;  //np-ii;
 
             //
             // calculate stencils
@@ -99,16 +93,13 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
 
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1;  //np-ii;
+            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
+            else            kkr = ijk.at(2)-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
+            else            jjt = ijk.at(1)-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
+            else            iip = ijk.at(0)-1;  //np-ii;
 
             //
             // calculate stencils
@@ -144,16 +135,13 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
 
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1;  //np-ii;
+            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
+            else            kkr = ijk.at(2)-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
+            else            jjt = ijk.at(1)-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
+            else            iip = ijk.at(0)-1;  //np-ii;
 
             //
             // calculate stencils
@@ -190,18 +178,13 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
 
-            //std::cout << sub_rank << ": " << i_level << " " << ii << " " << jj << " " << kk << std::endl;
-
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1; //np-ii;
+            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
+            else            kkr = ijk.at(2)-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
+            else            jjt = ijk.at(1)-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
+            else            iip = ijk.at(0)-1;  //np-ii;
 
             //
             // calculate stencils
@@ -236,16 +219,13 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-            int kk = ijk.at(2);
-            int jj = ijk.at(1);
-            int ii = ijk.at(0);
 
-            if (r_dirc < 0) kkr = nr-kk; //kk-1;
-            else            kkr = kk-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jj; //jj-1;
-            else            jjt = jj-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ii; //ii-1;
-            else            iip = ii-1; //np-ii;
+            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
+            else            kkr = ijk.at(2)-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
+            else            jjt = ijk.at(1)-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
+            else            iip = ijk.at(0)-1;  //np-ii;
 
             //
             // calculate stencils
