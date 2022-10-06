@@ -1,6 +1,8 @@
 #include "iterator.h"
 
-Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) {
+Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
+                   bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+         : is_second_run(is_second_run_in) {
     if(n_subprocs > 1) {
 
         // share necessary values between subprocs
@@ -68,15 +70,17 @@ Iterator::~Iterator() {}
 void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     if(if_verbose && myrank == 0) std::cout << "(re) initializing arrays" << std::endl;
 
-    if (subdom_main) {
-        if (!is_teleseismic) {
-            // set initial a b c and calculate a0 b0 c0 f0
-            grid.setup_factors(src);
-            // calculate T0 T0r T0t T0p and initialize tau
-            grid.initialize_fields(src);
-        } else {
-            // copy T_loc arrival time on domain's boundaries.
-            grid.initialize_fields_teleseismic(src, IP.get_src_point(id_sim_src));
+    if (!is_second_run) { // field initialization has already been done in the second run
+        if (subdom_main) {
+            if (!is_teleseismic) {
+                // set initial a b c and calculate a0 b0 c0 f0
+                grid.setup_factors(src);
+                // calculate T0 T0r T0t T0p and initialize tau
+                grid.initialize_fields(src);
+            } else {
+                // copy T_loc arrival time on domain's boundaries.
+                grid.initialize_fields_teleseismic(src, IP.get_src_point(id_sim_src));
+            }
         }
     }
 

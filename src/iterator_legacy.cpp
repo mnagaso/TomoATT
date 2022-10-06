@@ -1,8 +1,8 @@
 #include "iterator_legacy.h"
 
 
-Iterator_legacy:: Iterator_legacy(InputParams& IP, Grid& grid, Source& src, IO_utils& io,  bool first_init, bool is_teleseismic_in) \
-                : Iterator(IP, grid, src, io, first_init, is_teleseismic_in) {
+Iterator_legacy:: Iterator_legacy(InputParams& IP, Grid& grid, Source& src, IO_utils& io,  bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                : Iterator(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
     // do nothing
 }
 
@@ -50,8 +50,8 @@ void Iterator_legacy::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
 }
 
 
-Iterator_legacy_tele::Iterator_legacy_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) \
-                : Iterator(IP, grid, src, io, first_init, is_teleseismic_in) {
+Iterator_legacy_tele::Iterator_legacy_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                : Iterator(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
     // do nothing
 }
 
@@ -105,8 +105,8 @@ void Iterator_legacy_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
 }
 
 
-Iterator_legacy_1st_order::Iterator_legacy_1st_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) \
-                         : Iterator_legacy(IP, grid, src, io, first_init, is_teleseismic_in) {
+Iterator_legacy_1st_order::Iterator_legacy_1st_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_legacy(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -162,8 +162,8 @@ void Iterator_legacy_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP) 
 
 
 
-Iterator_legacy_3rd_order::Iterator_legacy_3rd_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) \
-                         : Iterator_legacy(IP, grid, src, io, first_init, is_teleseismic_in) {
+Iterator_legacy_3rd_order::Iterator_legacy_3rd_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_legacy(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -217,8 +217,8 @@ void Iterator_legacy_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP) 
 }
 
 
-Iterator_legacy_1st_order_tele::Iterator_legacy_1st_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) \
-                         : Iterator_legacy_tele(IP, grid, src, io, first_init, is_teleseismic_in) {
+Iterator_legacy_1st_order_tele::Iterator_legacy_1st_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_legacy_tele(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -277,8 +277,8 @@ void Iterator_legacy_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams&
 
 
 
-Iterator_legacy_3rd_order_tele::Iterator_legacy_3rd_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) \
-                         : Iterator_legacy_tele(IP, grid, src, io, first_init, is_teleseismic_in) {
+Iterator_legacy_3rd_order_tele::Iterator_legacy_3rd_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_legacy_tele(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 

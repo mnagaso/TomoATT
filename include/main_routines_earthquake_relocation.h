@@ -62,7 +62,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
-        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It);
+        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
 
         /////////////////////////
         // run forward simulation

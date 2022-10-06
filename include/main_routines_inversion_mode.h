@@ -72,15 +72,33 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
 
-        // initialize iterator object
-        std::unique_ptr<Iterator> It;
-        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It);
-
         /////////////////////////
         // run forward simulation
         /////////////////////////
 
-        It->run_iteration_forward(IP, grid, io, first_init);
+        // initialize iterator object
+        std::unique_ptr<Iterator> It;
+
+        if (!hybrid_stencil_order){
+            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+            It->run_iteration_forward(IP, grid, io, first_init);
+        } else {
+            // hybrid stencil mode
+            std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
+
+            // run 1st order forward simulation
+            std::unique_ptr<Iterator> It_pre;
+            IP.set_stencil_order(1);
+            IP.set_conv_tol(IP.get_conv_tol()*100.0);
+            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It_pre, false);
+            It_pre->run_iteration_forward(IP, grid, io, first_init);
+
+            // run 3rd order forward simulation
+            IP.set_stencil_order(3);
+            IP.set_conv_tol(IP.get_conv_tol()/100.0);
+            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
+            It->run_iteration_forward(IP, grid, io, first_init);
+        }
 
         // output the result of forward simulation
         // ignored for inversion mode.

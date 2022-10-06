@@ -32,3 +32,5 @@ find $TARGET_DIR -name "cuda_device_info.txt" -exec rm {} \;
 find $TARGET_DIR -name "error_message_*.txt" -exec rm {} \;
 # erase time*.txt
 find $TARGET_DIR -name "time*.txt" -exec rm {} \;
+# erase log
+find $TARGET_DIR -name "log" -exec rm {} \;

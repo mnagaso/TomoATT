@@ -121,9 +121,11 @@ public:
     std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
 
     CUSTOMREAL get_conv_tol(){return conv_tol;};
+    void set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
     CUSTOMREAL get_max_iter(){return max_iter;};
 
     int get_stencil_order(){return stencil_order;};
+    void set_stencil_order(int stencil_order_){stencil_order = stencil_order_;};
     int get_sweep_type()   {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};

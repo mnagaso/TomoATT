@@ -89,6 +89,7 @@ inline const int SRC_RELOCATION      = 3;
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
 inline const int SWEEP_TYPE_LEVEL  = 1;
+inline      bool hybrid_stencil_order = false; // if true, code at first run 1st order, then change to 3rd order (Dong Cui 2020)
 
 // convert depth <-> radius
 inline CUSTOMREAL depth2radius(CUSTOMREAL depth) {

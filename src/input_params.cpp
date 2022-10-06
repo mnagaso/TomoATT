@@ -231,6 +231,11 @@ InputParams::InputParams(std::string& input_file){
             // stencil order
             if (config["calculation"]["stencil_order"]) {
                 stencil_order = config["calculation"]["stencil_order"].as<int>();
+                // check if stencil_order == 999 : hybrid scheme
+                if (stencil_order == 999) {
+                    hybrid_stencil_order = true;
+                    stencil_order = 1;
+                }
             }
             // sweep type
             if (config["calculation"]["sweep_type"]) {
@@ -381,6 +386,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(conv_tol, 0);
     broadcast_i_single(max_iter, 0);
     broadcast_i_single(stencil_order, 0);
+    broadcast_bool_single(hybrid_stencil_order, 0);
     broadcast_i_single(sweep_type, 0);
     broadcast_i_single(output_format, 0);
     broadcast_bool_single(if_test, 0);

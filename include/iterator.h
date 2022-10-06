@@ -17,7 +17,7 @@
 
 class Iterator {
 public:
-    Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool);
+    Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool, bool);
     virtual ~Iterator();
     // regional source
     void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
@@ -88,6 +88,9 @@ protected:
 
     // teleseismic flag
     bool is_teleseismic = false;
+
+    // second run for hybrid order method
+    bool is_second_run = false;
 
 };
 
