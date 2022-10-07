@@ -153,7 +153,7 @@ inline std::vector<int> define_node_ids(std::vector<std::string>& mpi_node_names
 }
 
 
-inline int count_number_conpute_nodes(std::vector<std::string> mpi_node_names) {
+inline int count_number_compute_nodes(std::vector<std::string> mpi_node_names) {
     std::vector<std::string> mpi_node_names_unique = mpi_node_names;
     std::sort(mpi_node_names_unique.begin(), mpi_node_names_unique.end());
     mpi_node_names_unique.erase(std::unique(mpi_node_names_unique.begin(), mpi_node_names_unique.end()), mpi_node_names_unique.end());
@@ -245,7 +245,7 @@ inline void split_mpi_comm(){
 //    synchronize_all_world();
 
     // total number of nodes (unique)
-    int n_compute_nodes = count_number_conpute_nodes(mpi_node_names);
+    int n_compute_nodes = count_number_compute_nodes(mpi_node_names);
 
     // show node name and number summary
     if (world_rank == 0){
@@ -294,7 +294,7 @@ inline void split_mpi_comm(){
         mpi_node_ids   = mpi_node_ids_tmp;
 
         // count the number of compute nodes (unique) again
-        n_compute_nodes = count_number_conpute_nodes(mpi_node_names);
+        n_compute_nodes = count_number_compute_nodes(mpi_node_names);
 
     } else {
         // this is not a simultaneous run
