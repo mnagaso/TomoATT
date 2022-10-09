@@ -12,15 +12,16 @@ endif()
 #
 # for production
 #
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -Ofast -funroll-loops")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops")
 #
 # for debugging
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -funroll-loops") # debug
 #
-# for scorep profiling
-#
-#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -O2 -funroll-loops") # debug
+# for vtune profiling
+# with vectorization report
+#set(gcc_coverage_compile_flags "-wall -pedantic -lm -g -o3 -shared-libgcc  -ftree-vectorizer-verbose=2") # debug
+#set(GCC_COVERAGE_COMPILE_FLAGS "-g") # debug
 #
 # for FUGAKU (use clang mode)
 #

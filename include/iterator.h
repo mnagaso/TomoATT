@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <vector>
+#include <math.h>
 #include "grid.h"
 #include "input_params.h"
 #include "utils.h"
