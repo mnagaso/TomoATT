@@ -23,6 +23,11 @@ inline int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc;
 
 // 3d indices to 1d index
 #define I2V(A,B,C) ((C)*loc_I*loc_J + (B)*loc_I + A)
+inline void V2I(const int& ijk, int& i, int& j, int& k) {
+    k = ijk / (loc_I * loc_J);
+    j = (ijk - k * loc_I * loc_J) / loc_I;
+    i = ijk - k * loc_I * loc_J - j * loc_I;
+}
 
 #define I2V_INV_GRIDS(A,B,C,D) ((D)*n_inv_I_loc*n_inv_J_loc*n_inv_K_loc + (C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_KNL(A,B,C)     ((C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)

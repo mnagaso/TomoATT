@@ -70,7 +70,7 @@ protected:
     MPI_Win win_nr, win_nt, win_np; // windows for grid point information
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
-    std::vector< std::vector< std::vector<int> > > ijk_for_this_subproc; // ii,jj,kk for this process (level, kk)
+    std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, kk)
     const int nswp = 8;          // number of sweeping directions
     int r_dirc, t_dirc, p_dirc;  // sweeping directions
     CUSTOMREAL sigr, sigt, sigp; //

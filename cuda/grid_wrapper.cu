@@ -251,7 +251,7 @@ void cuda_data_transfer_to_device(Grid_on_device* grid_on_dv, \
 
 void cuda_init_gpu_params(Grid_on_device* grid_on_dv, \
                           MPI_Comm inter_sub_comm, \
-                          std::vector<std::vector<std::vector<int>>>& ijk_levels, \
+                          std::vector<std::vector<int>>& ijk_levels, \
                           CUSTOMREAL dr, CUSTOMREAL dt, CUSTOMREAL dp) {
 
     //printf("cuda_init_gpu_params\n");
@@ -288,12 +288,14 @@ void cuda_init_gpu_params(Grid_on_device* grid_on_dv, \
 
     // store the points in temporary arrays
     int current_pt = 0;
+    int iip,jjt,kkr;
     for (int ilevel = 0; ilevel < n_levels; ilevel++){
         int n_points = ijk_levels[ilevel].size();
         for (int ipoint = 0; ipoint < n_points; ipoint++){
-            i_id_all_level_tmp[current_pt] = ijk_levels[ilevel][ipoint][0];
-            j_id_all_level_tmp[current_pt] = ijk_levels[ilevel][ipoint][1];
-            k_id_all_level_tmp[current_pt] = ijk_levels[ilevel][ipoint][2];
+            V2I(ijk_levels[ilevel][ipoint], iip, jjt, kkr, grid_on_dv->loc_I_host, grid_on_dv->loc_J_host, grid_on_dv->loc_K_host);
+            i_id_all_level_tmp[current_pt] = iip;
+            j_id_all_level_tmp[current_pt] = jjt;
+            k_id_all_level_tmp[current_pt] = kkr;
             current_pt++;
         }
     }

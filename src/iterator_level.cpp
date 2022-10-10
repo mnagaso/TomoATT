@@ -13,15 +13,19 @@ void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+    int n_levels = ijk_for_this_subproc.size();
 
-            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
-            else            kkr = ijk.at(2)-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
-            else            jjt = ijk.at(1)-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
-            else            iip = ijk.at(0)-1;  //np-ii;
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level]) {
+
+            V2I(ijk, iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
 
             //
             // calculate stencils
@@ -48,16 +52,19 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
 
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level]) {
 
-            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
-            else            kkr = ijk.at(2)-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
-            else            jjt = ijk.at(1)-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
-            else            iip = ijk.at(0)-1;  //np-ii;
+            V2I(ijk, iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
 
             //
             // calculate stencils
@@ -90,16 +97,19 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
 
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level]) {
 
-            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
-            else            kkr = ijk.at(2)-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
-            else            jjt = ijk.at(1)-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
-            else            iip = ijk.at(0)-1;  //np-ii;
+            V2I(ijk, iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
 
             //
             // calculate stencils
@@ -132,16 +142,19 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
 
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level]) {
 
-            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
-            else            kkr = ijk.at(2)-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
-            else            jjt = ijk.at(1)-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
-            else            iip = ijk.at(0)-1;  //np-ii;
+            V2I(ijk, iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
 
             //
             // calculate stencils
@@ -175,16 +188,19 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
 
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level]) {
 
-            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
-            else            kkr = ijk.at(2)-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
-            else            jjt = ijk.at(1)-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
-            else            iip = ijk.at(0)-1;  //np-ii;
+            V2I(ijk, iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
 
             //
             // calculate stencils
@@ -216,16 +232,19 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
     set_sweep_direction(iswp);
 
     int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
 
-    for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        for (auto& ijk : ijk_for_this_subproc[i_level]) {
 
-            if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
-            else            kkr = ijk.at(2)-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-ijk.at(1); //jj-1;
-            else            jjt = ijk.at(1)-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-ijk.at(0); //ii-1;
-            else            iip = ijk.at(0)-1;  //np-ii;
+            V2I(ijk, iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
 
             //
             // calculate stencils

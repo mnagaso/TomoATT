@@ -532,7 +532,7 @@ void Iterator::assign_processes_for_levels() {
         int kleft  = std::max(st_id, level-np-nt+2);
         int kright = std::min(level-4, nr-1)   ;
 
-        std::vector< std::vector<int> > asigned_nodes_on_this_level;
+        std::vector<int> asigned_nodes_on_this_level;
         int grid_count = 0;
 
         // n grids calculated by each subproc
@@ -554,7 +554,7 @@ void Iterator::assign_processes_for_levels() {
                 // check if this node should be assigned to this process
                 //if (grid_count%n_subprocs == sub_rank) {
                 if (grid_count >= i_grid_start && grid_count < i_grid_start+n_grids_by_this) {
-                    std::vector<int> tmp_ijk = {ii,jj,kk};
+                    int tmp_ijk = I2V(ii,jj,kk);
                     asigned_nodes_on_this_level.push_back(tmp_ijk);
                     n_grids_this_subproc++;
                 }

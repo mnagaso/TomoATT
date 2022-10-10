@@ -2248,7 +2248,7 @@ void Grid::calc_residual() {
 }
 
 
-void Grid::initialize_gpu_grid(std::vector<std::vector<std::vector<int>>> &ijk_levels) {
+void Grid::initialize_gpu_grid(std::vector<std::vector<int>> &ijk_levels) {
     // initialize gpu grid
 #ifdef USE_CUDA
 

@@ -440,7 +440,7 @@ public:
 #ifdef USE_CUDA
     Grid_on_device *gpu_grid;
 #endif
-    void initialize_gpu_grid(std::vector<std::vector<std::vector<int>>>&);
+    void initialize_gpu_grid(std::vector<std::vector<int>>&);
     void reinitialize_gpu_grid();
 
 

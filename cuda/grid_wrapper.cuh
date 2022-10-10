@@ -242,7 +242,7 @@ void cuda_free_memory_for_grid(Grid_on_device*);
 // prepare grid informations on gpu
 void cuda_init_gpu_params(Grid_on_device*, \
                           MPI_Comm, \
-                          std::vector<std::vector<std::vector<int>>> &, \
+                          std::vector<std::vector<int>> &, \
                           CUSTOMREAL, CUSTOMREAL, CUSTOMREAL);
 
 // resert grid when target source changed
@@ -264,5 +264,12 @@ void cuda_send_recev_boundary_data(Grid_on_device*);
 void cuda_prepare_boundary_data_to_send(Grid_on_device*);
 void cuda_assign_received_data_to_ghost(Grid_on_device*);
 
+
+inline void V2I(const int& ijk, int& i, int& j, int& k, \
+                const int& loc_I, const int& loc_J, const int& loc_K) {
+    k = ijk / (loc_I * loc_J);
+    j = (ijk - k * loc_I * loc_J) / loc_I;
+    i = ijk - k * loc_I * loc_J - j * loc_I;
+}
 
 #endif // GRID_WRAPPER_CUH
