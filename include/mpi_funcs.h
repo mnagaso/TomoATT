@@ -74,7 +74,6 @@ inline void initialize_mpi(){
     int nthreads = omp_get_max_threads();
     std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
-
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
     // Get the rank of the process
