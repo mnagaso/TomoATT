@@ -16,9 +16,12 @@ void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     int n_levels = ijk_for_this_subproc.size();
 
     for (int i_level = 0; i_level < n_levels; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level]) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            V2I(ijk, iip, jjt, kkr);
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
             if (r_dirc < 0) kkr = nr-kkr; //kk-1;
             else            kkr = kkr-1;  //nr-kk;
@@ -55,9 +58,12 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     int n_levels = ijk_for_this_subproc.size();
 
     for (int i_level = 0; i_level < n_levels; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level]) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            V2I(ijk, iip, jjt, kkr);
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
             if (r_dirc < 0) kkr = nr-kkr; //kk-1;
             else            kkr = kkr-1;  //nr-kk;
@@ -100,9 +106,12 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     int n_levels = ijk_for_this_subproc.size();
 
     for (int i_level = 0; i_level < n_levels; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level]) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            V2I(ijk, iip, jjt, kkr);
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
             if (r_dirc < 0) kkr = nr-kkr; //kk-1;
             else            kkr = kkr-1;  //nr-kk;
@@ -146,6 +155,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     for (int i_level = 0; i_level < n_levels; i_level++) {
         size_t n_nodes = ijk_for_this_subproc[i_level].size();
+
         #pragma omp simd
         for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
@@ -193,9 +203,12 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
     int n_levels = ijk_for_this_subproc.size();
 
     for (int i_level = 0; i_level < n_levels; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level]) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            V2I(ijk, iip, jjt, kkr);
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
             if (r_dirc < 0) kkr = nr-kkr; //kk-1;
             else            kkr = kkr-1;  //nr-kk;
@@ -237,9 +250,12 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
     int n_levels = ijk_for_this_subproc.size();
 
     for (int i_level = 0; i_level < n_levels; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level]) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            V2I(ijk, iip, jjt, kkr);
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
             if (r_dirc < 0) kkr = nr-kkr; //kk-1;
             else            kkr = kkr-1;  //nr-kk;

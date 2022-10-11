@@ -1162,6 +1162,7 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
 
     //plane
     for (int jjt = 0; jjt < nt; jjt++){
+        #pragma omp simd
         for (int iip = 0; iip < np; iip++){
             v0 = _2_CR * grid.tau_loc[I2V(iip,jjt,1)] - grid.tau_loc[I2V(iip,jjt,2)];
             v1 = grid.tau_loc[I2V(iip,jjt,2)];
@@ -1173,6 +1174,7 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
     }
 
     for (int kkr = 0; kkr < nr; kkr++){
+        #pragma omp simd
         for (int iip = 0; iip < np; iip++){
             v0 = _2_CR * grid.tau_loc[I2V(iip,1,kkr)] - grid.tau_loc[I2V(iip,2,kkr)];
             v1 = grid.tau_loc[I2V(iip,2,kkr)];
@@ -1184,6 +1186,7 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
     }
 
     for (int kkr = 0; kkr < nr; kkr++){
+        #pragma omp simd
         for (int jjt = 0; jjt < nt; jjt++){
             v0 = _2_CR * grid.tau_loc[I2V(1,jjt,kkr)] - grid.tau_loc[I2V(2,jjt,kkr)];
             v1 = grid.tau_loc[I2V(2,jjt,kkr)];
