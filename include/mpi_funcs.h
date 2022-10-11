@@ -10,6 +10,10 @@
 #include "utils.h"
 #include "config.h"
 
+#ifdef USE_OMP
+#include <omp.h>
+#endif
+
 inline void initialize_mpi();
 inline void finalize_mpi();
 
@@ -57,9 +61,19 @@ inline void shm_fence(MPI_Win&);
 
 inline void initialize_mpi(){
     // Initialize the MPI environment
+#ifndef USE_OMP
     MPI_Init(NULL, NULL);
-    //int provided;
-    //MPI_Init_thread(NULL,NULL,MPI_THREAD_MULTIPLE,&provided); // #TODO: checkif SERIALIZED is needed
+#else
+    int provided;
+    MPI_Init_thread(NULL,NULL,MPI_THREAD_MULTIPLE,&provided); // #TODO: checkif SERIALIZED is needed
+    if(provided != MPI_THREAD_MULTIPLE){
+        std::cerr << "MPI_THREAD_MULTIPLE is not supported" << std::endl;
+        exit(1);
+    }
+    // show the number of threads
+    int nthreads = omp_get_max_threads();
+    std::cout << "Number of threads = " << nthreads << std::endl;
+#endif
 
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
