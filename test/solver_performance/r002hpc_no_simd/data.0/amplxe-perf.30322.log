@@ -1,0 +1,18 @@
+Using CPUID GenuineIntel-6-9E-A
+path: /home/masarunagaso/workspace/TomoATT/test/solver_performance/r002hpc/data.0/temp.dryrun.perf
+dir-data-file: (null)
+dir-reuse: false
+Compression enabled, disabling build id collection at the end of the session.
+nr_cblocks: 0
+affinity: SYS
+mmap flush: 1
+comp level: 1
+Problems creating module maps, continuing anyway...
+mmap size 528384B
+Control descriptor is not initialized
+
+30323:perf-sync:ready:TSC=7102433208424
+[ perf record: Woken up 27 times to write data ]
+failed to write feature HYBRID_TOPOLOGY
+failed to write feature HYBRID_CPU_PMU_CAPS
+[ perf record: Captured and wrote 0.011 MB /home/masarunagaso/workspace/TomoATT/test/solver_performance/r002hpc/data.0/temp.dryrun.perf (1 samples), compressed (original 0.008 MB, ratio is 5.865) ]

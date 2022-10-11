@@ -1,0 +1,67 @@
+threads_spec: cpu
+Using CPUID GenuineIntel-6-9E-A
+path: /home/masarunagaso/workspace/TomoATT/test/solver_performance/r002hpc/data.0/30325.perf
+dir-data-file: (null)
+dir-reuse: false
+Compression enabled, disabling build id collection at the end of the session.
+nr_threads: 12
+thread_masks[0]: 0x5602efe8f6e0: maps mask[12]: 0
+thread_masks[0]: 0x5602efe8f6f0: affinity mask[12]: 0
+thread_masks[1]: 0x5602efe8f700: maps mask[12]: 1
+thread_masks[1]: 0x5602efe8f710: affinity mask[12]: 1
+thread_masks[2]: 0x5602efe8f720: maps mask[12]: 2
+thread_masks[2]: 0x5602efe8f730: affinity mask[12]: 2
+thread_masks[3]: 0x5602efe8f740: maps mask[12]: 3
+thread_masks[3]: 0x5602efe8f750: affinity mask[12]: 3
+thread_masks[4]: 0x5602efe8f760: maps mask[12]: 4
+thread_masks[4]: 0x5602efe8f770: affinity mask[12]: 4
+thread_masks[5]: 0x5602efe8f780: maps mask[12]: 5
+thread_masks[5]: 0x5602efe8f790: affinity mask[12]: 5
+thread_masks[6]: 0x5602efe8f7a0: maps mask[12]: 6
+thread_masks[6]: 0x5602efe8f7b0: affinity mask[12]: 6
+thread_masks[7]: 0x5602efe8f7c0: maps mask[12]: 7
+thread_masks[7]: 0x5602efe8f7d0: affinity mask[12]: 7
+thread_masks[8]: 0x5602efe8f7e0: maps mask[12]: 8
+thread_masks[8]: 0x5602efe8f7f0: affinity mask[12]: 8
+thread_masks[9]: 0x5602efe8f800: maps mask[12]: 9
+thread_masks[9]: 0x5602efe8f810: affinity mask[12]: 9
+thread_masks[10]: 0x5602efe8f820: maps mask[12]: 10
+thread_masks[10]: 0x5602efe8f830: affinity mask[12]: 10
+thread_masks[11]: 0x5602efe8f840: maps mask[12]: 11
+thread_masks[11]: 0x5602efe8f850: affinity mask[12]: 11
+nr_cblocks: 0
+affinity: SYS
+mmap flush: 1
+comp level: 1
+Problems creating module maps, continuing anyway...
+mmap size 528384B
+threads[30335]: started on cpu=1
+threads[30336]: started on cpu=2
+threads[30337]: started on cpu=3
+threads[30338]: started on cpu=4
+threads[30339]: started on cpu=5
+threads[30340]: started on cpu=6
+threads[30341]: started on cpu=7
+threads[30342]: started on cpu=8
+threads[30343]: started on cpu=9
+threads[30344]: started on cpu=10
+threads[30345]: started on cpu=11
+threads[30333]: started on cpu=0
+
+30334:perf-sync:ready:TSC=7102897990720
+[ perf record: Woken up 801 times to write data ]
+threads[30333]: samples=79, wakes=54, trasferred=13854312, compressed=1862285
+threads[30335]: samples=79, wakes=78, trasferred=13647568, compressed=1829508
+threads[30336]: samples=83, wakes=57, trasferred=14557128, compressed=1936844
+threads[30337]: samples=71, wakes=49, trasferred=12427488, compressed=1672272
+threads[30338]: samples=79, wakes=54, trasferred=13705920, compressed=1839234
+threads[30339]: samples=83, wakes=57, trasferred=14632416, compressed=1949111
+threads[30340]: samples=79, wakes=63, trasferred=13741184, compressed=1849695
+threads[30341]: samples=82, wakes=67, trasferred=14309136, compressed=1918795
+threads[30342]: samples=84, wakes=56, trasferred=14575696, compressed=1946267
+threads[30343]: samples=82, wakes=121, trasferred=14254344, compressed=1894086
+threads[30344]: samples=82, wakes=56, trasferred=14412648, compressed=1925341
+threads[30345]: samples=86, wakes=89, trasferred=14953280, compressed=1986766
+failed to write feature HYBRID_TOPOLOGY
+failed to write feature HYBRID_CPU_PMU_CAPS
+[ perf record: Captured and wrote 21.598 MB /home/masarunagaso/workspace/TomoATT/test/solver_performance/r002hpc/data.0/30325.perf (969 samples), compressed (original 161.239 MB, ratio is 7.478) ]

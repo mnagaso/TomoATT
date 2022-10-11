@@ -1,0 +1,86 @@
+==87472== Memcheck, a memory error detector
+==87472== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==87472== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==87472== Command: ../../build/TOMOATT -i input_params_GJI_RealData.yml
+==87472== Parent PID: 87468
+==87472== 
+==87472== 
+==87472== Process terminating with default action of signal 13 (SIGPIPE)
+==87472==    at 0x53EAA6F: __libc_write (write.c:26)
+==87472==    by 0x53EAA6F: write (write.c:24)
+==87472==    by 0x5652093: output.part.0 (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-pal.so.40.30.2)
+==87472==    by 0x5653206: opal_output (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-pal.so.40.30.2)
+==87472==    by 0x6347E31: pmix3x_client_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_pmix_pmix3x.so)
+==87472==    by 0x5B12A27: rte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_ess_pmi.so)
+==87472==    by 0x55B3057: orte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-rte.so.40.30.2)
+==87472==    by 0x503B7C8: ompi_mpi_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libmpi.so.40.30.3)
+==87472==    by 0x4FCF718: PMPI_Init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libmpi.so.40.30.3)
+==87472==    by 0x205715: initialize_mpi() (mpi_funcs.h:60)
+==87472==    by 0x1F550E: main (main.cpp:28)
+==87472== 
+==87472== HEAP SUMMARY:
+==87472==     in use at exit: 789,955 bytes in 6,007 blocks
+==87472==   total heap usage: 12,989 allocs, 6,982 frees, 1,754,941 bytes allocated
+==87472== 
+==87472== 304 bytes in 1 blocks are possibly lost in loss record 4,362 of 4,483
+==87472==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==87472==    by 0x40147D9: calloc (rtld-malloc.h:44)
+==87472==    by 0x40147D9: allocate_dtv (dl-tls.c:375)
+==87472==    by 0x40147D9: _dl_allocate_tls (dl-tls.c:634)
+==87472==    by 0x536B834: allocate_stack (allocatestack.c:430)
+==87472==    by 0x536B834: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
+==87472==    by 0x561BFB9: opal_thread_start (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-pal.so.40.30.2)
+==87472==    by 0x561B94E: opal_progress_thread_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-pal.so.40.30.2)
+==87472==    by 0x5B12976: rte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_ess_pmi.so)
+==87472==    by 0x55B3057: orte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-rte.so.40.30.2)
+==87472==    by 0x503B7C8: ompi_mpi_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libmpi.so.40.30.3)
+==87472==    by 0x4FCF718: PMPI_Init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libmpi.so.40.30.3)
+==87472==    by 0x205715: initialize_mpi() (mpi_funcs.h:60)
+==87472==    by 0x1F550E: main (main.cpp:28)
+==87472== 
+==87472== 304 bytes in 1 blocks are possibly lost in loss record 4,363 of 4,483
+==87472==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==87472==    by 0x40147D9: calloc (rtld-malloc.h:44)
+==87472==    by 0x40147D9: allocate_dtv (dl-tls.c:375)
+==87472==    by 0x40147D9: _dl_allocate_tls (dl-tls.c:634)
+==87472==    by 0x536B834: allocate_stack (allocatestack.c:430)
+==87472==    by 0x536B834: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
+==87472==    by 0x63579D9: pmix_thread_start (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_pmix_pmix3x.so)
+==87472==    by 0x63BDD38: pmix_progress_thread_start (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_pmix_pmix3x.so)
+==87472==    by 0x63BD089: pmix_rte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_pmix_pmix3x.so)
+==87472==    by 0x637DA53: PMIx_Init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_pmix_pmix3x.so)
+==87472==    by 0x6347C3A: pmix3x_client_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_pmix_pmix3x.so)
+==87472==    by 0x5B12A27: rte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/openmpi/mca_ess_pmi.so)
+==87472==    by 0x55B3057: orte_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libopen-rte.so.40.30.2)
+==87472==    by 0x503B7C8: ompi_mpi_init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libmpi.so.40.30.3)
+==87472==    by 0x4FCF718: PMPI_Init (in /home/masarunagaso/workspace/TomoATT/external_libs/local_mpi_hdf5/lib/libmpi.so.40.30.3)
+==87472== 
+==87472== 2,304 bytes in 1 blocks are possibly lost in loss record 4,454 of 4,483
+==87472==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==87472==    by 0x4005D97: malloc (rtld-malloc.h:56)
+==87472==    by 0x4005D97: _dlfo_mappings_segment_allocate (dl-find_object.c:217)
+==87472==    by 0x4005D97: _dl_find_object_update_1 (dl-find_object.c:671)
+==87472==    by 0x4005D97: _dl_find_object_update (dl-find_object.c:804)
+==87472==    by 0x400ECCF: dl_open_worker_begin (dl-open.c:735)
+==87472==    by 0x544AC27: _dl_catch_exception (dl-error-skeleton.c:208)
+==87472==    by 0x400DF99: dl_open_worker (dl-open.c:782)
+==87472==    by 0x544AC27: _dl_catch_exception (dl-error-skeleton.c:208)
+==87472==    by 0x400E34D: _dl_open (dl-open.c:883)
+==87472==    by 0x53666BB: dlopen_doit (dlopen.c:56)
+==87472==    by 0x544AC27: _dl_catch_exception (dl-error-skeleton.c:208)
+==87472==    by 0x544ACF2: _dl_catch_error (dl-error-skeleton.c:227)
+==87472==    by 0x53661AD: _dlerror_run (dlerror.c:138)
+==87472==    by 0x5366747: dlopen_implementation (dlopen.c:71)
+==87472==    by 0x5366747: dlopen@@GLIBC_2.34 (dlopen.c:81)
+==87472== 
+==87472== LEAK SUMMARY:
+==87472==    definitely lost: 0 bytes in 0 blocks
+==87472==    indirectly lost: 0 bytes in 0 blocks
+==87472==      possibly lost: 2,912 bytes in 3 blocks
+==87472==    still reachable: 787,043 bytes in 6,004 blocks
+==87472==         suppressed: 0 bytes in 0 blocks
+==87472== Reachable blocks (those to which a pointer was found) are not shown.
+==87472== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==87472== 
+==87472== For lists of detected and suppressed errors, rerun with: -s
+==87472== ERROR SUMMARY: 3 errors from 3 contexts (suppressed: 0 from 0)
