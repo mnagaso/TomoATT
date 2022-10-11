@@ -134,7 +134,10 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     int iip, jjt, kkr;
 
     for (int i_level = st_level; i_level <= ed_level; i_level++) {
-        for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+        size_t n_nodes = ijk_for_this_subproc[i_level-st_level].size();
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+            auto& ijk = ijk_for_this_subproc[i_level-st_level][i_node];
 
             if (r_dirc < 0) kkr = nr-ijk.at(2); //kk-1;
             else            kkr = ijk.at(2)-1;  //nr-kk;
