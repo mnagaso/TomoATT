@@ -171,8 +171,26 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             //
             // calculate stencils
             //
+            calculate_stencil_3rd_order_opt_pre(grid, iip, jjt, kkr, i_node);
+        } // end ijk
+
+        #pragma omp simd
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
+
+            //
+            // calculate stencils
+            //
             if (grid.is_changed[I2V(iip, jjt, kkr)]) {
-                calculate_stencil_3rd_order(grid, iip, jjt, kkr);
+                calculate_stencil_3rd_order_opt_apre(grid, iip, jjt, kkr, i_node);
             } // is_changed == true
         } // end ijk
 

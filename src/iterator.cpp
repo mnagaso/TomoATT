@@ -64,7 +64,14 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 }
 
 
-Iterator::~Iterator() {}
+Iterator::~Iterator() {
+    delete[] dump_pp1;
+    delete[] dump_pp2;
+    delete[] dump_pt1;
+    delete[] dump_pt2;
+    delete[] dump_pr1;
+    delete[] dump_pr2;
+}
 
 
 void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
@@ -86,6 +93,28 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
 
     // assign processes for each sweeping level
     if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels();
+
+    // initialize arrays for stencil optimization
+    // set dump arrays for stencil coefficients
+    size_t n_dump = 0;
+    if(IP.get_sweep_type() == SWEEP_TYPE_LEGACY)
+        n_dump = np; // dump whole iip iteration
+    else if(IP.get_sweep_type() == SWEEP_TYPE_LEVEL){
+        // dump each plane of cuthill mckee node ordering
+        // prepare for dumping arrays with max length of ijk_for_this_subproc
+        for (size_t i = 0; i < ijk_for_this_subproc.size(); i++)
+            if (ijk_for_this_subproc[i].size() > n_dump)
+                n_dump = ijk_for_this_subproc[i].size();
+    }
+
+    // allocate memory for dumping arrays dump_*
+    dump_pp1 = new CUSTOMREAL[n_dump];
+    dump_pp2 = new CUSTOMREAL[n_dump];
+    dump_pt1 = new CUSTOMREAL[n_dump];
+    dump_pt2 = new CUSTOMREAL[n_dump];
+    dump_pr1 = new CUSTOMREAL[n_dump];
+    dump_pr2 = new CUSTOMREAL[n_dump];
+
 }
 
 
@@ -571,8 +600,10 @@ void Iterator::assign_processes_for_levels() {
     if(if_verbose)
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
-}
+    // prepare node stack for all sweeping directions
 
+
+}
 
 
 void Iterator::calculate_stencil_1st_order(Grid& grid, int& iip, int& jjt, int&kkr){
@@ -599,11 +630,48 @@ void Iterator::calculate_stencil_1st_order(Grid& grid, int& iip, int& jjt, int&k
 }
 
 
+void Iterator::calculate_stencil_1st_order_opt_pre(Grid& grid, int& iip, int& jjt, int&kkr, size_t& i_node){
+
+    dump_pp1[i_node] = (grid.tau_loc[I2V(iip  , jjt  , kkr  )] - grid.tau_loc[I2V(iip-1, jjt  , kkr  )])/dp;
+    dump_pp2[i_node] = (grid.tau_loc[I2V(iip+1, jjt  , kkr  )] - grid.tau_loc[I2V(iip  , jjt  , kkr  )])/dp;
+
+    dump_pt1[i_node] = (grid.tau_loc[I2V(iip  , jjt  , kkr  )] - grid.tau_loc[I2V(iip  , jjt-1, kkr  )])/dt;
+    dump_pt2[i_node] = (grid.tau_loc[I2V(iip  , jjt+1, kkr  )] - grid.tau_loc[I2V(iip  , jjt  , kkr  )])/dt;
+
+    dump_pr1[i_node] = (grid.tau_loc[I2V(iip  , jjt  , kkr  )] - grid.tau_loc[I2V(iip  , jjt  , kkr-1)])/dr;
+    dump_pr2[i_node] = (grid.tau_loc[I2V(iip  , jjt  , kkr+1)] - grid.tau_loc[I2V(iip  , jjt  , kkr  )])/dr;
+
+}
+
+
+void Iterator::calculate_stencil_1st_order_opt_apre(Grid& grid, int& iip, int& jjt, int&kkr, size_t& i_node){
+    sigr = SWEEPING_COEFF*std::sqrt(grid.fac_a_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
+    sigt = SWEEPING_COEFF*std::sqrt(grid.fac_b_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
+    sigp = SWEEPING_COEFF*std::sqrt(grid.fac_c_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
+    coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
+
+    pp1 = dump_pp1[i_node];
+    pp2 = dump_pp2[i_node];
+    pt1 = dump_pt1[i_node];
+    pt2 = dump_pt2[i_node];
+    pr1 = dump_pr1[i_node];
+    pr2 = dump_pr2[i_node];
+
+    // LF Hamiltonian
+    Htau = calc_LF_Hamiltonian(grid, pp1, pp2, pt1, pt2, pr1, pr2, iip, jjt, kkr);
+
+    grid.tau_loc[I2V(iip, jjt, kkr)] += coe*(grid.fun_loc[I2V(iip, jjt, kkr)] - Htau) \
+                                      + coe*(sigr*(pr2-pr1)/_2_CR + sigt*(pt2-pt1)/_2_CR + sigp*(pp2-pp1)/_2_CR);
+
+}
+
+
 void Iterator::calculate_stencil_3rd_order(Grid& grid, int& iip, int& jjt, int&kkr){
     sigr = SWEEPING_COEFF*std::sqrt(grid.fac_a_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
     sigt = SWEEPING_COEFF*std::sqrt(grid.fac_b_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
     sigp = SWEEPING_COEFF*std::sqrt(grid.fac_c_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
     coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
+
 
     // direction p
     if (iip == 1) {
@@ -813,6 +881,241 @@ void Iterator::calculate_stencil_3rd_order(Grid& grid, int& iip, int& jjt, int&k
     grid.tau_loc[I2V(iip,jjt,kkr)] += coe * ((grid.fun_loc[I2V(iip,jjt,kkr)] - Htau) + (sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
 
 }
+
+void Iterator::calculate_stencil_3rd_order_opt_pre(Grid& grid, int& iip, int& jjt, int&kkr, size_t& i_node){
+
+    // direction p
+    if (iip == 1) {
+        pp1 = (grid.tau_loc[I2V(iip,jjt,kkr)] \
+             - grid.tau_loc[I2V(iip-1,jjt,kkr)]) / dp;
+
+        wp2 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip+2,jjt,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip-1,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip+1,jjt,kkr)]) )) );
+
+        pp2 = (_1_CR - wp2) * (         grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                              -         grid.tau_loc[I2V(iip-1,jjt,kkr)]) / _2_CR / dp \
+                   + wp2  * ( - _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                              + _4_CR * grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                              -         grid.tau_loc[I2V(iip+2,jjt,kkr)] ) / _2_CR / dp;
+
+    } else if (iip == np-2) {
+        wp1 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip-1,jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip-2,jjt,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip-1,jjt,kkr)]) )) );
+
+        pp1 = (_1_CR - wp1) * (           grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                -         grid.tau_loc[I2V(iip-1,jjt,kkr)]) / _2_CR / dp \
+                     + wp1  * ( + _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                - _4_CR * grid.tau_loc[I2V(iip-1,jjt,kkr)] \
+                                +         grid.tau_loc[I2V(iip-2,jjt,kkr)] ) / _2_CR / dp;
+
+        pp2 = (grid.tau_loc[I2V(iip+1,jjt,kkr)] - grid.tau_loc[I2V(iip,jjt,kkr)]) / dp;
+
+    } else {
+        wp1 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip-1,jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip-2,jjt,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip-1,jjt,kkr)]) )) );
+
+        pp1 = (_1_CR - wp1) * (         grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                              -         grid.tau_loc[I2V(iip-1,jjt,kkr)]) / _2_CR / dp \
+                   + wp1  * ( + _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                              - _4_CR * grid.tau_loc[I2V(iip-1,jjt,kkr)] \
+                              +         grid.tau_loc[I2V(iip-2,jjt,kkr)] ) / _2_CR / dp;
+
+        wp2 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip+2,jjt,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip-1,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip+1,jjt,kkr)]) )) );
+
+        pp2 = (_1_CR - wp2) * (           grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                -         grid.tau_loc[I2V(iip-1,jjt,kkr)]) / _2_CR / dp \
+                     + wp2  * ( - _3_CR * grid.tau_loc[I2V(iip  ,jjt,kkr)] \
+                                + _4_CR * grid.tau_loc[I2V(iip+1,jjt,kkr)] \
+                                -         grid.tau_loc[I2V(iip+2,jjt,kkr)] ) / _2_CR / dp;
+
+    }
+
+    // direction t
+    if (jjt == 1) {
+        pt1 = (grid.tau_loc[I2V(iip,jjt  ,kkr)] \
+             - grid.tau_loc[I2V(iip,jjt-1,kkr)]) / dt;
+
+        wt2 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt+2,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt-1,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt+1,kkr)]) )) );
+
+        pt2 = (_1_CR - wt2) * (         grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                              -         grid.tau_loc[I2V(iip,jjt-1,kkr)]) / _2_CR / dt \
+                   + wt2  * ( - _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                              + _4_CR * grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                              -         grid.tau_loc[I2V(iip,jjt+2,kkr)] ) / _2_CR / dt;
+
+    } else if (jjt == nt-2) {
+        wt1 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt-1,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt-2,kkr)]) ) \
+
+                                         / (eps + my_square(       grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                                            -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                            +      grid.tau_loc[I2V(iip,jjt-1,kkr)]) )) );
+
+        pt1 = (_1_CR - wt1) * (           grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                -         grid.tau_loc[I2V(iip,jjt-1,kkr)]) / _2_CR / dt \
+                     + wt1  * ( + _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                - _4_CR * grid.tau_loc[I2V(iip,jjt-1,kkr)] \
+                                +         grid.tau_loc[I2V(iip,jjt-2,kkr)] ) / _2_CR / dt;
+
+        pt2 = (grid.tau_loc[I2V(iip,jjt+1,kkr)] - grid.tau_loc[I2V(iip,jjt,kkr)]) / dt;
+
+    } else {
+        wt1 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt-1,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt-2,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt-1,kkr)]) )) );
+
+        pt1 = (_1_CR - wt1) * (           grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                -         grid.tau_loc[I2V(iip,jjt-1,kkr)]) / _2_CR / dt \
+                     + wt1  * ( + _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                - _4_CR * grid.tau_loc[I2V(iip,jjt-1,kkr)] \
+                                +         grid.tau_loc[I2V(iip,jjt-2,kkr)] ) / _2_CR / dt;
+
+        wt2 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt+2,kkr)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt-1,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt+1,kkr)]) )) );
+
+        pt2 = (_1_CR - wt2) * (           grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                -         grid.tau_loc[I2V(iip,jjt-1,kkr)]) / _2_CR / dt \
+                     + wt2  * ( - _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                + _4_CR * grid.tau_loc[I2V(iip,jjt+1,kkr)] \
+                                -         grid.tau_loc[I2V(iip,jjt+2,kkr)] ) / _2_CR / dt;
+
+    }
+
+    // direction r
+    if (kkr == 1) {
+        pr1 = (grid.tau_loc[I2V(iip,jjt,kkr  )] \
+             - grid.tau_loc[I2V(iip,jjt,kkr-1)]) / dr;
+
+        wr2 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr+2)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr-1)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr+1)]) )) );
+
+        pr2 = (_1_CR - wr2) * (           grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                -         grid.tau_loc[I2V(iip,jjt,kkr-1)]) / _2_CR / dr \
+                     + wr2  * ( - _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                + _4_CR * grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                -         grid.tau_loc[I2V(iip,jjt,kkr+2)] ) / _2_CR / dr;
+
+    } else if (kkr == nr - 2) {
+        wr1 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt,kkr-1)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr-2)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr-1)]) )) );
+
+        pr1 = (_1_CR - wr1) * (            grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                -          grid.tau_loc[I2V(iip,jjt,kkr-1)]) / _2_CR / dr \
+                      + wr1  * ( + _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                 - _4_CR * grid.tau_loc[I2V(iip,jjt,kkr-1)] \
+                                 +         grid.tau_loc[I2V(iip,jjt,kkr-2)] ) / _2_CR / dr;
+
+        pr2 = (grid.tau_loc[I2V(iip,jjt,kkr+1)] - grid.tau_loc[I2V(iip,jjt,kkr)]) / dr;
+
+    } else {
+        wr1 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt,kkr-1)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr-2)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr-1)]) )) );
+
+        pr1 = (_1_CR - wr1) * (           grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                -         grid.tau_loc[I2V(iip,jjt,kkr-1)]) / _2_CR / dr \
+                     + wr1  * ( + _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                - _4_CR * grid.tau_loc[I2V(iip,jjt,kkr-1)] \
+                                +         grid.tau_loc[I2V(iip,jjt,kkr-2)] ) / _2_CR / dr;
+
+        wr2 = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr+2)]) ) \
+
+                                         / (eps + my_square(      grid.tau_loc[I2V(iip,jjt,kkr-1)] \
+                                                           -_2_CR*grid.tau_loc[I2V(iip,  jjt,kkr)] \
+                                                           +      grid.tau_loc[I2V(iip,jjt,kkr+1)]) )) );
+
+        pr2 = (_1_CR - wr2) * (           grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                -         grid.tau_loc[I2V(iip,jjt,kkr-1)]) / _2_CR / dr \
+                     + wr2  * ( - _3_CR * grid.tau_loc[I2V(iip,jjt,kkr)] \
+                                + _4_CR * grid.tau_loc[I2V(iip,jjt,kkr+1)] \
+                                -         grid.tau_loc[I2V(iip,jjt,kkr+2)] ) / _2_CR / dr;
+
+    }
+
+    dump_pp1[i_node] = pp1;
+    dump_pp2[i_node] = pp2;
+    dump_pt1[i_node] = pt1;
+    dump_pt2[i_node] = pt2;
+    dump_pr1[i_node] = pr1;
+    dump_pr2[i_node] = pr2;
+
+}
+
+
+void Iterator::calculate_stencil_3rd_order_opt_apre(Grid& grid, int& iip, int& jjt, int&kkr, size_t& i_node) {
+    sigr = SWEEPING_COEFF*std::sqrt(grid.fac_a_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
+    sigt = SWEEPING_COEFF*std::sqrt(grid.fac_b_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
+    sigp = SWEEPING_COEFF*std::sqrt(grid.fac_c_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
+    coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
+
+    pp1 = dump_pp1[i_node];
+    pp2 = dump_pp2[i_node];
+    pt1 = dump_pt1[i_node];
+    pt2 = dump_pt2[i_node];
+    pr1 = dump_pr1[i_node];
+    pr2 = dump_pr2[i_node];
+
+    // LF Hamiltonian
+    Htau = calc_LF_Hamiltonian(grid, pp1, pp2, pt1, pt2, pr1, pr2, iip, jjt, kkr);
+
+    // update tau
+    grid.tau_loc[I2V(iip,jjt,kkr)] += coe * ((grid.fun_loc[I2V(iip,jjt,kkr)] - Htau) + (sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
+
+}
+
 
 
 void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){

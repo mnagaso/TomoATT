@@ -53,6 +53,13 @@ protected:
                                                  CUSTOMREAL& ,CUSTOMREAL&, \
                                                  int&, int&, int& );
 
+    // stencil calculation optimization
+    void calculate_stencil_1st_order_opt_pre( Grid&, int&, int&, int&, size_t&);     // calculate stencil for 1st order
+    void calculate_stencil_3rd_order_opt_pre( Grid&, int&, int&, int&, size_t&);     // calculate stencil for 3rd order
+    void calculate_stencil_1st_order_opt_apre(Grid&, int&, int&, int&, size_t&);     // calculate stencil for 1st order
+    void calculate_stencil_3rd_order_opt_apre(Grid&, int&, int&, int&, size_t&);     // calculate stencil for 3rd order
+    // dumping array
+    CUSTOMREAL *dump_pp1, *dump_pp2, *dump_pt1, *dump_pt2, *dump_pr1, *dump_pr2;
 
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
@@ -71,6 +78,7 @@ protected:
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
     std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, kk)
+    //std::vector< std::vector< std::vector<int> > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, kk)
     const int nswp = 8;          // number of sweeping directions
     int r_dirc, t_dirc, p_dirc;  // sweeping directions
     CUSTOMREAL sigr, sigt, sigp; //
