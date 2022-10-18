@@ -53,14 +53,6 @@ protected:
                                                  CUSTOMREAL& ,CUSTOMREAL&, \
                                                  int&, int&, int& );
 
-    // stencil calculation optimization
-    void calculate_stencil_1st_order_opt_pre( Grid&, int&, int&, int&, size_t&);     // calculate stencil for 1st order
-    void calculate_stencil_3rd_order_opt_pre( Grid&, int&, int&, int&, size_t&);     // calculate stencil for 3rd order
-    void calculate_stencil_1st_order_opt_apre(Grid&, int&, int&, int&, size_t&);     // calculate stencil for 1st order
-    void calculate_stencil_3rd_order_opt_apre(Grid&, int&, int&, int&, size_t&);     // calculate stencil for 3rd order
-    // dumping array
-    CUSTOMREAL *dump_pp1, *dump_pp2, *dump_pt1, *dump_pt2, *dump_pr1, *dump_pr2;
-
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
@@ -77,8 +69,47 @@ protected:
     MPI_Win win_nr, win_nt, win_np; // windows for grid point information
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
-    std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, kk)
-    //std::vector< std::vector< std::vector<int> > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, kk)
+    std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, ijk)
+    std::vector< std::vector< std::vector< std::vector<int> > > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, node, {i,j,k})
+    int max_n_nodes_plane;          // maximum number of nodes on a plane
+
+#ifdef USE_AVX
+    // stencil dumps
+    // first orders
+    CUSTOMREAL *dump_c__;// center of C
+    CUSTOMREAL *dump_p__;
+    CUSTOMREAL *dump_m__;
+    CUSTOMREAL *dump__p_;
+    CUSTOMREAL *dump__m_;
+    CUSTOMREAL *dump___p;
+    CUSTOMREAL *dump___m;
+    // second orders
+    CUSTOMREAL *dump_pp____;
+    CUSTOMREAL *dump_mm____;
+    CUSTOMREAL *dump___pp__;
+    CUSTOMREAL *dump___mm__;
+    CUSTOMREAL *dump_____pp;
+    CUSTOMREAL *dump_____mm;
+
+    // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
+    CUSTOMREAL *dump_fac_a;
+    CUSTOMREAL *dump_fac_b;
+    CUSTOMREAL *dump_fac_c;
+    CUSTOMREAL *dump_fac_f;
+    CUSTOMREAL *dump_T0v  ;
+    CUSTOMREAL *dump_T0r  ;
+    CUSTOMREAL *dump_T0t  ;
+    CUSTOMREAL *dump_T0p  ;
+    CUSTOMREAL *dump_fun  ;
+
+
+    int* dump_iip;
+    int* dump_jjt;
+    int* dump_kkr;
+
+#endif
+
+
     const int nswp = 8;          // number of sweeping directions
     int r_dirc, t_dirc, p_dirc;  // sweeping directions
     CUSTOMREAL sigr, sigt, sigp; //

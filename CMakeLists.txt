@@ -12,7 +12,8 @@ endif()
 #
 # for production
 #
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
 #
 # for debugging
 #
@@ -55,6 +56,9 @@ if(HDF5_FOUND)
   message(STATUS "HDF5_FOUND: ${HDF5_FOUND}")
   add_definitions(-DUSE_HDF5)
 endif()
+
+# use AVX intrinsic
+add_definitions(-DUSE_AVX)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)
