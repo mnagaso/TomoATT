@@ -50,13 +50,23 @@ inline void fake_stencil_3rd_pre_simd(__m256i& v_iip, __m256i& v_jjt, __m256i& v
     // check if the stencil is in the domain or partially out of the domain
     __m256i mask_i_eq_1         = _mm256_cmpeq_epi32(v_iip, _mm256_set1_epi32(1));           // if iip == 1
     __m256i mask_i_eq_N_minus_1 = _mm256_cmpeq_epi32(v_iip, _mm256_set1_epi32(NP-1)); // if iip == N-1
-    __m256i mask_i_else         = _mm256_andnot_si256(_mm256_or_si256(mask_i_eq_1, mask_i_eq_N_minus_1), _mm256_set1_epi32(-1));
+    // mask which is not mask_i_eq_1 and not mask_i_eq_N_minus_1
+    __m256i mask_i_not_1_or_N_minus_1 = _mm256_andnot_si256(_mm256_or_si256(mask_i_eq_1, mask_i_eq_N_minus_1), _mm256_set1_epi32(-1));
+    // mask not mask_i_not_1_or_N_minus_1 and not 0 and not NP-1
+    __m256i mask_i_else = _mm256_andnot_si256(_mm256_or_si256(mask_i_not_1_or_N_minus_1, _mm256_or_si256(_mm256_set1_epi32(0), _mm256_set1_epi32(NP-1))), _mm256_set1_epi32(-1));
+
     __m256i mask_j_eq_1         = _mm256_cmpeq_epi32(v_jjt, _mm256_set1_epi32(1));           // if jjt == 1
     __m256i mask_j_eq_N_minus_1 = _mm256_cmpeq_epi32(v_jjt, _mm256_set1_epi32(NT-1)); // if jjt == N-1
-    __m256i mask_j_else         = _mm256_andnot_si256(_mm256_or_si256(mask_j_eq_1, mask_j_eq_N_minus_1), _mm256_set1_epi32(-1));
+    // mask which is not mask_j_eq_1 and not mask_j_eq_N_minus_1
+    __m256i mask_j_not_1_or_N_minus_1 = _mm256_andnot_si256(_mm256_or_si256(mask_j_eq_1, mask_j_eq_N_minus_1), _mm256_set1_epi32(-1));
+    // mask not mask_j_not_1_or_N_minus_1 and not 0 and not NT-1
+    __m256i mask_j_else = _mm256_andnot_si256(_mm256_or_si256(mask_j_not_1_or_N_minus_1, _mm256_or_si256(_mm256_set1_epi32(0), _mm256_set1_epi32(NT-1))), _mm256_set1_epi32(-1));
     __m256i mask_k_eq_1         = _mm256_cmpeq_epi32(v_kkr, _mm256_set1_epi32(1));           // if kkr == 1
     __m256i mask_k_eq_N_minus_1 = _mm256_cmpeq_epi32(v_kkr, _mm256_set1_epi32(NR-1)); // if kkr == N-1
-    __m256i mask_k_else         = _mm256_andnot_si256(_mm256_or_si256(mask_k_eq_1, mask_k_eq_N_minus_1), _mm256_set1_epi32(-1));
+    // mask which is not mask_k_eq_1 and not mask_k_eq_N_minus_1
+    __m256i mask_k_not_1_or_N_minus_1 = _mm256_andnot_si256(_mm256_or_si256(mask_k_eq_1, mask_k_eq_N_minus_1), _mm256_set1_epi32(-1));
+    // mask not mask_k_not_1_or_N_minus_1 and not 0 and not NR-1
+    __m256i mask_k_else = _mm256_andnot_si256(_mm256_or_si256(mask_k_not_1_or_N_minus_1, _mm256_or_si256(_mm256_set1_epi32(0), _mm256_set1_epi32(NR-1))), _mm256_set1_epi32(-1));
 
     // if _i_eq_1 == true
     v_pp1 = _mm256_blendv_pd(v_pp1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v_m__),v_DP_inv), _mm256_castsi256_pd(mask_i_eq_1));
@@ -234,6 +244,10 @@ inline void fake_stencil_3rd_apre_simd(__m256d& v_tau,__m256d& v_fac_a,__m256d& 
     __m256d DT_inv = _mm256_set1_pd(1.0/DT);
     __m256d DR_inv = _mm256_set1_pd(1.0/DR);
     __m256d coe = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(sigr,DR_inv),_mm256_mul_pd(sigt,DT_inv)),_mm256_mul_pd(sigp,DP_inv)));
+    // coe becomes inf as sig* goes to 0
+    // if coe > 1e19, set coe = 1e19
+    __m256d coe_max = _mm256_set1_pd(1e19);
+    coe = _mm256_min_pd(coe,coe_max);
 
     // Htau  = sqrt(v_fac_a * sqrt(v_T0r * v_tau + v_T0v * (v_pr1 + v_pr2)*0.5));
     __m256d Htau = _mm256_sqrt_pd(_mm256_mul_pd(v_fac_a,_mm256_sqrt_pd(_mm256_add_pd(_mm256_mul_pd(v_T0r,v_tau),_mm256_mul_pd(v_T0v,_mm256_mul_pd(_mm256_add_pd(v_pr1,v_pr2),_mm256_set1_pd(0.5)))))));

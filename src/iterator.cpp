@@ -618,11 +618,13 @@ void Iterator::assign_processes_for_levels() {
     int max_length = max_n_nodes_plane;
     if (max_length % NSIMD != 0)
         pad_length = NSIMD - max_length % NSIMD;
-    int dump_length = max_length + pad_length;
+    int dump_length = (max_length + pad_length);
 
     // stencil dumps
     // first orders
-    const int ALIGN = 32;
+    const int ALIGN = sizeof(CUSTOMREAL)*4;
+    const int ALIGN_int = sizeof(int)*8;
+
     dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of C
     dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump_m__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
@@ -649,10 +651,9 @@ void Iterator::assign_processes_for_levels() {
     dump_T0p   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump_fun   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
 
-
-    dump_iip = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_jjt = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_kkr = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_iip = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
+    dump_jjt = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
+    dump_kkr = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
 
 #endif
 
