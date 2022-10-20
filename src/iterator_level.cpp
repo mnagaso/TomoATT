@@ -291,9 +291,12 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         }
 
         // alias for temporal aligned array
-        __m256i* v_iip = (__m256i*)dump_iip;
-        __m256i* v_jjt = (__m256i*)dump_jjt;
-        __m256i* v_kkr = (__m256i*)dump_kkr;
+//        __m256i* v_iip = (__m256i*)dump_iip;
+//        __m256i* v_jjt = (__m256i*)dump_jjt;
+//        __m256i* v_kkr = (__m256i*)dump_kkr;
+        __m128i* v_iip = (__m128i*)dump_iip;
+        __m128i* v_jjt = (__m128i*)dump_jjt;
+        __m128i* v_kkr = (__m128i*)dump_kkr;
 
         __m256d* v_c__    = (__m256d*)dump_c__;
         __m256d* v_p__    = (__m256d*)dump_p__;
@@ -373,6 +376,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
             // unload v_c__ to dump_c__
             //_mm256_store_pd(&dump_c__[i_node*NSIMD], v_c__);
+            std::cout << std::endl;
 
         }
 
