@@ -13,12 +13,13 @@ endif()
 # for production
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
 #
 # for debugging
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -funroll-loops") # debug
-#
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -mavx -march=native")
+
 # for vtune profiling
 # with vectorization report
 #set(gcc_coverage_compile_flags "-lm -g -O3") # debug

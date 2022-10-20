@@ -623,7 +623,7 @@ void Iterator::assign_processes_for_levels() {
     // stencil dumps
     // first orders
     const int ALIGN = sizeof(CUSTOMREAL)*8;
-    const int ALIGN_int = sizeof(int)*8;
+    const int ALIGN_int = sizeof(int)*4;
 
     dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of C
     dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));

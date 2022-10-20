@@ -190,36 +190,6 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 #else // __AVX__
 
-    // if max_length % NSIMD != then we need to pad it
-
-//    __m256i v_iip;
-//    __m256i v_jjt;
-//    __m256i v_kkr;
-//
-//    __m256d v_c__;
-//    __m256d v_p__;
-//    __m256d v_m__;
-//    __m256d v__p_;
-//    __m256d v__m_;
-//    __m256d v___p;
-//    __m256d v___m;
-//    __m256d v_pp____;
-//    __m256d v_mm____;
-//    __m256d v___pp__;
-//    __m256d v___mm__;
-//    __m256d v_____pp;
-//    __m256d v_____mm;
-//
-//    __m256d v_fac_a;
-//    __m256d v_fac_b;
-//    __m256d v_fac_c;
-//    __m256d v_fac_f;
-//    __m256d v_T0v;
-//    __m256d v_T0r;
-//    __m256d v_T0t;
-//    __m256d v_T0p;
-//    __m256d v_fun;
-
     // store stencil coefs
     __m256d v_pp1;
     __m256d v_pp2;
@@ -249,12 +219,9 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         int n_nodes = ijk_for_this_subproc_optim_tmp[i_level].size();
         //std::cout << "n_nodes = " << n_nodes << std::endl;
 
-
        int num_iter = n_nodes / NSIMD + (n_nodes % NSIMD == 0 ? 0 : 1);
 
-
         // load data of all nodes in one level on temporal aligned array
-        //for (int i_node = 0; i_node < n_nodes; i_node++) {
         for (int i = 0; i < num_iter; i++) {
 
             for (int ii = 0; ii < NSIMD; ii++){
@@ -277,7 +244,6 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                 dump_iip[i_node] = iip;
                 dump_jjt[i_node] = jjt;
                 dump_kkr[i_node] = kkr;
-
 
                 load_stencil_data(grid.tau_loc, grid.fac_a_loc, grid.fac_b_loc, grid.fac_c_loc, grid.fac_f_loc, \
                                     grid.T0v_loc, grid.T0r_loc, grid.T0t_loc, grid.T0p_loc, grid.fun_loc, \
@@ -322,45 +288,8 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         __m256d* v_T0p    = (__m256d*)dump_T0p;
         __m256d* v_fun    = (__m256d*)dump_fun;
 
+        // loop over all nodes in one level
         for (int i_vec = 0; i_vec < num_iter; i_vec++) {
-            // load stencil data
-
-//            v_iip = _mm256_load_si256((__m256i*)&dump_iip[i_node*NSIMD]);
-//            v_jjt = _mm256_load_si256((__m256i*)&dump_jjt[i_node*NSIMD]);
-//            v_kkr = _mm256_load_si256((__m256i*)&dump_kkr[i_node*NSIMD]);
-//
-//            v_c__ = _mm256_load_pd(&dump_c__[i_node*NSIMD]);
-//            v_p__ = _mm256_load_pd(&dump_p__[i_node*NSIMD]);
-//            v_m__ = _mm256_load_pd(&dump_m__[i_node*NSIMD]);
-//            v__p_ = _mm256_load_pd(&dump__p_[i_node*NSIMD]);
-//            v__m_ = _mm256_load_pd(&dump__m_[i_node*NSIMD]);
-//            v___p = _mm256_load_pd(&dump___p[i_node*NSIMD]);
-//            v___m = _mm256_load_pd(&dump___m[i_node*NSIMD]);
-//            v_pp____ = _mm256_load_pd(&dump_pp____[i_node*NSIMD]);
-//            v_mm____ = _mm256_load_pd(&dump_mm____[i_node*NSIMD]);
-//            v___pp__ = _mm256_load_pd(&dump___pp__[i_node*NSIMD]);
-//            v___mm__ = _mm256_load_pd(&dump___mm__[i_node*NSIMD]);
-//            v_____pp = _mm256_load_pd(&dump_____pp[i_node*NSIMD]);
-//            v_____mm = _mm256_load_pd(&dump_____mm[i_node*NSIMD]);
-//
-//            v_fac_a = _mm256_load_pd(&dump_fac_a[i_node*NSIMD]);
-//            v_fac_b = _mm256_load_pd(&dump_fac_b[i_node*NSIMD]);
-//            v_fac_c = _mm256_load_pd(&dump_fac_c[i_node*NSIMD]);
-//            v_fac_f = _mm256_load_pd(&dump_fac_f[i_node*NSIMD]);
-//            v_T0v = _mm256_load_pd(&dump_T0v[i_node*NSIMD]);
-//            v_T0r = _mm256_load_pd(&dump_T0r[i_node*NSIMD]);
-//            v_T0t = _mm256_load_pd(&dump_T0t[i_node*NSIMD]);
-//            v_T0p = _mm256_load_pd(&dump_T0p[i_node*NSIMD]);
-//            v_fun = _mm256_load_pd(&dump_fun[i_node*NSIMD]);
-//
-//
-//            // store stencil coefs
-            v_pp1 = _mm256_setzero_pd();
-            v_pp2 = _mm256_setzero_pd();
-            v_pt1 = _mm256_setzero_pd();
-            v_pt2 = _mm256_setzero_pd();
-            v_pr1 = _mm256_setzero_pd();
-            v_pr2 = _mm256_setzero_pd();
 
             // calculate stencil coefs
             fake_stencil_3rd_pre_simd(v_iip[i_vec], v_jjt[i_vec], v_kkr[i_vec], v_c__[i_vec], v_p__[i_vec], v_m__[i_vec], v__p_[i_vec], v__m_[i_vec], v___p[i_vec], v___m[i_vec], \
@@ -376,7 +305,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
             // unload v_c__ to dump_c__
             //_mm256_store_pd(&dump_c__[i_node*NSIMD], v_c__);
-            std::cout << std::endl;
+            //std::cout << std::endl;
 
         }
 
@@ -386,29 +315,6 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             grid.tau_loc[tmp_ijk] = dump_c__[i];
         }
 
-        // check if tau has nan
-        //for (int i = 0; i < n_nodes; i++) {
-        //    int tmp_ijk = I2V(dump_iip[i], dump_jjt[i], dump_kkr[i]);
-        //    if (isnan(grid.tau_loc[tmp_ijk])) {
-        //        printf("tau_loc[%d] is nan with iip=%d, jjt=%d, kkr=%d", tmp_ijk,  dump_iip[i], dump_jjt[i], dump_kkr[i]);
-        //        exit(1);
-        //    }
-        //}
-
-
-        // below is the original code without intrinsics
-
-        //for (int i_node = 0; i_node < n_nodes; i_node++) {
-        //    int tmp_ijk = ijk_for_this_subproc_optim_tmp.at(i_level).at(i_node);
-        //    V2I(tmp_ijk, iip, jjt, kkr);
-        //    fake_stencil_3rd_pre(c, iip, jjt, kkr, dump_pp1, dump_pp2, dump_pt1, dump_pt2, dump_pr1, dump_pr2, i_node);
-        //}
-
-        //for (int i_node = 0; i_node < n_nodes; i_node++) {
-        //    int tmp_ijk = ijk_for_this_subproc_optim_tmp.at(i_level).at(i_node);
-        //    V2I(tmp_ijk, iip, jjt, kkr);
-        //    fake_stencil_3rd_apre(a,b,c, iip, jjt, kkr, dump_pp1, dump_pp2, dump_pt1, dump_pt2, dump_pr1, dump_pr2, i_node);
-        //}
     }
 
 
