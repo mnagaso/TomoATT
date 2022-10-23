@@ -8,6 +8,8 @@
 
 
 #include<vector>
+#include "config.h"
+
 
 #define NSIMD 4
 #define COEF 1.0
@@ -22,7 +24,7 @@ inline __m256d my_square(__m256d const& a){
 }
 
 
-inline void fake_stencil_3rd_pre_simd(__m128i& v_iip, __m128i& v_jjt, __m128i& v_kkr, __m256d& v_c__,  __m256d& v_p__,     __m256d& v_m__,     __m256d& v__p_,    __m256d& v__m_,    __m256d& v___p,    __m256d& v___m, \
+inline void fake_stencil_3rd_pre_simd(__m256i& v_iip, __m256i& v_jjt, __m256i& v_kkr, __m256d& v_c__,  __m256d& v_p__,     __m256d& v_m__,     __m256d& v__p_,    __m256d& v__m_,    __m256d& v___p,    __m256d& v___m, \
                                                                                                        __m256d& v_pp____,  __m256d& v_mm____,  __m256d& v___pp__, __m256d& v___mm__, __m256d& v_____pp, __m256d& v_____mm, \
                                                                                                        __m256d& v_pp1,     __m256d& v_pp2,     __m256d& v_pt1,    __m256d& v_pt2,    __m256d& v_pr1,    __m256d& v_pr2, \
                                                                                                        CUSTOMREAL& DP, CUSTOMREAL& DT, CUSTOMREAL& DR, \
@@ -52,59 +54,81 @@ inline void fake_stencil_3rd_pre_simd(__m128i& v_iip, __m128i& v_jjt, __m128i& v
     // debug
 
     // check if the stencil is in the domain or partially out of the domain
-    __m256i mask_i_eq_1         = _mm256_castsi128_si256(_mm_cmpeq_epi32(v_iip, _mm_set1_epi32(1)));           // if iip == 1
-    __m256i mask_j_eq_1         = _mm256_castsi128_si256(_mm_cmpeq_epi32(v_jjt, _mm_set1_epi32(1)));           // if jjt == 1
-    __m256i mask_k_eq_1         = _mm256_castsi128_si256(_mm_cmpeq_epi32(v_kkr, _mm_set1_epi32(1)));           // if kkr == 1
-
-    __m256i mask_i_eq_N_minus_2 =  _mm256_castsi128_si256(_mm_cmpeq_epi32(v_iip, _mm_set1_epi32(NP-2))); // if iip == N-2
-    __m256i mask_j_eq_N_minus_2 =  _mm256_castsi128_si256(_mm_cmpeq_epi32(v_jjt, _mm_set1_epi32(NT-2))); // if jjt == N-2
-    __m256i mask_k_eq_N_minus_2 =  _mm256_castsi128_si256(_mm_cmpeq_epi32(v_kkr, _mm_set1_epi32(NR-2))); // if kkr == N-2
-
-    // 1 < iip < N-2
-    __m256i mask_i_else = _mm256_castsi128_si256(_mm_and_si128(
-                                        _mm_cmpgt_epi32(v_iip, _mm_set1_epi32(1)),
-                                        _mm_cmplt_epi32(v_iip, _mm_set1_epi32(NP-2))
-                         ));
-    // 1 < jjt < N-2
-    __m256i mask_j_else = _mm256_castsi128_si256(_mm_and_si128(
-                                        _mm_cmpgt_epi32(v_jjt, _mm_set1_epi32(1)),
-                                        _mm_cmplt_epi32(v_jjt, _mm_set1_epi32(NT-2))
-                         ));
-    // 1 < kkr < N-2
-    __m256i mask_k_else = _mm256_castsi128_si256(_mm_and_si128(
-                                        _mm_cmpgt_epi32(v_kkr, _mm_set1_epi32(1)),
-                                        _mm_cmplt_epi32(v_kkr, _mm_set1_epi32(NR-2))
-                         ));
-
-//    __m256i mask_i_eq_1         = _mm256_cmpeq_epi32(v_iip, _mm256_set1_epi32(1));           // if iip == 1
-//    __m256i mask_j_eq_1         = _mm256_cmpeq_epi32(v_jjt, _mm256_set1_epi32(1));           // if jjt == 1
-//    __m256i mask_k_eq_1         = _mm256_cmpeq_epi32(v_kkr, _mm256_set1_epi32(1));           // if kkr == 1
+//    __m128i _mask_i_eq_1         = _mm_cmpeq_epi32(v_iip, _mm_set1_epi32(1));           // if iip == 1
+//    __m128i _mask_j_eq_1         = _mm_cmpeq_epi32(v_jjt, _mm_set1_epi32(1));           // if jjt == 1
+//    __m128i _mask_k_eq_1         = _mm_cmpeq_epi32(v_kkr, _mm_set1_epi32(1));           // if kkr == 1
 //
-//    __m256i mask_i_eq_N_minus_2 =  _mm256_cmpeq_epi32(v_iip, _mm256_set1_epi32(NP-2)); // if iip == N-2
-//    __m256i mask_j_eq_N_minus_2 =  _mm256_cmpeq_epi32(v_jjt, _mm256_set1_epi32(NT-2)); // if jjt == N-2
-//    __m256i mask_k_eq_N_minus_2 =  _mm256_cmpeq_epi32(v_kkr, _mm256_set1_epi32(NR-2)); // if kkr == N-2
-//
+//    __m128i _mask_i_eq_N_minus_2 =  _mm_cmpeq_epi32(v_iip, _mm_set1_epi32(NP-2)); // if iip == N-2
+//    __m128i _mask_j_eq_N_minus_2 =  _mm_cmpeq_epi32(v_jjt, _mm_set1_epi32(NT-2)); // if jjt == N-2
+//    __m128i _mask_k_eq_N_minus_2 =  _mm_cmpeq_epi32(v_kkr, _mm_set1_epi32(NR-2)); // if kkr == N-2
 //
 //    // 1 < iip < N-2
-//    __m256i mask_i_else = _mm256_and_si256(
-//                                        _mm256_cmpgt_epi32(v_iip, _mm256_set1_epi32(1)),
-//                                        _mm256_cmpgt_epi32(_mm256_set1_epi32(NP-2),v_iip)
+//    __m128i _mask_i_else = _mm_and_si128(
+//                                        _mm_cmpgt_epi32(v_iip, _mm_set1_epi32(1)),
+//                                        _mm_cmplt_epi32(v_iip, _mm_set1_epi32(NP-2))
 //                         );
 //    // 1 < jjt < N-2
-//    __m256i mask_j_else = _mm256_and_si256(
-//                                        _mm256_cmpgt_epi32(v_jjt, _mm256_set1_epi32(1)),
-//                                        _mm256_cmpgt_epi32(_mm256_set1_epi32(NT-2),v_jjt)
+//    __m128i _mask_j_else = _mm_and_si128(
+//                                        _mm_cmpgt_epi32(v_jjt, _mm_set1_epi32(1)),
+//                                        _mm_cmplt_epi32(v_jjt, _mm_set1_epi32(NT-2))
 //                         );
 //    // 1 < kkr < N-2
-//    __m256i mask_k_else = _mm256_and_si256(
-//                                        _mm256_cmpgt_epi32(v_kkr, _mm256_set1_epi32(1)),
-//                                        _mm256_cmpgt_epi32(_mm256_set1_epi32(NR-2),v_kkr)
+//    __m128i _mask_k_else = _mm_and_si128(
+//                                        _mm_cmpgt_epi32(v_kkr, _mm_set1_epi32(1)),
+//                                        _mm_cmplt_epi32(v_kkr, _mm_set1_epi32(NR-2))
 //                         );
+//
+//    // convet __m128i to __m256d
+//    __m256d mask_i_eq_1         = _mm256_cvtepi32_pd(_mask_i_eq_1);
+//    __m256d mask_j_eq_1         = _mm256_cvtepi32_pd(_mask_j_eq_1);
+//    __m256d mask_k_eq_1         = _mm256_cvtepi32_pd(_mask_k_eq_1);
+//    __m256d mask_i_eq_N_minus_2 = _mm256_cvtepi32_pd(_mask_i_eq_N_minus_2);
+//    __m256d mask_j_eq_N_minus_2 = _mm256_cvtepi32_pd(_mask_j_eq_N_minus_2);
+//    __m256d mask_k_eq_N_minus_2 = _mm256_cvtepi32_pd(_mask_k_eq_N_minus_2);
+//    __m256d mask_i_else = _mm256_cvtepi32_pd(_mask_i_else);
+//    __m256d mask_j_else = _mm256_cvtepi32_pd(_mask_j_else);
+//    __m256d mask_k_else = _mm256_cvtepi32_pd(_mask_k_else);
 
+    // # TODO: FIND A WAY TO USE MASK WITH AVX
+
+    __m256i mask_i_eq_1         = _mm256_cmpeq_epi64(v_iip, _mm256_set1_epi64(1));           // if iip == 1
+    __m256i mask_j_eq_1         = _mm256_cmpeq_epi64(v_jjt, _mm256_set1_epi64(1));           // if jjt == 1
+    __m256i mask_k_eq_1         = _mm256_cmpeq_epi64(v_kkr, _mm256_set1_epi64(1));           // if kkr == 1
+    __m256i mask_i_eq_N_minus_2 = _mm256_cmpeq_epi64(v_iip, _mm256_set1_epi64(NP-2)); // if iip == N-2
+    __m256i mask_j_eq_N_minus_2 = _mm256_cmpeq_epi64(v_jjt, _mm256_set1_epi64(NT-2)); // if jjt == N-2
+    __m256i mask_k_eq_N_minus_2 = _mm256_cmpeq_epi64(v_kkr, _mm256_set1_epi64(NR-2)); // if kkr == N-2
+
+
+    // 1 < iip < N-2
+    __m256i mask_i_else = _mm256_and_si256(
+                                        _mm256_cmpgt_epi64(v_iip, _mm256_set1_epi64(1)),
+                                        _mm256_cmpgt_epi64(_mm256_set1_epi64(NP-2),v_iip)
+                         );
+    // 1 < jjt < N-2
+    __m256i mask_j_else = _mm256_and_si256(
+                                        _mm256_cmpgt_epi64(v_jjt, _mm256_set1_epi64(1)),
+                                        _mm256_cmpgt_epi64(_mm256_set1_epi64(NT-2),v_jjt)
+                         );
+    // 1 < kkr < N-2
+    __m256i mask_k_else = _mm256_and_si256(
+                                        _mm256_cmpgt_epi64(v_kkr, _mm256_set1_epi64(1)),
+                                        _mm256_cmpgt_epi64(_mm256_set1_epi64(NR-2),v_kkr)
+                         );
+
+    // convert __m256i to __m256d
+//    __m256d mask_i_eq_1         = _mm256_cvtepi32_pd(_mask_i_eq_1);
+//    __m256d mask_j_eq_1         = _mm256_cvtepi32_pd(_mask_j_eq_1);
+//    __m256d mask_k_eq_1         = _mm256_cvtepi32_pd(_mask_k_eq_1);
+//    __m256d mask_i_eq_N_minus_2 = _mm256_cvtepi32_pd(_mask_i_eq_N_minus_2);
+//    __m256d mask_j_eq_N_minus_2 = _mm256_cvtepi32_pd(_mask_j_eq_N_minus_2);
+//    __m256d mask_k_eq_N_minus_2 = _mm256_cvtepi32_pd(_mask_k_eq_N_minus_2);
+//    __m256d mask_i_else = _mm256_cvtepi32_pd(_mask_i_else);
+//    __m256d mask_j_else = _mm256_cvtepi32_pd(_mask_j_else);
+//    __m256d mask_k_else = _mm256_cvtepi32_pd(_mask_k_else);
 
 
     // if _i_eq_1 == true
-    v_pp1 = _mm256_blendv_pd(v_pp1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v_m__),v_DP_inv), _mm256_castsi256_pd(mask_i_eq_1));
+    v_pp1 = _mm256_blendv_pd(v_pp1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v_m__),v_DP_inv), mask_i_eq_1);
     // v_eps + sqrt(v_c__ - 2.0*v_p__ + v_pp____)
     __m256d tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_p__),v_pp____))));
     // v_eps + sqrt(v_m__ - 2.0*v_c__ + v_p__)
@@ -115,155 +139,158 @@ inline void fake_stencil_3rd_pre_simd(__m128i& v_iip, __m128i& v_jjt, __m128i& v
     // + v_wp2 * (-3.0* v_c__ + 4.0 * v_p__ - v_pp____) / 2.0 / D
     v_pp2 = _mm256_blendv_pd(v_pp2,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wp2),_mm256_mul_pd(_mm256_sub_pd(v_p__,v_m__),_mm256_set1_pd(0.5/DP))),\
-                          _mm256_mul_pd(v_wp2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(4.0),v_p__),_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__)),v_pp____),_mm256_set1_pd(0.5/DP)))), _mm256_castsi256_pd(mask_i_eq_1));
+                          _mm256_mul_pd(v_wp2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(4.0),v_p__),_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__)),v_pp____),_mm256_set1_pd(0.5/DP)))), mask_i_eq_1);
 
     // if_i_eq_N_minus_2 == true
-    // v_eps + sqrt(v_mm____ - 2.0*v_m__ + v_c__)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_mm____,_mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_m__),v_c__))));
-    // v_eps + sqrt(v_m__ - 2.0*v_c__ + v_p__)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_m__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v_p__))));
+    // v_eps + square(v_mm____ - 2.0*v_m__ + v_c__)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_mm____,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_m__),v_c__))));
+    // v_eps + square(v_m__ - 2.0*v_c__ + v_p__)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_m__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v_p__))));
     // v_wp1 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wp1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_i_eq_N_minus_2);
+    v_wp1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pp1 = (1.0 - v_wp1) * (v_p__ - v_m__) / 2.0 / D
     // + v_wp1 * (v_mm____ - 4.0 * v_m__ + 3.0 * v_c__) / 2.0 / D
     v_pp1 = _mm256_blendv_pd(v_pp1,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wp1),_mm256_mul_pd(_mm256_sub_pd(v_p__,v_m__),_mm256_set1_pd(0.5/DP))),\
-                          _mm256_mul_pd(v_wp1,_mm256_mul_pd(_mm256_sub_pd(v_mm____,_mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(4.0),v_m__),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__))),_mm256_set1_pd(0.5/DP)))), _mm256_castsi256_pd(mask_i_eq_N_minus_2));
+                          _mm256_mul_pd(v_wp1,_mm256_mul_pd(_mm256_add_pd(v_mm____,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-4.0),v_m__),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__))),_mm256_set1_pd(0.5/DP)))), mask_i_eq_N_minus_2);
     // v_pp2 = (v_p__ - v_c__) * v_D_inv
-    v_pp2 = _mm256_blendv_pd(v_pp2,_mm256_mul_pd(_mm256_sub_pd(v_p__,v_c__),v_DP_inv), _mm256_castsi256_pd(mask_i_eq_N_minus_2));
+    v_pp2 = _mm256_blendv_pd(v_pp2,_mm256_mul_pd(_mm256_sub_pd(v_p__,v_c__),v_DP_inv),mask_i_eq_N_minus_2);
 
     // else
-    // v_eps + sqrt(v_mm____ - 2.0*v_m__ + v_c__)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_mm____,_mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_m__),v_c__))));
-    // v_eps + sqrt(v_m__ - 2.0*v_c__ + v_p__)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_m__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v_p__))));
-    // v_wp1 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wp1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_i_else);
+    // v_eps + square(v_mm____ - 2.0*v_m__ + v_c__)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_mm____,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_m__),v_c__))));
+    // v_eps + square(v_m__ - 2.0*v_c__ + v_p__)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_m__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v_p__))));
+    // v_wp1 = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
+    v_wp1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pp1 = (1.0 - v_wp1) * (v_p__ - v_m__) / 2.0 / D
     // + v_wp1 * (v_mm____ - 4.0 * v_m__ + 3.0 * v_c__) / 2.0 / D
     v_pp1 = _mm256_blendv_pd(v_pp1,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wp1),_mm256_mul_pd(_mm256_sub_pd(v_p__,v_m__),_mm256_set1_pd(0.5/DP))),\
-                          _mm256_mul_pd(v_wp1,_mm256_mul_pd(_mm256_sub_pd(v_mm____,_mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(4.0),v_m__),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__))),_mm256_set1_pd(0.5/DP)))), _mm256_castsi256_pd(mask_i_else));
-    // v_esp + sqrt(v_c__ - 2.0*v_p__ + v_pp____)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_p__),v_pp____))));
-    // v_eps + sqrt(v_m__ - 2.0*v_c__ + v_p__)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_m__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v_p__))));
-    // v_wp2 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wp2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_i_else);
+                          _mm256_mul_pd(v_wp1,_mm256_mul_pd(_mm256_add_pd(v_mm____,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-4.0),v_m__),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__))),_mm256_set1_pd(0.5/DP)))), mask_i_else);
+    // v_esp + square(v_c__ - 2.0*v_p__ + v_pp____)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_p__),v_pp____))));
+    // v_eps + square(v_m__ - 2.0*v_c__ + v_p__)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_m__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v_p__))));
+    // v_wp2 = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
+    v_wp2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pp2 = (1.0 - v_wp2) * (v_p__ - v_m__) / 2.0 / D
     // + v_wp2 * (-3.0 * v_c__ + 4.0 * v_p__ - v_pp____) / 2.0 / D
     v_pp2 = _mm256_blendv_pd(v_pp2,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wp2),_mm256_mul_pd(_mm256_sub_pd(v_p__,v_m__),_mm256_set1_pd(0.5/DP))),\
-                          _mm256_mul_pd(v_wp2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v_p__)),v_pp____),_mm256_set1_pd(0.5/DP)))), _mm256_castsi256_pd(mask_i_else));
+                          _mm256_mul_pd(v_wp2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v_p__)),v_pp____),_mm256_set1_pd(0.5/DP)))), mask_i_else);
 
     // if _j_eq_1 == true
     // v_pt1 = (v_c__ - v__m_) * v_D_inv
-    v_pt1 = _mm256_blendv_pd(v_pt1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v__m_),v_DT_inv), _mm256_castsi256_pd(mask_j_eq_1));
-    // v_esp + sqrt(v_c__ - 2.0*v__p_ + v___pp__)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v__p_),v___pp__))));
-    // v_eps + sqrt(v__m_ - 2.0*v_c__ + v__p_)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v__m_,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v__p_))));
-    // v_wt2 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wt2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_j_eq_1);
+    v_pt1 = _mm256_blendv_pd(v_pt1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v__m_),v_DT_inv), mask_j_eq_1);
+    // v_esp + square(v_c__ - 2.0*v__p_ + v___pp__)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v__p_),v___pp__))));
+    // v_eps + square(v__m_ - 2.0*v_c__ + v__p_)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v__m_,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v__p_))));
+    // v_wt2 = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
+    v_wt2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pt2 = (1.0 - v_wt2) * (v__p_ - v__m_) / 2.0 / D
-    // + v_wt2 * (-3.0 * v_c__ + 4.0 * v__p_ - v___mm__) / 2.0 / D
+    // + v_wt2 * (-3.0 * v_c__ + 4.0 * v__p_ - v___pp__) / 2.0 / D
     v_pt2 = _mm256_blendv_pd(v_pt2,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wt2),_mm256_mul_pd(_mm256_sub_pd(v__p_,v__m_),_mm256_set1_pd(0.5/DT))),\
-                          _mm256_mul_pd(v_wt2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v__p_)),v___mm__),_mm256_set1_pd(0.5/DT)))), _mm256_castsi256_pd(mask_j_eq_1));
+                          _mm256_mul_pd(v_wt2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v__p_)),v___pp__),_mm256_set1_pd(0.5/DT)))), mask_j_eq_1);
     // if _j_eq_N_minus_2 == true
-    // v_esp + sqrt(v___mm__ - 2.0*v__m_ + v_c__)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v___mm__,_mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v__m_),v_c__))));
-    // v_eps + sqrt(v__m_ - 2.0*v_c__ + v__m_)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v__m_,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v__m_))));
-    // v_wt1 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wt1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_j_eq_N_minus_2);
+    // v_esp + square(v___mm__ - 2.0*v__m_ + v_c__)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v___mm__,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v__m_),v_c__))));
+    // v_eps + square(v__p_ - 2.0*v_c__ + v__m_)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v__p_,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v__m_))));
+    // v_wt1 = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
+    v_wt1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pt1 = (1.0 - v_wt1) * (v__p_ - v__m_) / 2.0 / D
     // + v_wt1 * (v___mm__ - 4.0 * v__m_ + 3.0 * v_c__) / 2.0 / D
     v_pt1 = _mm256_blendv_pd(v_pt1,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wt1),_mm256_mul_pd(_mm256_sub_pd(v__p_,v__m_),_mm256_set1_pd(0.5/DT))),\
-                          _mm256_mul_pd(v_wt1,_mm256_mul_pd(_mm256_add_pd(_mm256_sub_pd(v___mm__,_mm256_mul_pd(_mm256_set1_pd(4.0),v__m_)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DT)))), _mm256_castsi256_pd(mask_j_eq_N_minus_2));
+                          _mm256_mul_pd(v_wt1,_mm256_mul_pd(_mm256_add_pd(_mm256_add_pd(v___mm__,_mm256_mul_pd(_mm256_set1_pd(-4.0),v__m_)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DT)))), mask_j_eq_N_minus_2);
     // v_pt2 = (v__p_ - v_c__) * v_D_inv
-    v_pt2 = _mm256_blendv_pd(v_pt2,_mm256_mul_pd(_mm256_sub_pd(v__p_,v_c__),v_DT_inv), _mm256_castsi256_pd(mask_j_eq_N_minus_2));
+    v_pt2 = _mm256_blendv_pd(v_pt2,_mm256_mul_pd(_mm256_sub_pd(v__p_,v_c__),v_DT_inv), mask_j_eq_N_minus_2);
+
     // else
-    // v_esp + sqrt(v___mm__ - 2.0*v__m_ + v_c__)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v___mm__,_mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v__m_),v_c__))));
-    // v_eps + sqrt(v__m_ - 2.0*v_c__ + v__m_)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v__m_,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v__m_))));
-    // v_wt1 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wt1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_j_else);
+    // v_esp + square(v___mm__ - 2.0*v__m_ + v_c__)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v___mm__,_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v__m_),v_c__))));
+    // v_eps + square(v__p_ - 2.0*v_c__ + v__m_)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v__p_,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v__m_))));
+    // v_wt1 = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
+    v_wt1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pt1 = (1.0 - v_wt1) * (v__p_ - v__m_) / 2.0 / D
     // + v_wt1 * (v___mm__ - 4.0 * v__m_ + 3.0 * v_c__) / 2.0 / D
     v_pt1 = _mm256_blendv_pd(v_pt1,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wt1),_mm256_mul_pd(_mm256_sub_pd(v__p_,v__m_),_mm256_set1_pd(0.5/DT))),\
-                          _mm256_mul_pd(v_wt1,_mm256_mul_pd(_mm256_add_pd(_mm256_sub_pd(v___mm__,_mm256_mul_pd(_mm256_set1_pd(4.0),v__m_)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DT)))), _mm256_castsi256_pd(mask_j_else));
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v__p_),v___pp__))));
+                          _mm256_mul_pd(v_wt1,_mm256_mul_pd(_mm256_add_pd(_mm256_add_pd(v___mm__,_mm256_mul_pd(_mm256_set1_pd(-4.0),v__m_)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DT)))), mask_j_else);
+    // v_eps + square(v___pp__ - 2.0*v__p_ + v_c__)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v__p_),v___pp__))));
     // v_eps + sqrt(v__m_ - 2.0*v_c__ + v__p_)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v__m_,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v__p_))));
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v__m_,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v__p_))));
     // v_wt2 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wt2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_j_else);
+    v_wt2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pt2 = (1.0 - v_wt2) * (v__p_ - v__m_) / 2.0 / D
-    // + v_wt2 * (-3.0 * v_c__ + 4.0 * v__p_ - v___mm__) / 2.0 / D
+    // + v_wt2 * (-3.0 * v_c__ + 4.0 * v__p_ - v___pp__) / 2.0 / D
     v_pt2 = _mm256_blendv_pd(v_pt2,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wt2),_mm256_mul_pd(_mm256_sub_pd(v__p_,v__m_),_mm256_set1_pd(0.5/DT))),\
-                          _mm256_mul_pd(v_wt2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v__p_)),v___mm__),_mm256_set1_pd(0.5/DT)))), _mm256_castsi256_pd(mask_j_else));
+                          _mm256_mul_pd(v_wt2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v__p_)),v___pp__),_mm256_set1_pd(0.5/DT)))), mask_j_else);
 
     // if _k_eq_1 == true
     // v_pr1 = (v_c__ - v___m) * v_D_inv
-    v_pr1 = _mm256_blendv_pd(v_pr1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v___m),v_DR_inv), _mm256_castsi256_pd(mask_k_eq_1));
-    // v_eps + sqrt(v_c__ - 2.0*v___p + v_____pp)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v___p),v_____pp))));
-    // v_eps + sqrt(v___m - 2.0*v_c__ + v___p)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v___m,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v___p))));
-    // v_wr2 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wr2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_k_eq_1);
+    v_pr1 = _mm256_blendv_pd(v_pr1,_mm256_mul_pd(_mm256_sub_pd(v_c__,v___m),v_DR_inv), mask_k_eq_1);
+    // v_eps + square(v_c__ - 2.0*v___p + v_____pp)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v___p),v_____pp))));
+    // v_eps + square(v___m - 2.0*v_c__ + v___p)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v___m,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v___p))));
+    // v_wr2 = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
+    v_wr2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pr2 = (1.0 - v_wr2) * (v___p - v___m) / 2.0 / D
     // + v_wr2 * (-3.0 * v_c__ + 4.0 * v___p - v_____pp) / 2.0 / D
     v_pr2 = _mm256_blendv_pd(v_pr2,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wr2),_mm256_mul_pd(_mm256_sub_pd(v___p,v___m),_mm256_set1_pd(0.5/DR))),\
-                          _mm256_mul_pd(v_wr2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v___p)),v_____pp),_mm256_set1_pd(0.5/DR)))), _mm256_castsi256_pd(mask_k_eq_1));
+                          _mm256_mul_pd(v_wr2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v___p)),v_____pp),_mm256_set1_pd(0.5/DR)))), mask_k_eq_1);
     // if _k_eq_N_minus_2 == true
-    // eps + sqrt(v_c__ - 2.0*v___m + v_____mm)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v___m),v_____mm))));
-    // eps + sqrt(v___m - 2.0*v_c__ + v___p)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v___m,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v___p))));
+    // eps + square(v_c__ - 2.0*v___m + v_____mm)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v___m),v_____mm))));
+    // eps + square(v___m - 2.0*v_c__ + v___p)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v___m,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v___p))));
     // v_wr1 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wr1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_k_eq_N_minus_2);
+    v_wr1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pr1 = (1.0 - v_wr1) * (v___p - v___m) / 2.0 / D
     // + v_wr1 * (v_____mm - 4.0 * v___m + 3.0 * v_c__) / 2.0 / D
     v_pr1 = _mm256_blendv_pd(v_pr1,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wr1),_mm256_mul_pd(_mm256_sub_pd(v___p,v___m),_mm256_set1_pd(0.5/DR))),\
-                          _mm256_mul_pd(v_wr1,_mm256_mul_pd(_mm256_add_pd(_mm256_add_pd(v_____mm,_mm256_mul_pd(_mm256_set1_pd(-4.0),v___m)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DR)))), _mm256_castsi256_pd(mask_k_eq_N_minus_2));
+                          _mm256_mul_pd(v_wr1,_mm256_mul_pd(_mm256_add_pd(_mm256_add_pd(v_____mm,_mm256_mul_pd(_mm256_set1_pd(-4.0),v___m)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DR)))), mask_k_eq_N_minus_2);
     // v_pr2 = (v___p - v_c__) * v_D_inv
-    v_pr2 = _mm256_blendv_pd(v_pr2,_mm256_mul_pd(_mm256_sub_pd(v___p,v_c__),v_DR_inv), _mm256_castsi256_pd(mask_k_eq_N_minus_2));
+    v_pr2 = _mm256_blendv_pd(v_pr2,_mm256_mul_pd(_mm256_sub_pd(v___p,v_c__),v_DR_inv), mask_k_eq_N_minus_2);
     // else
-    // eps + sqrt(v_c__ - 2.0*v___m + v_____mm)
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v___m),v_____mm))));
-    // eps + sqrt(v___m - 2.0*v_c__ + v___p)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v___m,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v___p))));
+    // eps + square(v_c__ - 2.0*v___m + v_____mm)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v___m),v_____mm))));
+    // eps + square(v___m - 2.0*v_c__ + v___p)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v___m,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v___p))));
     // v_wr1 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wr1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_k_else);
+    v_wr1 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pr1 = (1.0 - v_wr1) * (v___p - v___m) / 2.0 / D
     // + v_wr1 * (v_____mm - 4.0 * v___m + 3.0 * v_c__) / 2.0 / D
     v_pr1 = _mm256_blendv_pd(v_pr1,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wr1),_mm256_mul_pd(_mm256_sub_pd(v___p,v___m),_mm256_set1_pd(0.5/DR))),\
-                          _mm256_mul_pd(v_wr1,_mm256_mul_pd(_mm256_add_pd(_mm256_add_pd(v_____mm,_mm256_mul_pd(_mm256_set1_pd(-4.0),v___m)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DR)))), _mm256_castsi256_pd(mask_k_else));
-    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v_c__,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v___p),v_____pp))));
-    // v_eps + sqrt(v___m - 2.0*v_c__ + v___p)
-    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_sub_pd(v___m,   _mm256_sub_pd(_mm256_mul_pd(_mm256_set1_pd(2.0),v_c__),v___p))));
+                          _mm256_mul_pd(v_wr1,_mm256_mul_pd(_mm256_add_pd(_mm256_add_pd(v_____mm,_mm256_mul_pd(_mm256_set1_pd(-4.0),v___m)),_mm256_mul_pd(_mm256_set1_pd(3.0),v_c__)),_mm256_set1_pd(0.5/DR)))), mask_k_else);
+    // v_eps + square(v_c__ - 2.0*v___p + v_____pp)
+    tmp1 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v_c__,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v___p),v_____pp))));
+    // v_eps + square(v___m - 2.0*v_c__ + v___p)
+    tmp2 = _mm256_add_pd(v_eps,my_square(_mm256_add_pd(v___m,   _mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-2.0),v_c__),v___p))));
     // v_wr2 = 1.0/(1.0 + 2.0 * sqrt(tmp1/tmp2))
-    v_wr2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2))))), _mm256_castsi256_pd(mask_k_else);
+    v_wr2 = _mm256_div_pd(_mm256_set1_pd(1.0),_mm256_add_pd(_mm256_set1_pd(1.0),_mm256_mul_pd(_mm256_set1_pd(2.0),my_square(_mm256_div_pd(tmp1,tmp2)))));
     // v_pr2 = (1.0 - v_wr2) * (v___p - v___m) / 2.0 / D
     // + v_wr2 * (-3.0 * v_c__ + 4.0 * v___p - v_____pp) / 2.0 / D
     v_pr2 = _mm256_blendv_pd(v_pr2,_mm256_add_pd(\
                           _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(1.0),v_wr2),_mm256_mul_pd(_mm256_sub_pd(v___p,v___m),_mm256_set1_pd(0.5/DR))),\
-                          _mm256_mul_pd(v_wr2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v___p)),v_____pp),_mm256_set1_pd(0.5/DR)))), _mm256_castsi256_pd(mask_k_else));
+                          _mm256_mul_pd(v_wr2,_mm256_mul_pd(_mm256_sub_pd(_mm256_add_pd(_mm256_mul_pd(_mm256_set1_pd(-3.0),v_c__),_mm256_mul_pd(_mm256_set1_pd(4.0),v___p)),v_____pp),_mm256_set1_pd(0.5/DR)))), mask_k_else);
 
 }
 
 
 // tau fac_a fac_b fac_c fac_f T0v T0p T0t T0r fun
 inline void fake_stencil_3rd_apre_simd(__m256d& v_tau,__m256d& v_fac_a,__m256d& v_fac_b, __m256d& v_fac_c, __m256d& v_fac_f, \
-                                       __m256d& v_T0v, __m256d& v_T0p, __m256d& v_T0t, __m256d& v_T0r, __m256d& v_fun, \
+                                       __m256d& v_T0v, __m256d& v_T0p, __m256d& v_T0t, __m256d& v_T0r, __m256d& v_fun, __m256d& v_change,\
                                        __m256d& v_pp1, __m256d& v_pp2, __m256d& v_pt1, __m256d& v_pt2, __m256d& v_pr1, __m256d& v_pr2, \
                                        CUSTOMREAL& DP, CUSTOMREAL& DT, CUSTOMREAL& DR){
 
@@ -296,31 +323,39 @@ inline void fake_stencil_3rd_apre_simd(__m256d& v_tau,__m256d& v_fac_a,__m256d& 
     __m256d tmp1 = _mm256_add_pd(_mm256_mul_pd(v_T0t,v_tau),_mm256_mul_pd(v_T0v,_mm256_mul_pd(_mm256_add_pd(v_pt1,v_pt2),_mm256_set1_pd(0.5))));
     // tmp2 = ( v_T0p * v_tau + v_T0 * (v_pp1 + v_pp2)*0.5))
     __m256d tmp2 = _mm256_add_pd(_mm256_mul_pd(v_T0p,v_tau),_mm256_mul_pd(v_T0v,_mm256_mul_pd(_mm256_add_pd(v_pp1,v_pp2),_mm256_set1_pd(0.5))));
-    // Htau -= 2.0 * v_fac_f * tmp1 * tmp2;
-    Htau = _mm256_sub_pd(Htau,_mm256_mul_pd(_mm256_set1_pd(2.0),_mm256_mul_pd(v_fac_f,_mm256_mul_pd(tmp1,tmp2))));
-    // Htau = sqrt(Htau);
-    Htau = _mm256_sqrt_pd(Htau);
+    // tmp3 = -2.0 * v_fac_f * tmp1 * tmp2;
+    __m256d tmp3 = _mm256_mul_pd(_mm256_set1_pd(-2.0),_mm256_mul_pd(v_fac_f,_mm256_mul_pd(tmp1,tmp2)));
+
+    // Htau = sqrt(Htau + tmp3);
+    Htau = _mm256_sqrt_pd(_mm256_add_pd(Htau,tmp3));
 
     // tmp = (sigr*(v_pr1 - v_pr2) + sigt*(v_pt1 - v_pt2) + sigz*(v_pp1 - v_pp2))*0.5
     __m256d tmp = _mm256_mul_pd(_mm256_set1_pd(0.5),_mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(sigr,_mm256_sub_pd(v_pr2,v_pr1)),_mm256_mul_pd(sigt,_mm256_sub_pd(v_pt2,v_pt1))),_mm256_mul_pd(sigp,_mm256_sub_pd(v_pp2,v_pp1))));
 
-    /// v_tau += coe * ((v_fun - Htau) + tmp);
+
+    // mask if v_change != 1.0
+    __m256d mask = _mm256_cmp_pd(v_change,_mm256_set1_pd(1.0),_CMP_NEQ_OQ);
+
+    // v_tau += coe * ((v_fun - Htau) + tmp) if mask is true
     v_tau = _mm256_add_pd(v_tau,_mm256_mul_pd(coe,_mm256_add_pd(_mm256_sub_pd(v_fun,Htau),tmp)));
+
+    // set 1 if mask is true
+    v_tau = _mm256_blendv_pd(v_tau,_mm256_set1_pd(1.0),mask);
 
 }
 
-// tau fac_a fac_b fac_c fac_f fun T0v T0r T0t T0p
 
+// tau fac_a fac_b fac_c fac_f fun T0v T0r T0t T0p
 inline void load_stencil_data(CUSTOMREAL* tau, CUSTOMREAL* fac_a, CUSTOMREAL* fac_b, CUSTOMREAL* fac_c, CUSTOMREAL* fac_f, \
-                        CUSTOMREAL* T0v, CUSTOMREAL* T0r, CUSTOMREAL* T0t, CUSTOMREAL* T0p, CUSTOMREAL* fun, \
+                        CUSTOMREAL* T0v, CUSTOMREAL* T0r, CUSTOMREAL* T0t, CUSTOMREAL* T0p, CUSTOMREAL* fun, bool* is_changed, \
                         int& iip, int& jjt, int& kkr, int& i_, \
                         CUSTOMREAL* dump_tau, CUSTOMREAL* dump_fac_a, CUSTOMREAL* dump_fac_b, CUSTOMREAL* dump_fac_c, CUSTOMREAL* dump_fac_f, \
-                        CUSTOMREAL* dump_T0v, CUSTOMREAL* dump_T0r, CUSTOMREAL* dump_T0t, CUSTOMREAL* dump_T0p, CUSTOMREAL* dump_fun, \
+                        CUSTOMREAL* dump_T0v, CUSTOMREAL* dump_T0r, CUSTOMREAL* dump_T0t, CUSTOMREAL* dump_T0p, CUSTOMREAL* dump_fun, CUSTOMREAL* dump_change, \
                         CUSTOMREAL* dump_p__, CUSTOMREAL* dump_m__, CUSTOMREAL* dump__p_, CUSTOMREAL* dump__m_, CUSTOMREAL* dump___p, CUSTOMREAL* dump___m, \
                         CUSTOMREAL* dump_pp____, CUSTOMREAL* dump_mm____, CUSTOMREAL* dump___pp__, CUSTOMREAL* dump___mm__, CUSTOMREAL* dump_____pp, CUSTOMREAL* dump_____mm, \
                         int& NP, int& NT, int& NR) {
 
-    if(iip != 0 && jjt != 0 && kkr != 0 && iip != NP-1 && jjt != NT-1 && kkr != NR-1){
+    //if(iip != 0 && jjt != 0 && kkr != 0 && iip != NP-1 && jjt != NT-1 && kkr != NR-1){
         dump_tau[i_]   = tau[I2V(iip,jjt,kkr)];
         dump_fac_a[i_] = fac_a[I2V(iip,jjt,kkr)];
         dump_fac_b[i_] = fac_b[I2V(iip,jjt,kkr)];
@@ -331,7 +366,9 @@ inline void load_stencil_data(CUSTOMREAL* tau, CUSTOMREAL* fac_a, CUSTOMREAL* fa
         dump_T0t[i_]   = T0t[I2V(iip,jjt,kkr)];
         dump_T0p[i_]   = T0p[I2V(iip,jjt,kkr)];
         dump_fun[i_]   = fun[I2V(iip,jjt,kkr)];
-    }
+        // convert bool to CUSTOMREAL
+        dump_change[i_] = (CUSTOMREAL)is_changed[I2V(iip,jjt,kkr)];
+    //}
 
     if (iip == 0) {}
     else if (iip == 1){

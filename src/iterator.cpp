@@ -622,8 +622,8 @@ void Iterator::assign_processes_for_levels() {
 
     // stencil dumps
     // first orders
-    const int ALIGN = sizeof(CUSTOMREAL)*8;
-    const int ALIGN_int = sizeof(int)*4;
+    const int ALIGN     = 32;//sizeof(CUSTOMREAL); // double: 64, float: 32
+    const int ALIGN_int = 32;//sizeof(int);        // int: 32
 
     dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of C
     dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
@@ -641,15 +641,16 @@ void Iterator::assign_processes_for_levels() {
     dump_____mm = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
 
     // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
-    dump_fac_a = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fac_b = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fac_c = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fac_f = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0v   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0r   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0t   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0p   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fun   = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_fac_a  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_fac_b  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_fac_c  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_fac_f  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_T0v    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_T0r    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_T0t    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_T0p    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_fun    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_change = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
 
     dump_iip = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
     dump_jjt = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));

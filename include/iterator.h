@@ -101,6 +101,7 @@ protected:
     CUSTOMREAL *dump_T0t  ;
     CUSTOMREAL *dump_T0p  ;
     CUSTOMREAL *dump_fun  ;
+    CUSTOMREAL *dump_change;
 
 
     int* dump_iip;
