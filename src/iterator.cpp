@@ -65,6 +65,39 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 
 
 Iterator::~Iterator() {
+
+#ifdef USE_AVX
+    free(dump_c__);// center of stencil
+    free(dump_p__);
+    free(dump_m__);
+    free(dump__p_);
+    free(dump__m_);
+    free(dump___p);
+    free(dump___m);
+    // second orders
+    free(dump_pp____);
+    free(dump_mm____);
+    free(dump___pp__);
+    free(dump___mm__);
+    free(dump_____pp);
+    free(dump_____mm);
+
+    // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
+    free(dump_fac_a );
+    free(dump_fac_b );
+    free(dump_fac_c );
+    free(dump_fac_f );
+    free(dump_T0v   );
+    free(dump_T0r   );
+    free(dump_T0t   );
+    free(dump_T0p   );
+    free(dump_fun   );
+    free(dump_change);
+    free(dump_iip);
+    free(dump_jjt);
+    free(dump_kkr);
+#endif
+
 }
 
 
@@ -623,9 +656,9 @@ void Iterator::assign_processes_for_levels() {
     // stencil dumps
     // first orders
     const int ALIGN     = 32;//sizeof(CUSTOMREAL); // double: 64, float: 32
-    const int ALIGN_int = 32;//sizeof(int);        // int: 32
+    //const int ALIGN_int = 32;//sizeof(int);        // int: 32
 
-    dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of C
+    dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of stencil
     dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump_m__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump__p_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
@@ -652,9 +685,13 @@ void Iterator::assign_processes_for_levels() {
     dump_fun    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump_change = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
 
-    dump_iip = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
-    dump_jjt = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
-    dump_kkr = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
+//    dump_iip = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
+//    dump_jjt = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
+//    dump_kkr = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
+    dump_iip = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_jjt = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_kkr = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+
 
 #endif
 

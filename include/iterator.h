@@ -103,10 +103,13 @@ protected:
     CUSTOMREAL *dump_fun  ;
     CUSTOMREAL *dump_change;
 
+//    int* dump_iip;
+//    int* dump_jjt;
+//    int* dump_kkr;
+    CUSTOMREAL* dump_iip;
+    CUSTOMREAL* dump_jjt;
+    CUSTOMREAL* dump_kkr;
 
-    int* dump_iip;
-    int* dump_jjt;
-    int* dump_kkr;
 
 #endif
 
