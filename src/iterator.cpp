@@ -651,7 +651,9 @@ void Iterator::assign_processes_for_levels() {
     int max_length = max_n_nodes_plane;
     if (max_length % NSIMD != 0)
         pad_length = NSIMD - max_length % NSIMD;
-    int dump_length = (max_length + pad_length);
+//    int dump_length = (max_length + pad_length);
+    int dump_length = NSIMD;
+
 
     // stencil dumps
     // first orders
@@ -691,6 +693,27 @@ void Iterator::assign_processes_for_levels() {
     dump_iip = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump_jjt = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
     dump_kkr = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+
+    dump_icc = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_jcc = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_kcc = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+
+    dump_ip1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_jp1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_kp1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+
+    dump_im1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_jm1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_km1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+
+    dump_ip2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_jp2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_kp2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+
+    dump_im2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_jm2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+    dump_km2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
+
 
 
 #endif

@@ -205,6 +205,98 @@ inline void fake_stencil_3rd_apre_simd(__m256d& v_tau,__m256d& v_fac_a,__m256d& 
 }
 
 
+inline void load_stencil_tau(CUSTOMREAL* tau, \
+                        int& iip, int& jjt, int& kkr, int& i_, \
+                        CUSTOMREAL* dump_tau, \
+                        CUSTOMREAL* dump_p__, CUSTOMREAL* dump_m__, CUSTOMREAL* dump__p_, CUSTOMREAL* dump__m_, CUSTOMREAL* dump___p, CUSTOMREAL* dump___m, \
+                        CUSTOMREAL* dump_pp____, CUSTOMREAL* dump_mm____, CUSTOMREAL* dump___pp__, CUSTOMREAL* dump___mm__, CUSTOMREAL* dump_____pp, CUSTOMREAL* dump_____mm, \
+                        int& NP, int& NT, int& NR) {
+
+    dump_tau[i_]   = tau[I2V(iip,jjt,kkr)];
+     if (iip <= 0) {}
+    else if (iip == 1){
+        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
+        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
+        dump_pp____[i_] = tau[I2V(iip+2,jjt,kkr)];
+        dump_mm____[i_] = 1.0; // dummy
+    } else if (iip < NP-2) {
+        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
+        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
+        dump_pp____[i_] = tau[I2V(iip+2,jjt,kkr)];
+        dump_mm____[i_] = tau[I2V(iip-2,jjt,kkr)];
+    } else if (iip == NP-2){
+        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
+        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
+        dump_pp____[i_] = 1.0; // dummy
+        dump_mm____[i_] = tau[I2V(iip-2,jjt,kkr)];
+    }
+
+    if (jjt <= 0) {}
+    else if (jjt == 1){
+        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
+        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
+        dump___pp__[i_] = tau[I2V(iip,jjt+2,kkr)];
+        dump___mm__[i_] = 1.0; // dummy
+    } else if (jjt < NT-2) {
+        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
+        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
+        dump___pp__[i_] = tau[I2V(iip,jjt+2,kkr)];
+        dump___mm__[i_] = tau[I2V(iip,jjt-2,kkr)];
+    } else if (jjt == NT-2){
+        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
+        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
+        dump___pp__[i_] = 1.0; // dummy
+        dump___mm__[i_] = tau[I2V(iip,jjt-2,kkr)];
+    }
+
+    if (kkr <= 0){}
+    else if (kkr == 1){
+        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
+        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
+        dump_____pp[i_] = tau[I2V(iip,jjt,kkr+2)];
+        dump_____mm[i_] = 1.0; // dummy
+    } else if (kkr < NR-2) {
+        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
+        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
+        dump_____pp[i_] = tau[I2V(iip,jjt,kkr+2)];
+        dump_____mm[i_] = tau[I2V(iip,jjt,kkr-2)];
+    } else if (kkr == NR-2){
+        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
+        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
+        dump_____pp[i_] = 1.0; // dummy
+        dump_____mm[i_] = tau[I2V(iip,jjt,kkr-2)];
+    }
+}
+
+inline void load_mem_gen(CUSTOMREAL* a, CUSTOMREAL* dump, \
+                         int& iip, int& jjt, int& kkr, int& i_){
+    dump[i_] = a[I2V(iip,jjt,kkr)];
+}
+
+inline void load_mem_bool(bool* a, CUSTOMREAL* dump, \
+                         int& iip, int& jjt, int& kkr, int& i_){
+    dump[i_] = (CUSTOMREAL)a[I2V(iip,jjt,kkr)];
+}
+
+inline __m256d load_mem_gen_to_m256d(CUSTOMREAL* a, \
+                         int* iip, int* jjt, int* kkr){
+        CUSTOMREAL dump_[4] = {a[I2V(iip[0],jjt[0],kkr[0])], \
+                               a[I2V(iip[1],jjt[1],kkr[1])], \
+                               a[I2V(iip[2],jjt[2],kkr[2])], \
+                               a[I2V(iip[3],jjt[3],kkr[3])]};
+        return  _mm256_loadu_pd(dump_);
+}
+
+inline __m256d load_mem_bool_to_m256d(bool* a, \
+                         int* iip, int* jjt, int* kkr){
+        CUSTOMREAL dump_[4] = {(CUSTOMREAL)a[I2V(iip[0],jjt[0],kkr[0])], \
+                               (CUSTOMREAL)a[I2V(iip[1],jjt[1],kkr[1])], \
+                               (CUSTOMREAL)a[I2V(iip[2],jjt[2],kkr[2])], \
+                               (CUSTOMREAL)a[I2V(iip[3],jjt[3],kkr[3])]};
+        return _mm256_loadu_pd(dump_);
+}
+
+
 // tau fac_a fac_b fac_c fac_f fun T0v T0r T0t T0p
 inline void load_stencil_data(CUSTOMREAL* tau, CUSTOMREAL* fac_a, CUSTOMREAL* fac_b, CUSTOMREAL* fac_c, CUSTOMREAL* fac_f, \
                         CUSTOMREAL* T0v, CUSTOMREAL* T0r, CUSTOMREAL* T0t, CUSTOMREAL* T0p, CUSTOMREAL* fun, bool* is_changed, \

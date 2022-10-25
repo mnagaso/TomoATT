@@ -198,35 +198,6 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     __m256d v_pr1;
     __m256d v_pr2;
 
-//    __m256d v_iip   ;
-//    __m256d v_jjt   ;
-//    __m256d v_kkr   ;
-//    __m256d v_c__   ;
-//    __m256d v_p__   ;
-//    __m256d v_m__   ;
-//    __m256d v__p_   ;
-//    __m256d v__m_   ;
-//    __m256d v___p   ;
-//    __m256d v___m   ;
-//    __m256d v_pp____;
-//    __m256d v_mm____;
-//    __m256d v___pp__;
-//    __m256d v___mm__;
-//    __m256d v_____pp;
-//    __m256d v_____mm;
-//
-//    __m256d v_fac_a ;
-//    __m256d v_fac_b ;
-//    __m256d v_fac_c ;
-//    __m256d v_fac_f ;
-//    __m256d v_T0v   ;
-//    __m256d v_T0r   ;
-//    __m256d v_T0t   ;
-//    __m256d v_T0p   ;
-//    __m256d v_fun   ;
-//    __m256d v_change;
-
-
     // print length of ijk_for_this_subproc_optim
     //std::cout << "ijk_for_this_subproc_optim.size() = " << ijk_for_this_subproc_optim.size() << std::endl;
     //for (auto& ijk : ijk_for_this_subproc_optim) {
@@ -271,124 +242,145 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                 }
 
                 //std::cout << "load_stencil_data, iip = " << iip << ", jjt = " << jjt << ", kkr = " << kkr << ", I2V(iip, jjt, kkr) = " << I2V(iip, jjt, kkr) << ", i_node " << i_node << std::endl;
-                dump_iip[i_node] = (CUSTOMREAL)iip;
-                dump_jjt[i_node] = (CUSTOMREAL)jjt;
-                dump_kkr[i_node] = (CUSTOMREAL)kkr;
+                dump_iip[ii] = (CUSTOMREAL)iip;
+                dump_jjt[ii] = (CUSTOMREAL)jjt;
+                dump_kkr[ii] = (CUSTOMREAL)kkr;
 
-                load_stencil_data(grid.tau_loc, grid.fac_a_loc, grid.fac_b_loc, grid.fac_c_loc, grid.fac_f_loc, \
-                                  grid.T0v_loc, grid.T0r_loc, grid.T0t_loc, grid.T0p_loc, grid.fun_loc, grid.is_changed, \
-                                  iip, jjt, kkr, i_node, \
-                                  dump_c__, dump_fac_a, dump_fac_b, dump_fac_c, dump_fac_f, \
-                                  dump_T0v, dump_T0r, dump_T0t, dump_T0p, dump_fun, dump_change, \
-                                  dump_p__, dump_m__, dump__p_, dump__m_, dump___p, dump___m, dump_pp____, dump_mm____, dump___pp__, dump___mm__, dump_____pp, dump_____mm, \
-                                  loc_I, loc_J, loc_K);
+                dump_icc[ii] = iip;
+                dump_jcc[ii] = jjt;
+                dump_kcc[ii] = kkr;
+                dump_ip1[ii] = (iip+1);
+                dump_im1[ii] = (iip-1);
+                dump_jp1[ii] = (jjt+1);
+                dump_jm1[ii] = (jjt-1);
+                dump_kp1[ii] = (kkr+1);
+                dump_km1[ii] = (kkr-1);
+                dump_ip2[ii] = (iip+2);
+                dump_im2[ii] = (iip-2);
+                dump_jp2[ii] = (jjt+2);
+                dump_jm2[ii] = (jjt-2);
+                dump_kp2[ii] = (kkr+2);
+                dump_km2[ii] = (kkr-2);
+
+//                // load all data at the same time
+//                //load_stencil_data(grid.tau_loc, grid.fac_a_loc, grid.fac_b_loc, grid.fac_c_loc, grid.fac_f_loc, \
+//                //                  grid.T0v_loc, grid.T0r_loc, grid.T0t_loc, grid.T0p_loc, grid.fun_loc, grid.is_changed, \
+//                //                  iip, jjt, kkr, ii, \
+//                //                  dump_c__, dump_fac_a, dump_fac_b, dump_fac_c, dump_fac_f, \
+//                //                  dump_T0v, dump_T0r, dump_T0t, dump_T0p, dump_fun, dump_change, \
+//                //                  dump_p__, dump_m__, dump__p_, dump__m_, dump___p, dump___m, dump_pp____, dump_mm____, dump___pp__, dump___mm__, dump_____pp, dump_____mm, \
+//                //                  loc_I, loc_J, loc_K);
+//
+//                // load each data separately
+//                //load_stencil_tau(
+//                //    grid.tau_loc, \
+//                //    iip, jjt, kkr, ii, \
+//                //    dump_c__, dump_p__, dump_m__, dump__p_, dump__m_, dump___p, dump___m, dump_pp____, dump_mm____, dump___pp__, dump___mm__, dump_____pp, dump_____mm, \
+//                //    loc_I, loc_J, loc_K);
+//                int ip1 = iip+1, im1 = iip-1, jp1 = jjt+1, jm1 = jjt-1, kp1 = kkr+1, km1 = kkr-1;
+//                int ip2 = iip+2, im2 = iip-2, jp2 = jjt+2, jm2 = jjt-2, kp2 = kkr+2, km2 = kkr-2;
+//                load_mem_gen(grid.tau_loc, dump_c__   , iip, jjt, kkr, ii  );
+//                load_mem_gen(grid.tau_loc, dump_p__   , ip1, jjt, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump_m__   , im1, jjt, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump__p_   , iip, jp1, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump__m_   , iip, jm1, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump___p   , iip, jjt, kp1, ii);
+//                load_mem_gen(grid.tau_loc, dump___m   , iip, jjt, km1, ii);
+//                load_mem_gen(grid.tau_loc, dump_pp____, ip2, jjt, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump_mm____, im2, jjt, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump___pp__, iip, jp2, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump___mm__, iip, jm2, kkr, ii);
+//                load_mem_gen(grid.tau_loc, dump_____pp, iip, jjt, kp2, ii);
+//                load_mem_gen(grid.tau_loc, dump_____mm, iip, jjt, km2, ii);
+//
+//                load_mem_gen(grid.fac_a_loc, dump_fac_a, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.fac_b_loc, dump_fac_b, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.fac_c_loc, dump_fac_c, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.fac_f_loc, dump_fac_f, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.T0v_loc, dump_T0v, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.T0r_loc, dump_T0r, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.T0t_loc, dump_T0t, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.T0p_loc, dump_T0p, iip, jjt, kkr, ii);
+//                load_mem_gen(grid.fun_loc, dump_fun, iip, jjt, kkr, ii);
+//                load_mem_bool(grid.is_changed, dump_change, iip, jjt, kkr, ii);
 
             }
-        }
 
-        // alias for temporal aligned array
-        __m256d* v_iip = (__m256d*)dump_iip;
-        __m256d* v_jjt = (__m256d*)dump_jjt;
-        __m256d* v_kkr = (__m256d*)dump_kkr;
+//            // alias for temporal aligned array
+            __m256d* v_iip = (__m256d*)dump_iip;
+            __m256d* v_jjt = (__m256d*)dump_jjt;
+            __m256d* v_kkr = (__m256d*)dump_kkr;
+//
+//            __m256d* v_c__    = (__m256d*)dump_c__;
+//            __m256d* v_p__    = (__m256d*)dump_p__;
+//            __m256d* v_m__    = (__m256d*)dump_m__;
+//            __m256d* v__p_    = (__m256d*)dump__p_;
+//            __m256d* v__m_    = (__m256d*)dump__m_;
+//            __m256d* v___p    = (__m256d*)dump___p;
+//            __m256d* v___m    = (__m256d*)dump___m;
+//            __m256d* v_pp____ = (__m256d*)dump_pp____;
+//            __m256d* v_mm____ = (__m256d*)dump_mm____;
+//            __m256d* v___pp__ = (__m256d*)dump___pp__;
+//            __m256d* v___mm__ = (__m256d*)dump___mm__;
+//            __m256d* v_____pp = (__m256d*)dump_____pp;
+//            __m256d* v_____mm = (__m256d*)dump_____mm;
+//
+//            __m256d* v_fac_a  = (__m256d*)dump_fac_a;
+//            __m256d* v_fac_b  = (__m256d*)dump_fac_b;
+//            __m256d* v_fac_c  = (__m256d*)dump_fac_c;
+//            __m256d* v_fac_f  = (__m256d*)dump_fac_f;
+//            __m256d* v_T0v    = (__m256d*)dump_T0v;
+//            __m256d* v_T0r    = (__m256d*)dump_T0r;
+//            __m256d* v_T0t    = (__m256d*)dump_T0t;
+//            __m256d* v_T0p    = (__m256d*)dump_T0p;
+//            __m256d* v_fun    = (__m256d*)dump_fun;
+//            __m256d* v_change = (__m256d*)dump_change;
+//
+//            // loop over all nodes in one level
+//            int i_vec=0;
+//            fake_stencil_3rd_pre_simd(v_iip[i_vec], v_jjt[i_vec], v_kkr[i_vec], v_c__[i_vec], v_p__[i_vec], v_m__[i_vec], v__p_[i_vec], v__m_[i_vec], v___p[i_vec], v___m[i_vec], \
+//                                      v_pp____[i_vec], v_mm____[i_vec], v___pp__[i_vec], v___mm__[i_vec], v_____pp[i_vec], v_____mm[i_vec], \
+//                                      v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
+//                                      dp, dt, dr, loc_I, loc_J, loc_J);
+//
+//            //if (i_level == 198 && i_vec == 780)
+//            //    std::cout << "nan will be happened here." << std::endl;
+//
+//            //// calculate updated value on c
+//            fake_stencil_3rd_apre_simd(v_c__[i_vec], v_fac_a[i_vec], v_fac_b[i_vec], v_fac_c[i_vec], v_fac_f[i_vec], \
+//                                       v_T0v[i_vec], v_T0p[i_vec], v_T0t[i_vec], v_T0r[i_vec], v_fun[i_vec], v_change[i_vec], \
+//                                       v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
+//                                       dp, dt, dr);
 
-        __m256d* v_c__    = (__m256d*)dump_c__;
-        __m256d* v_p__    = (__m256d*)dump_p__;
-        __m256d* v_m__    = (__m256d*)dump_m__;
-        __m256d* v__p_    = (__m256d*)dump__p_;
-        __m256d* v__m_    = (__m256d*)dump__m_;
-        __m256d* v___p    = (__m256d*)dump___p;
-        __m256d* v___m    = (__m256d*)dump___m;
-        __m256d* v_pp____ = (__m256d*)dump_pp____;
-        __m256d* v_mm____ = (__m256d*)dump_mm____;
-        __m256d* v___pp__ = (__m256d*)dump___pp__;
-        __m256d* v___mm__ = (__m256d*)dump___mm__;
-        __m256d* v_____pp = (__m256d*)dump_____pp;
-        __m256d* v_____mm = (__m256d*)dump_____mm;
 
-        __m256d* v_fac_a  = (__m256d*)dump_fac_a;
-        __m256d* v_fac_b  = (__m256d*)dump_fac_b;
-        __m256d* v_fac_c  = (__m256d*)dump_fac_c;
-        __m256d* v_fac_f  = (__m256d*)dump_fac_f;
-        __m256d* v_T0v    = (__m256d*)dump_T0v;
-        __m256d* v_T0r    = (__m256d*)dump_T0r;
-        __m256d* v_T0t    = (__m256d*)dump_T0t;
-        __m256d* v_T0p    = (__m256d*)dump_T0p;
-        __m256d* v_fun    = (__m256d*)dump_fun;
-        __m256d* v_change = (__m256d*)dump_change;
+           __m256d v_c__    = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jcc, dump_kcc);
+           __m256d v_p__    = load_mem_gen_to_m256d(grid.tau_loc,  dump_ip1, dump_jcc, dump_kcc);
+           __m256d v_m__    = load_mem_gen_to_m256d(grid.tau_loc,  dump_im1, dump_jcc, dump_kcc);
+           __m256d v__p_    = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jp1, dump_kcc);
+           __m256d v__m_    = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jm1, dump_kcc);
+           __m256d v___p    = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jcc, dump_kp1);
+           __m256d v___m    = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jcc, dump_km1);
+           __m256d v_pp____ = load_mem_gen_to_m256d(grid.tau_loc,  dump_ip2, dump_jcc, dump_kcc);
+           __m256d v_mm____ = load_mem_gen_to_m256d(grid.tau_loc,  dump_im2, dump_jcc, dump_kcc);
+           __m256d v___pp__ = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jp2, dump_kcc);
+           __m256d v___mm__ = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jm2, dump_kcc);
+           __m256d v_____pp = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jcc, dump_kp2);
+           __m256d v_____mm = load_mem_gen_to_m256d(grid.tau_loc,  dump_icc, dump_jcc, dump_km2);
 
+           __m256d v_fac_a  = load_mem_gen_to_m256d(grid.fac_a_loc,  dump_icc, dump_jcc, dump_kcc);
+           __m256d v_fac_b  = load_mem_gen_to_m256d(grid.fac_b_loc,  dump_icc, dump_jcc, dump_kcc);
+           __m256d v_fac_c  = load_mem_gen_to_m256d(grid.fac_c_loc,  dump_icc, dump_jcc, dump_kcc);
+           __m256d v_fac_f  = load_mem_gen_to_m256d(grid.fac_f_loc,  dump_icc, dump_jcc, dump_kcc);
+           __m256d v_T0v    = load_mem_gen_to_m256d(grid.T0v_loc,    dump_icc, dump_jcc, dump_kcc);
+           __m256d v_T0r    = load_mem_gen_to_m256d(grid.T0r_loc,    dump_icc, dump_jcc, dump_kcc);
+           __m256d v_T0t    = load_mem_gen_to_m256d(grid.T0t_loc,    dump_icc, dump_jcc, dump_kcc);
+           __m256d v_T0p    = load_mem_gen_to_m256d(grid.T0p_loc,    dump_icc, dump_jcc, dump_kcc);
+           __m256d v_fun    = load_mem_gen_to_m256d(grid.fun_loc,    dump_icc, dump_jcc, dump_kcc);
+           __m256d v_change = load_mem_bool_to_m256d(grid.is_changed,  dump_icc, dump_jcc, dump_kcc);
 
-        // loop over all nodes in one level
-        for (int i_vec = 0; i_vec < num_iter; i_vec++) {
-
-/*
-            v_iip = _mm256_load_pd(&dump_iip[i_vec*NSIMD]);
-            v_jjt = _mm256_load_pd(&dump_jjt[i_vec*NSIMD]);
-            v_kkr = _mm256_load_pd(&dump_kkr[i_vec*NSIMD]);
-
-            v_c__    = _mm256_load_pd(&dump_c__[i_vec*NSIMD]);
-            v_p__    = _mm256_load_pd(&dump_p__[i_vec*NSIMD]);
-            v_m__    = _mm256_load_pd(&dump_m__[i_vec*NSIMD]);
-            v__p_    = _mm256_load_pd(&dump__p_[i_vec*NSIMD]);
-            v__m_    = _mm256_load_pd(&dump__m_[i_vec*NSIMD]);
-            v___p    = _mm256_load_pd(&dump___p[i_vec*NSIMD]);
-            v___m    = _mm256_load_pd(&dump___m[i_vec*NSIMD]);
-            v_pp____ = _mm256_load_pd(&dump_pp____[i_vec*NSIMD]);
-            v_mm____ = _mm256_load_pd(&dump_mm____[i_vec*NSIMD]);
-            v___pp__ = _mm256_load_pd(&dump___pp__[i_vec*NSIMD]);
-            v___mm__ = _mm256_load_pd(&dump___mm__[i_vec*NSIMD]);
-            v_____pp = _mm256_load_pd(&dump_____pp[i_vec*NSIMD]);
-            v_____mm = _mm256_load_pd(&dump_____mm[i_vec*NSIMD]);
-
-            v_fac_a  = _mm256_load_pd(&dump_fac_a[i_vec*NSIMD]);
-            v_fac_b  = _mm256_load_pd(&dump_fac_b[i_vec*NSIMD]);
-            v_fac_c  = _mm256_load_pd(&dump_fac_c[i_vec*NSIMD]);
-            v_fac_f  = _mm256_load_pd(&dump_fac_f[i_vec*NSIMD]);
-            v_T0v    = _mm256_load_pd(&dump_T0v[i_vec*NSIMD]);
-            v_T0r    = _mm256_load_pd(&dump_T0r[i_vec*NSIMD]);
-            v_T0t    = _mm256_load_pd(&dump_T0t[i_vec*NSIMD]);
-            v_T0p    = _mm256_load_pd(&dump_T0p[i_vec*NSIMD]);
-            v_fun    = _mm256_load_pd(&dump_fun[i_vec*NSIMD]);
-            v_change = _mm256_load_pd(&dump_change[i_vec*NSIMD]);
-
-            // calculate stencil coefs
-            fake_stencil_3rd_pre_simd(v_iip, \
-                                      v_jjt, \
-                                      v_kkr, \
-                                      v_c__, \
-                                      v_p__, \
-                                      v_m__, \
-                                      v__p_, \
-                                      v__m_, \
-                                      v___p, \
-                                      v___m, \
-                                      v_pp____,\
-                                      v_mm____, \
-                                      v___pp__, \
-                                      v___mm__, \
-                                      v_____pp, \
-                                      v_____mm, \
-                                      v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
-                                      dp, dt, dr, loc_I, loc_J, loc_J);
-
-            //// calculate updated value on c
-            fake_stencil_3rd_apre_simd(v_c__  , \
-                                       v_fac_a, \
-                                       v_fac_b, \
-                                       v_fac_c, \
-                                       v_fac_f, \
-                                       v_T0v, \
-                                       v_T0p, \
-                                       v_T0t, \
-                                       v_T0r, \
-                                       v_fun, \
-                                       v_change, \
-                                       v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
-                                       dp, dt, dr);
-
-*/
-
-            fake_stencil_3rd_pre_simd(v_iip[i_vec], v_jjt[i_vec], v_kkr[i_vec], v_c__[i_vec], v_p__[i_vec], v_m__[i_vec], v__p_[i_vec], v__m_[i_vec], v___p[i_vec], v___m[i_vec], \
-                                      v_pp____[i_vec], v_mm____[i_vec], v___pp__[i_vec], v___mm__[i_vec], v_____pp[i_vec], v_____mm[i_vec], \
+            // loop over all nodes in one level
+            fake_stencil_3rd_pre_simd(v_iip[0], v_jjt[0], v_kkr[0], v_c__, v_p__, v_m__, v__p_, v__m_, v___p, v___m, \
+                                      v_pp____, v_mm____, v___pp__, v___mm__, v_____pp, v_____mm, \
                                       v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
                                       dp, dt, dr, loc_I, loc_J, loc_J);
 
@@ -396,46 +388,22 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             //    std::cout << "nan will be happened here." << std::endl;
 
             //// calculate updated value on c
-            fake_stencil_3rd_apre_simd(v_c__[i_vec], v_fac_a[i_vec], v_fac_b[i_vec], v_fac_c[i_vec], v_fac_f[i_vec], \
-                                       v_T0v[i_vec], v_T0p[i_vec], v_T0t[i_vec], v_T0r[i_vec], v_fun[i_vec], v_change[i_vec], \
+            fake_stencil_3rd_apre_simd(v_c__, v_fac_a, v_fac_b, v_fac_c, v_fac_f, \
+                                       v_T0v, v_T0p  , v_T0t  , v_T0r  , v_fun  , v_change, \
                                        v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
                                        dp, dt, dr);
 
+            // store v_c__ to dump_c__
+            _mm256_store_pd(dump_c__, v_c__);
 
-//            // check if dump_c__[i_vec*4] includes nan
-//            for (int j = 0; j < 4; j++) {
-//                if (isnan(dump_c__[i_vec*4+j])) {
-//                    printf("i = %d, j = %d, c = %f", i_vec, j, dump_c__[i_vec*4+j]);
-//                }
-//            }
-//
-//            // check if v_c__ includes nan
-//            for (int j = 0; j < 4; j++) {
-//                if (isnan(((double*)&v_c__)[j])) {
-//                    printf("i = %d, j = %d, c = %f", i_vec, j, ((double*)&v_c__)[j]);
-//                }
-//            }
+            for (int i = 0; i < NSIMD; i++) {
+                int tmp_ijk = I2V(dump_iip[i], dump_jjt[i], dump_kkr[i]);
+                grid.tau_loc[tmp_ijk] = dump_c__[i];
+            }
 
-//            // unload v_c__ to dump_c__
-//            _mm256_store_pd(&dump_c__[i_vec*NSIMD], v_c__);
-//            //std::cout << std::endl;
-
-            // debug set dump_c__[i_vec*4] = 1.0
-            //for (int j = 0; j < 4; j++) {
-            //    dump_c__[i_vec*4+j] = 1.0;
-            //}
-            // debug set v_c__ = 1.0
-            //v_c__[i_vec] = _mm256_set1_pd(1.0);
 
 
         } // end of i_vec loop
-
-
-        for (int i = 0; i < n_nodes; i++) {
-            int tmp_ijk = I2V(dump_iip[i], dump_jjt[i], dump_kkr[i]);
-            grid.tau_loc[tmp_ijk] = dump_c__[i];
-        }
-
 
         // mpi synchronization
         synchronize_all_sub();

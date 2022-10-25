@@ -110,6 +110,9 @@ protected:
     CUSTOMREAL* dump_jjt;
     CUSTOMREAL* dump_kkr;
 
+    int* dump_icc, *dump_jcc, *dump_kcc;
+    int* dump_ip1, *dump_im1, *dump_jp1, *dump_jm1, *dump_kp1, *dump_km1;
+    int* dump_ip2, *dump_im2, *dump_jp2, *dump_jm2, *dump_kp2, *dump_km2;
 
 #endif
 
