@@ -464,6 +464,13 @@ InputParams::~InputParams(){
     delete [] lat_inv;
     delete [] lon_inv;
 
+    // clear all src/rec points
+    src_points.clear();
+    rec_points.clear();
+    src_points_back.clear();
+    rec_points_back.clear();
+    src_points_out.clear();
+    rec_points_out.clear();
 }
 
 
@@ -705,13 +712,14 @@ void InputParams::do_swap_src_rec(){
 
         for (auto& i_src_ori : new_srcs[i_src].id_srcs_ori){
 
-            SrcRec& tmp_new_rec = src_points_back[i_src_ori];
+            SrcRec tmp_new_rec = src_points_back[i_src_ori];
 
             for (auto& tmp_rec_ori : rec_points_back[i_src_ori]){
                 if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec)==0) {
                     // we can use the same arrival time for a src-rec pair by principle of reciprocity (Aki & Richards, 2002).
                     tmp_new_rec.arr_time     = tmp_rec_ori.arr_time;
                     tmp_new_rec.arr_time_ori = tmp_rec_ori.arr_time_ori;
+                    tmp_new_rec.id_rec_ori   = tmp_rec_ori.id_rec;
 
                     goto rec_found;
                 }
@@ -902,13 +910,14 @@ void InputParams::reverse_src_rec_points(){
         // swapped only the regional events
         if (src_points[i_src].is_teleseismic == false && swap_src_rec ) {
 
-            int id_rec_orig = src_points[i_src].id_rec;
             // loop swapped receivers
             for (long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++){
                 int id_src_orig = rec_points[i_src][i_rec].id_src;
+                int id_rec_orig = rec_points[i_src][i_rec].id_rec_ori; // cannot fully ecover  the original receiver id
 
+                std::cout << "id_src_orig = " << id_src_orig << " id_rec_orig = " << id_rec_orig << std::endl;
                 // store calculated arrival time in backuped receiver list
-                rec_points_back[id_src_orig][id_rec_orig].arr_time = rec_points[i_src][i_rec].arr_time;
+                rec_points_back[id_src_orig][id_rec_orig].arr_time     = rec_points[i_src][i_rec].arr_time;
                 rec_points_back[id_src_orig][id_rec_orig].dif_arr_time = rec_points[i_src][i_rec].dif_arr_time;
 
                 // update relocated source positions
