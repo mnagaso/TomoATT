@@ -915,6 +915,7 @@ void InputParams::reverse_src_rec_points(){
                 int id_src_orig = rec_points[i_src][i_rec].id_src;
                 int id_rec_orig = rec_points[i_src][i_rec].id_rec_ori; // cannot fully ecover  the original receiver id
 
+                std::cout << "id_src_orig = " << id_src_orig << " id_rec_orig = " << id_rec_orig << std::endl;
                 // store calculated arrival time in backuped receiver list
                 rec_points_back[id_src_orig][id_rec_orig].arr_time     = rec_points[i_src][i_rec].arr_time;
                 rec_points_back[id_src_orig][id_rec_orig].dif_arr_time = rec_points[i_src][i_rec].dif_arr_time;
