@@ -73,6 +73,7 @@ public:
 
     // original ids of source/receiver before swapping
     std::vector<int> id_srcs_ori;
+    int id_rec_ori; // used for swapping case at writing process
 
     //
     // variables for teleseismic source
