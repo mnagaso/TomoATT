@@ -280,19 +280,19 @@ inline void load_mem_bool(bool* a, CUSTOMREAL* dump, \
 
 inline __m256d load_mem_gen_to_m256d(CUSTOMREAL* a, \
                          int* iip, int* jjt, int* kkr){
-        CUSTOMREAL dump_[4] = {a[I2V(iip[0],jjt[0],kkr[0])], \
-                               a[I2V(iip[1],jjt[1],kkr[1])], \
-                               a[I2V(iip[2],jjt[2],kkr[2])], \
-                               a[I2V(iip[3],jjt[3],kkr[3])]};
+        const CUSTOMREAL dump_[4] = {a[I2V(iip[0],jjt[0],kkr[0])], \
+                                     a[I2V(iip[1],jjt[1],kkr[1])], \
+                                     a[I2V(iip[2],jjt[2],kkr[2])], \
+                                     a[I2V(iip[3],jjt[3],kkr[3])]};
         return  _mm256_loadu_pd(dump_);
 }
 
 inline __m256d load_mem_bool_to_m256d(bool* a, \
                          int* iip, int* jjt, int* kkr){
-        CUSTOMREAL dump_[4] = {(CUSTOMREAL)a[I2V(iip[0],jjt[0],kkr[0])], \
-                               (CUSTOMREAL)a[I2V(iip[1],jjt[1],kkr[1])], \
-                               (CUSTOMREAL)a[I2V(iip[2],jjt[2],kkr[2])], \
-                               (CUSTOMREAL)a[I2V(iip[3],jjt[3],kkr[3])]};
+        const CUSTOMREAL dump_[4] = {(CUSTOMREAL) a[I2V(iip[0],jjt[0],kkr[0])], \
+                                     (CUSTOMREAL) a[I2V(iip[1],jjt[1],kkr[1])], \
+                                     (CUSTOMREAL) a[I2V(iip[2],jjt[2],kkr[2])], \
+                                     (CUSTOMREAL) a[I2V(iip[3],jjt[3],kkr[3])]};
         return _mm256_loadu_pd(dump_);
 }
 
