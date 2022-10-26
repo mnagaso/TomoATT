@@ -991,6 +991,13 @@ void InputParams::merge_region_and_tele_src(){
 
 // check contradictory parameters
 void InputParams::check_contradictions(){
+
+    // if run_mode == 0 then the max_iter should be 1
+    if (run_mode == ONLY_FORWARD && max_iter_inv > 1){
+        std::cout << "Warning: run_mode = 0, max_iter should be 1" << std::endl;
+        max_iter_inv = 1;
+    }
+
 #ifdef USE_CUDA
     if (use_gpu){
 
