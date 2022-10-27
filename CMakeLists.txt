@@ -13,7 +13,7 @@ endif()
 # for production
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O2 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
 #
 # for debugging
 #

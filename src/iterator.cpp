@@ -83,19 +83,58 @@ Iterator::~Iterator() {
     free(dump_____mm);
 
     // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
-    free(dump_fac_a );
-    free(dump_fac_b );
-    free(dump_fac_c );
-    free(dump_fac_f );
-    free(dump_T0v   );
-    free(dump_T0r   );
-    free(dump_T0t   );
-    free(dump_T0p   );
-    free(dump_fun   );
-    free(dump_change);
-    free(dump_iip);
-    free(dump_jjt);
-    free(dump_kkr);
+//    free(dump_iip);
+//    free(dump_jjt);
+//    free(dump_kkr);
+//
+//    free(dump_icc);
+//    free(dump_jcc);
+//    free(dump_kcc);
+//
+//    free(dump_ip1);
+//    free(dump_jp1);
+//    free(dump_kp1);
+//
+//    free(dump_im1);
+//    free(dump_jm1);
+//    free(dump_km1);
+//
+//    free(dump_ip2);
+//    free(dump_jp2);
+//    free(dump_kp2);
+//
+//    free(dump_im2);
+//    free(dump_jm2);
+//    free(dump_km2);
+
+    // free vv_* preloaded arrays
+    free_preloaded_array(vv_icc);
+    free_preloaded_array(vv_jcc);
+    free_preloaded_array(vv_kcc);
+    free_preloaded_array(vv_ip1);
+    free_preloaded_array(vv_jp1);
+    free_preloaded_array(vv_kp1);
+    free_preloaded_array(vv_im1);
+    free_preloaded_array(vv_jm1);
+    free_preloaded_array(vv_km1);
+    free_preloaded_array(vv_ip2);
+    free_preloaded_array(vv_jp2);
+    free_preloaded_array(vv_kp2);
+    free_preloaded_array(vv_im2);
+    free_preloaded_array(vv_jm2);
+    free_preloaded_array(vv_km2);
+
+    free_preloaded_array(vv_fac_a);
+    free_preloaded_array(vv_fac_b);
+    free_preloaded_array(vv_fac_c);
+    free_preloaded_array(vv_fac_f);
+    free_preloaded_array(vv_T0v);
+    free_preloaded_array(vv_T0r);
+    free_preloaded_array(vv_T0t);
+    free_preloaded_array(vv_T0p);
+    free_preloaded_array(vv_fun);
+    free_preloaded_array(vv_change);
+
 #endif
 
 }
@@ -119,10 +158,244 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     }
 
     // assign processes for each sweeping level
-    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels();
+    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels(grid);
 
 }
 
+
+// assign intra-node processes for each sweeping level
+void Iterator::assign_processes_for_levels(Grid& grid) {
+    // allocate memory for process range
+    std::vector<int> n_nodes_of_levels;
+
+    // teleseismic case need to iterate outermost layer
+    int st_id, st_id2;
+    if (!is_teleseismic){
+        st_id  = 2;
+        st_id2 = 1;
+    } else {
+        st_id  = 1;
+        st_id2 = 0;
+    }
+
+    for (int level = st_level; level <= ed_level; level++) {
+        int kleft  = std::max(st_id, level-np-nt+2);
+        int kright = std::min(level-4, nr-1)   ;
+
+        int count_n_nodes = 0;
+
+        for (int kk = kleft; kk <= kright; kk++) {
+            int jleft  = std::max(st_id, level-kk-np+st_id2);
+            int jright = std::min(level-kk-2, nt-1);
+
+            int n_jlines = jright - jleft + 1;
+            count_n_nodes += n_jlines;
+        } // end loop kk
+
+        n_nodes_of_levels.push_back(count_n_nodes); // store the number of nodes of each level
+    } // end loop level
+
+    // find max in n_nodes_of_levels
+    max_n_nodes_plane = 0;
+    for (size_t i = 0; i < n_nodes_of_levels.size(); i++)
+        if (n_nodes_of_levels[i] > max_n_nodes_plane)
+            max_n_nodes_plane = n_nodes_of_levels[i];
+
+
+    int n_grids_this_subproc = 0; // count the number of grids calculated by this subproc
+
+    // assign nodes on each level plane to processes
+    for (int level = st_level; level <= ed_level; level++) {
+        int kleft  = std::max(st_id, level-np-nt+2);
+        int kright = std::min(level-4, nr-1)   ;
+
+        std::vector<int> asigned_nodes_on_this_level;
+        int grid_count = 0;
+
+        // n grids calculated by each subproc
+        int n_grids_each = static_cast<int>(n_nodes_of_levels[level-st_level] / n_subprocs);
+        int n_grids_by_this = n_grids_each;
+        int i_grid_start = n_grids_each*sub_rank;
+
+        // add modulo for last sub_rank
+        if (sub_rank == n_subprocs-1)
+            n_grids_by_this += static_cast<int>(n_nodes_of_levels[level-st_level] % n_subprocs);
+
+
+        for (int kk = kleft; kk <= kright; kk++) {
+            int jleft  = std::max(st_id, level-kk-np+st_id2);
+            int jright = std::min(level-kk-2, nt-1);
+
+            for (int jj = jleft; jj <= jright; jj++) {
+                int ii = level - kk - jj;
+
+                // check if this node should be assigned to this process
+                //if (grid_count%n_subprocs == sub_rank) {
+                if (grid_count >= i_grid_start && grid_count < i_grid_start+n_grids_by_this) {
+                    int tmp_ijk = I2V(ii,jj,kk);
+                    asigned_nodes_on_this_level.push_back(tmp_ijk);
+                    n_grids_this_subproc++;
+                }
+
+                grid_count++;
+
+            } // end loop jj
+        } // end loop kk
+
+        // store the node ids of each level
+        ijk_for_this_subproc.push_back(asigned_nodes_on_this_level);
+    } // end loop level
+
+    if(if_verbose)
+        std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
+
+#ifdef USE_AVX
+
+    preload_indices(vv_icc, vv_jcc, vv_kcc,  0, 0, 0);
+    preload_indices(vv_ip1, vv_jp1, vv_kp1,  1, 1, 1);
+    preload_indices(vv_im1, vv_jm1, vv_km1,  -1, -1, -1);
+    preload_indices(vv_ip2, vv_jp2, vv_kp2,  2, 2, 2);
+    preload_indices(vv_im2, vv_jm2, vv_km2,  -2, -2, -2);
+    preload_indices(vv_iip, vv_jjt, vv_kkr,  0, 0, 0);
+
+    int dump_length = NSIMD;
+    // stencil dumps
+    // first orders
+    dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of stencil
+    dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_m__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump__p_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump__m_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump___p = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump___m = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    // second orders
+    dump_pp____ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_mm____ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump___pp__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump___mm__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_____pp = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+    dump_____mm = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
+
+
+    // preload the stencil dumps
+    vv_fac_a = preload_array(grid.fac_a_loc);
+    vv_fac_b = preload_array(grid.fac_b_loc);
+    vv_fac_c = preload_array(grid.fac_c_loc);
+    vv_fac_f = preload_array(grid.fac_f_loc);
+    vv_T0v   = preload_array(grid.T0v_loc);
+    vv_T0r   = preload_array(grid.T0r_loc);
+    vv_T0t   = preload_array(grid.T0t_loc);
+    vv_T0p   = preload_array(grid.T0p_loc);
+    vv_fun   = preload_array(grid.fun_loc);
+    vv_change= preload_array(grid.is_changed);
+
+#endif
+
+}
+
+#ifdef USE_AVX
+
+template <typename T>
+std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
+
+    std::vector<std::vector<CUSTOMREAL*>> vvv;
+
+    for (int iswap=0; iswap<8; iswap++){
+        int n_levels = ijk_for_this_subproc.size();
+        std::vector<CUSTOMREAL*> vv;
+
+        for (int i_level=0; i_level<n_levels; i_level++){
+
+            int nnodes = ijk_for_this_subproc.at(i_level).size();
+            int nnodes_tmp = nnodes + ((nnodes % NSIMD == 0) ? 0 : (NSIMD - nnodes % NSIMD)); // length needs to be multiple of NSIMD
+
+            CUSTOMREAL* v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
+            // asign values
+            for (int i_node=0; i_node<nnodes; i_node++){
+                v[i_node] = (CUSTOMREAL) a[I2V(vv_icc.at(iswap).at(i_level)[i_node],\
+                                               vv_jcc.at(iswap).at(i_level)[i_node],\
+                                               vv_kcc.at(iswap).at(i_level)[i_node])];
+            }
+            // assign dummy
+            for (int i_node=nnodes; i_node<nnodes_tmp; i_node++){
+                v[i_node] = 0.0;
+            }
+            vv.push_back(v);
+        }
+        vvv.push_back(vv);
+    }
+
+    return vvv;
+}
+
+
+
+template <typename T>
+void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
+                               std::vector<std::vector<T*>> &vvvj, \
+                               std::vector<std::vector<T*>> &vvvk, \
+                               int shift_i, int shift_j, int shift_k) {
+
+    int iip, jjt, kkr;
+    for (int iswp=0; iswp < 8; iswp++){
+        set_sweep_direction(iswp);
+
+        std::vector<T*> vvi, vvj, vvk;
+
+        int n_levels = ijk_for_this_subproc.size();
+        for (int i_level = 0; i_level < n_levels; i_level++) {
+            int n_nodes = ijk_for_this_subproc[i_level].size();
+            int n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+
+            T* vi = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T* vj = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T* vk = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+
+            for (int i_node = 0; i_node < n_nodes; i_node++) {
+                int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
+                V2I(tmp_ijk, iip, jjt, kkr);
+                if (r_dirc < 0) kkr = loc_K-kkr; //kk-1;
+                else            kkr = kkr-1;  //nr-kk;
+                if (t_dirc < 0) jjt = loc_J-jjt; //jj-1;
+                else            jjt = jjt-1;  //nt-jj;
+                if (p_dirc < 0) iip = loc_I-iip; //ii-1;
+                else            iip = iip-1;  //np-ii;
+
+                kkr += shift_k;
+                jjt += shift_j;
+                iip += shift_i;
+
+                if (kkr >= loc_K) kkr = 0;
+                if (jjt >= loc_J) jjt = 0;
+                if (iip >= loc_I) iip = 0;
+
+                if (kkr < 0) kkr = 0;
+                if (jjt < 0) jjt = 0;
+                if (iip < 0) iip = 0;
+
+                vi[i_node] = (T)iip;
+                vj[i_node] = (T)jjt;
+                vk[i_node] = (T)kkr;
+
+            }
+            // assign dummy
+            for (int i=n_nodes; i<n_nodes_tmp; i++){
+                vi[i] = 0.0;
+                vj[i] = 0.0;
+                vk[i] = 0.0;
+            }
+
+            vvi.push_back(vi);
+            vvj.push_back(vj);
+            vvk.push_back(vk);
+        }
+        vvvi.push_back(vvi);
+        vvvj.push_back(vvj);
+        vvvk.push_back(vvk);
+    }
+}
+
+#endif // USE_AVX
 
 void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, bool& first_init) {
 
@@ -524,200 +797,6 @@ void Iterator::fix_boundary_Tadj(Grid& grid) {
                 for (int ip = 0; ip < np; ip++)
                     calculate_boundary_nodes_tele_adj(grid,ir,it,ip);
     }
-
-}
-
-
-// assign intra-node processes for each sweeping level
-void Iterator::assign_processes_for_levels() {
-    // allocate memory for process range
-    std::vector<int> n_nodes_of_levels;
-
-    // teleseismic case need to iterate outermost layer
-    int st_id, st_id2;
-    if (!is_teleseismic){
-        st_id  = 2;
-        st_id2 = 1;
-    } else {
-        st_id  = 1;
-        st_id2 = 0;
-    }
-
-    for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(st_id, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
-
-        int count_n_nodes = 0;
-
-        for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(st_id, level-kk-np+st_id2);
-            int jright = std::min(level-kk-2, nt-1);
-
-            int n_jlines = jright - jleft + 1;
-            count_n_nodes += n_jlines;
-        } // end loop kk
-
-        n_nodes_of_levels.push_back(count_n_nodes); // store the number of nodes of each level
-    } // end loop level
-
-    // find max in n_nodes_of_levels
-    max_n_nodes_plane = 0;
-    for (size_t i = 0; i < n_nodes_of_levels.size(); i++)
-        if (n_nodes_of_levels[i] > max_n_nodes_plane)
-            max_n_nodes_plane = n_nodes_of_levels[i];
-
-
-    int n_grids_this_subproc = 0; // count the number of grids calculated by this subproc
-
-    // assign nodes on each level plane to processes
-    for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(st_id, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
-
-        std::vector<int> asigned_nodes_on_this_level;
-        int grid_count = 0;
-
-        // n grids calculated by each subproc
-        int n_grids_each = static_cast<int>(n_nodes_of_levels[level-st_level] / n_subprocs);
-        int n_grids_by_this = n_grids_each;
-        int i_grid_start = n_grids_each*sub_rank;
-
-        // add modulo for last sub_rank
-        if (sub_rank == n_subprocs-1)
-            n_grids_by_this += static_cast<int>(n_nodes_of_levels[level-st_level] % n_subprocs);
-
-
-        for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(st_id, level-kk-np+st_id2);
-            int jright = std::min(level-kk-2, nt-1);
-
-            for (int jj = jleft; jj <= jright; jj++) {
-                int ii = level - kk - jj;
-
-                // check if this node should be assigned to this process
-                //if (grid_count%n_subprocs == sub_rank) {
-                if (grid_count >= i_grid_start && grid_count < i_grid_start+n_grids_by_this) {
-                    int tmp_ijk = I2V(ii,jj,kk);
-                    asigned_nodes_on_this_level.push_back(tmp_ijk);
-                    n_grids_this_subproc++;
-                }
-
-                grid_count++;
-
-            } // end loop jj
-        } // end loop kk
-
-        // store the node ids of each level
-        ijk_for_this_subproc.push_back(asigned_nodes_on_this_level);
-    } // end loop level
-
-    if(if_verbose)
-        std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
-
-#ifdef USE_AVX
-    // prepare node stack for all sweeping directions
-    int iip, jjt, kkr;
-    for (int iswp=0; iswp < 8; iswp++){
-        set_sweep_direction(iswp);
-
-        std::vector<std::vector<std::vector<int>>> ijk_for_this_subproc_optim_tmp;
-        int n_levels = ijk_for_this_subproc.size();
-        for (int i_level = 0; i_level < n_levels; i_level++) {
-            int n_nodes = ijk_for_this_subproc[i_level].size();
-            std::vector<std::vector<int>> ijk_for_this_subproc_optim_tmp_tmp;
-
-            for (int i_node = 0; i_node < n_nodes; i_node++) {
-                int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
-                V2I(tmp_ijk, iip, jjt, kkr);
-                if (r_dirc < 0) kkr = loc_K-kkr; //kk-1;
-                else            kkr = kkr-1;  //nr-kk;
-                if (t_dirc < 0) jjt = loc_J-jjt; //jj-1;
-                else            jjt = jjt-1;  //nt-jj;
-                if (p_dirc < 0) iip = loc_I-iip; //ii-1;
-                else            iip = iip-1;  //np-ii;
-                //tmp_ijk = I2V(iip, jjt, kkr);
-                std::vector<int> tmp_ijk_vec = {iip, jjt, kkr};
-
-                ijk_for_this_subproc_optim_tmp_tmp.push_back(tmp_ijk_vec);
-            }
-            ijk_for_this_subproc_optim_tmp.push_back(ijk_for_this_subproc_optim_tmp_tmp);
-        }
-
-        ijk_for_this_subproc_swps.push_back(ijk_for_this_subproc_optim_tmp);
-    }
-
-    int NSIMD = 4;
-    int pad_length = 0;
-    int max_length = max_n_nodes_plane;
-    if (max_length % NSIMD != 0)
-        pad_length = NSIMD - max_length % NSIMD;
-//    int dump_length = (max_length + pad_length);
-    int dump_length = NSIMD;
-
-
-    // stencil dumps
-    // first orders
-    const int ALIGN     = 32;//sizeof(CUSTOMREAL); // double: 64, float: 32
-    //const int ALIGN_int = 32;//sizeof(int);        // int: 32
-
-    dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of stencil
-    dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_m__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump__p_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump__m_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___p = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___m = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    // second orders
-    dump_pp____ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_mm____ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___pp__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___mm__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_____pp = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_____mm = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-
-    // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
-    dump_fac_a  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fac_b  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fac_c  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fac_f  = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0v    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0r    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0t    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_T0p    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_fun    = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_change = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-
-//    dump_iip = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
-//    dump_jjt = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
-//    dump_kkr = (int*) aligned_alloc(ALIGN_int, dump_length*sizeof(int));
-    dump_iip = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_jjt = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_kkr = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-
-    dump_icc = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_jcc = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_kcc = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-
-    dump_ip1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_jp1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_kp1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-
-    dump_im1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_jm1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_km1 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-
-    dump_ip2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_jp2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_kp2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-
-    dump_im2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_jm2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-    dump_km2 = (int*) aligned_alloc(ALIGN, dump_length*sizeof(int));
-
-
-
-#endif
-
 
 }
 

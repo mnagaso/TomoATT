@@ -30,7 +30,7 @@ public:
     void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
 
 protected:
-    void assign_processes_for_levels(); // assign intra-node processes for each sweeping level
+    void assign_processes_for_levels(Grid&); // assign intra-node processes for each sweeping level
     void set_sweep_direction(int);      // set sweep direction
     // regional source
     virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
@@ -70,10 +70,12 @@ protected:
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
     std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, ijk)
-    std::vector< std::vector< std::vector< std::vector<int> > > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, node, {i,j,k})
+    //std::vector< std::vector< std::vector< std::vector<int> > > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, node, {i,j,k})
     int max_n_nodes_plane;          // maximum number of nodes on a plane
 
 #ifdef USE_AVX
+    const int ALIGN = 32;           // alignment for AVX
+    const int NSIMD = 4;            // number of SIMD double
     // stencil dumps
     // first orders
     CUSTOMREAL *dump_c__;// center of C
@@ -91,28 +93,23 @@ protected:
     CUSTOMREAL *dump_____pp;
     CUSTOMREAL *dump_____mm;
 
-    // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
-    CUSTOMREAL *dump_fac_a;
-    CUSTOMREAL *dump_fac_b;
-    CUSTOMREAL *dump_fac_c;
-    CUSTOMREAL *dump_fac_f;
-    CUSTOMREAL *dump_T0v  ;
-    CUSTOMREAL *dump_T0r  ;
-    CUSTOMREAL *dump_T0t  ;
-    CUSTOMREAL *dump_T0p  ;
-    CUSTOMREAL *dump_fun  ;
-    CUSTOMREAL *dump_change;
+    // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
+    std::vector<std::vector<int*>> vv_icc, vv_jcc, vv_kcc, vv_ip1, vv_im1, vv_jp1, vv_jm1, vv_kp1, vv_km1, vv_ip2, vv_im2, vv_jp2, vv_jm2, vv_kp2, vv_km2;
+    std::vector<std::vector<CUSTOMREAL*>> vv_iip, vv_jjt, vv_kkr;
 
-//    int* dump_iip;
-//    int* dump_jjt;
-//    int* dump_kkr;
-    CUSTOMREAL* dump_iip;
-    CUSTOMREAL* dump_jjt;
-    CUSTOMREAL* dump_kkr;
+    std::vector<std::vector<CUSTOMREAL*>> vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change;
 
-    int* dump_icc, *dump_jcc, *dump_kcc;
-    int* dump_ip1, *dump_im1, *dump_jp1, *dump_jm1, *dump_kp1, *dump_km1;
-    int* dump_ip2, *dump_im2, *dump_jp2, *dump_jm2, *dump_kp2, *dump_km2;
+    template <typename T>
+    void preload_indices(std::vector<std::vector<T*>> &vi, std::vector<std::vector<T*>> &, std::vector<std::vector<T*>> &, int, int, int);
+    template <typename T>
+    std::vector<std::vector<CUSTOMREAL*>> preload_array(T* a);
+    template <typename T>
+    void free_preloaded_array(std::vector<std::vector<T*>> &vvv){
+        for (int iswap = 0; iswap < 8; iswap++){
+            for (auto& vv : vvv.at(iswap)) free(vv);
+        }
+    }
+
 
 #endif
 
