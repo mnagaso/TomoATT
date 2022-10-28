@@ -13,8 +13,9 @@ endif()
 # for production
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx512dq -march=native -ftree-vectorize -fopenmp")
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -march=skylake-avx512 -ftree-vectorize -fopenmp")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx2 -ftree-vectorize -fopenmp")
 
 #
 # for debugging
