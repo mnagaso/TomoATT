@@ -248,7 +248,9 @@ inline void fake_stencil_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fa
 #endif
 
 #ifdef USE_AVX
+    __m256d mask = _mm256_cmp_pd(v_change, v_1,_CMP_NEQ_OQ);
 
+    v_tau = _mm256_blendv_pd(v_tau, v_1,mask);
 #endif
 
 }
