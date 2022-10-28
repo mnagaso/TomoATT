@@ -2,7 +2,7 @@
 #define VECTORIZED_SWEEP_H
 
 
-#ifdef USE_AVX
+#if defined USE_AVX  || defined USE_AVX512
 #include <immintrin.h>
 
 
@@ -82,7 +82,6 @@ inline void fake_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, 
     int PLUS  = 1;
     int MINUS = -1;
 
-    // TODO: this is only for AVX512
 #ifdef USE_AVX512
     __mmask8 mask_i_eq_1         = _mm512_cmp_pd_mask(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
     __mmask8 mask_j_eq_1         = _mm512_cmp_pd_mask(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1

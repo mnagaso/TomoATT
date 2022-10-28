@@ -1,6 +1,7 @@
 #include "iterator_level.h"
 
-#ifdef USE_AVX
+#if defined USE_AVX || defined USE_AVX512
+#include <immintrin.h>
 #include "vectorized_sweep.h"
 #endif
 
@@ -152,7 +153,7 @@ Iterator_level_3rd_order::Iterator_level_3rd_order(InputParams& IP, Grid& grid, 
 void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 
-#ifndef USE_AVX
+#if !defined USE_AVX && !defined USE_AVX512
 
     // set sweep direction
     set_sweep_direction(iswp);
@@ -282,7 +283,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                        v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            _mm256_store_pd(dump_c__, v_c__);
+            _mmT_store_pd(dump_c__, v_c__);
 
             for (int i = 0; i < NSIMD; i++) {
                 int tmp_ijk = I2V(dump_icc[i_vec*NSIMD+i], dump_jcc[i_vec*NSIMD+i], dump_kcc[i_vec*NSIMD+i]);

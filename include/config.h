@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 #include <limits>
+#if defined USE_AVX || defined USE_AVX512
+#include <immintrin.h>
+#endif
 
 // custom floating point accuracy
 //#define CUSTOMREAL float
@@ -26,6 +29,7 @@ const int NSIMD = 4;
 #define _mmT_div_pd _mm256_div_pd
 #define _mmT_min_pd _mm256_min_pd
 #define _mmT_sqrt_pd _mm256_sqrt_pd
+#define _mmT_store_pd _mm256_store_pd
 #endif
 #ifdef USE_AVX512
 const int ALIGN = 64;
@@ -39,6 +43,7 @@ const int NSIMD = 8;
 #define _mmT_div_pd _mm512_div_pd
 #define _mmT_min_pd _mm512_min_pd
 #define _mmT_sqrt_pd _mm512_sqrt_pd
+#define _mmT_store_pd _mm512_store_pd
 #endif
 
 
