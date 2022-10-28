@@ -79,62 +79,120 @@ inline void fake_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, 
                                                                                                        __mTd& v_DP_inv_half, __mTd& v_DT_inv_half, __mTd& v_DR_inv_half, \
                                                                                                        int& NP, int& NT, int& NR){
 
-
-    __mmask8 mask_i_eq_1         = _mmT_cmp_pd_mask(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
-    __mmask8 mask_j_eq_1         = _mmT_cmp_pd_mask(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
-    __mmask8 mask_k_eq_1         = _mmT_cmp_pd_mask(v_kkr, v_1,_CMP_EQ_OQ);    // if kkr == 1
-    __mmask8 mask_i_eq_N_minus_2 = _mmT_cmp_pd_mask(v_iip, _mmT_set1_pd(NP-2),_CMP_EQ_OQ); // if iip == N-2
-    __mmask8 mask_j_eq_N_minus_2 = _mmT_cmp_pd_mask(v_jjt, _mmT_set1_pd(NT-2),_CMP_EQ_OQ); // if jjt == N-2
-    __mmask8 mask_k_eq_N_minus_2 = _mmT_cmp_pd_mask(v_kkr, _mmT_set1_pd(NR-2),_CMP_EQ_OQ); // if kkr == N-2
-
-    // 1 < iip < N-2
-    __mmask8 mask_i_else = _kand_mask8(
-                               _mmT_cmp_pd_mask(v_iip, v_1                , _CMP_GT_OQ),
-                               _mmT_cmp_pd_mask(_mmT_set1_pd(NP-2),  v_iip, _CMP_GT_OQ)
-                         );
-    // 1 < jjt < N-2
-    __mmask8 mask_j_else = _kand_mask8(
-                               _mmT_cmp_pd_mask(v_jjt, v_1                , _CMP_GT_OQ),
-                               _mmT_cmp_pd_mask(_mmT_set1_pd(NT-2),  v_jjt, _CMP_GT_OQ)
-                         );
-    // 1 < kkr < N-2
-    __mmask8 mask_k_else = _kand_mask8(
-                               _mmT_cmp_pd_mask(v_kkr, v_1                , _CMP_GT_OQ),
-                               _mmT_cmp_pd_mask(_mmT_set1_pd(NR-2),  v_kkr, _CMP_GT_OQ)
-                         );
-
     int PLUS  = 1;
     int MINUS = -1;
 
+    // TODO: this is only for AVX512
+#ifdef USE_AVX512
+    __mmask8 mask_i_eq_1         = _mm512_cmp_pd_mask(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
+    __mmask8 mask_j_eq_1         = _mm512_cmp_pd_mask(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
+    __mmask8 mask_k_eq_1         = _mm512_cmp_pd_mask(v_kkr, v_1,_CMP_EQ_OQ);    // if kkr == 1
+    __mmask8 mask_i_eq_N_minus_2 = _mm512_cmp_pd_mask(v_iip, _mm512_set1_pd(NP-2),_CMP_EQ_OQ); // if iip == N-2
+    __mmask8 mask_j_eq_N_minus_2 = _mm512_cmp_pd_mask(v_jjt, _mm512_set1_pd(NT-2),_CMP_EQ_OQ); // if jjt == N-2
+    __mmask8 mask_k_eq_N_minus_2 = _mm512_cmp_pd_mask(v_kkr, _mm512_set1_pd(NR-2),_CMP_EQ_OQ); // if kkr == N-2
+
+    // 1 < iip < N-2
+    __mmask8 mask_i_else = _kand_mask8(
+                               _mm512_cmp_pd_mask(v_iip, v_1                , _CMP_GT_OQ),
+                               _mm512_cmp_pd_mask(_mm512_set1_pd(NP-2),  v_iip, _CMP_GT_OQ)
+                         );
+    // 1 < jjt < N-2
+    __mmask8 mask_j_else = _kand_mask8(
+                               _mm512_cmp_pd_mask(v_jjt, v_1                , _CMP_GT_OQ),
+                               _mm512_cmp_pd_mask(_mm512_set1_pd(NT-2),  v_jjt, _CMP_GT_OQ)
+                         );
+    // 1 < kkr < N-2
+    __mmask8 mask_k_else = _kand_mask8(
+                               _mm512_cmp_pd_mask(v_kkr, v_1                , _CMP_GT_OQ),
+                               _mm512_cmp_pd_mask(_mm512_set1_pd(NR-2),  v_kkr, _CMP_GT_OQ)
+                         );
+
     // if _i_eq_1 == true
-    v_pp1 = _mmT_mask_blend_pd(mask_i_eq_1, calc_1d_stencil(v_c__, v_m__, v_DP_inv)                            , v_pp1 );
-    v_pp2 = _mmT_mask_blend_pd(mask_i_eq_1, calc_3d_stencil(v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS), v_pp2 );
+    v_pp1 = _mm512_mask_blend_pd(mask_i_eq_1, calc_1d_stencil(v_c__, v_m__, v_DP_inv)                            , v_pp1 );
+    v_pp2 = _mm512_mask_blend_pd(mask_i_eq_1, calc_3d_stencil(v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS), v_pp2 );
     // if_i_eq_N_minus_2 == true
-    v_pp1 = _mmT_mask_blend_pd(mask_i_eq_N_minus_2, calc_3d_stencil(v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), v_pp1);
-    v_pp2 = _mmT_mask_blend_pd(mask_i_eq_N_minus_2, calc_1d_stencil(v_p__, v_c__, v_DP_inv)                             , v_pp2);
+    v_pp1 = _mm512_mask_blend_pd(mask_i_eq_N_minus_2, calc_3d_stencil(v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), v_pp1);
+    v_pp2 = _mm512_mask_blend_pd(mask_i_eq_N_minus_2, calc_1d_stencil(v_p__, v_c__, v_DP_inv)                             , v_pp2);
     // else
-    v_pp1 = _mmT_mask_blend_pd(mask_i_else, calc_3d_stencil(v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), v_pp1);
-    v_pp2 = _mmT_mask_blend_pd(mask_i_else, calc_3d_stencil(v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) , v_pp2);
+    v_pp1 = _mm512_mask_blend_pd(mask_i_else, calc_3d_stencil(v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), v_pp1);
+    v_pp2 = _mm512_mask_blend_pd(mask_i_else, calc_3d_stencil(v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) , v_pp2);
 
     // if _j_eq_1 == true
-    v_pt1 = _mmT_mask_blend_pd(mask_j_eq_1, calc_1d_stencil(v_c__, v__m_, v_DT_inv)                            , v_pt1);
-    v_pt2 = _mmT_mask_blend_pd(mask_j_eq_1, calc_3d_stencil(v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS), v_pt2);
+    v_pt1 = _mm512_mask_blend_pd(mask_j_eq_1, calc_1d_stencil(v_c__, v__m_, v_DT_inv)                            , v_pt1);
+    v_pt2 = _mm512_mask_blend_pd(mask_j_eq_1, calc_3d_stencil(v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS), v_pt2);
     // if _j_eq_N_minus_2 == true
-    v_pt1 = _mmT_mask_blend_pd(mask_j_eq_N_minus_2, calc_3d_stencil(v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), v_pt1);
-    v_pt2 = _mmT_mask_blend_pd(mask_j_eq_N_minus_2, calc_1d_stencil(v__p_, v_c__, v_DT_inv)                             , v_pt2);
+    v_pt1 = _mm512_mask_blend_pd(mask_j_eq_N_minus_2, calc_3d_stencil(v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), v_pt1);
+    v_pt2 = _mm512_mask_blend_pd(mask_j_eq_N_minus_2, calc_1d_stencil(v__p_, v_c__, v_DT_inv)                             , v_pt2);
     // else
-    v_pt1 = _mmT_mask_blend_pd(mask_j_else, calc_3d_stencil(v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), v_pt1);
-    v_pt2 = _mmT_mask_blend_pd(mask_j_else, calc_3d_stencil(v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) , v_pt2);
+    v_pt1 = _mm512_mask_blend_pd(mask_j_else, calc_3d_stencil(v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), v_pt1);
+    v_pt2 = _mm512_mask_blend_pd(mask_j_else, calc_3d_stencil(v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) , v_pt2);
 
     // if _k_eq_1 == true
-    v_pr1 = _mmT_mask_blend_pd(mask_k_eq_1, calc_1d_stencil(v_c__, v___m, v_DR_inv)                            , v_pr1 );
-    v_pr2 = _mmT_mask_blend_pd(mask_k_eq_1, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS), v_pr2 );
+    v_pr1 = _mm512_mask_blend_pd(mask_k_eq_1, calc_1d_stencil(v_c__, v___m, v_DR_inv)                            , v_pr1 );
+    v_pr2 = _mm512_mask_blend_pd(mask_k_eq_1, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS), v_pr2 );
     // if _k_eq_N_minus_2 == true
-    v_pr1 = _mmT_mask_blend_pd(mask_k_eq_N_minus_2, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
-    v_pr2 = _mmT_mask_blend_pd(mask_k_eq_N_minus_2, calc_1d_stencil(v___p, v_c__, v_DR_inv)                             , v_pr2);
+    v_pr1 = _mm512_mask_blend_pd(mask_k_eq_N_minus_2, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
+    v_pr2 = _mm512_mask_blend_pd(mask_k_eq_N_minus_2, calc_1d_stencil(v___p, v_c__, v_DR_inv)                             , v_pr2);
     // else
-    v_pr1 = _mmT_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
-    v_pr2 = _mmT_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) , v_pr2);
+    v_pr1 = _mm512_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
+    v_pr2 = _mm512_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) , v_pr2);
+
+#endif
+
+#ifdef USE_AVX
+    __m256d mask_i_eq_1         = _mm256_cmp_pd(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
+    __m256d mask_j_eq_1         = _mm256_cmp_pd(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
+    __m256d mask_k_eq_1         = _mm256_cmp_pd(v_kkr, v_1,_CMP_EQ_OQ);    // if kkr == 1
+    __m256d mask_i_eq_N_minus_2 = _mm256_cmp_pd(v_iip, _mm256_set1_pd(NP-2),_CMP_EQ_OQ); // if iip == N-2
+    __m256d mask_j_eq_N_minus_2 = _mm256_cmp_pd(v_jjt, _mm256_set1_pd(NT-2),_CMP_EQ_OQ); // if jjt == N-2
+    __m256d mask_k_eq_N_minus_2 = _mm256_cmp_pd(v_kkr, _mm256_set1_pd(NR-2),_CMP_EQ_OQ); // if kkr == N-2
+
+    // 1 < iip < N-2
+    __m256d mask_i_else = _mm256_and_pd(
+                                        _mm256_cmp_pd(v_iip, v_1                , _CMP_GT_OQ),
+                                        _mm256_cmp_pd(_mm256_set1_pd(NP-2),v_iip, _CMP_GT_OQ)
+                         );
+    // 1 < jjt < N-2
+    __m256d mask_j_else = _mm256_and_pd(
+                                        _mm256_cmp_pd(v_jjt, v_1                , _CMP_GT_OQ),
+                                        _mm256_cmp_pd(_mm256_set1_pd(NT-2),v_jjt, _CMP_GT_OQ)
+                         );
+    // 1 < kkr < N-2
+    __m256d mask_k_else = _mm256_and_pd(
+                                        _mm256_cmp_pd(v_kkr, v_1                , _CMP_GT_OQ),
+                                        _mm256_cmp_pd(_mm256_set1_pd(NR-2),v_kkr, _CMP_GT_OQ)
+                         );
+
+    // if _i_eq_1 == true
+    v_pp1 = _mm256_blendv_pd(v_pp1, calc_1d_stencil(v_c__, v_m__, v_DP_inv),                             mask_i_eq_1);
+    v_pp2 = _mm256_blendv_pd(v_pp2, calc_3d_stencil(v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS), mask_i_eq_1);
+    // if_i_eq_N_minus_2 == true
+    v_pp1 = _mm256_blendv_pd(v_pp1, calc_3d_stencil(v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), mask_i_eq_N_minus_2);
+    v_pp2 = _mm256_blendv_pd(v_pp2, calc_1d_stencil(v_p__, v_c__, v_DP_inv),                              mask_i_eq_N_minus_2);
+    // else
+    v_pp1 = _mm256_blendv_pd(v_pp1, calc_3d_stencil(v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), mask_i_else);
+    v_pp2 = _mm256_blendv_pd(v_pp2, calc_3d_stencil(v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS),  mask_i_else);
+
+    // if _j_eq_1 == true
+    v_pt1 = _mm256_blendv_pd(v_pt1, calc_1d_stencil(v_c__, v__m_, v_DT_inv),                             mask_j_eq_1);
+    v_pt2 = _mm256_blendv_pd(v_pt2, calc_3d_stencil(v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS), mask_j_eq_1);
+    // if _j_eq_N_minus_2 == true
+    v_pt1 = _mm256_blendv_pd(v_pt1, calc_3d_stencil(v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), mask_j_eq_N_minus_2);
+    v_pt2 = _mm256_blendv_pd(v_pt2, calc_1d_stencil(v__p_, v_c__, v_DT_inv),                              mask_j_eq_N_minus_2);
+    // else
+    v_pt1 = _mm256_blendv_pd(v_pt1, calc_3d_stencil(v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), mask_j_else);
+    v_pt2 = _mm256_blendv_pd(v_pt2, calc_3d_stencil(v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS),  mask_j_else);
+
+    // if _k_eq_1 == true
+    v_pr1 = _mm256_blendv_pd(v_pr1, calc_1d_stencil(v_c__, v___m, v_DR_inv),                             mask_k_eq_1);
+    v_pr2 = _mm256_blendv_pd(v_pr2, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS), mask_k_eq_1);
+    // if _k_eq_N_minus_2 == true
+    v_pr1 = _mm256_blendv_pd(v_pr1, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), mask_k_eq_N_minus_2);
+    v_pr2 = _mm256_blendv_pd(v_pr2, calc_1d_stencil(v___p, v_c__, v_DR_inv),                              mask_k_eq_N_minus_2);
+    // else
+    v_pr1 = _mm256_blendv_pd(v_pr1, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), mask_k_else);
+    v_pr2 = _mm256_blendv_pd(v_pr2, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS),  mask_k_else);
+#endif
 
 }
 
@@ -179,14 +237,19 @@ inline void fake_stencil_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fa
     // tmp = (sigr*(v_pr1 - v_pr2) + sigt*(v_pt1 - v_pt2) + sigz*(v_pp1 - v_pp2))*0.5
     __mTd tmp = _mmT_mul_pd(v_half,_mmT_add_pd(_mmT_add_pd(_mmT_mul_pd(sigr,_mmT_sub_pd(v_pr2,v_pr1)),_mmT_mul_pd(sigt,_mmT_sub_pd(v_pt2,v_pt1))),_mmT_mul_pd(sigp,_mmT_sub_pd(v_pp2,v_pp1))));
 
-    // mask if v_change != 1.0
-    __mmask8 mask = _mmT_cmp_pd_mask(v_change,v_1,_CMP_NEQ_OQ);
-
     // v_tau += coe * ((v_fun - Htau) + tmp) if mask is true
     v_tau = _mmT_add_pd(v_tau,_mmT_mul_pd(coe,_mmT_add_pd(_mmT_sub_pd(v_fun,Htau),tmp)));
 
+#ifdef USE_AVX512
+    // mask if v_change != 1.0
+    __mmask8 mask = _mm512_cmp_pd_mask(v_change,v_1,_CMP_NEQ_OQ);
     // set 1 if mask is true
-    v_tau = _mmT_mask_blend_pd(mask,v_tau,v_1);
+    v_tau = _mm512_mask_blend_pd(mask,v_tau,v_1);
+#endif
+
+#ifdef USE_AVX
+
+#endif
 
 }
 
