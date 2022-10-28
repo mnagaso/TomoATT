@@ -73,9 +73,8 @@ protected:
     //std::vector< std::vector< std::vector< std::vector<int> > > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, node, {i,j,k})
     int max_n_nodes_plane;          // maximum number of nodes on a plane
 
-#ifdef USE_AVX
-    const int ALIGN = 32;           // alignment for AVX
-    const int NSIMD = 4;            // number of SIMD double
+
+#if defined USE_AVX || defined USE_AVX512
     // stencil dumps
     // first orders
     CUSTOMREAL *dump_c__;// center of C

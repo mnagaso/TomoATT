@@ -66,7 +66,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 
 Iterator::~Iterator() {
 
-#ifdef USE_AVX
+#if defined USE_AVX || defined USE_AVX512
     free(dump_c__);// center of stencil
     free(dump_p__);
     free(dump_m__);
@@ -81,31 +81,6 @@ Iterator::~Iterator() {
     free(dump___mm__);
     free(dump_____pp);
     free(dump_____mm);
-
-    // center of fac_a fac_b fac_c fac_f T0v T0r T0t T0p fun
-//    free(dump_iip);
-//    free(dump_jjt);
-//    free(dump_kkr);
-//
-//    free(dump_icc);
-//    free(dump_jcc);
-//    free(dump_kcc);
-//
-//    free(dump_ip1);
-//    free(dump_jp1);
-//    free(dump_kp1);
-//
-//    free(dump_im1);
-//    free(dump_jm1);
-//    free(dump_km1);
-//
-//    free(dump_ip2);
-//    free(dump_jp2);
-//    free(dump_kp2);
-//
-//    free(dump_im2);
-//    free(dump_jm2);
-//    free(dump_km2);
 
     // free vv_* preloaded arrays
     free_preloaded_array(vv_icc);
@@ -249,7 +224,7 @@ void Iterator::assign_processes_for_levels(Grid& grid) {
     if(if_verbose)
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
-#ifdef USE_AVX
+#if defined USE_AVX || defined USE_AVX512
 
     preload_indices(vv_icc, vv_jcc, vv_kcc,  0, 0, 0);
     preload_indices(vv_ip1, vv_jp1, vv_kp1,  1, 1, 1);
@@ -293,7 +268,7 @@ void Iterator::assign_processes_for_levels(Grid& grid) {
 
 }
 
-#ifdef USE_AVX
+#if defined USE_AVX || defined USE_AVX512
 
 template <typename T>
 std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){

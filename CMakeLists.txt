@@ -14,6 +14,8 @@ endif()
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
 set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx -march=native -ftree-vectorize -fopenmp")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -march=skylake-avx512 -ftree-vectorize -fopenmp")
+
 #
 # for debugging
 #
@@ -60,6 +62,8 @@ endif()
 
 # use AVX intrinsic
 add_definitions(-DUSE_AVX)
+# or AVX-512
+#add_definitions(-DUSE_AVX512)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)
