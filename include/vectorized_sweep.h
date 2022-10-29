@@ -72,12 +72,14 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
 }
 
 
-inline void fake_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, __mTd& v_c__,  __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m, \
-                                                                                                       __mTd& v_pp____,  __mTd& v_mm____,  __mTd& v___pp__, __mTd& v___mm__, __mTd& v_____pp, __mTd& v_____mm, \
-                                                                                                       __mTd& v_pp1,     __mTd& v_pp2,     __mTd& v_pt1,    __mTd& v_pt2,    __mTd& v_pr1,    __mTd& v_pr2, \
-                                                                                                       __mTd& v_DP_inv,  __mTd& v_DT_inv,  __mTd& v_DR_inv, \
-                                                                                                       __mTd& v_DP_inv_half, __mTd& v_DT_inv_half, __mTd& v_DR_inv_half, \
-                                                                                                       int& NP, int& NT, int& NR){
+inline void fake_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, \
+                                      __mTd& v_c__, \
+                                      __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m, \
+                                      __mTd& v_pp____,  __mTd& v_mm____,  __mTd& v___pp__, __mTd& v___mm__, __mTd& v_____pp, __mTd& v_____mm, \
+                                      __mTd& v_pp1,     __mTd& v_pp2,     __mTd& v_pt1,    __mTd& v_pt2,    __mTd& v_pr1,    __mTd& v_pr2, \
+                                      __mTd& v_DP_inv,  __mTd& v_DT_inv,  __mTd& v_DR_inv, \
+                                      __mTd& v_DP_inv_half, __mTd& v_DT_inv_half, __mTd& v_DR_inv_half, \
+                                      int& NP, int& NT, int& NR){
 
     int PLUS  = 1;
     int MINUS = -1;

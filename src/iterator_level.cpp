@@ -252,8 +252,9 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         int* dump_km2 = vv_km2.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
-        for (int i_vec = 0; i_vec < num_iter; i_vec++) {
+        for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
 
+            int i_vec = _i_vec * NSIMD;
             __mTd v_c__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
             __mTd v_p__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
             __mTd v_m__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
@@ -269,7 +270,9 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             __mTd v_____mm = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km2[i_vec]);
 
             // loop over all nodes in one level
-            fake_stencil_3rd_pre_simd(v_iip[i_vec], v_jjt[i_vec], v_kkr[i_vec], v_c__, v_p__, v_m__, v__p_, v__m_, v___p, v___m, \
+            fake_stencil_3rd_pre_simd(v_iip[_i_vec], v_jjt[_i_vec], v_kkr[_i_vec], \
+                                      v_c__, \
+                                      v_p__,    v_m__,    v__p_,    v__m_,    v___p,    v___m, \
                                       v_pp____, v_mm____, v___pp__, v___mm__, v_____pp, v_____mm, \
                                       v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
                                       v_DP_inv, v_DT_inv, v_DR_inv, \
@@ -277,16 +280,17 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                       loc_I, loc_J, loc_J);
 
             //// calculate updated value on c
-            fake_stencil_3rd_apre_simd(v_c__, v_fac_a[i_vec], v_fac_b[i_vec], v_fac_c[i_vec], v_fac_f[i_vec], \
-                                       v_T0v[i_vec], v_T0p[i_vec]  , v_T0t[i_vec]  , v_T0r[i_vec]  , v_fun[i_vec]  , v_change[i_vec], \
+            fake_stencil_3rd_apre_simd(v_c__, v_fac_a[_i_vec], v_fac_b[_i_vec], v_fac_c[_i_vec], v_fac_f[_i_vec], \
+                                       v_T0v[_i_vec], v_T0p[_i_vec]  , v_T0t[_i_vec]  , v_T0r[_i_vec]  , v_fun[_i_vec]  , v_change[_i_vec], \
                                        v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
                                        v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
             _mmT_store_pd(dump_c__, v_c__);
 
+
             for (int i = 0; i < NSIMD; i++) {
-                int tmp_ijk = I2V(dump_icc[i_vec*NSIMD+i], dump_jcc[i_vec*NSIMD+i], dump_kcc[i_vec*NSIMD+i]);
+                int tmp_ijk = I2V(dump_icc[i_vec+i], dump_jcc[i_vec+i], dump_kcc[i_vec+i]);
                 grid.tau_loc[tmp_ijk] = dump_c__[i];
             }
 

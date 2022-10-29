@@ -78,19 +78,6 @@ protected:
     // stencil dumps
     // first orders
     CUSTOMREAL *dump_c__;// center of C
-    CUSTOMREAL *dump_p__;
-    CUSTOMREAL *dump_m__;
-    CUSTOMREAL *dump__p_;
-    CUSTOMREAL *dump__m_;
-    CUSTOMREAL *dump___p;
-    CUSTOMREAL *dump___m;
-    // second orders
-    CUSTOMREAL *dump_pp____;
-    CUSTOMREAL *dump_mm____;
-    CUSTOMREAL *dump___pp__;
-    CUSTOMREAL *dump___mm__;
-    CUSTOMREAL *dump_____pp;
-    CUSTOMREAL *dump_____mm;
 
     // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
     std::vector<std::vector<int*>> vv_icc, vv_jcc, vv_kcc, vv_ip1, vv_im1, vv_jp1, vv_jm1, vv_kp1, vv_km1, vv_ip2, vv_im2, vv_jp2, vv_jm2, vv_kp2, vv_km2;

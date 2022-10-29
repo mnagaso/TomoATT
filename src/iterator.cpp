@@ -68,19 +68,6 @@ Iterator::~Iterator() {
 
 #if defined USE_AVX || defined USE_AVX512
     free(dump_c__);// center of stencil
-    free(dump_p__);
-    free(dump_m__);
-    free(dump__p_);
-    free(dump__m_);
-    free(dump___p);
-    free(dump___m);
-    // second orders
-    free(dump_pp____);
-    free(dump_mm____);
-    free(dump___pp__);
-    free(dump___mm__);
-    free(dump_____pp);
-    free(dump_____mm);
 
     // free vv_* preloaded arrays
     free_preloaded_array(vv_icc);
@@ -237,20 +224,6 @@ void Iterator::assign_processes_for_levels(Grid& grid) {
     // stencil dumps
     // first orders
     dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of stencil
-    dump_p__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_m__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump__p_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump__m_ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___p = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___m = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    // second orders
-    dump_pp____ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_mm____ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___pp__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump___mm__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_____pp = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-    dump_____mm = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));
-
 
     // preload the stencil dumps
     vv_fac_a = preload_array(grid.fac_a_loc);
