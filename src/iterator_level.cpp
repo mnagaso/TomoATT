@@ -290,6 +290,8 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 
             for (int i = 0; i < NSIMD; i++) {
+                if(i_vec+i>=n_nodes) break;
+
                 int tmp_ijk = I2V(dump_icc[i_vec+i], dump_jcc[i_vec+i], dump_kcc[i_vec+i]);
                 grid.tau_loc[tmp_ijk] = dump_c__[i];
             }
