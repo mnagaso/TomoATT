@@ -213,6 +213,8 @@ void Iterator::assign_processes_for_levels(Grid& grid) {
 
 #if defined USE_AVX || defined USE_AVX512
 
+    // #TODO those arrays should be allocated as mpi shm arrays
+
     preload_indices(vv_icc, vv_jcc, vv_kcc,  0, 0, 0);
     preload_indices(vv_ip1, vv_jp1, vv_kp1,  1, 1, 1);
     preload_indices(vv_im1, vv_jm1, vv_km1,  -1, -1, -1);
