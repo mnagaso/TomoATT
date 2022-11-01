@@ -67,36 +67,37 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 Iterator::~Iterator() {
 
 #if defined USE_AVX || defined USE_AVX512
-    free(dump_c__);// center of stencil
+    if (simd_allocated){
+        free(dump_c__);// center of stencil
 
-    // free vv_* preloaded arrays
-    free_preloaded_array(vv_icc);
-    free_preloaded_array(vv_jcc);
-    free_preloaded_array(vv_kcc);
-    free_preloaded_array(vv_ip1);
-    free_preloaded_array(vv_jp1);
-    free_preloaded_array(vv_kp1);
-    free_preloaded_array(vv_im1);
-    free_preloaded_array(vv_jm1);
-    free_preloaded_array(vv_km1);
-    free_preloaded_array(vv_ip2);
-    free_preloaded_array(vv_jp2);
-    free_preloaded_array(vv_kp2);
-    free_preloaded_array(vv_im2);
-    free_preloaded_array(vv_jm2);
-    free_preloaded_array(vv_km2);
+        // free vv_* preloaded arrays
+        free_preloaded_array(vv_icc);
+        free_preloaded_array(vv_jcc);
+        free_preloaded_array(vv_kcc);
+        free_preloaded_array(vv_ip1);
+        free_preloaded_array(vv_jp1);
+        free_preloaded_array(vv_kp1);
+        free_preloaded_array(vv_im1);
+        free_preloaded_array(vv_jm1);
+        free_preloaded_array(vv_km1);
+        free_preloaded_array(vv_ip2);
+        free_preloaded_array(vv_jp2);
+        free_preloaded_array(vv_kp2);
+        free_preloaded_array(vv_im2);
+        free_preloaded_array(vv_jm2);
+        free_preloaded_array(vv_km2);
 
-    free_preloaded_array(vv_fac_a);
-    free_preloaded_array(vv_fac_b);
-    free_preloaded_array(vv_fac_c);
-    free_preloaded_array(vv_fac_f);
-    free_preloaded_array(vv_T0v);
-    free_preloaded_array(vv_T0r);
-    free_preloaded_array(vv_T0t);
-    free_preloaded_array(vv_T0p);
-    free_preloaded_array(vv_fun);
-    free_preloaded_array(vv_change);
-
+        free_preloaded_array(vv_fac_a);
+        free_preloaded_array(vv_fac_b);
+        free_preloaded_array(vv_fac_c);
+        free_preloaded_array(vv_fac_f);
+        free_preloaded_array(vv_T0v);
+        free_preloaded_array(vv_T0r);
+        free_preloaded_array(vv_T0t);
+        free_preloaded_array(vv_T0p);
+        free_preloaded_array(vv_fun);
+        free_preloaded_array(vv_change);
+    }
 #endif
 
 }
@@ -239,6 +240,8 @@ void Iterator::assign_processes_for_levels(Grid& grid) {
     vv_fun   = preload_array(grid.fun_loc);
     vv_change= preload_array(grid.is_changed);
 
+    // flag for preloading
+    simd_allocated = true;
 #endif
 
 }

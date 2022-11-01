@@ -78,7 +78,6 @@ protected:
     // stencil dumps
     // first orders
     CUSTOMREAL *dump_c__;// center of C
-
     // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
     std::vector<std::vector<int*>> vv_icc, vv_jcc, vv_kcc, vv_ip1, vv_im1, vv_jp1, vv_jm1, vv_kp1, vv_km1, vv_ip2, vv_im2, vv_jp2, vv_jm2, vv_kp2, vv_km2;
     std::vector<std::vector<CUSTOMREAL*>> vv_iip, vv_jjt, vv_kkr;
@@ -95,7 +94,8 @@ protected:
             for (auto& vv : vvv.at(iswap)) free(vv);
         }
     }
-
+    // flag for deallocation
+    bool simd_allocated = false;
 
 #endif
 
