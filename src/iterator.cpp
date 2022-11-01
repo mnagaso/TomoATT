@@ -330,9 +330,9 @@ void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
             }
             // assign dummy
             for (int i=n_nodes; i<n_nodes_tmp; i++){
-                vi[i] = 0.0;
-                vj[i] = 0.0;
-                vk[i] = 0.0;
+                vi[i] = (T)0;
+                vj[i] = (T)0;
+                vk[i] = (T)0;
             }
 
             vvi.push_back(vi);

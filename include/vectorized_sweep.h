@@ -72,7 +72,7 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
 }
 
 
-inline void fake_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, \
+inline void vect_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, \
                                       __mTd& v_c__, \
                                       __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m, \
                                       __mTd& v_pp____,  __mTd& v_mm____,  __mTd& v___pp__, __mTd& v___mm__, __mTd& v_____pp, __mTd& v_____mm, \
@@ -199,7 +199,7 @@ inline void fake_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, 
 
 
 // tau fac_a fac_b fac_c fac_f T0v T0p T0t T0r fun
-inline void fake_stencil_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fac_b, __mTd& v_fac_c, __mTd& v_fac_f, \
+inline void vect_stencil_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fac_b, __mTd& v_fac_c, __mTd& v_fac_f, \
                                        __mTd& v_T0v,  __mTd& v_T0p,  __mTd& v_T0t,   __mTd& v_T0r,   __mTd& v_fun, __mTd& v_change,\
                                        __mTd& v_pp1,  __mTd& v_pp2,  __mTd& v_pt1,   __mTd& v_pt2,   __mTd& v_pr1, __mTd& v_pr2, \
                                        __mTd& DP_inv, __mTd& DT_inv, __mTd& DR_inv){
