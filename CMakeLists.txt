@@ -97,6 +97,11 @@ else()
   message(STATUS "TomoATT will be compiled without cuda, because cuda is not found or -DUSE_CUDA=True was not specified.")
 endif()
 
+# synchronize the adjuscent ghost layers for each direction oft the sweep
+# which is more frequent than the referred paper but necessary
+add_definitions(-DFREQ_SYNC_GHOST)
+
+
 
 # submodules
 # yaml parser
