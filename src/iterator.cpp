@@ -80,12 +80,15 @@ Iterator::~Iterator() {
         free_preloaded_array(vv_im1);
         free_preloaded_array(vv_jm1);
         free_preloaded_array(vv_km1);
-        free_preloaded_array(vv_ip2);
-        free_preloaded_array(vv_jp2);
-        free_preloaded_array(vv_kp2);
-        free_preloaded_array(vv_im2);
-        free_preloaded_array(vv_jm2);
-        free_preloaded_array(vv_km2);
+
+        if(simd_allocated_3rd){
+            free_preloaded_array(vv_ip2);
+            free_preloaded_array(vv_jp2);
+            free_preloaded_array(vv_kp2);
+            free_preloaded_array(vv_im2);
+            free_preloaded_array(vv_jm2);
+            free_preloaded_array(vv_km2);
+        }
 
         free_preloaded_array(vv_fac_a);
         free_preloaded_array(vv_fac_b);
@@ -121,13 +124,13 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     }
 
     // assign processes for each sweeping level
-    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels(grid);
+    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels(grid, IP);
 
 }
 
 
 // assign intra-node processes for each sweeping level
-void Iterator::assign_processes_for_levels(Grid& grid) {
+void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     // allocate memory for process range
     std::vector<int> n_nodes_of_levels;
 
@@ -219,9 +222,13 @@ void Iterator::assign_processes_for_levels(Grid& grid) {
     preload_indices(vv_icc, vv_jcc, vv_kcc,  0, 0, 0);
     preload_indices(vv_ip1, vv_jp1, vv_kp1,  1, 1, 1);
     preload_indices(vv_im1, vv_jm1, vv_km1,  -1, -1, -1);
-    preload_indices(vv_ip2, vv_jp2, vv_kp2,  2, 2, 2);
-    preload_indices(vv_im2, vv_jm2, vv_km2,  -2, -2, -2);
     preload_indices(vv_iip, vv_jjt, vv_kkr,  0, 0, 0);
+
+    if(IP.get_stencil_order() == 3){
+        preload_indices(vv_ip2, vv_jp2, vv_kp2,  2, 2, 2);
+        preload_indices(vv_im2, vv_jm2, vv_km2,  -2, -2, -2);
+        simd_allocated_3rd = true;
+    }
 
     int dump_length = NSIMD;
     // stencil dumps

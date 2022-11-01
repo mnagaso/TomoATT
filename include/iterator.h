@@ -30,7 +30,7 @@ public:
     void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
 
 protected:
-    void assign_processes_for_levels(Grid&); // assign intra-node processes for each sweeping level
+    void assign_processes_for_levels(Grid&, InputParams&); // assign intra-node processes for each sweeping level
     void set_sweep_direction(int);      // set sweep direction
     // regional source
     virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
@@ -95,7 +95,8 @@ protected:
         }
     }
     // flag for deallocation
-    bool simd_allocated = false;
+    bool simd_allocated     = false;
+    bool simd_allocated_3rd = false;
 
 #endif
 

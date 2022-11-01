@@ -72,6 +72,24 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
 }
 
 
+inline void vect_stencil_1st_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, \
+                                      __mTd& v_c__, \
+                                      __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m, \
+                                      __mTd& v_pp1,     __mTd& v_pp2,     __mTd& v_pt1,    __mTd& v_pt2,    __mTd& v_pr1,    __mTd& v_pr2, \
+                                      __mTd& v_DP_inv,  __mTd& v_DT_inv,  __mTd& v_DR_inv, \
+                                      __mTd& v_DP_inv_half, __mTd& v_DT_inv_half, __mTd& v_DR_inv_half, \
+                                      int& NP, int& NT, int& NR){
+
+    v_pp1 = calc_1d_stencil(v_c__, v_m__, v_DP_inv);
+    v_pp2 = calc_1d_stencil(v_p__, v_c__, v_DP_inv);
+    v_pt1 = calc_1d_stencil(v_c__, v__m_, v_DT_inv);
+    v_pt2 = calc_1d_stencil(v__p_, v_c__, v_DT_inv);
+    v_pr1 = calc_1d_stencil(v_c__, v___m, v_DR_inv);
+    v_pr2 = calc_1d_stencil(v___p, v_c__, v_DR_inv);
+
+}
+
+
 inline void vect_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, \
                                       __mTd& v_c__, \
                                       __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m, \
@@ -199,10 +217,10 @@ inline void vect_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, 
 
 
 // tau fac_a fac_b fac_c fac_f T0v T0p T0t T0r fun
-inline void vect_stencil_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fac_b, __mTd& v_fac_c, __mTd& v_fac_f, \
-                                       __mTd& v_T0v,  __mTd& v_T0p,  __mTd& v_T0t,   __mTd& v_T0r,   __mTd& v_fun, __mTd& v_change,\
-                                       __mTd& v_pp1,  __mTd& v_pp2,  __mTd& v_pt1,   __mTd& v_pt2,   __mTd& v_pr1, __mTd& v_pr2, \
-                                       __mTd& DP_inv, __mTd& DT_inv, __mTd& DR_inv){
+inline void vect_stencil_1st_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fac_b, __mTd& v_fac_c, __mTd& v_fac_f, \
+                                           __mTd& v_T0v,  __mTd& v_T0p,  __mTd& v_T0t,   __mTd& v_T0r,   __mTd& v_fun, __mTd& v_change,\
+                                           __mTd& v_pp1,  __mTd& v_pp2,  __mTd& v_pt1,   __mTd& v_pt2,   __mTd& v_pr1, __mTd& v_pr2, \
+                                           __mTd& DP_inv, __mTd& DT_inv, __mTd& DR_inv){
 
     // sigr = COEF * sqrt(v_fac_a)*v_T0v;
     __mTd sigr = _mmT_mul_pd(_mmT_mul_pd(COEF,_mmT_sqrt_pd(v_fac_a)),v_T0v);
@@ -276,160 +294,6 @@ inline __mTd load_mem_bool_to_mTd(bool* a, \
 }
 
 
-/*
-inline void load_stencil_tau(CUSTOMREAL* tau, \
-                        int& iip, int& jjt, int& kkr, int& i_, \
-                        CUSTOMREAL* dump_tau, \
-                        CUSTOMREAL* dump_p__, CUSTOMREAL* dump_m__, CUSTOMREAL* dump__p_, CUSTOMREAL* dump__m_, CUSTOMREAL* dump___p, CUSTOMREAL* dump___m, \
-                        CUSTOMREAL* dump_pp____, CUSTOMREAL* dump_mm____, CUSTOMREAL* dump___pp__, CUSTOMREAL* dump___mm__, CUSTOMREAL* dump_____pp, CUSTOMREAL* dump_____mm, \
-                        int& NP, int& NT, int& NR) {
-
-    dump_tau[i_]   = tau[I2V(iip,jjt,kkr)];
-     if (iip <= 0) {}
-    else if (iip == 1){
-        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
-        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
-        dump_pp____[i_] = tau[I2V(iip+2,jjt,kkr)];
-        dump_mm____[i_] = 1.0; // dummy
-    } else if (iip < NP-2) {
-        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
-        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
-        dump_pp____[i_] = tau[I2V(iip+2,jjt,kkr)];
-        dump_mm____[i_] = tau[I2V(iip-2,jjt,kkr)];
-    } else if (iip == NP-2){
-        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
-        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
-        dump_pp____[i_] = 1.0; // dummy
-        dump_mm____[i_] = tau[I2V(iip-2,jjt,kkr)];
-    }
-
-    if (jjt <= 0) {}
-    else if (jjt == 1){
-        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
-        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
-        dump___pp__[i_] = tau[I2V(iip,jjt+2,kkr)];
-        dump___mm__[i_] = 1.0; // dummy
-    } else if (jjt < NT-2) {
-        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
-        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
-        dump___pp__[i_] = tau[I2V(iip,jjt+2,kkr)];
-        dump___mm__[i_] = tau[I2V(iip,jjt-2,kkr)];
-    } else if (jjt == NT-2){
-        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
-        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
-        dump___pp__[i_] = 1.0; // dummy
-        dump___mm__[i_] = tau[I2V(iip,jjt-2,kkr)];
-    }
-
-    if (kkr <= 0){}
-    else if (kkr == 1){
-        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
-        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
-        dump_____pp[i_] = tau[I2V(iip,jjt,kkr+2)];
-        dump_____mm[i_] = 1.0; // dummy
-    } else if (kkr < NR-2) {
-        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
-        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
-        dump_____pp[i_] = tau[I2V(iip,jjt,kkr+2)];
-        dump_____mm[i_] = tau[I2V(iip,jjt,kkr-2)];
-    } else if (kkr == NR-2){
-        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
-        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
-        dump_____pp[i_] = 1.0; // dummy
-        dump_____mm[i_] = tau[I2V(iip,jjt,kkr-2)];
-    }
-}
-
-inline void load_mem_gen(CUSTOMREAL* a, CUSTOMREAL* dump, \
-                         int& iip, int& jjt, int& kkr, int& i_){
-    dump[i_] = a[I2V(iip,jjt,kkr)];
-}
-
-inline void load_mem_bool(bool* a, CUSTOMREAL* dump, \
-                         int& iip, int& jjt, int& kkr, int& i_){
-    dump[i_] = (CUSTOMREAL)a[I2V(iip,jjt,kkr)];
-}
-*/
-
-/*
-// tau fac_a fac_b fac_c fac_f fun T0v T0r T0t T0p
-inline void load_stencil_data(CUSTOMREAL* tau, CUSTOMREAL* fac_a, CUSTOMREAL* fac_b, CUSTOMREAL* fac_c, CUSTOMREAL* fac_f, \
-                        CUSTOMREAL* T0v, CUSTOMREAL* T0r, CUSTOMREAL* T0t, CUSTOMREAL* T0p, CUSTOMREAL* fun, bool* is_changed, \
-                        int& iip, int& jjt, int& kkr, int& i_, \
-                        CUSTOMREAL* dump_tau, CUSTOMREAL* dump_fac_a, CUSTOMREAL* dump_fac_b, CUSTOMREAL* dump_fac_c, CUSTOMREAL* dump_fac_f, \
-                        CUSTOMREAL* dump_T0v, CUSTOMREAL* dump_T0r, CUSTOMREAL* dump_T0t, CUSTOMREAL* dump_T0p, CUSTOMREAL* dump_fun, CUSTOMREAL* dump_change, \
-                        CUSTOMREAL* dump_p__, CUSTOMREAL* dump_m__, CUSTOMREAL* dump__p_, CUSTOMREAL* dump__m_, CUSTOMREAL* dump___p, CUSTOMREAL* dump___m, \
-                        CUSTOMREAL* dump_pp____, CUSTOMREAL* dump_mm____, CUSTOMREAL* dump___pp__, CUSTOMREAL* dump___mm__, CUSTOMREAL* dump_____pp, CUSTOMREAL* dump_____mm, \
-                        int& NP, int& NT, int& NR) {
-
-    dump_tau[i_]   = tau[I2V(iip,jjt,kkr)];
-    dump_fac_a[i_] = fac_a[I2V(iip,jjt,kkr)];
-    dump_fac_b[i_] = fac_b[I2V(iip,jjt,kkr)];
-    dump_fac_c[i_] = fac_c[I2V(iip,jjt,kkr)];
-    dump_fac_f[i_] = fac_f[I2V(iip,jjt,kkr)];
-    dump_T0v[i_]   = T0v[I2V(iip,jjt,kkr)];
-    dump_T0r[i_]   = T0r[I2V(iip,jjt,kkr)];
-    dump_T0t[i_]   = T0t[I2V(iip,jjt,kkr)];
-    dump_T0p[i_]   = T0p[I2V(iip,jjt,kkr)];
-    dump_fun[i_]   = fun[I2V(iip,jjt,kkr)];
-    // convert bool to CUSTOMREAL
-    dump_change[i_] = (CUSTOMREAL)is_changed[I2V(iip,jjt,kkr)];
-
-    if (iip <= 0) {}
-    else if (iip == 1){
-        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
-        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
-        dump_pp____[i_] = tau[I2V(iip+2,jjt,kkr)];
-        dump_mm____[i_] = 1.0; // dummy
-    } else if (iip < NP-2) {
-        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
-        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
-        dump_pp____[i_] = tau[I2V(iip+2,jjt,kkr)];
-        dump_mm____[i_] = tau[I2V(iip-2,jjt,kkr)];
-    } else if (iip == NP-2){
-        dump_p__[i_]    = tau[I2V(iip+1,jjt,kkr)];
-        dump_m__[i_]    = tau[I2V(iip-1,jjt,kkr)];
-        dump_pp____[i_] = 1.0; // dummy
-        dump_mm____[i_] = tau[I2V(iip-2,jjt,kkr)];
-    }
-
-    if (jjt <= 0) {}
-    else if (jjt == 1){
-        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
-        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
-        dump___pp__[i_] = tau[I2V(iip,jjt+2,kkr)];
-        dump___mm__[i_] = 1.0; // dummy
-    } else if (jjt < NT-2) {
-        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
-        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
-        dump___pp__[i_] = tau[I2V(iip,jjt+2,kkr)];
-        dump___mm__[i_] = tau[I2V(iip,jjt-2,kkr)];
-    } else if (jjt == NT-2){
-        dump__p_[i_]    = tau[I2V(iip,jjt+1,kkr)];
-        dump__m_[i_]    = tau[I2V(iip,jjt-1,kkr)];
-        dump___pp__[i_] = 1.0; // dummy
-        dump___mm__[i_] = tau[I2V(iip,jjt-2,kkr)];
-    }
-
-    if (kkr <= 0){}
-    else if (kkr == 1){
-        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
-        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
-        dump_____pp[i_] = tau[I2V(iip,jjt,kkr+2)];
-        dump_____mm[i_] = 1.0; // dummy
-    } else if (kkr < NR-2) {
-        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
-        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
-        dump_____pp[i_] = tau[I2V(iip,jjt,kkr+2)];
-        dump_____mm[i_] = tau[I2V(iip,jjt,kkr-2)];
-    } else if (kkr == NR-2){
-        dump___p[i_]    = tau[I2V(iip,jjt,kkr+1)];
-        dump___m[i_]    = tau[I2V(iip,jjt,kkr-1)];
-        dump_____pp[i_] = 1.0; // dummy
-        dump_____mm[i_] = tau[I2V(iip,jjt,kkr-2)];
-    }
-}
-*/
 
 #endif // USE_AVX or USE_AVX512
 
