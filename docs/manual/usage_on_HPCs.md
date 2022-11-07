@@ -4,9 +4,7 @@
 
 ### 1. Load necessary modules and select GNU compilers
 ```bash
-module purge && module load cmake
-export CC=/usr/local/gcc-9.3.0/bin/gcc
-export CXX=/usr/local/gcc-9.3.0/bin/g++
+module purge && module load cmake gnu/gcc-9.3.0
 ```
 
 ### 2. compiler openmpi and HDF5 with parallel option
