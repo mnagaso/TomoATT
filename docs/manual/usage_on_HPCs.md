@@ -11,12 +11,10 @@ export CXX=/usr/local/gcc-9.3.0/bin/g++
 
 ### 2. compiler openmpi and HDF5 with parallel option
 `./install_mpi_and_hdf5_local.sh`  
+will create openmpi and hdf5 executables in external_libs/local_mpi_hdf5/bin
 
 ### 3. Compile TomoATT
 ```bash
-# cd to TomoATT directory
-cd ../..
-
 # make a build directory
 mkdir build
 
