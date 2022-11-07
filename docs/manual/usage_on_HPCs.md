@@ -1,5 +1,34 @@
 # commands for compiling and running on HPCs
 
+## Gekko @ NTU
+
+### 1. Load necessary modules and select GNU compilers
+```bash
+module purge && module load cmake
+CC=/usr/local/gcc-9.3.0/bin/gcc
+CXX=/usr/local/gcc-9.3.0/bin/g++
+```
+
+### 2. compiler openmpi and HDF5 with parallel option
+`./install_mpi_and_hdf5_local.sh`  
+
+### 3. Compile TomoATT
+```bash
+# cd to TomoATT directory
+cd ../..
+
+# make a build directory
+mkdir build
+
+# compile TomoATT
+cd build
+cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
+
+make -j16
+```
+
+Then the executable TOMOATT is created in the build directory.
+
 
 ## Fugaku @ RIKEN
 
