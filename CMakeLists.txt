@@ -61,10 +61,8 @@ if(HDF5_FOUND)
   add_definitions(-DUSE_HDF5)
 endif()
 
-# use AVX intrinsic
-add_definitions(-DUSE_AVX)
-# or AVX-512
-#add_definitions(-DUSE_AVX512)
+# use SIMD
+add_definitions(-DUSE_SIMD)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)

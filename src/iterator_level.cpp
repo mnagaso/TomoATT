@@ -1,9 +1,9 @@
 #include "iterator_level.h"
 
-#if defined USE_AVX || defined USE_AVX512
-#include <immintrin.h>
+#ifdef USE_SIMD
 #include "vectorized_sweep.h"
 #endif
+
 
 Iterator_level::Iterator_level(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
                 : Iterator(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
@@ -104,7 +104,7 @@ Iterator_level_1st_order::Iterator_level_1st_order(InputParams& IP, Grid& grid, 
 
 void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
-#if !defined USE_AVX && !defined USE_AVX512
+#ifndef USE_SIMD
 
     // set sweep direction
     set_sweep_direction(iswp);
@@ -140,7 +140,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end loop i_level
 
-#else // __AVX__
+#else // USE_SIMD
 
     //
     __mTd v_DP_inv      = _mmT_set1_pd(1.0/dp);
@@ -243,7 +243,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     } // end of i_level loop
 
 
-#endif // USE_AVX
+#endif // USE_SIMD
 
 
     // update boundary
@@ -262,7 +262,7 @@ Iterator_level_3rd_order::Iterator_level_3rd_order(InputParams& IP, Grid& grid, 
 void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 
-#if !defined USE_AVX && !defined USE_AVX512
+#ifndef USE_SIMD
 
     // set sweep direction
     set_sweep_direction(iswp);
@@ -298,7 +298,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end loop i_level
 
-#else // __AVX__
+#else // USE_SIMD
 
     //
     __mTd v_DP_inv      = _mmT_set1_pd(1.0/dp);
@@ -414,7 +414,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     } // end of i_level loop
 
 
-#endif // USE_AVX
+#endif // USE_SIMD
 
 
     // update boundary

@@ -66,7 +66,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 
 Iterator::~Iterator() {
 
-#if defined USE_AVX || defined USE_AVX512
+#ifdef USE_SIMD
     if (simd_allocated){
         free(dump_c__);// center of stencil
 
@@ -215,7 +215,7 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     if(if_verbose)
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
-#if defined USE_AVX || defined USE_AVX512
+#ifdef USE_SIMD
 
     // #TODO those arrays should be allocated as mpi shm arrays
 
@@ -249,11 +249,11 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
     // flag for preloading
     simd_allocated = true;
-#endif
+#endif // USE_SIMD
 
 }
 
-#if defined USE_AVX || defined USE_AVX512
+#ifdef USE_SIMD
 
 template <typename T>
 std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
@@ -355,7 +355,7 @@ void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
     }
 }
 
-#endif // USE_AVX
+#endif // USE_SIMD
 
 void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, bool& first_init) {
 

@@ -2,14 +2,13 @@
 #define VECTORIZED_SWEEP_H
 
 
-#if defined USE_AVX  || defined USE_AVX512
-#include <immintrin.h>
-
-
 #include<vector>
 #include "config.h"
 
+#ifdef USE_SIMD // closed at the end of this file
+#include "simd_conf.h"
 
+#if defined __AVX__ || defined __AVX512F__
 __mTd COEF    = _mmT_set1_pd(1.0);
 __mTd v_1     = _mmT_set1_pd(1.0);
 __mTd v_0     = _mmT_set1_pd(0.0);
@@ -20,6 +19,8 @@ __mTd v_4     = _mmT_set1_pd(4.0);
 __mTd v_m3    = _mmT_set1_pd(-3.0);
 __mTd coe_max = _mmT_set1_pd(1e19);
 __mTd v_eps   = _mmT_set1_pd(1e-12);
+#endif
+
 
 //#define CUSTOMREAL double
 
@@ -102,7 +103,7 @@ inline void vect_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, 
     int PLUS  = 1;
     int MINUS = -1;
 
-#ifdef USE_AVX512
+#ifdef __AVX512F__
     __mmask8 mask_i_eq_1         = _mm512_cmp_pd_mask(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
     __mmask8 mask_j_eq_1         = _mm512_cmp_pd_mask(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
     __mmask8 mask_k_eq_1         = _mm512_cmp_pd_mask(v_kkr, v_1,_CMP_EQ_OQ);    // if kkr == 1
@@ -156,9 +157,9 @@ inline void vect_stencil_3rd_pre_simd(__mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr, 
     v_pr1 = _mm512_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
     v_pr2 = _mm512_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) , v_pr2);
 
-#endif
+#endif // __AVX512F__
 
-#ifdef USE_AVX
+#ifdef __AVX__
     __m256d mask_i_eq_1         = _mm256_cmp_pd(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
     __m256d mask_j_eq_1         = _mm256_cmp_pd(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
     __m256d mask_k_eq_1         = _mm256_cmp_pd(v_kkr, v_1,_CMP_EQ_OQ);    // if kkr == 1
@@ -259,14 +260,14 @@ inline void vect_stencil_1st_3rd_apre_simd(__mTd& v_tau,  __mTd& v_fac_a,__mTd& 
     // v_tau += coe * ((v_fun - Htau) + tmp) if mask is true
     v_tau = _mmT_add_pd(v_tau,_mmT_mul_pd(coe,_mmT_add_pd(_mmT_sub_pd(v_fun,Htau),tmp)));
 
-#ifdef USE_AVX512
+#ifdef __AVX512F__
     // mask if v_change != 1.0
     __mmask8 mask = _mm512_cmp_pd_mask(v_change,v_1,_CMP_NEQ_OQ);
     // set 1 if mask is true
     v_tau = _mm512_mask_blend_pd(mask,v_tau,v_1);
 #endif
 
-#ifdef USE_AVX
+#ifdef __AVX__
     __m256d mask = _mm256_cmp_pd(v_change, v_1,_CMP_NEQ_OQ);
 
     v_tau = _mm256_blendv_pd(v_tau, v_1,mask);
@@ -295,8 +296,8 @@ inline __mTd load_mem_bool_to_mTd(bool* a, \
 
 
 
-#endif // USE_AVX or USE_AVX512
+#endif // USE_SIMD
 
 
 
-#endif //
+#endif // VECTORIZATED_SWEEP_H

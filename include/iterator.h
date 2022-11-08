@@ -16,6 +16,10 @@
 #include "iterator_wrapper.cuh"
 #endif
 
+#ifdef USE_SIMD
+#include "simd_conf.h"
+#endif
+
 class Iterator {
 public:
     Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool, bool);
@@ -74,7 +78,7 @@ protected:
     int max_n_nodes_plane;          // maximum number of nodes on a plane
 
 
-#if defined USE_AVX || defined USE_AVX512
+#ifdef USE_SIMD
     // stencil dumps
     // first orders
     CUSTOMREAL *dump_c__;// center of C
