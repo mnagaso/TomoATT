@@ -268,7 +268,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         int n_nodes = ijk_for_this_subproc.at(i_level).size();
         //std::cout << "n_nodes = " << n_nodes << std::endl;
 
-        //int num_iter = n_nodes / NSIMD + (n_nodes % NSIMD == 0 ? 0 : 1);
+        int num_iter = n_nodes / NSIMD + (n_nodes % NSIMD == 0 ? 0 : 1);
 
         // make alias to preloaded data
         CUSTOMREAL* v_iip    = vv_iip.at(iswp).at(i_level);
@@ -298,8 +298,9 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         int* dump_km1 = vv_km1.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
-        //for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
-        for (int i_vec = 0; i_vec < n_nodes; i_vec+=NSIMD) {
+        for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
+            int i_vec = _i_vec * NSIMD;
+
             svbool_t pg = svwhilelt_b64(i_vec, n_nodes);
 
             __mTd v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
@@ -349,7 +350,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            dump_c__ = svst1(pg, &dump_c__[i_vec], v_c__);
+            dump_c__ = svst1(pg, dump_c__, v_c__);
 
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
@@ -563,7 +564,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         int n_nodes = ijk_for_this_subproc.at(i_level).size();
         //std::cout << "n_nodes = " << n_nodes << std::endl;
 
-        //int num_iter = n_nodes / NSIMD + (n_nodes % NSIMD == 0 ? 0 : 1);
+        int num_iter = n_nodes / NSIMD + (n_nodes % NSIMD == 0 ? 0 : 1);
 
         // make alias to preloaded data
         CUSTOMREAL* v_iip    = vv_iip.at(iswp).at(i_level);
@@ -600,8 +601,9 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 
         // load data of all nodes in one level on temporal aligned array
-        //for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
-        for (int i_vec = 0; i_vec < n_nodes; i_vec+=NSIMD) {
+        for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
+            int i_vec = _i_vec * NSIMD;
+
             svbool_t pg = svwhilelt_b64(i_vec, n_nodes);
 
             __mTd v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
