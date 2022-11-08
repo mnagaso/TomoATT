@@ -140,7 +140,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end loop i_level
 
-#else // USE_SIMD
+#elif defined __AVX512F__ || defined __AVX__
 
     //
     __mTd v_DP_inv      = _mmT_set1_pd(1.0/dp);
@@ -241,6 +241,8 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         synchronize_all_sub();
 
     } // end of i_level loop
+
+#elif defined __ARM_FEATURE_SVE
 
 
 #endif // USE_SIMD

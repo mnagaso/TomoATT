@@ -42,6 +42,12 @@ int main(int argc, char *argv[])
     if(use_gpu) initialize_cuda();
 #endif
 
+#ifdef USE_SIMD
+    // check SIMD type
+    if (myrank==0)
+        print_simd_type();
+#endif
+
     // check the number of mpi processes and ndiv setting is consistent
     check_total_nprocs_and_ndiv();
 

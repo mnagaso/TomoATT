@@ -2,14 +2,14 @@
 #define SIMD_CONF_H
 
 #ifdef USE_SIMD
+
+
 #if defined __AVX__ || defined __AVX512F__
 #include <immintrin.h>
 #elif defined __ARM_FEATURE_SVE
 #include <arm_sve.h>
 #endif // __
-#endif // USE_SIMD
 
-#ifdef USE_SIMD
 
 #ifdef __AVX__
 const int ALIGN = 32;
@@ -24,8 +24,8 @@ const int NSIMD = 4;
 #define _mmT_min_pd _mm256_min_pd
 #define _mmT_sqrt_pd _mm256_sqrt_pd
 #define _mmT_store_pd _mm256_store_pd
-#endif // __AVX__
-#ifdef __AVX512F__
+
+#elif defined __AVX512F__
 const int ALIGN = 64;
 const int NSIMD = 8;
 #define __mTd __m512d
@@ -38,7 +38,23 @@ const int NSIMD = 8;
 #define _mmT_min_pd _mm512_min_pd
 #define _mmT_sqrt_pd _mm512_sqrt_pd
 #define _mmT_store_pd _mm512_store_pd
-#endif // __AVX512F__
+
+#elif defined __ARM_FEATURE_SVE
+
+#endif // __ARM_FEATURE_SVE
+
+
+inline void print_simd_type() {
+    std::cout << "SIMD type: ";
+#ifdef __AVX__
+    std::cout << "AVX" << std::endl;
+#elif defined __AVX512F__
+    std::cout << "AVX512" << std::endl;
+#elif defined __ARM_FEATURE_SVE
+    std::cout << "ARM SVE" << std::endl;
+#endif // __ARM_FEATURE_SVE
+}
+
 
 #endif // USE_SIMD
 
