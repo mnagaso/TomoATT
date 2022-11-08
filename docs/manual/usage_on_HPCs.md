@@ -28,6 +28,7 @@ Then the executable TOMOATT is created in the build directory.
 
 ## Fugaku @ RIKEN
 
+
 ### 0. start interactive job on Fugaku (for accessing arch64 environment)
 
 ```bash 
@@ -39,8 +40,8 @@ pjsub --interact -g hp220155 -L "node=1" -L "rscgrp=int" -L "elapse=1:00:00" --s
 ```bash
 # prepare spack env
 . /vol0004/apps/oss/spack/share/spack/setup-env.sh
-# load gcc 11.2.0 and Fujitsu mpi
-spack load /nphnrhl /cvur4ou
+# load Fujitsu mpi
+spack load /jfzaut5
 ```
 
 
@@ -60,7 +61,7 @@ wget https://gamma.hdfgroup.org/ftp/pub/outgoing/hdf5/snapshots/v112/hdf5-1.12.2
 tar -xvf hdf5-1.12.2-1.tar.gz && cd hdf5-1.12.2-1
 
 # Configure the code. (the pathes to mpicc, mpicxx should vary on the environment)
-CC=mpicc CXX=mpic++ ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
+CC=mpifcc CFLAGS="-Nclang" CXX=mpiFCC CXXFLAGS="-Nclang" ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
 
 # make
 make -j16 && make install
@@ -78,13 +79,14 @@ mkdir build
 
 # compile TomoATT
 cd build
-cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
+CC=mpifcc CXX=mpiFCC cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
 
 make -j16
 ```
 
 ### 4. terminalte interactive job
 `Ctrl + D`
+
 
 
 
