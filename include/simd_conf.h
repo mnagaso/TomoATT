@@ -40,6 +40,18 @@ const int NSIMD = 8;
 #define _mmT_store_pd _mm512_store_pd
 
 #elif defined __ARM_FEATURE_SVE
+const int ALIGN = 16*svcntw();
+const int NSIMD = svcntw(); // Vector Length
+#define __mTd svfloat64_t
+//#define _mmT_set1_pd svdup_f64
+//#define _mmT_loadu_pd svld1_f64
+//#define _mmT_mul_pd svmul_f64_m
+//#define _mmT_sub_pd svsub_f64_m
+//#define _mmT_add_pd svadd_f64_m
+//#define _mmT_div_pd svdiv_f64_m
+//#define _mmT_min_pd svmin_f64_m
+//#define _mmT_sqrt_pd svsqrt_f64_m
+//#define _mmT_store_pd svst1_f64
 
 #endif // __ARM_FEATURE_SVE
 
