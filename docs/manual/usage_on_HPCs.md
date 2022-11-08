@@ -28,6 +28,7 @@ Then the executable TOMOATT is created in the build directory.
 
 ## Fugaku @ RIKEN
 
+
 ### 0. start interactive job on Fugaku (for accessing arch64 environment)
 
 ```bash 
@@ -85,6 +86,7 @@ make -j16
 
 ### 4. terminalte interactive job
 `Ctrl + D`
+
 
 
 
