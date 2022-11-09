@@ -43,7 +43,7 @@ const int NSIMD = 8;
 const int ALIGN = 16*svcntw();
 const int NSIMD = svcntw(); // Vector Length
 #define __mTd svfloat64_t
-#define _mmT_set1_pd svdup_f64
+//#define _mmT_set1_pd svdup_f64
 //#define _mmT_loadu_pd svld1_f64
 //#define _mmT_mul_pd svmul_f64_m
 //#define _mmT_sub_pd svsub_f64_m

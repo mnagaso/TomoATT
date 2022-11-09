@@ -8,7 +8,7 @@
 #ifdef USE_SIMD // closed at the end of this file
 #include "simd_conf.h"
 
-//#if defined __AVX__ || defined __AVX512F__
+#if defined __AVX__ || defined __AVX512F__
 __mTd COEF    = _mmT_set1_pd(1.0);
 __mTd v_1     = _mmT_set1_pd(1.0);
 __mTd v_0     = _mmT_set1_pd(0.0);
@@ -20,7 +20,6 @@ __mTd v_m3    = _mmT_set1_pd(-3.0);
 __mTd coe_max = _mmT_set1_pd(1e19);
 __mTd v_eps   = _mmT_set1_pd(1e-12);
 
-#if defined __AVX__ || defined __AVX512F__
 
 // square of __mTd
 inline __mTd my_square(__mTd const& a){
@@ -78,6 +77,13 @@ inline __mTd calc_1d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
 }
 
 inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b, __mTd const&c, __mTd const& d, __mTd const& Dinv_half, int& sign){
+
+    __mTd v_1     = svdup_f64(1.0);
+    __mTd v_2     = svdup_f64(2.0);
+    __mTd v_m2    = svdup_f64(-2.0);
+    __mTd v_4     = svdup_f64(4.0);
+    __mTd v_m3    = svdup_f64(-3.0);
+    __mTd v_eps   = svdup_f64(1e-12);
 
     // v_eps + sqrt(a - 2.0*b + c)
     __mTd tmp1 = svadd_f64_z(pg, v_eps, my_square(pg, svadd_f64_z(pg, a, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, b), c))));
@@ -389,16 +395,11 @@ inline void vect_stencil_1st_3rd_apre_simd(
 
 #elif defined __ARM_FEATURE_SVE
 
-//    __mTd COEF    = svdup_f64(1.0);
-//    __mTd v_1     = svdup_f64(1.0);
-//    __mTd v_0     = svdup_f64(0.0);
-//    __mTd v_half  = svdup_f64(0.5);
-//    __mTd v_2     = svdup_f64(2.0);
-//    __mTd v_m2    = svdup_f64(-2.0);
-//    __mTd v_4     = svdup_f64(4.0);
-//    __mTd v_m3    = svdup_f64(-3.0);
-//    __mTd coe_max = svdup_f64(1e19);
-//    __mTd v_eps   = svdup_f64(1e-12);
+    __mTd COEF    = svdup_f64(1.0);
+    __mTd v_1     = svdup_f64(1.0);
+    __mTd v_half  = svdup_f64(0.5);
+    __mTd v_m2    = svdup_f64(-2.0);
+    __mTd coe_max = svdup_f64(1e19);
 
     // sigr = COEF * sqrt(v_fac_a)*v_T0v;
     __mTd sigr = svmul_f64_z(pg, svmul_f64_z(pg,COEF,svsqrt_f64_z(pg,v_fac_a)), v_T0v);
