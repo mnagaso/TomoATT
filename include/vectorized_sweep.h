@@ -22,7 +22,7 @@ __mTd v_eps   = _mmT_set1_pd(1e-12);
 
 
 // square of __mTd
-inline __mTd my_square(__mTd const& a){
+inline __mTd my_square_v(__mTd const& a){
     return _mmT_mul_pd(a, a);
 }
 
@@ -32,11 +32,11 @@ inline __mTd calc_1d_stencil(__mTd const& a, __mTd const& b, __mTd const& Dinv){
 }
 
 /*
-    ww  = _1_CR/(_1_CR+_2_CR*my_square((eps + my_square(      a \
+    ww  = _1_CR/(_1_CR+_2_CR*my_square_v((eps + my_square_v(      a \
                                                        -_2_CR*b \
                                                        +      c) ) \
 
-                                     / (eps + my_square(      d \
+                                     / (eps + my_square_v(      d \
                                                        -_2_CR*a \
                                                        +      b) )) );
 
@@ -49,11 +49,11 @@ inline __mTd calc_1d_stencil(__mTd const& a, __mTd const& b, __mTd const& Dinv){
 inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mTd const& d, __mTd const& Dinv_half, int const& sign){
 
     // v_eps + sqrt(a - 2.0*b + c)
-    __mTd tmp1 = _mmT_add_pd(v_eps,my_square(_mmT_add_pd(a,_mmT_add_pd(_mmT_mul_pd(v_m2,b),c))));
+    __mTd tmp1 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(a,_mmT_add_pd(_mmT_mul_pd(v_m2,b),c))));
     // v_eps + sqrt(d - 2.0*a + b)
-    __mTd tmp2 = _mmT_add_pd(v_eps,my_square(_mmT_add_pd(d,_mmT_add_pd(_mmT_mul_pd(v_m2,a),b))));
+    __mTd tmp2 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(d,_mmT_add_pd(_mmT_mul_pd(v_m2,a),b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
-    __mTd ww = _mmT_div_pd(v_1,_mmT_add_pd(v_1,_mmT_mul_pd(v_2,my_square(_mmT_div_pd(tmp1,tmp2)))));
+    __mTd ww = _mmT_div_pd(v_1,_mmT_add_pd(v_1,_mmT_mul_pd(v_2,my_square_v(_mmT_div_pd(tmp1,tmp2)))));
     // pp = sign* ((1.0 - ww) * (d - b) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
     return _mmT_mul_pd(_mmT_set1_pd(sign), \
@@ -68,7 +68,7 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
 
 #elif defined __ARM_FEATURE_SVE
 
-inline __mTd my_square(svbool_t const& pg, __mTd const& a){
+inline __mTd my_square_v(svbool_t const& pg, __mTd const& a){
     return svmul_f64_z(pg, a, a);
 }
 
@@ -76,7 +76,7 @@ inline __mTd calc_1d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
     return svmul_f64_z(pg, svsub_f64_z(pg, a, b), Dinv);
 }
 
-inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b, __mTd const&c, __mTd const& d, __mTd const& Dinv_half, int& sign){
+inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b, __mTd const&c, __mTd const& d, __mTd const& Dinv_half, int const& sign){
 
     __mTd v_1     = svdup_f64(1.0);
     __mTd v_2     = svdup_f64(2.0);
@@ -86,14 +86,14 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
     __mTd v_eps   = svdup_f64(1e-12);
 
     // v_eps + sqrt(a - 2.0*b + c)
-    __mTd tmp1 = svadd_f64_z(pg, v_eps, my_square(pg, svadd_f64_z(pg, a, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, b), c))));
+    __mTd tmp1 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, a, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, b), c))));
     // v_eps + sqrt(d - 2.0*a + b)
-    __mTd tmp2 = svadd_f64_z(pg, v_eps, my_square(pg, svadd_f64_z(pg, d, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, a), b))));
+    __mTd tmp2 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, d, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, a), b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
-    __mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
+    __mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square_v(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
     // pp = sign* ((1.0 - ww) * (d - b) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
-    return svmul_f64_m(pg, svdup_f64(pg, sign), \
+    return svmul_f64_m(pg, svdup_f64(sign), \
                 svadd_f64_z(pg, \
                             svmul_f64_z(pg, svsub_f64_z(pg, v_1, ww), svmul_f64_z(pg, svsub_f64_z(pg, d, b), Dinv_half)),\
                             svmul_f64_z(pg, ww, svmul_f64_z(pg, svsub_f64_z(pg, svadd_f64_z(pg, svmul_f64_z(pg, v_4, b), svmul_f64_z(pg, v_m3, a)), c), Dinv_half))\
@@ -299,34 +299,34 @@ inline void vect_stencil_3rd_pre_simd(
                          );
 
     // if _i_eq_1 == true
-    v_pp1 = calc_1d_stencil(pg, mask_i_eq_1, v_c__, v_m__, v_DP_inv)                            ;
-    v_pp2 = calc_3d_stencil(pg, mask_i_eq_1, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS);
+    v_pp1 = calc_1d_stencil(mask_i_eq_1, v_c__, v_m__, v_DP_inv)                            ;
+    v_pp2 = calc_3d_stencil(mask_i_eq_1, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS);
     // if_i_eq_N_minus_2 == true
-    v_pp1 = calc_3d_stencil(pg, mask_i_eq_N_minus_2, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
-    v_pp2 = calc_1d_stencil(pg, mask_i_eq_N_minus_2, v_p__, v_c__, v_DP_inv)                             ;
+    v_pp1 = calc_3d_stencil(mask_i_eq_N_minus_2, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
+    v_pp2 = calc_1d_stencil(mask_i_eq_N_minus_2, v_p__, v_c__, v_DP_inv)                             ;
     // else
-    v_pp1 = calc_3d_stencil(pg, mask_i_else, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
-    v_pp2 = calc_3d_stencil(pg, mask_i_else, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) ;
+    v_pp1 = calc_3d_stencil(mask_i_else, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
+    v_pp2 = calc_3d_stencil(mask_i_else, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) ;
 
     // if _j_eq_1 == true
-    v_pt1 = calc_1d_stencil(pg, mask_j_eq_1, v_c__, v__m_, v_DT_inv)                            ;
-    v_pt2 = calc_3d_stencil(pg, mask_j_eq_1, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS);
+    v_pt1 = calc_1d_stencil(mask_j_eq_1, v_c__, v__m_, v_DT_inv)                            ;
+    v_pt2 = calc_3d_stencil(mask_j_eq_1, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS);
     // if _j_eq_N_minus_2 == true
-    v_pt1 = calc_3d_stencil(pg, mask_j_eq_N_minus_2, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
-    v_pt2 = calc_1d_stencil(pg, mask_j_eq_N_minus_2, v__p_, v_c__, v_DT_inv)                             ;
+    v_pt1 = calc_3d_stencil(mask_j_eq_N_minus_2, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
+    v_pt2 = calc_1d_stencil(mask_j_eq_N_minus_2, v__p_, v_c__, v_DT_inv)                             ;
     // else
-    v_pt1 = calc_3d_stencil(pg, mask_j_else, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
-    v_pt2 = calc_3d_stencil(pg, mask_j_else, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) ;
+    v_pt1 = calc_3d_stencil(mask_j_else, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
+    v_pt2 = calc_3d_stencil(mask_j_else, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) ;
 
     // if _k_eq_1 == true
-    v_pr1 = calc_1d_stencil(pg, mask_k_eq_1, v_c__, v___m, v_DR_inv)                            ;
-    v_pr2 = calc_3d_stencil(pg, mask_k_eq_1, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS);
+    v_pr1 = calc_1d_stencil(mask_k_eq_1, v_c__, v___m, v_DR_inv)                            ;
+    v_pr2 = calc_3d_stencil(mask_k_eq_1, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS);
     // if _k_eq_N_minus_2 == true
-    v_pr1 = calc_3d_stencil(pg, mask_k_eq_N_minus_2, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
-    v_pr2 = calc_1d_stencil(pg, mask_k_eq_N_minus_2, v___p, v_c__, v_DR_inv)                             ;
+    v_pr1 = calc_3d_stencil(mask_k_eq_N_minus_2, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
+    v_pr2 = calc_1d_stencil(mask_k_eq_N_minus_2, v___p, v_c__, v_DR_inv)                             ;
     // else
-    v_pr1 = calc_3d_stencil(pg, mask_k_else, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
-    v_pr2 = calc_3d_stencil(pg, mask_k_else, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) ;
+    v_pr1 = calc_3d_stencil(mask_k_else, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
+    v_pr2 = calc_3d_stencil(mask_k_else, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) ;
 
 
 #endif
@@ -360,12 +360,12 @@ inline void vect_stencil_1st_3rd_apre_simd(
     coe = _mmT_min_pd(coe,coe_max);
 
     // Htau  = v_fac_a * square(v_T0r * v_tau + v_T0v * (v_pr1 + v_pr2)*0.5);
-    __mTd Htau = _mmT_mul_pd(v_fac_a,my_square(_mmT_add_pd(_mmT_mul_pd(v_T0r,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pr1,v_pr2),v_half)))));
+    __mTd Htau = _mmT_mul_pd(v_fac_a,my_square_v(_mmT_add_pd(_mmT_mul_pd(v_T0r,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pr1,v_pr2),v_half)))));
 
     // Htau += v_fac_b * square(v_T0t * v_tau + v_T0v * (v_pt1 + v_pt2)*0.5))
-    Htau = _mmT_add_pd(Htau,_mmT_mul_pd(v_fac_b,my_square(_mmT_add_pd(_mmT_mul_pd(v_T0t,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pt1,v_pt2), v_half))))));
+    Htau = _mmT_add_pd(Htau,_mmT_mul_pd(v_fac_b,my_square_v(_mmT_add_pd(_mmT_mul_pd(v_T0t,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pt1,v_pt2), v_half))))));
     // Htau += v_fac_c * square(v_T0p * v_tau + v_T0v * (v_pp1 + v_pp2)*0.5))
-    Htau = _mmT_add_pd(Htau,_mmT_mul_pd(v_fac_c,my_square(_mmT_add_pd(_mmT_mul_pd(v_T0p,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pp1,v_pp2), v_half))))));
+    Htau = _mmT_add_pd(Htau,_mmT_mul_pd(v_fac_c,my_square_v(_mmT_add_pd(_mmT_mul_pd(v_T0p,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pp1,v_pp2), v_half))))));
 
     // tmp1 = ( v_T0t * v_tau + v_T0v * (v_pt1 + v_pt2)*0.5)
     __mTd tmp1 = _mmT_add_pd(_mmT_mul_pd(v_T0t,v_tau),_mmT_mul_pd(v_T0v,_mmT_mul_pd(_mmT_add_pd(v_pt1,v_pt2), v_half)));
@@ -409,29 +409,29 @@ inline void vect_stencil_1st_3rd_apre_simd(
     __mTd sigp = svmul_f64_z(pg, svmul_f64_z(pg,COEF,svsqrt_f64_z(pg,v_fac_c)), v_T0v);
 
     // coe = 1.0 / (sigr/D + sigt/D + sigz/D);
-    __mTd coe = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, svadd_f64_z(pg, svdmul_f64_z(pg, sigr, DR_inv), svmul_f64_z(pg, sigt, DT_inv)), svmul_f64_z(pg, sigp, DP_inv)));
+    __mTd coe = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, svadd_f64_z(pg, svmul_f64_z(pg, sigr, DR_inv), svmul_f64_z(pg, sigt, DT_inv)), svmul_f64_z(pg, sigp, DP_inv)));
     // coe becomes inf as sig* goes to 0
     // if coe > 1e19, set coe = 1e19
     coe = svmin_f64_z(pg, coe, coe_max);
 
     // Htau  = v_fac_a * square(v_T0r * v_tau + v_T0v * (v_pr1 + v_pr2)*0.5);
-    __mTd Htau = svmul_f64_z(pg, v_fac_a, my_square(svadd_f64_z(pg, \
-                                                         svmul_f64_z(pg, v_T0r, v_tau), \
-                                                         svmul_f64_z(pg, v_T0v, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pr1, v_pr2))))\
+    __mTd Htau = svmul_f64_z(pg, v_fac_a, my_square_v(pg, svadd_f64_z(pg, \
+                                                          svmul_f64_z(pg, v_T0r, v_tau), \
+                                                          svmul_f64_z(pg, v_T0v, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pr1, v_pr2))))\
                                                    )\
                             );
 
     // Htau += v_fac_b * square(v_T0t * v_tau + v_T0v * (v_pt1 + v_pt2)*0.5))
-    Htau = svadd_f64_z(pg, Htau, svmul_f64_z(pg, v_fac_b, my_square(svadd_f64_z(pg, \
-                                                                           svmul_f64_z(pg, v_T0t, v_tau), \
-                                                                           svmul_f64_z(pg, v_T0v, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pt1, v_pt2))))\
+    Htau = svadd_f64_z(pg, Htau, svmul_f64_z(pg, v_fac_b, my_square_v(pg, svadd_f64_z(pg, \
+                                                                            svmul_f64_z(pg, v_T0t, v_tau), \
+                                                                            svmul_f64_z(pg, v_T0v, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pt1, v_pt2))))\
                                                                    )\
                                             )\
                       );
     // Htau += v_fac_c * square(v_T0p * v_tau + v_T0v * (v_pp1 + v_pp2)*0.5))
-    Htau = svadd_f64_z(pg, Htau, svmul_f64_z(pg, v_fac_c, my_square(svadd_f64_z(pg, \
-                                                                           svmul_f64_z(pg, v_T0p, v_tau), \
-                                                                           svmul_f64_z(pg, v_T0v, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pp1, v_pp2))))\
+    Htau = svadd_f64_z(pg, Htau, svmul_f64_z(pg, v_fac_c, my_square_v(pg, svadd_f64_z(pg, \
+                                                                            svmul_f64_z(pg, v_T0p, v_tau), \
+                                                                            svmul_f64_z(pg, v_T0v, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pp1, v_pp2))))\
                                                                    )\
                                             )\
                       );
@@ -465,9 +465,9 @@ inline void vect_stencil_1st_3rd_apre_simd(
     // v_tau += coe * ((v_fun - Htau) + tmp) if mask is true
     v_tau = svadd_f64_z(pg, v_tau, svmul_f64_z(pg, coe, svadd_f64_z(pg, svsub_f64_z(pg, v_fun, Htau), tmp)));
     // mask = v_change != 1.0
-    mask = svcmpne_f64(pg, v_change, v_1);
+    svbool_t mask = svcmpne_f64(pg, v_change, v_1);
     // v_tau = v_1 if mask is true (!= 1.0)
-    v_tau = svsel_f64_z(mask, v_1, v_tau);
+    v_tau = svsel_f64(mask, v_1, v_tau);
 
 #endif
 
@@ -495,21 +495,24 @@ inline __mTd load_mem_bool_to_mTd(bool* a, \
 
 #elif defined __ARM_FEATURE_SVE
 
-inline __mTd load_mem_gen_to_mTd(svboot_t const& pg, CUSTOMREAL* a, \
+inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, \
                          int* iip, int* jjt, int* kkr){
-        const CUSTOMREAL dump_[NSIMD] = {a[I2V(iip[0],jjt[0],kkr[0])], \
-                                         a[I2V(iip[1],jjt[1],kkr[1])], \
-                                         a[I2V(iip[2],jjt[2],kkr[2])], \
-                                         a[I2V(iip[3],jjt[3],kkr[3])]};
+        CUSTOMREAL dump_[NSIMD];
+        dump_[0] = a[I2V(iip[0],jjt[0],kkr[0])];
+        dump_[1] = a[I2V(iip[1],jjt[1],kkr[1])];
+        dump_[2] = a[I2V(iip[2],jjt[2],kkr[2])];
+        dump_[3] = a[I2V(iip[3],jjt[3],kkr[3])];
         return svld1_f64(pg, dump_);
 }
 
-inline __mTd load_mem_bool_to_mTd(svboot_t const& pg, bool* a, \
+inline __mTd load_mem_bool_to_mTd(svbool_t const& pg, bool* a, \
                          int* iip, int* jjt, int* kkr){
-        const CUSTOMREAL dump_[NSIMD] = {(CUSTOMREAL) a[I2V(iip[0],jjt[0],kkr[0])], \
-                                         (CUSTOMREAL) a[I2V(iip[1],jjt[1],kkr[1])], \
-                                         (CUSTOMREAL) a[I2V(iip[2],jjt[2],kkr[2])], \
-                                         (CUSTOMREAL) a[I2V(iip[3],jjt[3],kkr[3])]};
+        CUSTOMREAL dump_[NSIMD];
+        dump_[0] = (CUSTOMREAL)a[I2V(iip[0],jjt[0],kkr[0])];
+        dump_[1] = (CUSTOMREAL)a[I2V(iip[1],jjt[1],kkr[1])];
+        dump_[2] = (CUSTOMREAL)a[I2V(iip[2],jjt[2],kkr[2])];
+        dump_[3] = (CUSTOMREAL)a[I2V(iip[3],jjt[3],kkr[3])];
+
         return svld1_f64(pg, dump_);
 }
 

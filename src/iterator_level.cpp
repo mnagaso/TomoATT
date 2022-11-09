@@ -350,7 +350,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            dump_c__ = svst1(pg, dump_c__, v_c__);
+            svst1(pg, dump_c__, v_c__);
 
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
