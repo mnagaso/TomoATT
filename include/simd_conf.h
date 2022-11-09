@@ -40,8 +40,8 @@ const int NSIMD = 8;
 #define _mmT_store_pd _mm512_store_pd
 
 #elif defined __ARM_FEATURE_SVE
-const int ALIGN = 16*svcntw();
-const int NSIMD = svcntw(); // Vector Length
+const int ALIGN = 16*svcntd(); // use svcntw() for float
+const int NSIMD = svcntd(); // Vector Length
 #define __mTd svfloat64_t
 //#define _mmT_set1_pd svdup_f64
 //#define _mmT_loadu_pd svld1_f64

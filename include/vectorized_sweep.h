@@ -477,20 +477,24 @@ inline void vect_stencil_1st_3rd_apre_simd(
 
 inline __mTd load_mem_gen_to_mTd(CUSTOMREAL* a, \
                          int* iip, int* jjt, int* kkr){
-        const CUSTOMREAL dump_[NSIMD] = {a[I2V(iip[0],jjt[0],kkr[0])], \
-                                         a[I2V(iip[1],jjt[1],kkr[1])], \
-                                         a[I2V(iip[2],jjt[2],kkr[2])], \
-                                         a[I2V(iip[3],jjt[3],kkr[3])]};
+
+        CUSTOMREAL dump_[NSIMD];
+        for (int i=0; i<NSIMD; i++){
+            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+        }
+
         return  _mmT_loadu_pd(dump_);
 }
 
 inline __mTd load_mem_bool_to_mTd(bool* a, \
                          int* iip, int* jjt, int* kkr){
-        const CUSTOMREAL dump_[NSIMD] = {(CUSTOMREAL) a[I2V(iip[0],jjt[0],kkr[0])], \
-                                         (CUSTOMREAL) a[I2V(iip[1],jjt[1],kkr[1])], \
-                                         (CUSTOMREAL) a[I2V(iip[2],jjt[2],kkr[2])], \
-                                         (CUSTOMREAL) a[I2V(iip[3],jjt[3],kkr[3])]};
-        return _mmT_loadu_pd(dump_);
+
+        CUSTOMREAL dump_[NSIMD];
+        for (int i=0; i<NSIMD; i++){
+            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+        }
+
+       return _mmT_loadu_pd(dump_);
 }
 
 #elif defined __ARM_FEATURE_SVE
@@ -498,20 +502,21 @@ inline __mTd load_mem_bool_to_mTd(bool* a, \
 inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, \
                          int* iip, int* jjt, int* kkr){
         CUSTOMREAL dump_[NSIMD];
-        dump_[0] = a[I2V(iip[0],jjt[0],kkr[0])];
-        dump_[1] = a[I2V(iip[1],jjt[1],kkr[1])];
-        dump_[2] = a[I2V(iip[2],jjt[2],kkr[2])];
-        dump_[3] = a[I2V(iip[3],jjt[3],kkr[3])];
+
+        for (int i=0; i<NSIMD; i++){
+            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+        }
+
         return svld1_f64(pg, dump_);
 }
 
 inline __mTd load_mem_bool_to_mTd(svbool_t const& pg, bool* a, \
                          int* iip, int* jjt, int* kkr){
         CUSTOMREAL dump_[NSIMD];
-        dump_[0] = (CUSTOMREAL)a[I2V(iip[0],jjt[0],kkr[0])];
-        dump_[1] = (CUSTOMREAL)a[I2V(iip[1],jjt[1],kkr[1])];
-        dump_[2] = (CUSTOMREAL)a[I2V(iip[2],jjt[2],kkr[2])];
-        dump_[3] = (CUSTOMREAL)a[I2V(iip[3],jjt[3],kkr[3])];
+
+        for (int i=0; i<NSIMD; i++){
+            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+        }
 
         return svld1_f64(pg, dump_);
 }
