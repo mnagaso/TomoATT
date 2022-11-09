@@ -93,7 +93,7 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
     __mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
     // pp = sign* ((1.0 - ww) * (d - b) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
-    return svmul_f64_m(pg, svset1_f64_z(pg, sign), \
+    return svmul_f64_m(pg, svdup_f64(pg, sign), \
                 svadd_f64_z(pg, \
                             svmul_f64_z(pg, svsub_f64_z(pg, v_1, ww), svmul_f64_z(pg, svsub_f64_z(pg, d, b), Dinv_half)),\
                             svmul_f64_z(pg, ww, svmul_f64_z(pg, svsub_f64_z(pg, svadd_f64_z(pg, svmul_f64_z(pg, v_4, b), svmul_f64_z(pg, v_m3, a)), c), Dinv_half))\
@@ -275,58 +275,58 @@ inline void vect_stencil_3rd_pre_simd(
     svfloat64_t v_NT_minus_2 = svdup_f64(NT-2);
     svfloat64_t v_NR_minus_2 = svdup_f64(NR-2);
 
-    svbool_t mask_i_eq_1         = svcmpeg_f64(pg, v_iip, v_1);    // if iip == 1
-    svbool_t mask_j_eq_1         = svcmpeg_f64(pg, v_jjt, v_1);    // if jjt == 1
-    svbool_t mask_k_eq_1         = svcmpeg_f64(pg, v_kkr, v_1);    // if kkr == 1
-    svbool_t mask_i_eq_N_minus_2 = svcmpeg_f64(pg, v_iip, v_NP_minus_2); // if iip == N-2
-    svbool_t mask_j_eq_N_minus_2 = svcmpeg_f64(pg, v_jjt, v_NT_minus_2); // if jjt == N-2
-    svbool_t mask_k_eq_N_minus_2 = svcmpeg_f64(pg, v_kkr, v_NR_minus_2); // if kkr == N-2
+    svbool_t mask_i_eq_1         = svcmpeq_f64(pg, v_iip, v_1);    // if iip == 1
+    svbool_t mask_j_eq_1         = svcmpeq_f64(pg, v_jjt, v_1);    // if jjt == 1
+    svbool_t mask_k_eq_1         = svcmpeq_f64(pg, v_kkr, v_1);    // if kkr == 1
+    svbool_t mask_i_eq_N_minus_2 = svcmpeq_f64(pg, v_iip, v_NP_minus_2); // if iip == N-2
+    svbool_t mask_j_eq_N_minus_2 = svcmpeq_f64(pg, v_jjt, v_NT_minus_2); // if jjt == N-2
+    svbool_t mask_k_eq_N_minus_2 = svcmpeq_f64(pg, v_kkr, v_NR_minus_2); // if kkr == N-2
 
     // 1 < iip < N-2
     svbool_t mask_i_else = svand_b_z(pg,
-                               svcmptg_f64(pg, v_iip, v_1),
-                               svcmplt_f64(pg, v_iip, v_NP_minus_2),
+                               svcmpgt_f64(pg, v_iip, v_1),
+                               svcmplt_f64(pg, v_iip, v_NP_minus_2)
                          );
     // 1 < jjt < N-2
     svbool_t mask_j_else = svand_b_z(pg,
-                               svcmptg_f64(pg, v_jjt, v_1),
-                               svcmplt_f64(pg, v_jjt, v_NT_minus_2),
+                               svcmpgt_f64(pg, v_jjt, v_1),
+                               svcmplt_f64(pg, v_jjt, v_NT_minus_2)
                          );
     // 1 < kkr < N-2
     svbool_t mask_k_else = svand_b_z(pg,
-                               svcmptg_f64(pg, v_kkr, v_1),
-                               svcmplt_f64(pg, v_kkr, v_NR_minus_2),
+                               svcmpgt_f64(pg, v_kkr, v_1),
+                               svcmplt_f64(pg, v_kkr, v_NR_minus_2)
                          );
 
     // if _i_eq_1 == true
-    v_pp1 = calc_1d_stencil(mask_i_eq_1, v_c__, v_m__, v_DP_inv)                            ;
-    v_pp2 = calc_3d_stencil(mask_i_eq_1, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS);
+    v_pp1 = calc_1d_stencil(pg, mask_i_eq_1, v_c__, v_m__, v_DP_inv)                            ;
+    v_pp2 = calc_3d_stencil(pg, mask_i_eq_1, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS);
     // if_i_eq_N_minus_2 == true
-    v_pp1 = calc_3d_stencil(mask_i_eq_N_minus_2, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
-    v_pp2 = calc_1d_stencil(mask_i_eq_N_minus_2, v_p__, v_c__, v_DP_inv)                             ;
+    v_pp1 = calc_3d_stencil(pg, mask_i_eq_N_minus_2, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
+    v_pp2 = calc_1d_stencil(pg, mask_i_eq_N_minus_2, v_p__, v_c__, v_DP_inv)                             ;
     // else
-    v_pp1 = calc_3d_stencil(mask_i_else, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
-    v_pp2 = calc_3d_stencil(mask_i_else, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) ;
+    v_pp1 = calc_3d_stencil(pg, mask_i_else, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
+    v_pp2 = calc_3d_stencil(pg, mask_i_else, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) ;
 
     // if _j_eq_1 == true
-    v_pt1 = calc_1d_stencil(mask_j_eq_1, v_c__, v__m_, v_DT_inv)                            ;
-    v_pt2 = calc_3d_stencil(mask_j_eq_1, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS);
+    v_pt1 = calc_1d_stencil(pg, mask_j_eq_1, v_c__, v__m_, v_DT_inv)                            ;
+    v_pt2 = calc_3d_stencil(pg, mask_j_eq_1, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS);
     // if _j_eq_N_minus_2 == true
-    v_pt1 = calc_3d_stencil(mask_j_eq_N_minus_2, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
-    v_pt2 = calc_1d_stencil(mask_j_eq_N_minus_2, v__p_, v_c__, v_DT_inv)                             ;
+    v_pt1 = calc_3d_stencil(pg, mask_j_eq_N_minus_2, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
+    v_pt2 = calc_1d_stencil(pg, mask_j_eq_N_minus_2, v__p_, v_c__, v_DT_inv)                             ;
     // else
-    v_pt1 = calc_3d_stencil(mask_j_else, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
-    v_pt2 = calc_3d_stencil(mask_j_else, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) ;
+    v_pt1 = calc_3d_stencil(pg, mask_j_else, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
+    v_pt2 = calc_3d_stencil(pg, mask_j_else, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) ;
 
     // if _k_eq_1 == true
-    v_pr1 = calc_1d_stencil(mask_k_eq_1, v_c__, v___m, v_DR_inv)                            ;
-    v_pr2 = calc_3d_stencil(mask_k_eq_1, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS);
+    v_pr1 = calc_1d_stencil(pg, mask_k_eq_1, v_c__, v___m, v_DR_inv)                            ;
+    v_pr2 = calc_3d_stencil(pg, mask_k_eq_1, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS);
     // if _k_eq_N_minus_2 == true
-    v_pr1 = calc_3d_stencil(mask_k_eq_N_minus_2, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
-    v_pr2 = calc_1d_stencil(mask_k_eq_N_minus_2, v___p, v_c__, v_DR_inv)                             ;
+    v_pr1 = calc_3d_stencil(pg, mask_k_eq_N_minus_2, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
+    v_pr2 = calc_1d_stencil(pg, mask_k_eq_N_minus_2, v___p, v_c__, v_DR_inv)                             ;
     // else
-    v_pr1 = calc_3d_stencil(mask_k_else, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
-    v_pr2 = calc_3d_stencil(mask_k_else, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) ;
+    v_pr1 = calc_3d_stencil(pg, mask_k_else, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
+    v_pr2 = calc_3d_stencil(pg, mask_k_else, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) ;
 
 
 #endif
