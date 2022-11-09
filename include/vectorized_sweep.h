@@ -66,7 +66,7 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
 
 }
 
-#elif defined __ARM_FEATURE_SIMD32
+#elif defined __ARM_FEATURE_SVE
 
 inline __mTd my_square(svbool_t const& pg, __mTd const& a){
     return svmul_f64_z(pg, a, a);
@@ -100,7 +100,7 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
 
 
 inline void vect_stencil_1st_pre_simd(
-#ifdef __ARM_FEATURE_SIMD
+#ifdef __ARM_FEATURE_SVE
                                       svbool_t const& pg,
 #endif
                                       __mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr,
@@ -120,7 +120,7 @@ inline void vect_stencil_1st_pre_simd(
     v_pr1 = calc_1d_stencil(v_c__, v___m, v_DR_inv);
     v_pr2 = calc_1d_stencil(v___p, v_c__, v_DR_inv);
 
-#elif defined __ARM_FEATURE_SIMD
+#elif defined __ARM_FEATURE_SVE
 
     v_pp1 = calc_1d_stencil(pg, v_c__, v_m__, v_DP_inv);
     v_pp2 = calc_1d_stencil(pg, v_p__, v_c__, v_DP_inv);
@@ -135,7 +135,7 @@ inline void vect_stencil_1st_pre_simd(
 
 
 inline void vect_stencil_3rd_pre_simd(
-#ifdef __ARM_FEATURE_SIMD
+#ifdef __ARM_FEATURE_SVE
                                       svbool_t const& pg,
 #endif
                                       __mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr,
@@ -329,7 +329,7 @@ inline void vect_stencil_3rd_pre_simd(
 
 // tau fac_a fac_b fac_c fac_f T0v T0p T0t T0r fun
 inline void vect_stencil_1st_3rd_apre_simd(
-#ifdef __ARM_FEATURE_SIMD
+#ifdef __ARM_FEATURE_SVE
                                            svbool_t const& pg,
 #endif
                                            __mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fac_b, __mTd& v_fac_c, __mTd& v_fac_f,
