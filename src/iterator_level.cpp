@@ -312,19 +312,19 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             __mTd v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
 
             // load v_iip, v_jjt, v_kkr
-            __mTd v_iip_   = svld1(pg, v_iip   +i_vec);
-            __mTd v_jjt_   = svld1(pg, v_jjt   +i_vec);
-            __mTd v_kkr_   = svld1(pg, v_kkr   +i_vec);
-            __mTd v_fac_a_ = svld1(pg, v_fac_a +i_vec);
-            __mTd v_fac_b_ = svld1(pg, v_fac_b +i_vec);
-            __mTd v_fac_c_ = svld1(pg, v_fac_c +i_vec);
-            __mTd v_fac_f_ = svld1(pg, v_fac_f +i_vec);
-            __mTd v_T0v_   = svld1(pg, v_T0v   +i_vec);
-            __mTd v_T0r_   = svld1(pg, v_T0r   +i_vec);
-            __mTd v_T0t_   = svld1(pg, v_T0t   +i_vec);
-            __mTd v_T0p_   = svld1(pg, v_T0p   +i_vec);
-            __mTd v_fun_   = svld1(pg, v_fun   +i_vec);
-            __mTd v_change_= svld1(pg, v_change+i_vec);
+            __mTd v_iip_   = svld1_f64(pg, v_iip   +i_vec);
+            __mTd v_jjt_   = svld1_f64(pg, v_jjt   +i_vec);
+            __mTd v_kkr_   = svld1_f64(pg, v_kkr   +i_vec);
+            __mTd v_fac_a_ = svld1_f64(pg, v_fac_a +i_vec);
+            __mTd v_fac_b_ = svld1_f64(pg, v_fac_b +i_vec);
+            __mTd v_fac_c_ = svld1_f64(pg, v_fac_c +i_vec);
+            __mTd v_fac_f_ = svld1_f64(pg, v_fac_f +i_vec);
+            __mTd v_T0v_   = svld1_f64(pg, v_T0v   +i_vec);
+            __mTd v_T0r_   = svld1_f64(pg, v_T0r   +i_vec);
+            __mTd v_T0t_   = svld1_f64(pg, v_T0t   +i_vec);
+            __mTd v_T0p_   = svld1_f64(pg, v_T0p   +i_vec);
+            __mTd v_fun_   = svld1_f64(pg, v_fun   +i_vec);
+            __mTd v_change_= svld1_f64(pg, v_change+i_vec);
 
             // loop over all nodes in one level
             vect_stencil_1st_pre_simd(pg, v_iip_, v_jjt_, v_kkr_, \
@@ -335,14 +335,14 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                       v_DP_inv_half, v_DT_inv_half, v_DR_inv_half, \
                                       loc_I, loc_J, loc_K);
 
-            //// calculate updated value on c
+            // calculate updated value on c
             vect_stencil_1st_3rd_apre_simd(pg, v_c__, v_fac_a_, v_fac_b_, v_fac_c_, v_fac_f_, \
                                            v_T0v_, v_T0p_, v_T0t_, v_T0r_, v_fun_, v_change_, \
                                            v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            svst1(pg, dump_c__, v_c__);
+            svst1_f64(pg, dump_c__, v_c__);
 
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
@@ -614,19 +614,19 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 
             // load v_iip, v_jjt, v_kkr
-            __mTd v_iip_   = svld1(pg, v_iip   +i_vec);
-            __mTd v_jjt_   = svld1(pg, v_jjt   +i_vec);
-            __mTd v_kkr_   = svld1(pg, v_kkr   +i_vec);
-            __mTd v_fac_a_ = svld1(pg, v_fac_a +i_vec);
-            __mTd v_fac_b_ = svld1(pg, v_fac_b +i_vec);
-            __mTd v_fac_c_ = svld1(pg, v_fac_c +i_vec);
-            __mTd v_fac_f_ = svld1(pg, v_fac_f +i_vec);
-            __mTd v_T0v_   = svld1(pg, v_T0v   +i_vec);
-            __mTd v_T0r_   = svld1(pg, v_T0r   +i_vec);
-            __mTd v_T0t_   = svld1(pg, v_T0t   +i_vec);
-            __mTd v_T0p_   = svld1(pg, v_T0p   +i_vec);
-            __mTd v_fun_   = svld1(pg, v_fun   +i_vec);
-            __mTd v_change_= svld1(pg, v_change+i_vec);
+            __mTd v_iip_   = svld1_f64(pg, v_iip   +i_vec);
+            __mTd v_jjt_   = svld1_f64(pg, v_jjt   +i_vec);
+            __mTd v_kkr_   = svld1_f64(pg, v_kkr   +i_vec);
+            __mTd v_fac_a_ = svld1_f64(pg, v_fac_a +i_vec);
+            __mTd v_fac_b_ = svld1_f64(pg, v_fac_b +i_vec);
+            __mTd v_fac_c_ = svld1_f64(pg, v_fac_c +i_vec);
+            __mTd v_fac_f_ = svld1_f64(pg, v_fac_f +i_vec);
+            __mTd v_T0v_   = svld1_f64(pg, v_T0v   +i_vec);
+            __mTd v_T0r_   = svld1_f64(pg, v_T0r   +i_vec);
+            __mTd v_T0t_   = svld1_f64(pg, v_T0t   +i_vec);
+            __mTd v_T0p_   = svld1_f64(pg, v_T0p   +i_vec);
+            __mTd v_fun_   = svld1_f64(pg, v_fun   +i_vec);
+            __mTd v_change_= svld1_f64(pg, v_change+i_vec);
 
             // loop over all nodes in one level
             vect_stencil_3rd_pre_simd(pg, v_iip_, v_jjt_, v_kkr_, \
@@ -645,7 +645,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            svst1(pg, dump_c__, v_c__);
+            svst1_f64(pg, dump_c__, v_c__);
 
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
