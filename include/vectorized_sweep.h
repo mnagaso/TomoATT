@@ -491,7 +491,7 @@ inline __mTd load_mem_bool_to_mTd(bool* a, \
 
         CUSTOMREAL dump_[NSIMD];
         for (int i=0; i<NSIMD; i++){
-            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+            dump_[i] = (CUSTOMREAL) a[I2V(iip[i],jjt[i],kkr[i])];
         }
 
        return _mmT_loadu_pd(dump_);
@@ -515,7 +515,7 @@ inline __mTd load_mem_bool_to_mTd(svbool_t const& pg, bool* a, \
         CUSTOMREAL dump_[NSIMD];
 
         for (int i=0; i<NSIMD; i++){
-            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+            dump_[i] = (CUSTOMREAL) a[I2V(iip[i],jjt[i],kkr[i])];
         }
 
         return svld1_f64(pg, dump_);
