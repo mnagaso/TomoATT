@@ -145,14 +145,14 @@ inline void vect_stencil_3rd_pre_simd(
 #ifdef __ARM_FEATURE_SVE
                                       svbool_t const& pg,
 #endif
-                                      __mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr,
+                                      __mTd const& v_iip, __mTd const& v_jjt, __mTd const& v_kkr,
                                       __mTd& v_c__,
-                                      __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m,
-                                      __mTd& v_pp____,  __mTd& v_mm____,  __mTd& v___pp__, __mTd& v___mm__, __mTd& v_____pp, __mTd& v_____mm,
+                                      __mTd const& v_p__,     __mTd const& v_m__,     __mTd const& v__p_,    __mTd const& v__m_,    __mTd const& v___p,    __mTd const& v___m,
+                                      __mTd const& v_pp____,  __mTd const& v_mm____,  __mTd const& v___pp__, __mTd const& v___mm__, __mTd const& v_____pp, __mTd const& v_____mm,
                                       __mTd& v_pp1,     __mTd& v_pp2,     __mTd& v_pt1,    __mTd& v_pt2,    __mTd& v_pr1,    __mTd& v_pr2,
-                                      __mTd& v_DP_inv,  __mTd& v_DT_inv,  __mTd& v_DR_inv,
-                                      __mTd& v_DP_inv_half, __mTd& v_DT_inv_half, __mTd& v_DR_inv_half,
-                                      int& NP, int& NT, int& NR){
+                                      __mTd const& v_DP_inv,  __mTd const& v_DT_inv,  __mTd const& v_DR_inv,
+                                      __mTd const& v_DP_inv_half, __mTd const& v_DT_inv_half, __mTd const& v_DR_inv_half,
+                                      int const& NP, int const& NT, int const& NR){
 
     const int PLUS  = 1;
     const int MINUS = -1;
@@ -339,10 +339,10 @@ inline void vect_stencil_1st_3rd_apre_simd(
 #ifdef __ARM_FEATURE_SVE
                                            svbool_t const& pg,
 #endif
-                                           __mTd& v_tau,  __mTd& v_fac_a,__mTd& v_fac_b, __mTd& v_fac_c, __mTd& v_fac_f,
-                                           __mTd& v_T0v,  __mTd& v_T0p,  __mTd& v_T0t,   __mTd& v_T0r,   __mTd& v_fun, __mTd& v_change,
-                                           __mTd& v_pp1,  __mTd& v_pp2,  __mTd& v_pt1,   __mTd& v_pt2,   __mTd& v_pr1, __mTd& v_pr2,
-                                           __mTd& DP_inv, __mTd& DT_inv, __mTd& DR_inv){
+                                           __mTd& v_tau,        __mTd const& v_fac_a,__mTd const& v_fac_b, __mTd const& v_fac_c, __mTd const& v_fac_f,
+                                           __mTd const& v_T0v,  __mTd const& v_T0p,  __mTd const& v_T0t,   __mTd const& v_T0r,   __mTd const& v_fun, __mTd const& v_change,
+                                           __mTd const& v_pp1,  __mTd const& v_pp2,  __mTd const& v_pt1,   __mTd const& v_pt2,   __mTd const& v_pr1, __mTd const& v_pr2,
+                                           __mTd const& DP_inv, __mTd const& DT_inv, __mTd const& DR_inv){
 
 #if defined __AVX512F__ || defined __AVX__
 
