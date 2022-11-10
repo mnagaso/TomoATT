@@ -54,7 +54,7 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
     __mTd tmp2 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(d,_mmT_add_pd(_mmT_mul_pd(v_m2,a),b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
     __mTd ww = _mmT_div_pd(v_1,_mmT_add_pd(v_1,_mmT_mul_pd(v_2,my_square_v(_mmT_div_pd(tmp1,tmp2)))));
-    // pp = sign* ((1.0 - ww) * (d - b) / 2.0 / D
+    // pp = sign* ((1.0 - ww) * (b - d) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
     return _mmT_mul_pd(_mmT_set1_pd(sign), \
                 _mmT_add_pd(\
@@ -91,11 +91,11 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
     __mTd tmp2 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, d, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, a), b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
     __mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square_v(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
-    // pp = sign* ((1.0 - ww) * (d - b) / 2.0 / D
+    // pp = sign* ((1.0 - ww) * (b - d) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
     return svmul_f64_m(pg, svdup_f64(sign), \
                 svadd_f64_z(pg, \
-                            svmul_f64_z(pg, svsub_f64_z(pg, v_1, ww), svmul_f64_z(pg, svsub_f64_z(pg, d, b), Dinv_half)),\
+                            svmul_f64_z(pg, svsub_f64_z(pg, v_1, ww), svmul_f64_z(pg, svsub_f64_z(pg, b, d), Dinv_half)),\
                             svmul_f64_z(pg, ww, svmul_f64_z(pg, svsub_f64_z(pg, svadd_f64_z(pg, svmul_f64_z(pg, v_4, b), svmul_f64_z(pg, v_m3, a)), c), Dinv_half))\
                 )\
            );
@@ -299,34 +299,34 @@ inline void vect_stencil_3rd_pre_simd(
                          );
 
     // if _i_eq_1 == true
-    v_pp1 = calc_1d_stencil(mask_i_eq_1, v_c__, v_m__, v_DP_inv)                            ;
-    v_pp2 = calc_3d_stencil(mask_i_eq_1, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS);
+    v_pp1 = svsel_f64(mask_i_eq_1, calc_1d_stencil(mask_i_eq_1, v_c__, v_m__, v_DP_inv)                            , v_pp1);
+    v_pp2 = svsel_f64(mask_i_eq_1, calc_3d_stencil(mask_i_eq_1, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS), v_pp2);
     // if_i_eq_N_minus_2 == true
-    v_pp1 = calc_3d_stencil(mask_i_eq_N_minus_2, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
-    v_pp2 = calc_1d_stencil(mask_i_eq_N_minus_2, v_p__, v_c__, v_DP_inv)                             ;
+    v_pp1 = svsel_f64(mask_i_eq_N_minus_2, calc_3d_stencil(mask_i_eq_N_minus_2, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), v_pp1);
+    v_pp2 = svsel_f64(mask_i_eq_N_minus_2, calc_1d_stencil(mask_i_eq_N_minus_2, v_p__, v_c__, v_DP_inv)                             , v_pp2);
     // else
-    v_pp1 = calc_3d_stencil(mask_i_else, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS);
-    v_pp2 = calc_3d_stencil(mask_i_else, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) ;
+    v_pp1 = svsel_f64(mask_i_else, calc_3d_stencil(mask_i_else, v_c__, v_m__, v_mm____, v_p__, v_DP_inv_half, MINUS), v_pp1);
+    v_pp2 = svsel_f64(mask_i_else, calc_3d_stencil(mask_i_else, v_c__, v_p__, v_pp____, v_m__, v_DP_inv_half, PLUS) , v_pp2);
 
     // if _j_eq_1 == true
-    v_pt1 = calc_1d_stencil(mask_j_eq_1, v_c__, v__m_, v_DT_inv)                            ;
-    v_pt2 = calc_3d_stencil(mask_j_eq_1, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS);
+    v_pt1 = svsel_f64(mask_j_eq_1, calc_1d_stencil(mask_j_eq_1, v_c__, v__m_, v_DT_inv)                            , v_pt1);
+    v_pt2 = svsel_f64(mask_j_eq_1, calc_3d_stencil(mask_j_eq_1, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS), v_pt2);
     // if _j_eq_N_minus_2 == true
-    v_pt1 = calc_3d_stencil(mask_j_eq_N_minus_2, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
-    v_pt2 = calc_1d_stencil(mask_j_eq_N_minus_2, v__p_, v_c__, v_DT_inv)                             ;
+    v_pt1 = svsel_f64(mask_j_eq_N_minus_2, calc_3d_stencil(mask_j_eq_N_minus_2, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), v_pt1);
+    v_pt2 = svsel_f64(mask_j_eq_N_minus_2, calc_1d_stencil(mask_j_eq_N_minus_2, v__p_, v_c__, v_DT_inv)                             , v_pt2);
     // else
-    v_pt1 = calc_3d_stencil(mask_j_else, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS);
-    v_pt2 = calc_3d_stencil(mask_j_else, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) ;
+    v_pt1 = svsel_f64(mask_j_else, calc_3d_stencil(mask_j_else, v_c__, v__m_, v___mm__, v__p_, v_DT_inv_half, MINUS), v_pt1);
+    v_pt2 = svsel_f64(mask_j_else, calc_3d_stencil(mask_j_else, v_c__, v__p_, v___pp__, v__m_, v_DT_inv_half, PLUS) , v_pt2);
 
     // if _k_eq_1 == true
-    v_pr1 = calc_1d_stencil(mask_k_eq_1, v_c__, v___m, v_DR_inv)                            ;
-    v_pr2 = calc_3d_stencil(mask_k_eq_1, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS);
+    v_pr1 = svsel_f64(mask_k_eq_1, calc_1d_stencil(mask_k_eq_1, v_c__, v___m, v_DR_inv)                            , v_pr1);
+    v_pr2 = svsel_f64(mask_k_eq_1, calc_3d_stencil(mask_k_eq_1, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS), v_pr2);
     // if _k_eq_N_minus_2 == true
-    v_pr1 = calc_3d_stencil(mask_k_eq_N_minus_2, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
-    v_pr2 = calc_1d_stencil(mask_k_eq_N_minus_2, v___p, v_c__, v_DR_inv)                             ;
+    v_pr1 = svsel_f64(mask_k_eq_N_minus_2, calc_3d_stencil(mask_k_eq_N_minus_2, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
+    v_pr2 = svsel_f64(mask_k_eq_N_minus_2, calc_1d_stencil(mask_k_eq_N_minus_2, v___p, v_c__, v_DR_inv)                             , v_pr2);
     // else
-    v_pr1 = calc_3d_stencil(mask_k_else, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS);
-    v_pr2 = calc_3d_stencil(mask_k_else, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) ;
+    v_pr1 = svsel_f64(mask_k_else, calc_3d_stencil(mask_k_else, v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
+    v_pr2 = svsel_f64(mask_k_else, calc_3d_stencil(mask_k_else, v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) , v_pr2);
 
 
 #endif
