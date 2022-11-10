@@ -110,13 +110,13 @@ inline void vect_stencil_1st_pre_simd(
 #ifdef __ARM_FEATURE_SVE
                                       svbool_t const& pg,
 #endif
-                                      __mTd& v_iip, __mTd& v_jjt, __mTd& v_kkr,
-                                      __mTd& v_c__,
-                                      __mTd& v_p__,     __mTd& v_m__,     __mTd& v__p_,    __mTd& v__m_,    __mTd& v___p,    __mTd& v___m,
-                                      __mTd& v_pp1,     __mTd& v_pp2,     __mTd& v_pt1,    __mTd& v_pt2,    __mTd& v_pr1,    __mTd& v_pr2,
-                                      __mTd& v_DP_inv,  __mTd& v_DT_inv,  __mTd& v_DR_inv,
-                                      __mTd& v_DP_inv_half, __mTd& v_DT_inv_half, __mTd& v_DR_inv_half,
-                                      int& NP, int& NT, int& NR){
+                                      __mTd const& v_iip, __mTd const& v_jjt, __mTd const& v_kkr,
+                                      __mTd const& v_c__,
+                                      __mTd const& v_p__, __mTd const& v_m__, __mTd const& v__p_, __mTd const& v__m_, __mTd const& v___p, __mTd const& v___m,
+                                      __mTd& v_pp1, __mTd& v_pp2, __mTd& v_pt1, __mTd& v_pt2, __mTd& v_pr1, __mTd& v_pr2,
+                                      __mTd const& v_DP_inv, __mTd const& v_DT_inv, __mTd const& v_DR_inv,
+                                      __mTd const& v_DP_inv_half, __mTd const& v_DT_inv_half, __mTd const& v_DR_inv_half,
+                                      int const& NP, int const& NT, int const& NR){
 
 #if defined __AVX512F__ || defined __AVX__
 
@@ -377,7 +377,7 @@ inline void vect_stencil_1st_3rd_apre_simd(
     // Htau = sqrt(Htau + tmp3); // # becamse nan as Htau - tmp3 goes to 0
     Htau = _mmT_sqrt_pd(_mmT_add_pd(Htau,tmp3));
 
-    // tmp = (sigr*(v_pr1 - v_pr2) + sigt*(v_pt1 - v_pt2) + sigz*(v_pp1 - v_pp2))*0.5
+    // tmp = (sigr*(v_pr2 - v_pr1) + sigt*(v_pt2 - v_pt1) + sigz*(v_pp2 - v_pp1))*0.5
     __mTd tmp = _mmT_mul_pd(v_half,_mmT_add_pd(_mmT_add_pd(_mmT_mul_pd(sigr,_mmT_sub_pd(v_pr2,v_pr1)),_mmT_mul_pd(sigt,_mmT_sub_pd(v_pt2,v_pt1))),_mmT_mul_pd(sigp,_mmT_sub_pd(v_pp2,v_pp1))));
 
     // v_tau += coe * ((v_fun - Htau) + tmp) if mask is true
@@ -452,13 +452,13 @@ inline void vect_stencil_1st_3rd_apre_simd(
     // Htau = sqrt(Htau + tmp3); // # becamse nan as Htau - tmp3 goes to 0
     Htau = svsqrt_f64_z(pg, svadd_f64_z(pg, Htau, tmp3));
 
-    // tmp = (sigr*(v_pr1 - v_pr2) + sigt*(v_pt1 - v_pt2) + sigz*(v_pp1 - v_pp2))*0.5
+    // tmp = (sigr*(v_pr2 - v_pr1) + sigt*(v_pt2 - v_pt1) + sigz*(v_pp2 - v_pp1))*0.5
     __mTd tmp = svmul_f64_z(pg, v_half, svadd_f64_z(pg, \
                                                    svadd_f64_z(pg, \
-                                                               svmul_f64_z(pg, sigr, svsub_f64_z(pg, v_pr1, v_pr2)), \
-                                                               svmul_f64_z(pg, sigt, svsub_f64_z(pg, v_pt1, v_pt2))\
+                                                               svmul_f64_z(pg, sigr, svsub_f64_z(pg, v_pr2, v_pr1)), \
+                                                               svmul_f64_z(pg, sigt, svsub_f64_z(pg, v_pt2, v_pt1))\
                                                                ), \
-                                                   svmul_f64_z(pg, sigp, svsub_f64_z(pg, v_pp1, v_pp2))\
+                                                   svmul_f64_z(pg, sigp, svsub_f64_z(pg, v_pp2, v_pp1))\
                                                    )\
                             );
 
