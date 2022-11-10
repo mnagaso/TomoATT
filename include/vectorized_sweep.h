@@ -146,7 +146,7 @@ inline void vect_stencil_3rd_pre_simd(
                                       svbool_t const& pg,
 #endif
                                       __mTd const& v_iip, __mTd const& v_jjt, __mTd const& v_kkr,
-                                      __mTd& v_c__,
+                                      __mTd const& v_c__,
                                       __mTd const& v_p__,     __mTd const& v_m__,     __mTd const& v__p_,    __mTd const& v__m_,    __mTd const& v___p,    __mTd const& v___m,
                                       __mTd const& v_pp____,  __mTd const& v_mm____,  __mTd const& v___pp__, __mTd const& v___mm__, __mTd const& v_____pp, __mTd const& v_____mm,
                                       __mTd& v_pp1,     __mTd& v_pp2,     __mTd& v_pt1,    __mTd& v_pt2,    __mTd& v_pr1,    __mTd& v_pr2,
