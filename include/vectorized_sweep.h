@@ -48,9 +48,9 @@ inline __mTd calc_1d_stencil(__mTd const& a, __mTd const& b, __mTd const& Dinv){
 */
 inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mTd const& d, __mTd const& Dinv_half, int const& sign){
 
-    // v_eps + sqrt(a - 2.0*b + c)
+    // v_eps + square(a - 2.0*b + c)
     __mTd tmp1 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(a,_mmT_add_pd(_mmT_mul_pd(v_m2,b),c))));
-    // v_eps + sqrt(d - 2.0*a + b)
+    // v_eps + square(d - 2.0*a + b)
     __mTd tmp2 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(d,_mmT_add_pd(_mmT_mul_pd(v_m2,a),b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
     __mTd ww = _mmT_div_pd(v_1,_mmT_add_pd(v_1,_mmT_mul_pd(v_2,my_square_v(_mmT_div_pd(tmp1,tmp2)))));
@@ -85,9 +85,9 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
     __mTd v_m3    = svdup_f64(-3.0);
     __mTd v_eps   = svdup_f64(1e-12);
 
-    // v_eps + sqrt(a - 2.0*b + c)
+    // v_eps + square(a - 2.0*b + c)
     __mTd tmp1 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, a, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, b), c))));
-    // v_eps + sqrt(d - 2.0*a + b)
+    // v_eps + square(d - 2.0*a + b)
     __mTd tmp2 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, d, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, a), b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
     __mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square_v(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
