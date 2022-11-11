@@ -48,21 +48,34 @@ inline __mTd calc_1d_stencil(__mTd const& a, __mTd const& b, __mTd const& Dinv){
 */
 inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mTd const& d, __mTd const& Dinv_half, int const& sign){
 
+#ifdef __FMA__
     // v_eps + square(a - 2.0*b + c)
-    __mTd tmp1 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(a,_mmT_add_pd(_mmT_mul_pd(v_m2,b),c))));
+    __mTd tmp1 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(a,_mmT_fmadd_pd(v_m2,b,c))));
     // v_eps + square(d - 2.0*a + b)
-    __mTd tmp2 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(d,_mmT_add_pd(_mmT_mul_pd(v_m2,a),b))));
+    __mTd tmp2 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(d,_mmT_fmadd_pd(v_m2,a,b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
-    __mTd ww = _mmT_div_pd(v_1,_mmT_add_pd(v_1,_mmT_mul_pd(v_2,my_square_v(_mmT_div_pd(tmp1,tmp2)))));
+    __mTd ww = _mmT_div_pd(v_1,_mmT_fmadd_pd(v_2,my_square_v(_mmT_div_pd(tmp1,tmp2)),v_1));
     // pp = sign* ((1.0 - ww) * (b - d) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
+    /*
+    */
+    return _mmT_mul_pd(_mmT_set1_pd(sign), \
+                _mmT_add_pd(\
+                            _mmT_mul_pd(_mmT_sub_pd(v_1,ww),_mmT_mul_pd(_mmT_sub_pd(b,d),Dinv_half)),\
+                            _mmT_mul_pd(ww,_mmT_mul_pd(_mmT_sub_pd(_mmT_fmadd_pd(v_4,b,_mmT_mul_pd(v_m3,a)),c),Dinv_half))\
+                )\
+           );
+#else
+    __mTd tmp1 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(a,_mmT_add_pd(_mmT_mul_pd(v_m2,b),c))));
+    __mTd tmp2 = _mmT_add_pd(v_eps,my_square_v(_mmT_add_pd(d,_mmT_add_pd(_mmT_mul_pd(v_m2,a),b))));
+    __mTd ww = _mmT_div_pd(v_1,_mmT_add_pd(v_1,_mmT_mul_pd(v_2,my_square_v(_mmT_div_pd(tmp1,tmp2)))));
     return _mmT_mul_pd(_mmT_set1_pd(sign), \
                 _mmT_add_pd(\
                             _mmT_mul_pd(_mmT_sub_pd(v_1,ww),_mmT_mul_pd(_mmT_sub_pd(b,d),Dinv_half)),\
                             _mmT_mul_pd(ww,_mmT_mul_pd(_mmT_sub_pd(_mmT_add_pd(_mmT_mul_pd(v_4,b),_mmT_mul_pd(v_m3,a)),c),Dinv_half))\
                 )\
            );
-
+#endif
 
 }
 

@@ -24,6 +24,7 @@ const int NSIMD = 4;
 #define _mmT_min_pd _mm256_min_pd
 #define _mmT_sqrt_pd _mm256_sqrt_pd
 #define _mmT_store_pd _mm256_store_pd
+#define _mmT_fmadd_pd _mm256_fmadd_pd
 
 #elif defined __AVX512F__
 const int ALIGN = 64;
@@ -38,6 +39,7 @@ const int NSIMD = 8;
 #define _mmT_min_pd _mm512_min_pd
 #define _mmT_sqrt_pd _mm512_sqrt_pd
 #define _mmT_store_pd _mm512_store_pd
+#define _mmT_fmadd_pd _mm512_fmadd_pd
 
 #elif defined __ARM_FEATURE_SVE
 const int ALIGN = 8*svcntd(); // use svcntw() for float
