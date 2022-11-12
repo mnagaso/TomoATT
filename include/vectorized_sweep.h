@@ -99,17 +99,28 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
     __mTd v_eps   = svdup_f64(1e-12);
 
     // v_eps + square(a - 2.0*b + c)
-    __mTd tmp1 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, a, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, b), c))));
+    //__mTd tmp1 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, a, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, b), c))));
+    __mTd tmp1 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, a, svmad_f64_z(pg, v_m2, b, c))));
     // v_eps + square(d - 2.0*a + b)
-    __mTd tmp2 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, d, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, a), b))));
+    //__mTd tmp2 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, d, svadd_f64_z(pg, svmul_f64_z(pg, v_m2, a), b))));
+    __mTd tmp2 = svadd_f64_z(pg, v_eps, my_square_v(pg, svadd_f64_z(pg, d, svmad_f64_z(pg, v_m2, a, b))));
     // ww = 1.0/(1.0 + 2.0 * square(tmp1/tmp2))
-    __mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square_v(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
+    //__mTd ww = svdiv_f64_z(pg, v_1, svadd_f64_z(pg, v_1, svmul_f64_z(pg, v_2, my_square_v(pg, svdiv_f64_z(pg, tmp1, tmp2)))));
+    __mTd ww = svdiv_f64_z(pg, v_1, svmad_f64_z(pg, v_2, my_square_v(pg, svdiv_f64_z(pg, tmp1, tmp2)), v_1));
     // pp = sign* ((1.0 - ww) * (b - d) / 2.0 / D
     //                  + ww  * (-3.0* a + 4.0 * b - c) * Dinv_half)
+    /*
+    return svmul_f64_m(pg, svdup_f64(sign), \
+            svadd_f64_z(pg, \
+                        svmul_f64_z(pg, svsub_f64_z(pg, v_1, ww), svmul_f64_z(pg, svsub_f64_z(pg, b, d), Dinv_half)),\
+                        svmul_f64_z(pg, ww, svmul_f64_z(pg, svsub_f64_z(pg, svadd_f64_z(pg, svmul_f64_z(pg, v_4, b), svmul_f64_z(pg, v_m3, a)), c), Dinv_half))\
+            )\
+       );
+    */
     return svmul_f64_m(pg, svdup_f64(sign), \
                 svadd_f64_z(pg, \
                             svmul_f64_z(pg, svsub_f64_z(pg, v_1, ww), svmul_f64_z(pg, svsub_f64_z(pg, b, d), Dinv_half)),\
-                            svmul_f64_z(pg, ww, svmul_f64_z(pg, svsub_f64_z(pg, svadd_f64_z(pg, svmul_f64_z(pg, v_4, b), svmul_f64_z(pg, v_m3, a)), c), Dinv_half))\
+                            svmul_f64_z(pg, ww, svmul_f64_z(pg, svsub_f64_z(pg, svmad_f64_z(pg, v_4, b, svmul_f64_z(pg, v_m3, a)), c), Dinv_half))\
                 )\
            );
 }

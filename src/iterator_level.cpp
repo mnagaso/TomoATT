@@ -244,6 +244,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 #elif defined __ARM_FEATURE_SVE
 
+    svbool_t pg;
     //
     __mTd v_DP_inv      = svdup_f64(1.0/dp);
     __mTd v_DT_inv      = svdup_f64(1.0/dt);
@@ -259,6 +260,29 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     __mTd v_pt2;
     __mTd v_pr1;
     __mTd v_pr2;
+
+    __mTd v_c__   ;
+    __mTd v_p__   ;
+    __mTd v_m__   ;
+    __mTd v__p_   ;
+    __mTd v__m_   ;
+    __mTd v___p   ;
+    __mTd v___m   ;
+
+    __mTd v_iip_   ;
+    __mTd v_jjt_   ;
+    __mTd v_kkr_   ;
+    __mTd v_fac_a_ ;
+    __mTd v_fac_b_ ;
+    __mTd v_fac_c_ ;
+    __mTd v_fac_f_ ;
+    __mTd v_T0v_   ;
+    __mTd v_T0r_   ;
+    __mTd v_T0t_   ;
+    __mTd v_T0p_   ;
+    __mTd v_fun_   ;
+    __mTd v_change_;
+
 
     // measure time for only loop
     //auto start = std::chrono::high_resolution_clock::now();
@@ -301,30 +325,43 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
             int i_vec = _i_vec * NSIMD;
 
-            svbool_t pg = svwhilelt_b64(i_vec, n_nodes);
+            pg = svwhilelt_b64(i_vec, n_nodes);
 
-            __mTd v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
-            __mTd v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
-            __mTd v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
-            __mTd v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
+            v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
+            v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
+            v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
+            v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
 
             // load v_iip, v_jjt, v_kkr
-            __mTd v_iip_   = svld1_f64(pg, &v_iip   [i_vec]);
-            __mTd v_jjt_   = svld1_f64(pg, &v_jjt   [i_vec]);
-            __mTd v_kkr_   = svld1_f64(pg, &v_kkr   [i_vec]);
-            __mTd v_fac_a_ = svld1_f64(pg, &v_fac_a [i_vec]);
-            __mTd v_fac_b_ = svld1_f64(pg, &v_fac_b [i_vec]);
-            __mTd v_fac_c_ = svld1_f64(pg, &v_fac_c [i_vec]);
-            __mTd v_fac_f_ = svld1_f64(pg, &v_fac_f [i_vec]);
-            __mTd v_T0v_   = svld1_f64(pg, &v_T0v   [i_vec]);
-            __mTd v_T0r_   = svld1_f64(pg, &v_T0r   [i_vec]);
-            __mTd v_T0t_   = svld1_f64(pg, &v_T0t   [i_vec]);
-            __mTd v_T0p_   = svld1_f64(pg, &v_T0p   [i_vec]);
-            __mTd v_fun_   = svld1_f64(pg, &v_fun   [i_vec]);
-            __mTd v_change_= svld1_f64(pg, &v_change[i_vec]);
+            //__mTd v_iip_   = svld1_f64(pg, &v_iip   [i_vec]);
+            //__mTd v_jjt_   = svld1_f64(pg, &v_jjt   [i_vec]);
+            //__mTd v_kkr_   = svld1_f64(pg, &v_kkr   [i_vec]);
+            //__mTd v_fac_a_ = svld1_f64(pg, &v_fac_a [i_vec]);
+            //__mTd v_fac_b_ = svld1_f64(pg, &v_fac_b [i_vec]);
+            //__mTd v_fac_c_ = svld1_f64(pg, &v_fac_c [i_vec]);
+            //__mTd v_fac_f_ = svld1_f64(pg, &v_fac_f [i_vec]);
+            //__mTd v_T0v_   = svld1_f64(pg, &v_T0v   [i_vec]);
+            //__mTd v_T0r_   = svld1_f64(pg, &v_T0r   [i_vec]);
+            //__mTd v_T0t_   = svld1_f64(pg, &v_T0t   [i_vec]);
+            //__mTd v_T0p_   = svld1_f64(pg, &v_T0p   [i_vec]);
+            //__mTd v_fun_   = svld1_f64(pg, &v_fun   [i_vec]);
+            //__mTd v_change_= svld1_f64(pg, &v_change[i_vec]);
+            v_iip_   = svld1_vnum_f64(pg, v_iip   , _i_vec);
+            v_jjt_   = svld1_vnum_f64(pg, v_jjt   , _i_vec);
+            v_kkr_   = svld1_vnum_f64(pg, v_kkr   , _i_vec);
+            v_fac_a_ = svld1_vnum_f64(pg, v_fac_a , _i_vec);
+            v_fac_b_ = svld1_vnum_f64(pg, v_fac_b , _i_vec);
+            v_fac_c_ = svld1_vnum_f64(pg, v_fac_c , _i_vec);
+            v_fac_f_ = svld1_vnum_f64(pg, v_fac_f , _i_vec);
+            v_T0v_   = svld1_vnum_f64(pg, v_T0v   , _i_vec);
+            v_T0r_   = svld1_vnum_f64(pg, v_T0r   , _i_vec);
+            v_T0t_   = svld1_vnum_f64(pg, v_T0t   , _i_vec);
+            v_T0p_   = svld1_vnum_f64(pg, v_T0p   , _i_vec);
+            v_fun_   = svld1_vnum_f64(pg, v_fun   , _i_vec);
+            v_change_= svld1_vnum_f64(pg, v_change, _i_vec);
 
             // loop over all nodes in one level
             vect_stencil_1st_pre_simd(pg, v_iip_, v_jjt_, v_kkr_, \
@@ -533,6 +570,8 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 #elif defined __ARM_FEATURE_SVE
     //
+    svbool_t pg;
+
     __mTd v_DP_inv      = svdup_f64(1.0/dp);
     __mTd v_DT_inv      = svdup_f64(1.0/dt);
     __mTd v_DR_inv      = svdup_f64(1.0/dr);
@@ -547,6 +586,35 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     __mTd v_pt2;
     __mTd v_pr1;
     __mTd v_pr2;
+
+    __mTd v_c__   ;
+    __mTd v_p__   ;
+    __mTd v_m__   ;
+    __mTd v__p_   ;
+    __mTd v__m_   ;
+    __mTd v___p   ;
+    __mTd v___m   ;
+    __mTd v_pp____;
+    __mTd v_mm____;
+    __mTd v___pp__;
+    __mTd v___mm__;
+    __mTd v_____pp;
+    __mTd v_____mm;
+
+    __mTd v_iip_   ;
+    __mTd v_jjt_   ;
+    __mTd v_kkr_   ;
+    __mTd v_fac_a_ ;
+    __mTd v_fac_b_ ;
+    __mTd v_fac_c_ ;
+    __mTd v_fac_f_ ;
+    __mTd v_T0v_   ;
+    __mTd v_T0r_   ;
+    __mTd v_T0t_   ;
+    __mTd v_T0p_   ;
+    __mTd v_fun_   ;
+    __mTd v_change_;
+
 
     // measure time for only loop
     //auto start = std::chrono::high_resolution_clock::now();
@@ -596,37 +664,51 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
             int i_vec = _i_vec * NSIMD;
 
-            svbool_t pg = svwhilelt_b64(i_vec, n_nodes);
+            pg = svwhilelt_b64(i_vec, n_nodes);
 
-            __mTd v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
-            __mTd v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
-            __mTd v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
-            __mTd v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
-            __mTd v_pp____ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_mm____ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v___pp__ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp2[i_vec], &dump_kcc[i_vec]);
-            __mTd v___mm__ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm2[i_vec], &dump_kcc[i_vec]);
-            __mTd v_____pp = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp2[i_vec]);
-            __mTd v_____mm = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km2[i_vec]);
+            v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
+            v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
+            v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
+            v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
+            v_pp____ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v_mm____ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
+            v___pp__ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp2[i_vec], &dump_kcc[i_vec]);
+            v___mm__ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm2[i_vec], &dump_kcc[i_vec]);
+            v_____pp = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp2[i_vec]);
+            v_____mm = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km2[i_vec]);
 
 
             // load v_iip, v_jjt, v_kkr
-            __mTd v_iip_   = svld1_f64(pg, &v_iip   [i_vec]);
-            __mTd v_jjt_   = svld1_f64(pg, &v_jjt   [i_vec]);
-            __mTd v_kkr_   = svld1_f64(pg, &v_kkr   [i_vec]);
-            __mTd v_fac_a_ = svld1_f64(pg, &v_fac_a [i_vec]);
-            __mTd v_fac_b_ = svld1_f64(pg, &v_fac_b [i_vec]);
-            __mTd v_fac_c_ = svld1_f64(pg, &v_fac_c [i_vec]);
-            __mTd v_fac_f_ = svld1_f64(pg, &v_fac_f [i_vec]);
-            __mTd v_T0v_   = svld1_f64(pg, &v_T0v   [i_vec]);
-            __mTd v_T0r_   = svld1_f64(pg, &v_T0r   [i_vec]);
-            __mTd v_T0t_   = svld1_f64(pg, &v_T0t   [i_vec]);
-            __mTd v_T0p_   = svld1_f64(pg, &v_T0p   [i_vec]);
-            __mTd v_fun_   = svld1_f64(pg, &v_fun   [i_vec]);
-            __mTd v_change_= svld1_f64(pg, &v_change[i_vec]);
+//            __mTd v_iip_   = svld1_f64(pg, &v_iip   [i_vec]);
+//            __mTd v_jjt_   = svld1_f64(pg, &v_jjt   [i_vec]);
+//            __mTd v_kkr_   = svld1_f64(pg, &v_kkr   [i_vec]);
+//            __mTd v_fac_a_ = svld1_f64(pg, &v_fac_a [i_vec]);
+//            __mTd v_fac_b_ = svld1_f64(pg, &v_fac_b [i_vec]);
+//            __mTd v_fac_c_ = svld1_f64(pg, &v_fac_c [i_vec]);
+//            __mTd v_fac_f_ = svld1_f64(pg, &v_fac_f [i_vec]);
+//            __mTd v_T0v_   = svld1_f64(pg, &v_T0v   [i_vec]);
+//            __mTd v_T0r_   = svld1_f64(pg, &v_T0r   [i_vec]);
+//            __mTd v_T0t_   = svld1_f64(pg, &v_T0t   [i_vec]);
+//            __mTd v_T0p_   = svld1_f64(pg, &v_T0p   [i_vec]);
+//            __mTd v_fun_   = svld1_f64(pg, &v_fun   [i_vec]);
+//            __mTd v_change_= svld1_f64(pg, &v_change[i_vec]);
+            v_iip_   = svld1_vnum_f64(pg, v_iip   , _i_vec);
+            v_jjt_   = svld1_vnum_f64(pg, v_jjt   , _i_vec);
+            v_kkr_   = svld1_vnum_f64(pg, v_kkr   , _i_vec);
+            v_fac_a_ = svld1_vnum_f64(pg, v_fac_a , _i_vec);
+            v_fac_b_ = svld1_vnum_f64(pg, v_fac_b , _i_vec);
+            v_fac_c_ = svld1_vnum_f64(pg, v_fac_c , _i_vec);
+            v_fac_f_ = svld1_vnum_f64(pg, v_fac_f , _i_vec);
+            v_T0v_   = svld1_vnum_f64(pg, v_T0v   , _i_vec);
+            v_T0r_   = svld1_vnum_f64(pg, v_T0r   , _i_vec);
+            v_T0t_   = svld1_vnum_f64(pg, v_T0t   , _i_vec);
+            v_T0p_   = svld1_vnum_f64(pg, v_T0p   , _i_vec);
+            v_fun_   = svld1_vnum_f64(pg, v_fun   , _i_vec);
+            v_change_= svld1_vnum_f64(pg, v_change, _i_vec);
+
 
             // loop over all nodes in one level
             vect_stencil_3rd_pre_simd(pg, v_iip_, v_jjt_, v_kkr_, \
