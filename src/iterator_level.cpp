@@ -308,13 +308,13 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         CUSTOMREAL* v_change = vv_change.at(iswp).at(i_level);
 
         // alias for dumped index
-        int* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
-        int* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
-        int* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
-        int* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
-        int* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
-        int* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
-        int* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
+        uint64_t* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
+        uint64_t* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
+        uint64_t* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
+        uint64_t* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
+        uint64_t* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
+        uint64_t* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
+        uint64_t* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
@@ -361,7 +361,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            svst1_scatter_index_f64(pg, grid.tau_loc, stld1(&dump_ijk[i_vec]), v_c__);
+            svst1_scatter_u64index_f64(pg, grid.tau_loc, svld1_u64(pg,&dump_ijk[i_vec]), v_c__);
 
 
         } // end of i_vec loop
@@ -614,20 +614,19 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         CUSTOMREAL* v_change = vv_change.at(iswp).at(i_level);
 
         // alias for dumped index
-        int* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
-        int* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
-        int* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
-        int* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
-        int* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
-        int* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
-        int* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
-        int* dump_ip2jk = vv_ip2j__k__.at(iswp).at(i_level);
-        int* dump_im2jk = vv_im2j__k__.at(iswp).at(i_level);
-        int* dump_ijp2k = vv_i__jp2k__.at(iswp).at(i_level);
-        int* dump_ijm2k = vv_i__jm2k__.at(iswp).at(i_level);
-        int* dump_ijkp2 = vv_i__j__kp2.at(iswp).at(i_level);
-        int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level);
-a
+        uint64_t* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
+        uint64_t* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
+        uint64_t* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
+        uint64_t* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
+        uint64_t* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
+        uint64_t* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
+        uint64_t* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
+        uint64_t* dump_ip2jk = vv_ip2j__k__.at(iswp).at(i_level);
+        uint64_t* dump_im2jk = vv_im2j__k__.at(iswp).at(i_level);
+        uint64_t* dump_ijp2k = vv_i__jp2k__.at(iswp).at(i_level);
+        uint64_t* dump_ijm2k = vv_i__jm2k__.at(iswp).at(i_level);
+        uint64_t* dump_ijkp2 = vv_i__j__kp2.at(iswp).at(i_level);
+        uint64_t* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
@@ -681,8 +680,7 @@ a
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            svst1_scatter_index_f64(pg, grid.tau_loc, stld1(&dump_ijk[i_vec]), v_c__);
-
+            svst1_scatter_u64index_f64(pg, grid.tau_loc, svld1_u64(pg,&dump_ijk[i_vec]), v_c__);
         } // end of i_vec loop
 
         // mpi synchronization

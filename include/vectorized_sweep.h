@@ -521,8 +521,9 @@ inline __mTd load_mem_bool_to_mTd(bool* a, int* ijk){
 
 #elif defined __ARM_FEATURE_SVE
 
-inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, int* ijk){
-        return svld1_gather_index_f64(pg, a, svld1(pg,ijk));
+inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, uint64_t* ijk){
+    svuint64_t v_ijk = svld1_u64(pg, ijk);
+    return svld1_gather_u64index_f64(pg, a, v_ijk);
 }
 
 inline __mTd load_mem_bool_to_mTd(svbool_t const& pg, bool* a, int* ijk){

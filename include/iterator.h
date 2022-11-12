@@ -82,8 +82,13 @@ protected:
     // first orders
     CUSTOMREAL *dump_c__;// center of C
     // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
+#if defined __AVX512F__ || defined __AVX__
     std::vector<std::vector<int*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
     std::vector<std::vector<int*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
+#else defined ARM_FEATURE_SVE__
+    std::vector<std::vector<uint64_t*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
+    std::vector<std::vector<uint64_t*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
+#endif
     std::vector<std::vector<CUSTOMREAL*>> vv_iip, vv_jjt, vv_kkr;
 
     std::vector<std::vector<CUSTOMREAL*>> vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change;
