@@ -499,23 +499,21 @@ inline void vect_stencil_1st_3rd_apre_simd(
 
 #if defined __AVX512F__ || defined __AVX__
 
-inline __mTd load_mem_gen_to_mTd(CUSTOMREAL* a, \
-                         int* iip, int* jjt, int* kkr){
+inline __mTd load_mem_gen_to_mTd(CUSTOMREAL* a, int* ijk){
 
         CUSTOMREAL dump_[NSIMD];
         for (int i=0; i<NSIMD; i++){
-            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+            dump_[i] = a[ijk[i]];
         }
 
         return  _mmT_loadu_pd(dump_);
 }
 
-inline __mTd load_mem_bool_to_mTd(bool* a, \
-                         int* iip, int* jjt, int* kkr){
+inline __mTd load_mem_bool_to_mTd(bool* a, int* ijk){
 
         CUSTOMREAL dump_[NSIMD];
         for (int i=0; i<NSIMD; i++){
-            dump_[i] = (CUSTOMREAL) a[I2V(iip[i],jjt[i],kkr[i])];
+            dump_[i] = (CUSTOMREAL) a[ijk[i]];
         }
 
        return _mmT_loadu_pd(dump_);
@@ -523,26 +521,24 @@ inline __mTd load_mem_bool_to_mTd(bool* a, \
 
 #elif defined __ARM_FEATURE_SVE
 
-inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, \
-                         int* iip, int* jjt, int* kkr){
+inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, int* ijk){
         CUSTOMREAL dump_[NSIMD];
 
         for (int i=0; i<NSIMD; i++){
-            dump_[i] = a[I2V(iip[i],jjt[i],kkr[i])];
+            dump_[i] = a[ijk[i]];
         }
 
-        return svld1_f64(pg, dump_);
+        return svld1_f64(pg, dump_);// change this to gather load
 }
 
-inline __mTd load_mem_bool_to_mTd(svbool_t const& pg, bool* a, \
-                         int* iip, int* jjt, int* kkr){
+inline __mTd load_mem_bool_to_mTd(svbool_t const& pg, bool* a, int* ijk){
         CUSTOMREAL dump_[NSIMD];
 
         for (int i=0; i<NSIMD; i++){
-            dump_[i] = (CUSTOMREAL) a[I2V(iip[i],jjt[i],kkr[i])];
+            dump_[i] = (CUSTOMREAL) a[ijk[i]];
         }
 
-        return svld1_f64(pg, dump_);
+        return svld1_f64(pg, dump_); // change this to gather load
 }
 
 #endif // __ARM_FEATURE_SVE

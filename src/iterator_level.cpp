@@ -185,27 +185,25 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         __mTd* v_change = (__mTd*) vv_change.at(iswp).at(i_level);
 
         // alias for dumped index
-        int* dump_icc = vv_icc.at(iswp).at(i_level);
-        int* dump_jcc = vv_jcc.at(iswp).at(i_level);
-        int* dump_kcc = vv_kcc.at(iswp).at(i_level);
-        int* dump_ip1 = vv_ip1.at(iswp).at(i_level);
-        int* dump_jp1 = vv_jp1.at(iswp).at(i_level);
-        int* dump_kp1 = vv_kp1.at(iswp).at(i_level);
-        int* dump_im1 = vv_im1.at(iswp).at(i_level);
-        int* dump_jm1 = vv_jm1.at(iswp).at(i_level);
-        int* dump_km1 = vv_km1.at(iswp).at(i_level);
+        int* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
+        int* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
+        int* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
+        int* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
+        int* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
+        int* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
+        int* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
 
             int i_vec = _i_vec * NSIMD;
-            __mTd v_c__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_p__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_m__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v__p_    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
-            __mTd v__m_    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
-            __mTd v___p    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
-            __mTd v___m    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
+            __mTd v_c__    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijk[i_vec]);
+            __mTd v_p__    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ip1jk[i_vec]);
+            __mTd v_m__    = load_mem_gen_to_mTd(grid.tau_loc, &dump_im1jk[i_vec]);
+            __mTd v__p_    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijp1k[i_vec]);
+            __mTd v__m_    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijm1k[i_vec]);
+            __mTd v___p    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijkp1[i_vec]);
+            __mTd v___m    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijkm1[i_vec]);
 
             // loop over all nodes in one level
             vect_stencil_1st_pre_simd(v_iip[_i_vec], v_jjt[_i_vec], v_kkr[_i_vec], \
@@ -229,8 +227,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
 
-                int tmp_ijk = I2V(dump_icc[i_vec+i], dump_jcc[i_vec+i], dump_kcc[i_vec+i]);
-                grid.tau_loc[tmp_ijk] = dump_c__[i];
+                grid.tau_loc[dump_ijk[i_vec+i]] = dump_c__[i];
             }
 
 
@@ -311,15 +308,13 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         CUSTOMREAL* v_change = vv_change.at(iswp).at(i_level);
 
         // alias for dumped index
-        int* dump_icc = vv_icc.at(iswp).at(i_level);
-        int* dump_jcc = vv_jcc.at(iswp).at(i_level);
-        int* dump_kcc = vv_kcc.at(iswp).at(i_level);
-        int* dump_ip1 = vv_ip1.at(iswp).at(i_level);
-        int* dump_jp1 = vv_jp1.at(iswp).at(i_level);
-        int* dump_kp1 = vv_kp1.at(iswp).at(i_level);
-        int* dump_im1 = vv_im1.at(iswp).at(i_level);
-        int* dump_jm1 = vv_jm1.at(iswp).at(i_level);
-        int* dump_km1 = vv_km1.at(iswp).at(i_level);
+        int* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
+        int* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
+        int* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
+        int* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
+        int* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
+        int* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
+        int* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
@@ -327,28 +322,15 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
             pg = svwhilelt_b64(i_vec, n_nodes);
 
-            v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
-            v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
-            v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
-            v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
+            v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ijk[i_vec]);
+            v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1jk[i_vec]);
+            v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1jk[i_vec]);
+            v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ijp1k[i_vec]);
+            v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ijm1k[i_vec]);
+            v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ijkp1[i_vec]);
+            v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ijkm1[i_vec]);
 
             // load v_iip, v_jjt, v_kkr
-            //__mTd v_iip_   = svld1_f64(pg, &v_iip   [i_vec]);
-            //__mTd v_jjt_   = svld1_f64(pg, &v_jjt   [i_vec]);
-            //__mTd v_kkr_   = svld1_f64(pg, &v_kkr   [i_vec]);
-            //__mTd v_fac_a_ = svld1_f64(pg, &v_fac_a [i_vec]);
-            //__mTd v_fac_b_ = svld1_f64(pg, &v_fac_b [i_vec]);
-            //__mTd v_fac_c_ = svld1_f64(pg, &v_fac_c [i_vec]);
-            //__mTd v_fac_f_ = svld1_f64(pg, &v_fac_f [i_vec]);
-            //__mTd v_T0v_   = svld1_f64(pg, &v_T0v   [i_vec]);
-            //__mTd v_T0r_   = svld1_f64(pg, &v_T0r   [i_vec]);
-            //__mTd v_T0t_   = svld1_f64(pg, &v_T0t   [i_vec]);
-            //__mTd v_T0p_   = svld1_f64(pg, &v_T0p   [i_vec]);
-            //__mTd v_fun_   = svld1_f64(pg, &v_fun   [i_vec]);
-            //__mTd v_change_= svld1_f64(pg, &v_change[i_vec]);
             v_iip_   = svld1_vnum_f64(pg, v_iip   , _i_vec);
             v_jjt_   = svld1_vnum_f64(pg, v_jjt   , _i_vec);
             v_kkr_   = svld1_vnum_f64(pg, v_kkr   , _i_vec);
@@ -384,8 +366,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
 
-                int tmp_ijk = I2V(dump_icc[i_vec+i], dump_jcc[i_vec+i], dump_kcc[i_vec+i]);
-                grid.tau_loc[tmp_ijk] = dump_c__[i];
+                grid.tau_loc[dump_ijk[i_vec+i]] = dump_c__[i];
             }
 
 
@@ -498,39 +479,37 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         __mTd* v_change = (__mTd*) vv_change.at(iswp).at(i_level);
 
         // alias for dumped index
-        int* dump_icc = vv_icc.at(iswp).at(i_level);
-        int* dump_jcc = vv_jcc.at(iswp).at(i_level);
-        int* dump_kcc = vv_kcc.at(iswp).at(i_level);
-        int* dump_ip1 = vv_ip1.at(iswp).at(i_level);
-        int* dump_jp1 = vv_jp1.at(iswp).at(i_level);
-        int* dump_kp1 = vv_kp1.at(iswp).at(i_level);
-        int* dump_im1 = vv_im1.at(iswp).at(i_level);
-        int* dump_jm1 = vv_jm1.at(iswp).at(i_level);
-        int* dump_km1 = vv_km1.at(iswp).at(i_level);
-        int* dump_ip2 = vv_ip2.at(iswp).at(i_level);
-        int* dump_jp2 = vv_jp2.at(iswp).at(i_level);
-        int* dump_kp2 = vv_kp2.at(iswp).at(i_level);
-        int* dump_im2 = vv_im2.at(iswp).at(i_level);
-        int* dump_jm2 = vv_jm2.at(iswp).at(i_level);
-        int* dump_km2 = vv_km2.at(iswp).at(i_level);
+        int* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
+        int* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
+        int* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
+        int* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
+        int* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
+        int* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
+        int* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
+        int* dump_ip2jk = vv_ip2j__k__.at(iswp).at(i_level);
+        int* dump_im2jk = vv_im2j__k__.at(iswp).at(i_level);
+        int* dump_ijp2k = vv_i__jp2k__.at(iswp).at(i_level);
+        int* dump_ijm2k = vv_i__jm2k__.at(iswp).at(i_level);
+        int* dump_ijkp2 = vv_i__j__kp2.at(iswp).at(i_level);
+        int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level);
 
         // load data of all nodes in one level on temporal aligned array
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
 
             int i_vec = _i_vec * NSIMD;
-            __mTd v_c__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_p__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_m__    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v__p_    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
-            __mTd v__m_    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
-            __mTd v___p    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
-            __mTd v___m    = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
-            __mTd v_pp____ = load_mem_gen_to_mTd(grid.tau_loc,  &dump_ip2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v_mm____ = load_mem_gen_to_mTd(grid.tau_loc,  &dump_im2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            __mTd v___pp__ = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jp2[i_vec], &dump_kcc[i_vec]);
-            __mTd v___mm__ = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jm2[i_vec], &dump_kcc[i_vec]);
-            __mTd v_____pp = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp2[i_vec]);
-            __mTd v_____mm = load_mem_gen_to_mTd(grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km2[i_vec]);
+            __mTd v_c__    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijk  [i_vec]);
+            __mTd v_p__    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ip1jk[i_vec]);
+            __mTd v_m__    = load_mem_gen_to_mTd(grid.tau_loc, &dump_im1jk[i_vec]);
+            __mTd v__p_    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijp1k[i_vec]);
+            __mTd v__m_    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijm1k[i_vec]);
+            __mTd v___p    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijkp1[i_vec]);
+            __mTd v___m    = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijkm1[i_vec]);
+            __mTd v_pp____ = load_mem_gen_to_mTd(grid.tau_loc, &dump_ip2jk[i_vec]);
+            __mTd v_mm____ = load_mem_gen_to_mTd(grid.tau_loc, &dump_im2jk[i_vec]);
+            __mTd v___pp__ = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijp2k[i_vec]);
+            __mTd v___mm__ = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijm2k[i_vec]);
+            __mTd v_____pp = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijkp2[i_vec]);
+            __mTd v_____mm = load_mem_gen_to_mTd(grid.tau_loc, &dump_ijkm2[i_vec]);
 
             // loop over all nodes in one level
             vect_stencil_3rd_pre_simd(v_iip[_i_vec], v_jjt[_i_vec], v_kkr[_i_vec], \
@@ -555,8 +534,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
 
-                int tmp_ijk = I2V(dump_icc[i_vec+i], dump_jcc[i_vec+i], dump_kcc[i_vec+i]);
-                grid.tau_loc[tmp_ijk] = dump_c__[i];
+                grid.tau_loc[dump_ijk[i_vec+i]] = dump_c__[i];
             }
 
 
@@ -643,22 +621,20 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         CUSTOMREAL* v_change = vv_change.at(iswp).at(i_level);
 
         // alias for dumped index
-        int* dump_icc = vv_icc.at(iswp).at(i_level);
-        int* dump_jcc = vv_jcc.at(iswp).at(i_level);
-        int* dump_kcc = vv_kcc.at(iswp).at(i_level);
-        int* dump_ip1 = vv_ip1.at(iswp).at(i_level);
-        int* dump_jp1 = vv_jp1.at(iswp).at(i_level);
-        int* dump_kp1 = vv_kp1.at(iswp).at(i_level);
-        int* dump_im1 = vv_im1.at(iswp).at(i_level);
-        int* dump_jm1 = vv_jm1.at(iswp).at(i_level);
-        int* dump_km1 = vv_km1.at(iswp).at(i_level);
-        int* dump_ip2 = vv_ip2.at(iswp).at(i_level);
-        int* dump_jp2 = vv_jp2.at(iswp).at(i_level);
-        int* dump_kp2 = vv_kp2.at(iswp).at(i_level);
-        int* dump_im2 = vv_im2.at(iswp).at(i_level);
-        int* dump_jm2 = vv_jm2.at(iswp).at(i_level);
-        int* dump_km2 = vv_km2.at(iswp).at(i_level);
-
+        int* dump_ijk   = vv_i__j__k__.at(iswp).at(i_level);
+        int* dump_ip1jk = vv_ip1j__k__.at(iswp).at(i_level);
+        int* dump_im1jk = vv_im1j__k__.at(iswp).at(i_level);
+        int* dump_ijp1k = vv_i__jp1k__.at(iswp).at(i_level);
+        int* dump_ijm1k = vv_i__jm1k__.at(iswp).at(i_level);
+        int* dump_ijkp1 = vv_i__j__kp1.at(iswp).at(i_level);
+        int* dump_ijkm1 = vv_i__j__km1.at(iswp).at(i_level);
+        int* dump_ip2jk = vv_ip2j__k__.at(iswp).at(i_level);
+        int* dump_im2jk = vv_im2j__k__.at(iswp).at(i_level);
+        int* dump_ijp2k = vv_i__jp2k__.at(iswp).at(i_level);
+        int* dump_ijm2k = vv_i__jm2k__.at(iswp).at(i_level);
+        int* dump_ijkp2 = vv_i__j__kp2.at(iswp).at(i_level);
+        int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level);
+a
 
         // load data of all nodes in one level on temporal aligned array
         for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
@@ -666,35 +642,21 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
             pg = svwhilelt_b64(i_vec, n_nodes);
 
-            v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im1[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp1[i_vec], &dump_kcc[i_vec]);
-            v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm1[i_vec], &dump_kcc[i_vec]);
-            v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp1[i_vec]);
-            v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km1[i_vec]);
-            v_pp____ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_ip2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v_mm____ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_im2[i_vec], &dump_jcc[i_vec], &dump_kcc[i_vec]);
-            v___pp__ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jp2[i_vec], &dump_kcc[i_vec]);
-            v___mm__ = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jm2[i_vec], &dump_kcc[i_vec]);
-            v_____pp = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_kp2[i_vec]);
-            v_____mm = load_mem_gen_to_mTd(pg, grid.tau_loc,  &dump_icc[i_vec], &dump_jcc[i_vec], &dump_km2[i_vec]);
-
+            v_c__    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijk  [i_vec]);
+            v_p__    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ip1jk[i_vec]);
+            v_m__    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_im1jk[i_vec]);
+            v__p_    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijp1k[i_vec]);
+            v__m_    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijm1k[i_vec]);
+            v___p    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijkp1[i_vec]);
+            v___m    = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijkm1[i_vec]);
+            v_pp____ = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ip2jk[i_vec]);
+            v_mm____ = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_im2jk[i_vec]);
+            v___pp__ = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijp2k[i_vec]);
+            v___mm__ = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijm2k[i_vec]);
+            v_____pp = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijkp2[i_vec]);
+            v_____mm = load_mem_gen_to_mTd(pg, grid.tau_loc, &dump_ijkm2[i_vec]);
 
             // load v_iip, v_jjt, v_kkr
-//            __mTd v_iip_   = svld1_f64(pg, &v_iip   [i_vec]);
-//            __mTd v_jjt_   = svld1_f64(pg, &v_jjt   [i_vec]);
-//            __mTd v_kkr_   = svld1_f64(pg, &v_kkr   [i_vec]);
-//            __mTd v_fac_a_ = svld1_f64(pg, &v_fac_a [i_vec]);
-//            __mTd v_fac_b_ = svld1_f64(pg, &v_fac_b [i_vec]);
-//            __mTd v_fac_c_ = svld1_f64(pg, &v_fac_c [i_vec]);
-//            __mTd v_fac_f_ = svld1_f64(pg, &v_fac_f [i_vec]);
-//            __mTd v_T0v_   = svld1_f64(pg, &v_T0v   [i_vec]);
-//            __mTd v_T0r_   = svld1_f64(pg, &v_T0r   [i_vec]);
-//            __mTd v_T0t_   = svld1_f64(pg, &v_T0t   [i_vec]);
-//            __mTd v_T0p_   = svld1_f64(pg, &v_T0p   [i_vec]);
-//            __mTd v_fun_   = svld1_f64(pg, &v_fun   [i_vec]);
-//            __mTd v_change_= svld1_f64(pg, &v_change[i_vec]);
             v_iip_   = svld1_vnum_f64(pg, v_iip   , _i_vec);
             v_jjt_   = svld1_vnum_f64(pg, v_jjt   , _i_vec);
             v_kkr_   = svld1_vnum_f64(pg, v_kkr   , _i_vec);
@@ -708,7 +670,6 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             v_T0p_   = svld1_vnum_f64(pg, v_T0p   , _i_vec);
             v_fun_   = svld1_vnum_f64(pg, v_fun   , _i_vec);
             v_change_= svld1_vnum_f64(pg, v_change, _i_vec);
-
 
             // loop over all nodes in one level
             vect_stencil_3rd_pre_simd(pg, v_iip_, v_jjt_, v_kkr_, \
@@ -732,8 +693,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             for (int i = 0; i < NSIMD; i++) {
                 if(i_vec+i>=n_nodes) break;
 
-                int tmp_ijk = I2V(dump_icc[i_vec+i], dump_jcc[i_vec+i], dump_kcc[i_vec+i]);
-                grid.tau_loc[tmp_ijk] = dump_c__[i];
+                grid.tau_loc[dump_ijk[i_vec+i]] = dump_c__[i];
             }
 
 

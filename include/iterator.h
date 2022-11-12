@@ -74,7 +74,6 @@ protected:
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
     std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, ijk)
-    //std::vector< std::vector< std::vector< std::vector<int> > > > ijk_for_this_subproc_swps; // ijk=I2V(i,j,k) for this process (swp, level, node, {i,j,k})
     int max_n_nodes_plane;          // maximum number of nodes on a plane
 
 
@@ -83,13 +82,16 @@ protected:
     // first orders
     CUSTOMREAL *dump_c__;// center of C
     // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
-    std::vector<std::vector<int*>> vv_icc, vv_jcc, vv_kcc, vv_ip1, vv_im1, vv_jp1, vv_jm1, vv_kp1, vv_km1, vv_ip2, vv_im2, vv_jp2, vv_jm2, vv_kp2, vv_km2;
+    std::vector<std::vector<int*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
+    std::vector<std::vector<int*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
     std::vector<std::vector<CUSTOMREAL*>> vv_iip, vv_jjt, vv_kkr;
 
     std::vector<std::vector<CUSTOMREAL*>> vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change;
 
     template <typename T>
     void preload_indices(std::vector<std::vector<T*>> &vi, std::vector<std::vector<T*>> &, std::vector<std::vector<T*>> &, int, int, int);
+    template <typename T>
+    void preload_indices_1d(std::vector<std::vector<T*>> &, int, int, int);
     template <typename T>
     std::vector<std::vector<CUSTOMREAL*>> preload_array(T* a);
     template <typename T>

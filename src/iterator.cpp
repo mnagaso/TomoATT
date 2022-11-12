@@ -71,23 +71,21 @@ Iterator::~Iterator() {
         free(dump_c__);// center of stencil
 
         // free vv_* preloaded arrays
-        free_preloaded_array(vv_icc);
-        free_preloaded_array(vv_jcc);
-        free_preloaded_array(vv_kcc);
-        free_preloaded_array(vv_ip1);
-        free_preloaded_array(vv_jp1);
-        free_preloaded_array(vv_kp1);
-        free_preloaded_array(vv_im1);
-        free_preloaded_array(vv_jm1);
-        free_preloaded_array(vv_km1);
+        free_preloaded_array(vv_i__j__k__);
+        free_preloaded_array(vv_ip1j__k__);
+        free_preloaded_array(vv_im1j__k__);
+        free_preloaded_array(vv_i__jp1k__);
+        free_preloaded_array(vv_i__jm1k__);
+        free_preloaded_array(vv_i__j__kp1);
+        free_preloaded_array(vv_i__j__km1);
 
         if(simd_allocated_3rd){
-            free_preloaded_array(vv_ip2);
-            free_preloaded_array(vv_jp2);
-            free_preloaded_array(vv_kp2);
-            free_preloaded_array(vv_im2);
-            free_preloaded_array(vv_jm2);
-            free_preloaded_array(vv_km2);
+            free_preloaded_array(vv_ip2j__k__);
+            free_preloaded_array(vv_im2j__k__);
+            free_preloaded_array(vv_i__jp2k__);
+            free_preloaded_array(vv_i__jm2k__);
+            free_preloaded_array(vv_i__j__kp2);
+            free_preloaded_array(vv_i__j__km2);
         }
 
         free_preloaded_array(vv_fac_a);
@@ -219,14 +217,22 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
     // #TODO those arrays should be allocated as mpi shm arrays
 
-    preload_indices(vv_icc, vv_jcc, vv_kcc,  0, 0, 0);
-    preload_indices(vv_ip1, vv_jp1, vv_kp1,  1, 1, 1);
-    preload_indices(vv_im1, vv_jm1, vv_km1,  -1, -1, -1);
     preload_indices(vv_iip, vv_jjt, vv_kkr,  0, 0, 0);
+    preload_indices_1d(vv_i__j__k__, 0, 0, 0);
+    preload_indices_1d(vv_ip1j__k__, 1, 0, 0);
+    preload_indices_1d(vv_i__jp1k__, 0, 1, 0);
+    preload_indices_1d(vv_i__j__kp1, 0, 0, 1);
+    preload_indices_1d(vv_im1j__k__,-1, 0, 0);
+    preload_indices_1d(vv_i__jm1k__, 0,-1, 0);
+    preload_indices_1d(vv_i__j__km1, 0, 0,-1);
 
     if(IP.get_stencil_order() == 3){
-        preload_indices(vv_ip2, vv_jp2, vv_kp2,  2, 2, 2);
-        preload_indices(vv_im2, vv_jm2, vv_km2,  -2, -2, -2);
+        preload_indices_1d(vv_ip2j__k__, 2, 0, 0);
+        preload_indices_1d(vv_i__jp2k__, 0, 2, 0);
+        preload_indices_1d(vv_i__j__kp2, 0, 0, 2);
+        preload_indices_1d(vv_im2j__k__,-2, 0, 0);
+        preload_indices_1d(vv_i__jm2k__, 0,-2, 0);
+        preload_indices_1d(vv_i__j__km2, 0, 0,-2);
         simd_allocated_3rd = true;
     }
 
@@ -272,9 +278,7 @@ std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
             CUSTOMREAL* v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
             // asign values
             for (int i_node=0; i_node<nnodes; i_node++){
-                v[i_node] = (CUSTOMREAL) a[I2V(vv_icc.at(iswap).at(i_level)[i_node],\
-                                               vv_jcc.at(iswap).at(i_level)[i_node],\
-                                               vv_kcc.at(iswap).at(i_level)[i_node])];
+                v[i_node] = (CUSTOMREAL) a[vv_i__j__k__.at(iswap).at(i_level)[i_node]];
             }
             // assign dummy
             for (int i_node=nnodes; i_node<nnodes_tmp; i_node++){
@@ -354,6 +358,62 @@ void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
         vvvk.push_back(vvk);
     }
 }
+
+
+template <typename T>
+void Iterator::preload_indices_1d(std::vector<std::vector<T*>> &vvv, \
+                               int shift_i, int shift_j, int shift_k) {
+
+    int iip, jjt, kkr;
+    for (int iswp=0; iswp < 8; iswp++){
+        set_sweep_direction(iswp);
+
+        std::vector<T*> vv;
+
+        int n_levels = ijk_for_this_subproc.size();
+        for (int i_level = 0; i_level < n_levels; i_level++) {
+            int n_nodes = ijk_for_this_subproc[i_level].size();
+            int n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+
+            T* v = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+
+            for (int i_node = 0; i_node < n_nodes; i_node++) {
+                int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
+                V2I(tmp_ijk, iip, jjt, kkr);
+                if (r_dirc < 0) kkr = loc_K-kkr; //kk-1;
+                else            kkr = kkr-1;  //nr-kk;
+                if (t_dirc < 0) jjt = loc_J-jjt; //jj-1;
+                else            jjt = jjt-1;  //nt-jj;
+                if (p_dirc < 0) iip = loc_I-iip; //ii-1;
+                else            iip = iip-1;  //np-ii;
+
+                kkr += shift_k;
+                jjt += shift_j;
+                iip += shift_i;
+
+                if (kkr >= loc_K) kkr = 0;
+                if (jjt >= loc_J) jjt = 0;
+                if (iip >= loc_I) iip = 0;
+
+                if (kkr < 0) kkr = 0;
+                if (jjt < 0) jjt = 0;
+                if (iip < 0) iip = 0;
+
+                v[i_node] = (T)I2V(iip, jjt, kkr);
+
+            }
+            // assign dummy
+            for (int i=n_nodes; i<n_nodes_tmp; i++){
+                v[i] = (T)0;
+            }
+
+            vv.push_back(v);
+        }
+
+        vvv.push_back(vv);
+    }
+}
+
 
 #endif // USE_SIMD
 
