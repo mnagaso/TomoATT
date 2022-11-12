@@ -361,14 +361,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            svst1_f64(pg, dump_c__, v_c__);
-
-            for (int i = 0; i < NSIMD; i++) {
-                if(i_vec+i>=n_nodes) break;
-
-                grid.tau_loc[dump_ijk[i_vec+i]] = dump_c__[i];
-            }
-
+            svst1_scatter_index_f64(pg, grid.tau_loc, stld1(&dump_ijk[i_vec]), v_c__);
 
 
         } // end of i_vec loop
@@ -688,15 +681,7 @@ a
                                            v_DP_inv, v_DT_inv, v_DR_inv);
 
             // store v_c__ to dump_c__
-            svst1_f64(pg, dump_c__, v_c__);
-
-            for (int i = 0; i < NSIMD; i++) {
-                if(i_vec+i>=n_nodes) break;
-
-                grid.tau_loc[dump_ijk[i_vec+i]] = dump_c__[i];
-            }
-
-
+            svst1_scatter_index_f64(pg, grid.tau_loc, stld1(&dump_ijk[i_vec]), v_c__);
 
         } // end of i_vec loop
 
