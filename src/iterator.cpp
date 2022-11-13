@@ -66,8 +66,11 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 
 Iterator::~Iterator() {
 
-#ifdef USE_SIMD
+#ifdef USE_SIMD || USE_CUDA
+
     if (simd_allocated){
+        // if use_gpu == false, simd_allocated is also false here
+
         free(dump_c__);// center of stencil
 
         // free vv_* preloaded arrays
@@ -101,6 +104,17 @@ Iterator::~Iterator() {
     }
 #endif
 
+#ifdef USE_CUDA
+    // free memory on device before host arrays
+    // otherwise the program crashes
+    if (use_gpu) {
+        // free memory on device
+        cuda_free_memory_for_grid(gpu_grid);
+
+        delete gpu_grid;
+    }
+#endif
+
 }
 
 
@@ -123,6 +137,23 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
 
     // assign processes for each sweeping level
     if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels(grid, IP);
+
+#ifdef USE_CUDA
+    if(use_gpu){
+        gpu_grid = new Grid_on_device();
+        if (IP.get_stencil_order() == 1){
+            cuda_allocate_memory_for_grid_1st(gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+                vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
+                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
+        } else {
+            cuda_allocate_memory_for_grid_3rd(gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+                vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
+                              vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2, \
+                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
+
+        }
+    }
+#endif
 
 }
 
@@ -213,9 +244,11 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     if(if_verbose)
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
-#ifdef USE_SIMD
+#ifdef USE_SIMD || USE_CUDA
 
-    // #TODO those arrays should be allocated as mpi shm arrays
+#ifdef USE_CUDA
+    if(!use_gpu) break; // no need to allocate memory on device
+#endif
 
     preload_indices(vv_iip, vv_jjt, vv_kkr,  0, 0, 0);
     preload_indices_1d(vv_i__j__k__, 0, 0, 0);
@@ -544,15 +577,18 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
     #ifdef USE_CUDA
         if (!is_teleseismic){
             // transfer field to GPU grid for iteration (only need to call for the first source of first inversion step)
-            if(first_init)
-                grid.initialize_gpu_grid(ijk_for_this_subproc);
-            else
-                grid.reinitialize_gpu_grid(); // update only fac_abcf
+//            if(first_init)
+//                grid.initialize_gpu_grid(ijk_for_this_subproc);
+//            else
+//                grid.reinitialize_gpu_grid(); // update only fac_abcf
+
+            // transfer grid info to GPU device
+            transfer_grid_info_to_gpu(...);
 
             // run iteration
-            cuda_run_iterate_forward(grid.gpu_grid, IP.get_conv_tol(), IP.get_max_iter(), IP.get_stencil_order());
+            //cuda_run_iterate_forward(grid.gpu_grid, IP.get_conv_tol(), IP.get_max_iter(), IP.get_stencil_order());
             // copy result on device to host
-            cuda_copy_T_loc_tau_loc_to_host(grid.T_loc, grid.tau_loc, grid.gpu_grid);
+            //cuda_copy_T_loc_tau_loc_to_host(grid.T_loc, grid.tau_loc, grid.gpu_grid);
         } else {
             std::cout << "ERROR: GPU mode does not support teleseismic source." << std::endl;
             exit(1);

@@ -77,12 +77,12 @@ protected:
     int max_n_nodes_plane;          // maximum number of nodes on a plane
 
 
-#ifdef USE_SIMD
+#if defined USE_SIMD || defined USE_CUDA
     // stencil dumps
     // first orders
     CUSTOMREAL *dump_c__;// center of C
     // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
-#if defined __AVX512F__ || defined __AVX__
+#if defined __AVX512F__ || defined __AVX__ || defined USE_CUDA
     std::vector<std::vector<int*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
     std::vector<std::vector<int*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
 #elif defined ARM_FEATURE_SVE__
@@ -109,6 +109,10 @@ protected:
     bool simd_allocated     = false;
     bool simd_allocated_3rd = false;
 
+#endif // USE_SIMD || USE_CUDA
+
+#ifdef USE_CUDA
+    Grid_on_device *gpu_grid;
 #endif
 
 

@@ -20,10 +20,10 @@
 #include "source.h"
 #include "io.h"
 
-#ifdef USE_CUDA
-#include "cuda_constants.cuh"
-#include "grid_wrapper.cuh"
-#endif
+//#ifdef USE_CUDA
+//#include "cuda_constants.cuh"
+//#include "grid_wrapper.cuh"
+//#endif
 
 class Grid {
 public:
@@ -437,11 +437,11 @@ public:
     //
     // gpu grid object
     //
-#ifdef USE_CUDA
-    Grid_on_device *gpu_grid;
-#endif
-    void initialize_gpu_grid(std::vector<std::vector<int>>&);
-    void reinitialize_gpu_grid();
+//#ifdef USE_CUDA
+//    Grid_on_device *gpu_grid;
+//#endif
+//    void initialize_gpu_grid(std::vector<std::vector<int>>&);
+//    void reinitialize_gpu_grid();
 
 
 
