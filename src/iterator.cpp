@@ -142,11 +142,11 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     if(use_gpu){
         gpu_grid = new Grid_on_device();
         if (IP.get_stencil_order() == 1){
-            cuda_allocate_memory_for_grid_1st(gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+            cuda_allocate_memory_for_grid_1st(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
                 vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
         } else {
-            cuda_allocate_memory_for_grid_3rd(gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+            cuda_allocate_memory_for_grid_3rd(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
                 vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
                               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2, \
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
