@@ -66,7 +66,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 
 Iterator::~Iterator() {
 
-#ifdef USE_SIMD || USE_CUDA
+#if defined USE_SIMD || defined USE_CUDA
 
     if (simd_allocated){
         // if use_gpu == false, simd_allocated is also false here
@@ -244,7 +244,7 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     if(if_verbose)
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
-#ifdef USE_SIMD || USE_CUDA
+#if defined USE_SIMD || defined USE_CUDA
 
 #ifdef USE_CUDA
     if(!use_gpu) break; // no need to allocate memory on device

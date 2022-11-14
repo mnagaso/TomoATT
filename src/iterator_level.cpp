@@ -140,7 +140,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end loop i_level
 
-#elif defined __AVX512F__ || defined __AVX__
+#elif USE_AVX512 || USE_AVX
 
     //
     __mTd v_DP_inv      = _mmT_set1_pd(1.0/dp);
@@ -239,7 +239,7 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end of i_level loop
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 
     svbool_t pg;
     //
@@ -427,7 +427,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end loop i_level
 
-#elif defined __AVX512F__ || defined __AVX__
+#elif USE_AVX512 || USE_AVX
 
     //
     __mTd v_DP_inv      = _mmT_set1_pd(1.0/dp);
@@ -539,7 +539,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
     } // end of i_level loop
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
     //
     svbool_t pg;
 

@@ -8,7 +8,7 @@
 #ifdef USE_SIMD // closed at the end of this file
 #include "simd_conf.h"
 
-#if defined __AVX__ || defined __AVX512F__
+#if USE_AVX || USE_AVX512
 __mTd COEF    = _mmT_set1_pd(1.0);
 __mTd v_1     = _mmT_set1_pd(1.0);
 __mTd v_0     = _mmT_set1_pd(0.0);
@@ -79,7 +79,7 @@ inline __mTd calc_3d_stencil(__mTd const& a, __mTd const& b, __mTd const&c, __mT
 
 }
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 
 inline __mTd my_square_v(svbool_t const& pg, __mTd const& a){
     return svmul_f64_z(pg, a, a);
@@ -131,7 +131,7 @@ inline __mTd calc_3d_stencil(svbool_t const& pg, __mTd const& a, __mTd const& b,
 
 
 inline void vect_stencil_1st_pre_simd(
-#ifdef __ARM_FEATURE_SVE
+#if USE_ARM_SVE
                                       svbool_t const& pg,
 #endif
                                       __mTd const& v_iip, __mTd const& v_jjt, __mTd const& v_kkr,
@@ -142,7 +142,7 @@ inline void vect_stencil_1st_pre_simd(
                                       __mTd const& v_DP_inv_half, __mTd const& v_DT_inv_half, __mTd const& v_DR_inv_half,
                                       int const& NP, int const& NT, int const& NR){
 
-#if defined __AVX512F__ || defined __AVX__
+#if USE_AVX512 || USE_AVX
 
     v_pp1 = calc_1d_stencil(v_c__, v_m__, v_DP_inv);
     v_pp2 = calc_1d_stencil(v_p__, v_c__, v_DP_inv);
@@ -151,7 +151,7 @@ inline void vect_stencil_1st_pre_simd(
     v_pr1 = calc_1d_stencil(v_c__, v___m, v_DR_inv);
     v_pr2 = calc_1d_stencil(v___p, v_c__, v_DR_inv);
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 
     v_pp1 = calc_1d_stencil(pg, v_c__, v_m__, v_DP_inv);
     v_pp2 = calc_1d_stencil(pg, v_p__, v_c__, v_DP_inv);
@@ -166,7 +166,7 @@ inline void vect_stencil_1st_pre_simd(
 
 
 inline void vect_stencil_3rd_pre_simd(
-#ifdef __ARM_FEATURE_SVE
+#if USE_ARM_SVE
                                       svbool_t const& pg,
 #endif
                                       __mTd const& v_iip, __mTd const& v_jjt, __mTd const& v_kkr,
@@ -181,7 +181,7 @@ inline void vect_stencil_3rd_pre_simd(
     const int PLUS  = 1;
     const int MINUS = -1;
 
-#ifdef __AVX512F__
+#if USE_AVX512
 
     __mmask8 mask_i_eq_1         = _mm512_cmp_pd_mask(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
     __mmask8 mask_j_eq_1         = _mm512_cmp_pd_mask(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
@@ -236,7 +236,7 @@ inline void vect_stencil_3rd_pre_simd(
     v_pr1 = _mm512_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), v_pr1);
     v_pr2 = _mm512_mask_blend_pd(mask_k_else, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS) , v_pr2);
 
-#elif defined __AVX__
+#elif USE_AVX
 
     __m256d mask_i_eq_1         = _mm256_cmp_pd(v_iip, v_1,_CMP_EQ_OQ);    // if iip == 1
     __m256d mask_j_eq_1         = _mm256_cmp_pd(v_jjt, v_1,_CMP_EQ_OQ);    // if jjt == 1
@@ -291,7 +291,7 @@ inline void vect_stencil_3rd_pre_simd(
     v_pr1 = _mm256_blendv_pd(v_pr1, calc_3d_stencil(v_c__, v___m, v_____mm, v___p, v_DR_inv_half, MINUS), mask_k_else);
     v_pr2 = _mm256_blendv_pd(v_pr2, calc_3d_stencil(v_c__, v___p, v_____pp, v___m, v_DR_inv_half, PLUS),  mask_k_else);
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 
     svfloat64_t v_1 = svdup_f64(1.0);
 
@@ -360,7 +360,7 @@ inline void vect_stencil_3rd_pre_simd(
 
 // tau fac_a fac_b fac_c fac_f T0v T0p T0t T0r fun
 inline void vect_stencil_1st_3rd_apre_simd(
-#ifdef __ARM_FEATURE_SVE
+#if USE_ARM_SVE
                                            svbool_t const& pg,
 #endif
                                            __mTd& v_tau,        __mTd const& v_fac_a,__mTd const& v_fac_b, __mTd const& v_fac_c, __mTd const& v_fac_f,
@@ -368,7 +368,7 @@ inline void vect_stencil_1st_3rd_apre_simd(
                                            __mTd const& v_pp1,  __mTd const& v_pp2,  __mTd const& v_pt1,   __mTd const& v_pt2,   __mTd const& v_pr1, __mTd const& v_pr2,
                                            __mTd const& DP_inv, __mTd const& DT_inv, __mTd const& DR_inv){
 
-#if defined __AVX512F__ || defined __AVX__
+#if USE_AVX512 || USE_AVX
 
     // sigr = COEF * sqrt(v_fac_a)*v_T0v;
     __mTd sigr = _mmT_mul_pd(_mmT_mul_pd(COEF,_mmT_sqrt_pd(v_fac_a)),v_T0v);
@@ -407,17 +407,17 @@ inline void vect_stencil_1st_3rd_apre_simd(
     // v_tau += coe * ((v_fun - Htau) + tmp) if mask is true
     v_tau = _mmT_add_pd(v_tau,_mmT_mul_pd(coe,_mmT_add_pd(_mmT_sub_pd(v_fun,Htau),tmp)));
 
-#ifdef __AVX512F__
+#if USE_AVX512
     // mask if v_change != 1.0
     __mmask8 mask = _mm512_cmp_pd_mask(v_change,v_1,_CMP_NEQ_OQ);
     // set 1 if mask is true
     v_tau = _mm512_mask_blend_pd(mask,v_tau,v_1);
-#elif defined __AVX__
+#elif USE_AVX
     __m256d mask = _mm256_cmp_pd(v_change, v_1,_CMP_NEQ_OQ);
     v_tau        = _mm256_blendv_pd(v_tau, v_1,mask);
 #endif
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 
     __mTd COEF    = svdup_f64(1.0);
     __mTd v_1     = svdup_f64(1.0);
@@ -497,7 +497,7 @@ inline void vect_stencil_1st_3rd_apre_simd(
 
 }
 
-#if defined __AVX512F__ || defined __AVX__
+#if USE_AVX512 || USE_AVX
 
 inline __mTd load_mem_gen_to_mTd(CUSTOMREAL* a, int* ijk){
 
@@ -519,7 +519,7 @@ inline __mTd load_mem_bool_to_mTd(bool* a, int* ijk){
        return _mmT_loadu_pd(dump_);
 }
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 
 inline __mTd load_mem_gen_to_mTd(svbool_t const& pg, CUSTOMREAL* a, uint64_t* ijk){
     svuint64_t v_ijk = svld1_u64(pg, ijk);

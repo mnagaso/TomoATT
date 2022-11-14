@@ -3,15 +3,25 @@
 
 #ifdef USE_SIMD
 
+// flags for self controling the SIMD usage
+#define USE_AVX     __AVX__
+#define USE_AVX512  __AVX512F__
+#define USE_ARM_SVE __ARM_FEATURE_SVE
 
-#if defined __AVX__ || defined __AVX512F__
+// forcely make USE_AVX and USE_AVX512 to be false if USE_ARM_SVE is true
+#if USE_ARM_SVE
+#define USE_AVX     0
+#define USE_AVX512  0
+#endif
+
+#if USE_AVX || USE_AVX512
 #include <immintrin.h>
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 #include <arm_sve.h>
 #endif // __
 
 
-#ifdef __AVX__
+#if USE_AVX && !USE_AVX512
 const int ALIGN = 32;
 const int NSIMD = 4;
 #define __mTd __m256d
@@ -26,7 +36,7 @@ const int NSIMD = 4;
 #define _mmT_store_pd _mm256_store_pd
 #define _mmT_fmadd_pd _mm256_fmadd_pd
 
-#elif defined __AVX512F__
+#elif USE_AVX512
 const int ALIGN = 64;
 const int NSIMD = 8;
 #define __mTd __m512d
@@ -41,7 +51,7 @@ const int NSIMD = 8;
 #define _mmT_store_pd _mm512_store_pd
 #define _mmT_fmadd_pd _mm512_fmadd_pd
 
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
 const int ALIGN = 8*svcntd(); // use svcntw() for float
 const int NSIMD = svcntd(); // Vector Length
 #define __mTd svfloat64_t
@@ -60,11 +70,11 @@ const int NSIMD = svcntd(); // Vector Length
 
 inline void print_simd_type() {
     std::cout << "SIMD type: ";
-#ifdef __AVX__
+#if USE_AVX && !USE_AVX512
     std::cout << "AVX" << std::endl;
-#elif defined __AVX512F__
+#elif USE_AVX512
     std::cout << "AVX512" << std::endl;
-#elif defined __ARM_FEATURE_SVE
+#elif USE_ARM_SVE
     std::cout << "ARM SVE" << std::endl;
 #endif // __ARM_FEATURE_SVE
 }
