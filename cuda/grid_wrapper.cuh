@@ -20,21 +20,21 @@ typedef struct Grid_on_device {
     int n_levels_host;
 
     // index storage
-    int* n_nodes_on_levels, *n_nodes_on_levels_host;
+    int* n_nodes_on_levels;
 
-    int* vv_i__j__k__0, *vv_i__j__k__1, *vv_i__j__k__2, *vv_i__j__k__3, *vv_i__j__k__4, *vv_i__j__k__5, *vv_i__j__k__6, *vv_i__j__k__7;
-    int* vv_ip1j__k__0, *vv_ip1j__k__1, *vv_ip1j__k__2, *vv_ip1j__k__3, *vv_ip1j__k__4, *vv_ip1j__k__5, *vv_ip1j__k__6, *vv_ip1j__k__7;
-    int* vv_im1j__k__0, *vv_im1j__k__1, *vv_im1j__k__2, *vv_im1j__k__3, *vv_im1j__k__4, *vv_im1j__k__5, *vv_im1j__k__6, *vv_im1j__k__7;
-    int* vv_i__jp1k__0, *vv_i__jp1k__1, *vv_i__jp1k__2, *vv_i__jp1k__3, *vv_i__jp1k__4, *vv_i__jp1k__5, *vv_i__jp1k__6, *vv_i__jp1k__7;
-    int* vv_i__jm1k__0, *vv_i__jm1k__1, *vv_i__jm1k__2, *vv_i__jm1k__3, *vv_i__jm1k__4, *vv_i__jm1k__5, *vv_i__jm1k__6, *vv_i__jm1k__7;
-    int* vv_i__j__kp10, *vv_i__j__kp11, *vv_i__j__kp12, *vv_i__j__kp13, *vv_i__j__kp14, *vv_i__j__kp15, *vv_i__j__kp16, *vv_i__j__kp17;
-    int* vv_i__j__km10, *vv_i__j__km11, *vv_i__j__km12, *vv_i__j__km13, *vv_i__j__km14, *vv_i__j__km15, *vv_i__j__km16, *vv_i__j__km17;
-    int* vv_ip2j__k__0, *vv_ip2j__k__1, *vv_ip2j__k__2, *vv_ip2j__k__3, *vv_ip2j__k__4, *vv_ip2j__k__5, *vv_ip2j__k__6, *vv_ip2j__k__7;
-    int* vv_im2j__k__0, *vv_im2j__k__1, *vv_im2j__k__2, *vv_im2j__k__3, *vv_im2j__k__4, *vv_im2j__k__5, *vv_im2j__k__6, *vv_im2j__k__7;
-    int* vv_i__jp2k__0, *vv_i__jp2k__1, *vv_i__jp2k__2, *vv_i__jp2k__3, *vv_i__jp2k__4, *vv_i__jp2k__5, *vv_i__jp2k__6, *vv_i__jp2k__7;
-    int* vv_i__jm2k__0, *vv_i__jm2k__1, *vv_i__jm2k__2, *vv_i__jm2k__3, *vv_i__jm2k__4, *vv_i__jm2k__5, *vv_i__jm2k__6, *vv_i__jm2k__7;
-    int* vv_i__j__kp20, *vv_i__j__kp21, *vv_i__j__kp22, *vv_i__j__kp23, *vv_i__j__kp24, *vv_i__j__kp25, *vv_i__j__kp26, *vv_i__j__kp27;
-    int* vv_i__j__km20, *vv_i__j__km21, *vv_i__j__km22, *vv_i__j__km23, *vv_i__j__km24, *vv_i__j__km25, *vv_i__j__km26, *vv_i__j__km27;
+    int* vv_i__j__k___0, *vv_i__j__k___1, *vv_i__j__k___2, *vv_i__j__k___3, *vv_i__j__k___4, *vv_i__j__k___5, *vv_i__j__k___6, *vv_i__j__k___7;
+    int* vv_ip1j__k___0, *vv_ip1j__k___1, *vv_ip1j__k___2, *vv_ip1j__k___3, *vv_ip1j__k___4, *vv_ip1j__k___5, *vv_ip1j__k___6, *vv_ip1j__k___7;
+    int* vv_im1j__k___0, *vv_im1j__k___1, *vv_im1j__k___2, *vv_im1j__k___3, *vv_im1j__k___4, *vv_im1j__k___5, *vv_im1j__k___6, *vv_im1j__k___7;
+    int* vv_i__jp1k___0, *vv_i__jp1k___1, *vv_i__jp1k___2, *vv_i__jp1k___3, *vv_i__jp1k___4, *vv_i__jp1k___5, *vv_i__jp1k___6, *vv_i__jp1k___7;
+    int* vv_i__jm1k___0, *vv_i__jm1k___1, *vv_i__jm1k___2, *vv_i__jm1k___3, *vv_i__jm1k___4, *vv_i__jm1k___5, *vv_i__jm1k___6, *vv_i__jm1k___7;
+    int* vv_i__j__kp1_0, *vv_i__j__kp1_1, *vv_i__j__kp1_2, *vv_i__j__kp1_3, *vv_i__j__kp1_4, *vv_i__j__kp1_5, *vv_i__j__kp1_6, *vv_i__j__kp1_7;
+    int* vv_i__j__km1_0, *vv_i__j__km1_1, *vv_i__j__km1_2, *vv_i__j__km1_3, *vv_i__j__km1_4, *vv_i__j__km1_5, *vv_i__j__km1_6, *vv_i__j__km1_7;
+    int* vv_ip2j__k___0, *vv_ip2j__k___1, *vv_ip2j__k___2, *vv_ip2j__k___3, *vv_ip2j__k___4, *vv_ip2j__k___5, *vv_ip2j__k___6, *vv_ip2j__k___7;
+    int* vv_im2j__k___0, *vv_im2j__k___1, *vv_im2j__k___2, *vv_im2j__k___3, *vv_im2j__k___4, *vv_im2j__k___5, *vv_im2j__k___6, *vv_im2j__k___7;
+    int* vv_i__jp2k___0, *vv_i__jp2k___1, *vv_i__jp2k___2, *vv_i__jp2k___3, *vv_i__jp2k___4, *vv_i__jp2k___5, *vv_i__jp2k___6, *vv_i__jp2k___7;
+    int* vv_i__jm2k___0, *vv_i__jm2k___1, *vv_i__jm2k___2, *vv_i__jm2k___3, *vv_i__jm2k___4, *vv_i__jm2k___5, *vv_i__jm2k___6, *vv_i__jm2k___7;
+    int* vv_i__j__kp2_0, *vv_i__j__kp2_1, *vv_i__j__kp2_2, *vv_i__j__kp2_3, *vv_i__j__kp2_4, *vv_i__j__kp2_5, *vv_i__j__kp2_6, *vv_i__j__kp2_7;
+    int* vv_i__j__km2_0, *vv_i__j__km2_1, *vv_i__j__km2_2, *vv_i__j__km2_3, *vv_i__j__km2_4, *vv_i__j__km2_5, *vv_i__j__km2_6, *vv_i__j__km2_7;
 
     // constants
     CUSTOMREAL* vv_fac_a_0, *vv_fac_a_1, *vv_fac_a_2, *vv_fac_a_3, *vv_fac_a_4, *vv_fac_a_5, *vv_fac_a_6, *vv_fac_a_7;
@@ -50,6 +50,14 @@ typedef struct Grid_on_device {
 
     // temporary variables
     CUSTOMREAL* tau;
+
+    bool if_3rd_order = false;
+
+    // thead and grid for sweeping
+    dim3 grid_sweep_host, threads_sweep_host;
+    // array of streams
+    cudaStream_t* level_streams;
+
 
 } Grid_on_device;
 
@@ -100,5 +108,13 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
                 std::vector<std::vector<CUSTOMREAL*>> const& vv_fun, \
                 std::vector<std::vector<CUSTOMREAL*>> const& vv_change);
 
+
+// finalize
+void cuda_finalize_grid(Grid_on_device* grid_dv);
+
+// copy tau from host to device
+void cuda_copy_tau_to_device(Grid_on_device* grid_dv, CUSTOMREAL* tau_h);
+// copy tau from device to host
+void cuda_copy_tau_to_host(Grid_on_device* grid_dv, CUSTOMREAL* tau_h);
 
 #endif // GRID_WRAPPER_CUH

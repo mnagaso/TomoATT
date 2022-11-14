@@ -109,7 +109,7 @@ Iterator::~Iterator() {
     // otherwise the program crashes
     if (use_gpu) {
         // free memory on device
-        cuda_free_memory_for_grid(gpu_grid);
+        cuda_finalize_grid(gpu_grid);
 
         delete gpu_grid;
     }
@@ -142,15 +142,14 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     if(use_gpu){
         gpu_grid = new Grid_on_device();
         if (IP.get_stencil_order() == 1){
-            cuda_allocate_memory_for_grid_1st(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+            cuda_initialize_grid_1st(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
                 vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
         } else {
-            cuda_allocate_memory_for_grid_3rd(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+            cuda_initialize_grid_3rd(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
                 vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
                               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2, \
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
-
         }
     }
 #endif
@@ -458,56 +457,43 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
     std::string iter_str = "iteration_forward";
     Timer timer_iter(iter_str);
 
-    if(!use_gpu){
-        // in cpu mode
-        iter_count = 0; cur_diff_L1 = HUGE_VAL; cur_diff_Linf = HUGE_VAL;
+    // in cpu mode
+    iter_count = 0; cur_diff_L1 = HUGE_VAL; cur_diff_Linf = HUGE_VAL;
 
-        // calculate the differcence from the true solution
-        if (if_test && subdom_main) {
-            if (!is_teleseismic)
-                grid.calc_L1_and_Linf_error(ini_err_L1, ini_err_Linf);
+    // calculate the differcence from the true solution
+    if (if_test && subdom_main) {
+        if (!is_teleseismic)
+            grid.calc_L1_and_Linf_error(ini_err_L1, ini_err_Linf);
+        else
+            grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
+
+        if (myrank==0)
+            std::cout << "initial err values L1, inf: " << ini_err_L1 << ", " << ini_err_Linf << std::endl;
+    }
+
+    if (subdom_main) {
+        grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
+        if (myrank==0 && if_verbose)
+            std::cout << "initial diff values L1, inf: " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+    }
+
+    // start iteration
+    while (true) {
+
+        // store tau for comparison
+        if (subdom_main){
+            if(!is_teleseismic)
+                grid.tau2tau_old();
             else
-                grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
-
-            if (myrank==0)
-                std::cout << "initial err values L1, inf: " << ini_err_L1 << ", " << ini_err_Linf << std::endl;
+                grid.T2tau_old();
         }
 
-        if (subdom_main) {
-            grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
-            if (myrank==0 && if_verbose)
-                std::cout << "initial diff values L1, inf: " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
-        }
-
-        // start iteration
-        while (true) {
-
-            // store tau for comparison
-            if (subdom_main){
-                if(!is_teleseismic)
-                    grid.tau2tau_old();
-                else
-                    grid.T2tau_old();
-            }
-
-            // do sweeping for all direction
-            for (int iswp = nswp-1; iswp > -1; iswp--) {
-                do_sweep(iswp, grid, IP);
+        // do sweeping for all direction
+        for (int iswp = nswp-1; iswp > -1; iswp--) {
+            do_sweep(iswp, grid, IP);
 
 #ifdef FREQ_SYNC_GHOST
-                // synchronize ghost cells everytime after sweeping of each direction
-                if (subdom_main){
-                    if (!is_teleseismic)
-                        grid.send_recev_boundary_data(grid.tau_loc);
-                    else
-                        grid.send_recev_boundary_data(grid.T_loc);
-                }
-#endif
-            }
-
-#ifndef FREQ_SYNC_GHOST
-            // synchronize ghost cells everytime after sweeping of all directions
-            // as the same method with Detrixhe2016
+            // synchronize ghost cells everytime after sweeping of each direction
             if (subdom_main){
                 if (!is_teleseismic)
                     grid.send_recev_boundary_data(grid.tau_loc);
@@ -515,87 +501,73 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
                     grid.send_recev_boundary_data(grid.T_loc);
             }
 #endif
+        }
 
-            // calculate the objective function
-            // if converged, break the loop
-            if (subdom_main) {
-                if (!is_teleseismic)
-                    grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
-                else
-                    grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
+#ifndef FREQ_SYNC_GHOST
+        // synchronize ghost cells everytime after sweeping of all directions
+        // as the same method with Detrixhe2016
+        if (subdom_main){
+            if (!is_teleseismic)
+                grid.send_recev_boundary_data(grid.tau_loc);
+            else
+                grid.send_recev_boundary_data(grid.T_loc);
+        }
+#endif
 
-                if(if_test) {
-                    grid.calc_L1_and_Linf_error(cur_err_L1, cur_err_Linf);
-                    //std::cout << "Theoretical difference: " << cur_err_L1 << ' ' << cur_err_Linf << std::endl;
-                }
-            }
+        // calculate the objective function
+        // if converged, break the loop
+        if (subdom_main) {
+            if (!is_teleseismic)
+                grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
+            else
+                grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
 
-            // broadcast the diff values
-            broadcast_cr_single_sub(cur_diff_L1, 0);
-            broadcast_cr_single_sub(cur_diff_Linf, 0);
-            if (if_test) {
-                broadcast_cr_single_sub(cur_err_L1, 0);
-                broadcast_cr_single_sub(cur_err_Linf, 0);
-            }
-
-            //if (iter_count==0)
-            //    std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
-
-            // debug store temporal T fields
-            //io.write_tmp_tau_h5(grid, iter_count);
-
-            //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
-            if (cur_diff_L1 < IP.get_conv_tol()) {
-                //stdout_by_main("--- iteration converged. ---");
-                goto iter_end;
-            } else if (IP.get_max_iter() <= iter_count) {
-                stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
-                goto iter_end;
-            } else {
-                if(myrank==0 && if_verbose)
-                    std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
-                iter_count++;
+            if(if_test) {
+                grid.calc_L1_and_Linf_error(cur_err_L1, cur_err_Linf);
+                //std::cout << "Theoretical difference: " << cur_err_L1 << ' ' << cur_err_Linf << std::endl;
             }
         }
 
-    iter_end:
-        if (myrank==0){
-            if (if_verbose){
-                std::cout << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
-            }
-            if (if_test)
-                std::cout << "errors at iteration " << iter_count << ": " << cur_err_L1 << ", " << cur_err_Linf << std::endl;
+        // broadcast the diff values
+        broadcast_cr_single_sub(cur_diff_L1, 0);
+        broadcast_cr_single_sub(cur_diff_Linf, 0);
+        if (if_test) {
+            broadcast_cr_single_sub(cur_err_L1, 0);
+            broadcast_cr_single_sub(cur_err_Linf, 0);
         }
 
-        // calculate T
-        // teleseismic case will update T_loc, so T = T0*tau is not necessary.
-        if (subdom_main && !is_teleseismic) grid.calc_T_plus_tau();
+        //if (iter_count==0)
+        //    std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
 
-    } else {
+        // debug store temporal T fields
+        //io.write_tmp_tau_h5(grid, iter_count);
 
-        // GPU mode
-    #ifdef USE_CUDA
-        if (!is_teleseismic){
-            // transfer field to GPU grid for iteration (only need to call for the first source of first inversion step)
-//            if(first_init)
-//                grid.initialize_gpu_grid(ijk_for_this_subproc);
-//            else
-//                grid.reinitialize_gpu_grid(); // update only fac_abcf
-
-            // transfer grid info to GPU device
-            transfer_grid_info_to_gpu(...);
-
-            // run iteration
-            //cuda_run_iterate_forward(grid.gpu_grid, IP.get_conv_tol(), IP.get_max_iter(), IP.get_stencil_order());
-            // copy result on device to host
-            //cuda_copy_T_loc_tau_loc_to_host(grid.T_loc, grid.tau_loc, grid.gpu_grid);
+        //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
+        if (cur_diff_L1 < IP.get_conv_tol()) {
+            //stdout_by_main("--- iteration converged. ---");
+            goto iter_end;
+        } else if (IP.get_max_iter() <= iter_count) {
+            stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
+            goto iter_end;
         } else {
-            std::cout << "ERROR: GPU mode does not support teleseismic source." << std::endl;
-            exit(1);
+            if(myrank==0 && if_verbose)
+                std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
+            iter_count++;
         }
-    #endif
-
     }
+
+iter_end:
+    if (myrank==0){
+        if (if_verbose){
+            std::cout << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+        }
+        if (if_test)
+            std::cout << "errors at iteration " << iter_count << ": " << cur_err_L1 << ", " << cur_err_Linf << std::endl;
+    }
+
+    // calculate T
+    // teleseismic case will update T_loc, so T = T0*tau is not necessary.
+    if (subdom_main && !is_teleseismic) grid.calc_T_plus_tau();
 
     // check the time for iteration
     if (inter_sub_rank==0 && subdom_main) {
@@ -607,7 +579,6 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         ofs << "Converged at iteration " << iter_count << ", L1 " << cur_diff_L1 << ", Linf " << cur_diff_Linf << ", total time[s] " << timer_iter.get_t() << std::endl;
 
     }
-
 
 }
 

@@ -59,7 +59,6 @@ cudaError_t copy_host_to_device_bl(bool* d_ptr, bool* h_ptr, const size_t size)
     return cudaMemcpy(d_ptr, h_ptr, size * sizeof(bool), cudaMemcpyHostToDevice);
 }
 
-
 // copy memory from device to host
 cudaError_t copy_device_to_host_i(int* h_ptr, int* d_ptr, size_t size)
 {
@@ -84,6 +83,54 @@ cudaError_t allocate_and_copy_host_to_device_cv(CUSTOMREAL* d_ptr, CUSTOMREAL* h
 {
     cudaError_t err0 = allocate_memory_on_device_cv((void**) &d_ptr, size);
     cudaError_t err1 = copy_host_to_device_cv(d_ptr, h_ptr, size);
+
+    return err1;
+}
+
+// allocate, flatten and copy from host to device
+cudaError_t allocate_memory_and_copy_host_to_device_flatten_i(int* d_ptr, std::vector<int*> const &h_v, size_t size_total, int* size_each)
+{
+    // allocate
+    cudaError_t err0 = allocate_memory_on_device_i((void**) &d_ptr, size_total);
+    // flatten
+    int* h_ptr_flattened = new int[size_total];
+    size_t counter = 0;
+    int n_v = h_v.size();
+
+    for (int i = 0; i < n_v; i++) {
+        for (int j = 0; j < size_each[i]; j++) {
+            h_ptr_flattened[counter] = h_v.at(i)[j];
+            counter++;
+        }
+    }
+
+    cudaError_t err1 = copy_host_to_device_i(d_ptr, h_ptr_flattened, size_total);
+
+    delete[] h_ptr_flattened;
+
+    return err1;
+}
+
+// allocate, flatten and copy from host to device cv
+cudaError_t allocate_memory_and_copy_host_to_device_flatten_cv(CUSTOMREAL* d_ptr, std::vector<CUSTOMREAL*> const &h_v, size_t size_total, int* size_each)
+{
+    // allocate
+    cudaError_t err0 = allocate_memory_on_device_cv((void**) &d_ptr, size_total);
+    // flatten
+    CUSTOMREAL* h_ptr_flattened = new CUSTOMREAL[size_total];
+    size_t counter = 0;
+    int n_v = h_v.size();
+
+    for (int i = 0; i < n_v; i++) {
+        for (int j = 0; j < size_each[i]; j++) {
+            h_ptr_flattened[counter] = h_v.at(i)[j];
+            counter++;
+        }
+    }
+
+    cudaError_t err1 = copy_host_to_device_cv(d_ptr, h_ptr_flattened, size_total);
+
+    delete[] h_ptr_flattened;
 
     return err1;
 }

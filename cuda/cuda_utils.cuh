@@ -6,6 +6,7 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <stdio.h>
+#include <vector>
 
 #include "cuda_constants.cuh"
 
@@ -39,6 +40,10 @@ cudaError_t copy_device_to_host_cv(CUSTOMREAL *h_ptr, CUSTOMREAL *d_ptr, size_t 
 // allocate and copy to device
 cudaError_t allocate_and_copy_host_to_device_i(int* d_ptr, int* h_ptr, size_t size);
 cudaError_t allocate_and_copy_host_to_device_cv(CUSTOMREAL* d_ptr, CUSTOMREAL* h_ptr, size_t size);
+
+// allocate, flatten and copy to device
+cudaError_t allocate_memory_and_copy_host_to_device_flatten_i(int* d_ptr, std::vector<int*> const &h_v, size_t size_total, int* size_each);
+cudaError_t allocate_memory_and_copy_host_to_device_flatten_cv(CUSTOMREAL* d_ptr, std::vector<CUSTOMREAL*> const &h_v, size_t size_total, int* size_each);
 
 // mpi send recv
 static inline void cuda_send_cr(CUSTOMREAL* buf, int count, int dest, MPI_Comm inter_sub_comm){

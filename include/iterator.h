@@ -13,6 +13,7 @@
 #include "timer.h"
 
 #ifdef USE_CUDA
+#include "grid_wrapper.cuh"
 #include "iterator_wrapper.cuh"
 #endif
 
