@@ -15,8 +15,14 @@ build
 external_libs/hdf5*
 external_libs/openmpi*
 external_libs/local_mpi_hdf5
+external_libs/local_mpi_hdf5_intel
+
 
 base_proj
+
+include_copy*
+src_copy_*
+jchen_work
 
 # result for comparison
 test/inversion_2_one_src/fortran_code/ega5/output/*
@@ -28,4 +34,6 @@ test/solver_performance/input_params_*
 test/solver_performance/vtune*
 test/solver_performance/e0*
 test/solver_performance/advisor*
+test/solver_performance/r0*
+
 

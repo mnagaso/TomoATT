@@ -37,7 +37,7 @@ public:
     // set factors
     void setup_factors(Source &);
     // calculate initial fields T0 T0r T0t T0p and initialize tau
-    void initialize_fields(Source &);
+    void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
     void initialize_fields_teleseismic(Source &, SrcRec&);
     // calculate L1 and Linf diff (sum of value change on the nodes)
@@ -395,6 +395,7 @@ private:
     // anisotropic factors
     CUSTOMREAL a0, b0, c0, f0, fun0;
 
+    CUSTOMREAL source_width;
     //
     // member functions
     //

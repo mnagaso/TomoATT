@@ -66,6 +66,7 @@ inline const CUSTOMREAL _3_CR     = 3.0;
 inline const CUSTOMREAL _4_CR     = 4.0;
 inline const CUSTOMREAL _8_CR     = 8.0;
 inline const CUSTOMREAL TAU_INITIAL_VAL = 1.0;
+inline const CUSTOMREAL TAU_INF_VAL = 20.0;
 inline const int        SWEEPING_COEFF  = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
 
 // ASCII output precision

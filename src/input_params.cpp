@@ -237,6 +237,10 @@ InputParams::InputParams(std::string& input_file){
                     stencil_order = 1;
                 }
             }
+            // stencil type
+            if (config["calculation"]["stencil_type"]) {
+                stencil_type = config["calculation"]["stencil_type"].as<int>();
+            }
             // sweep type
             if (config["calculation"]["sweep_type"]) {
                 sweep_type = config["calculation"]["sweep_type"].as<int>();
@@ -387,6 +391,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(max_iter, 0);
     broadcast_i_single(stencil_order, 0);
     broadcast_bool_single(hybrid_stencil_order, 0);
+    broadcast_i_single(stencil_type, 0);
     broadcast_i_single(sweep_type, 0);
     broadcast_i_single(output_format, 0);
     broadcast_bool_single(if_test, 0);
@@ -436,6 +441,7 @@ InputParams::InputParams(std::string& input_file){
 
     // broadcast the values to all processes
     stdout_by_main("read input file successfully.");
+
 }
 
 
@@ -529,6 +535,7 @@ void InputParams::parse_src_rec_file(){
     rec_points_tmp.clear();
     rec_points.clear();
 
+
     while (std::getline(ifs, line)) {
         // skip comment and empty lines
         if (line[0] == '#' || line.empty())
@@ -566,7 +573,7 @@ void InputParams::parse_src_rec_file(){
             ndata_tmp      = src.n_data;
             src.n_rec      = 0;
             src.n_rec_pair = 0;
-            src.id_event = tokens[12];
+            src.name_src = tokens[12];
             // check if tokens[13] exists, then read weight
             if (tokens.size() > 13)
                 src.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
@@ -591,13 +598,13 @@ void InputParams::parse_src_rec_file(){
                 rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
                 rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
                 rec.phase    = tokens[6];
-                rec.epi_dist = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
-                rec.arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
-                rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // store read data
+                // rec.epi_dist = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
+                // rec.arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
+                rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
 
-                // check if tokens[9] exists read weight
-                if (tokens.size() > 9)
-                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[9]));
+                // check if tokens[8] exists read weight
+                if (tokens.size() > 8)
+                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
                 else
                     rec.weight = 1.0; // default weight
                 rec_points_tmp.push_back(rec);
@@ -720,7 +727,6 @@ void InputParams::do_swap_src_rec(){
                     tmp_new_rec.arr_time     = tmp_rec_ori.arr_time;
                     tmp_new_rec.arr_time_ori = tmp_rec_ori.arr_time_ori;
                     tmp_new_rec.id_rec_ori   = tmp_rec_ori.id_rec;
-
                     goto rec_found;
                 }
             }
@@ -807,6 +813,26 @@ void InputParams::gather_all_arrival_times_to_main(){
 
 void InputParams::write_src_rec_file(int i_inv) {
 
+    // check src and rec:
+    // for (int i_proc = 0; i_proc<=world_nprocs; i_proc++){
+    //     if (i_proc == world_rank){
+    //         std::cout << "check src info" << std::endl;
+    //         for(auto& src: src_points){
+    //             std::cout << "world_rank: "<< world_rank <<", src name: " << src.name_rec << ", lat: " << src.lat << ", lon:"
+    //                     << src.lon << ", dep:" << src.dep << std::endl;
+    //         }
+    //         std::cout << "check rec info" << std::endl;
+    //         for(auto& rec: rec_points){
+    //             for (auto &data: rec){
+    //                 std::cout << "world_rank: "<< world_rank <<", rec name: " << data.name_src << ", lat: " << data.lat << ", lon:"
+    //                     << data.lon << ", dep:" << data.dep << ", arrival time: " << data.arr_time << std::endl;
+    //             }
+    //         }
+    //     }
+    //     synchronize_all_world();
+    // }
+
+
     if (src_rec_file_exist){
 
         std::ofstream ofs;
@@ -855,7 +881,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src_points_out[i_src].dep << " "
                     << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src_points_out[i_src].mag << " "
                     << std::setw(5) << std::right << std::setfill(' ') << src_points_out[i_src].n_data << " "
-                    << src_points_out[i_src].id_event << " "
+                    << src_points_out[i_src].name_src << " "
                     << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << src_points_out[i_src].weight
                     << std::endl;
                 for (long unsigned int i_rec = 0; i_rec < rec_points_out[i_src].size(); i_rec++){
@@ -868,7 +894,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                             << std::fixed << std::setprecision(4) << std::setw(9) << rec_points_out[i_src][i_rec].lon << " "
                             << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec_points_out[i_src][i_rec].dep*1000.0 << " "
                             << rec_points_out[i_src][i_rec].phase << " "
-                            << rec_points_out[i_src][i_rec].epi_dist << " "  // no need to include this data, may consider to delete it
+                            // << rec_points_out[i_src][i_rec].epi_dist << " "  // no need to include this data, may consider to delete it
                             << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].arr_time << " "
                             << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].weight
                             << std::endl;
@@ -906,19 +932,22 @@ void InputParams::reverse_src_rec_points(){
 
     // loop swapped sources
     for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
+        // swapped only the regional events && really need swap
+        if (src_points[i_src].is_teleseismic == false && swap_src_rec){
 
-        // swapped only the regional events
-        if (src_points[i_src].is_teleseismic == false && swap_src_rec ) {
-
+            // int id_rec_orig = src_points[i_src].id_rec;
             // loop swapped receivers
             for (long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++){
                 int id_src_orig = rec_points[i_src][i_rec].id_src;
                 int id_rec_orig = rec_points[i_src][i_rec].id_rec_ori; // cannot fully ecover  the original receiver id
 
-                std::cout << "id_src_orig = " << id_src_orig << " id_rec_orig = " << id_rec_orig << std::endl;
                 // store calculated arrival time in backuped receiver list
                 rec_points_back[id_src_orig][id_rec_orig].arr_time     = rec_points[i_src][i_rec].arr_time;
                 rec_points_back[id_src_orig][id_rec_orig].dif_arr_time = rec_points[i_src][i_rec].dif_arr_time;
+                // std::cout   << "world_rank: " << world_rank << ", id_rec_orig: " << id_rec_orig << ", id_src_orig:"
+                //             << id_src_orig << ", arr_time: " << rec_points_back[id_src_orig][id_rec_orig].arr_time
+                //             << ", i_src:" << i_src << ", i_rec:" << i_rec
+                //             << ", rec_points:" << rec_points[i_src][i_rec].arr_time <<std::endl;
 
                 // update relocated source positions
                 if (run_mode == SRC_RELOCATION) {
@@ -926,7 +955,6 @@ void InputParams::reverse_src_rec_points(){
                     src_points_back[id_src_orig].lon = rec_points[i_src][i_rec].lon;
                     src_points_back[id_src_orig].dep = rec_points[i_src][i_rec].dep;
                 }
-
             }
         } else {
             // teleseismic events are not swapped
@@ -943,6 +971,7 @@ void InputParams::reverse_src_rec_points(){
     // copy backup to backup to src_points and rec_points
     src_points_out = src_points_back;
     rec_points_out = rec_points_back;
+
 
 }
 

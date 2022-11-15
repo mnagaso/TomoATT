@@ -58,9 +58,9 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic) {
             dis_src_err_lat = std::min(error_lat / grid.get_delta_lat(), _1_CR);
             dis_src_err_r   = std::min(error_r   / grid.get_delta_r()  , _1_CR);
 
-            //std::cout << "src_lon, dis_src_lon, dis_src_err_lon : " << src_lon << ", " << dis_src_lon << ", " << dis_src_err_lon << std::endl;
-            //std::cout << "src_lat, dis_src_lat, dis_src_err_lat : " << src_lat << ", " << dis_src_lat << ", " << dis_src_err_lat << std::endl;
-            //std::cout << "src_r, dis_src_r, dis_src_err_r   : " << src_r   << ", " << dis_src_r   << ", " << dis_src_err_r   << std::endl;
+            // std::cout << "src_lon, dis_src_lon, dis_src_err_lon : " << src_lon*RAD2DEG << ", " << dis_src_lon*RAD2DEG << ", " << dis_src_err_lon << std::endl;
+            // std::cout << "src_lat, dis_src_lat, dis_src_err_lat : " << src_lat*RAD2DEG << ", " << dis_src_lat*RAD2DEG << ", " << dis_src_err_lat << std::endl;
+            // std::cout << "src_r, dis_src_r, dis_src_err_r   : " << src_r   << ", " << dis_src_r   << ", " << dis_src_err_r   << std::endl;
 
             if (if_verbose){
                 std::cout << "src positions lon lat r                  :    " << src_lon     << " " << src_lat     << " " << src_r     << std::endl;
@@ -104,8 +104,10 @@ CUSTOMREAL Source::get_fac_at_source(CUSTOMREAL *loc_array) {
     }
 
     broadcast_cr_single(fac, src_rank);
-
+    // std::cout << "interp: " << dis_src_err_r << ' ' << dis_src_err_lat << ' ' << dis_src_err_lon << ' ' << get_fac_at_point(loc_array,0,0,0) << std::endl;
     return fac;
+
+    
 }
 
 
