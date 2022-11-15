@@ -33,8 +33,8 @@ public:
     CUSTOMREAL lat; // stored in degree, but convarted to radian when passed through get_src_* function
     CUSTOMREAL lon; // stored in degree, but convarted to radian when passed through get_src_* function
 
-    CUSTOMREAL arr_time;     // calculated arrival time will be stored and updated during the simulation
-    CUSTOMREAL arr_time_ori; // recorded/original arrival time (written in the input file)
+    CUSTOMREAL arr_time = 0.0;     // calculated arrival time will be stored and updated during the simulation
+    CUSTOMREAL arr_time_ori = 0.0; // recorded/original arrival time (written in the input file)
     CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
     CUSTOMREAL weight=1.0;   // weight
 
@@ -66,7 +66,7 @@ public:
     int min              = 99;
     CUSTOMREAL sec       = 99;
     CUSTOMREAL mag       = 99;
-    std::string id_event = "src_name_dummy";
+    std::string name_src = "src_name_dummy";
     std::string name_rec = "rec_name_dummy";
     std::string phase    = "P";
     CUSTOMREAL epi_dist  = 0;
@@ -75,9 +75,6 @@ public:
     std::vector<int> id_srcs_ori;
     int id_rec_ori; // used for swapping case at writing process
 
-    //
-    // variables for teleseismic source
-    //
     bool is_teleseismic = false;
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
     CUSTOMREAL* arr_times_bound_N; // arrival time of the receiver at the north boundary of the subdomain
@@ -127,6 +124,7 @@ public:
 
     int get_stencil_order(){return stencil_order;};
     void set_stencil_order(int stencil_order_){stencil_order = stencil_order_;};
+    int get_stencil_type(){return stencil_type;};
     int get_sweep_type()   {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};
@@ -182,6 +180,8 @@ private:
     CUSTOMREAL src_lat;              // source latitude in degrees
     CUSTOMREAL src_lon;              // source longitude in degrees
     std::string src_rec_file;        // source receiver file
+    std::string src_list_file;       // source list file
+    std::string rec_list_file;       // source list file
     std::string src_rec_file_out;    // source receiver file to be output
     bool src_rec_file_exist = false; // source receiver file exist
 
@@ -215,10 +215,22 @@ private:
 
     // calculation method
     int stencil_order; // stencil order
+    int stencil_type; // stencil order
     int sweep_type; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
     // parse src_rec_file
     void parse_src_rec_file();
+    // parse src_list_file
+    void parse_src_list();
+    // parse rec_list_file
+    void parse_rec_list();
+    // parse src_rec_file new
+    void parse_src_rec_file_new();
+
+    // list for all src and rec info
+    std::vector<SrcRec> src_list;
+    std::vector<SrcRec> rec_list;
+
     // list for all of src point data
     std::vector<SrcRec> src_points;
     std::vector<SrcRec> src_points_back; // for backup purposes

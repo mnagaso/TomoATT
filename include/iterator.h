@@ -41,6 +41,7 @@ protected:
     virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
     void calculate_stencil_1st_order(Grid&, int&, int&, int&);     // calculate stencil for 1st order
     void calculate_stencil_3rd_order(Grid&, int&, int&, int&);     // calculate stencil for 3rd order
+    void calculate_stencil_1st_order_upwind(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
     void calculate_boundary_nodes(Grid&);                          // calculate boundary values
 //    // teleseismic source
     void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order
@@ -128,6 +129,18 @@ protected:
     CUSTOMREAL wt1, pt1, wt2, pt2;
     CUSTOMREAL wr1, pr1, wr2, pr2;
     CUSTOMREAL Htau, tpT;
+
+    CUSTOMREAL ap1, bp1, ap2, bp2, ap, bp;
+    CUSTOMREAL at1, bt1, at2, bt2, at, bt;
+    CUSTOMREAL ar1, br1, ar2, br2, ar, br;
+    
+    CUSTOMREAL bc_f2, eqn_a, eqn_b, eqn_c, eqn_Delta;
+    CUSTOMREAL tmp_tau;
+    CUSTOMREAL T_r, T_t, T_p, charact_r, charact_t, charact_p;
+    bool is_causality; 
+    int count_cand;
+    std::vector<CUSTOMREAL> canditate = std::vector<CUSTOMREAL>(60);
+
 
     // iteration control
     int iter_count = 0;

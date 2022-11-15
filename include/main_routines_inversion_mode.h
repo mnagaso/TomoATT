@@ -127,14 +127,14 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
-
+        
         if (IP.get_run_mode()==DO_INVERSION){
             // calculate adjoint source
             v_obj += recs.calculate_adjoint_source(IP);
 
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
-
+            
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
 
@@ -152,17 +152,17 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         // delete iterator object
 
     } // end loop sources
-
+    
 
     // wait for all processes to finish
     synchronize_all_world();
 
     // allreduce sum_adj_src
     allreduce_cr_sim_single(v_obj, v_obj);
-
+    
     // return current objective function value
     return v_obj;
-
+    
 }
 
 

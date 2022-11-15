@@ -1211,7 +1211,7 @@ void Grid::setup_factors(Source &src){
 }
 
 
-void Grid::initialize_fields(Source& src){
+void Grid::initialize_fields(Source& src, InputParams& IP){
 
     // get source position
     CUSTOMREAL src_r = src.get_src_r();
@@ -1223,6 +1223,10 @@ void Grid::initialize_fields(Source& src){
 
     // debug
     int n_source_node = 0;
+
+    // std::cout << a0 << ' ' << b0 << ' ' << c0 << ' ' << f0 << ' ' << std::endl;
+
+
 
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
@@ -1248,9 +1252,15 @@ void Grid::initialize_fields(Source& src){
                     T0p_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(b0/(c0b0_minus_f0f0)*dp_from_src+f0/(c0b0_minus_f0f0)*dt_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
                 }
 
-                if (std::abs(dr_from_src/dr) <= _2_CR \
-                 && std::abs(dt_from_src/dt) <= _2_CR \
-                 && std::abs(dp_from_src/dp) <= _2_CR) {
+                if (IP.get_stencil_order() == 1){
+                    source_width = _1_CR-0.1;
+                } else {
+                    source_width = _2_CR;
+                }
+
+                if (std::abs(dr_from_src/dr) <= source_width \
+                 && std::abs(dt_from_src/dt) <= source_width \
+                 && std::abs(dp_from_src/dp) <= source_width) {
 
                     tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
                     is_changed[I2V(i_lon,j_lat,k_r)] = false;
@@ -1267,8 +1277,10 @@ void Grid::initialize_fields(Source& src){
                     }
 
                 } else {
-
-                    tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
+                    if (IP.get_stencil_type()==1)   // upwind scheme, initial tau should be large enough
+                        tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INF_VAL;
+                    else
+                        tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
                     is_changed[I2V(i_lon,j_lat,k_r)] = true;
 
                 }
@@ -1414,6 +1426,7 @@ void Grid::calc_L1_and_Linf_diff(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)];
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)]);
+                    // std::cout << R_earth-r_loc_3d[k_r] << ' ' << t_loc_3d[j_lat] << ' ' << p_loc_3d[i_lon] << ' ' << T0v_loc[I2V(i_lon,j_lat,k_r)] << ' ' << std::endl;
                 }
             }
         }

@@ -742,6 +742,48 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 }
 
+// Iterator_level_1st_order_upwind::Iterator_level_1st_order_upwind(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) 
+//                                 : Iterator_level(IP, grid, src, io, first_init, is_teleseismic_in) {
+//     // initialization is done in the base class                              
+// }
+
+// void Iterator_level_1st_order_upwind::do_sweep(int iswp, Grid& grid, InputParams& IP){
+//     // set sweep direction
+//     set_sweep_direction(iswp);
+
+//     int iip, jjt, kkr;
+
+//     for (int i_level = st_level; i_level <= ed_level; i_level++) {
+//         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
+//             int kk = ijk.at(2);
+//             int jj = ijk.at(1);
+//             int ii = ijk.at(0);
+
+//             if (r_dirc < 0) kkr = nr-kk; //kk-1;
+//             else            kkr = kk-1;  //nr-kk;
+//             if (t_dirc < 0) jjt = nt-jj; //jj-1;
+//             else            jjt = jj-1;  //nt-jj;
+//             if (p_dirc < 0) iip = np-ii; //ii-1;
+//             else            iip = ii-1;  //np-ii;
+
+//             //
+//             // calculate stencils
+//             //
+//             if (grid.is_changed[I2V(iip, jjt, kkr)]) {
+//                 calculate_stencil_3rd_order(grid, iip, jjt, kkr);
+//             } // is_changed == true
+//         } // end ijk
+
+//         // mpi synchronization
+//         synchronize_all_sub();
+
+//     } // end loop i_level
+
+//     // update boundary
+//     if (subdom_main) {
+//         calculate_boundary_nodes(grid);
+//     }
+// }
 
 Iterator_level_1st_order_tele::Iterator_level_1st_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
                          : Iterator_level_tele(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
