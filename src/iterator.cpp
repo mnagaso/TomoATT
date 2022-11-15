@@ -151,6 +151,8 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
                               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2, \
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
         }
+
+        std::cout << "gpu grid initialization done." << std::endl;
     }
 #endif
 
@@ -245,10 +247,6 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
 #if defined USE_SIMD || defined USE_CUDA
 
-#ifdef USE_CUDA
-    if(!use_gpu) break; // no need to allocate memory on device
-#endif
-
     preload_indices(vv_iip, vv_jjt, vv_kkr,  0, 0, 0);
     preload_indices_1d(vv_i__j__k__, 0, 0, 0);
     preload_indices_1d(vv_ip1j__k__, 1, 0, 0);
@@ -291,7 +289,7 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
 }
 
-#ifdef USE_SIMD
+#if defined USE_SIMD || defined USE_CUDA
 
 template <typename T>
 std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
@@ -305,9 +303,18 @@ std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
         for (int i_level=0; i_level<n_levels; i_level++){
 
             int nnodes = ijk_for_this_subproc.at(i_level).size();
-            int nnodes_tmp = nnodes + ((nnodes % NSIMD == 0) ? 0 : (NSIMD - nnodes % NSIMD)); // length needs to be multiple of NSIMD
+            int nnodes_tmp;
+            if(!use_gpu)
+                nnodes_tmp = nnodes + ((nnodes % NSIMD == 0) ? 0 : (NSIMD - nnodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                nnodes_tmp = nnodes;
 
-            CUSTOMREAL* v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
+            CUSTOMREAL* v;
+            if (!use_gpu)
+                v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
+            else
+                v = (CUSTOMREAL*) malloc(nnodes_tmp*sizeof(CUSTOMREAL));
+
             // asign values
             for (int i_node=0; i_node<nnodes; i_node++){
                 v[i_node] = (CUSTOMREAL) a[vv_i__j__k__.at(iswap).at(i_level)[i_node]];
@@ -341,12 +348,22 @@ void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
         int n_levels = ijk_for_this_subproc.size();
         for (int i_level = 0; i_level < n_levels; i_level++) {
             int n_nodes = ijk_for_this_subproc[i_level].size();
-            int n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+            int n_nodes_tmp;
+            if(!use_gpu)
+                n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                n_nodes_tmp = n_nodes;
 
-            T* vi = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-            T* vj = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-            T* vk = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-
+            T* vi, *vj, *vk;
+            if(!use_gpu){
+                vi = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+                vj = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+                vk = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            } else {
+                vi = (T*) malloc(n_nodes_tmp*sizeof(T));
+                vj = (T*) malloc(n_nodes_tmp*sizeof(T));
+                vk = (T*) malloc(n_nodes_tmp*sizeof(T));
+            }
             for (int i_node = 0; i_node < n_nodes; i_node++) {
                 int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
                 V2I(tmp_ijk, iip, jjt, kkr);
@@ -405,9 +422,17 @@ void Iterator::preload_indices_1d(std::vector<std::vector<T*>> &vvv, \
         int n_levels = ijk_for_this_subproc.size();
         for (int i_level = 0; i_level < n_levels; i_level++) {
             int n_nodes = ijk_for_this_subproc[i_level].size();
-            int n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+            int n_nodes_tmp;
+            if(!use_gpu)
+                n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                n_nodes_tmp = n_nodes;
 
-            T* v = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T* v;
+            if (!use_gpu)
+                v = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            else
+                v = (T*) malloc(n_nodes_tmp*sizeof(T));
 
             for (int i_node = 0; i_node < n_nodes; i_node++) {
                 int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
@@ -447,7 +472,7 @@ void Iterator::preload_indices_1d(std::vector<std::vector<T*>> &vvv, \
 }
 
 
-#endif // USE_SIMD
+#endif // USE_SIMD || USE_CUDA
 
 void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, bool& first_init) {
 

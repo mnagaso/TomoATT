@@ -15,7 +15,7 @@ endif()
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx512dq -march=native -ftree-vectorize -fopenmp")
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -march=skylake-avx512 -ftree-vectorize -fopenmp")
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
 
 #
 # for debugging
@@ -85,10 +85,10 @@ if(CUDA_FOUND) # TODO : add HIP here in the future
   # cuda flag
   #
   # for production
-  set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
+  #set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
   #
   # for debugging
-  #set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -O0 -gencode arch=compute_61,code=sm_61")
+  set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -O0 -gencode arch=compute_61,code=sm_61")
   set(CMAKE_CUDA_STANDARD "11")
   message(STATUS, "TomoATT will be compiled with cuda.")
 else()

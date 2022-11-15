@@ -595,36 +595,36 @@ void Grid::memory_allocation() {
             }
         }
     } // end of if inverse_flag
-
-//#ifdef USE_CUDA
-//    if (use_gpu){
-//        // structure storing device memory
-//        gpu_grid = new Grid_on_device();
-//        // allocate memory for device
-//        cuda_allocate_memory_for_grid(gpu_grid, \
-//            ngrid_i, ngrid_j, ngrid_k, \
-//            loc_I, \
-//            loc_J, \
-//            loc_K, \
-//            loc_I_excl_ghost, \
-//            loc_J_excl_ghost, \
-//            loc_K_excl_ghost, \
-//            n_grid_bound_i, \
-//            n_grid_bound_j, \
-//            n_grid_bound_k, \
-//            n_ghost_layers, \
-//            inverse_flag, \
-//            i_start_loc, \
-//            j_start_loc, \
-//            k_start_loc, \
-//            i_end_loc, \
-//            j_end_loc, \
-//            k_end_loc, \
-//            n_subdomains, \
-//            inter_sub_rank);
-//    }
-//#endif
-
+/*
+#ifdef USE_CUDA
+    if (use_gpu){
+        // structure storing device memory
+        gpu_grid = new Grid_on_device();
+        // allocate memory for device
+        cuda_allocate_memory_for_grid(gpu_grid, \
+            ngrid_i, ngrid_j, ngrid_k, \
+            loc_I, \
+            loc_J, \
+            loc_K, \
+            loc_I_excl_ghost, \
+            loc_J_excl_ghost, \
+            loc_K_excl_ghost, \
+            n_grid_bound_i, \
+            n_grid_bound_j, \
+            n_grid_bound_k, \
+            n_ghost_layers, \
+            inverse_flag, \
+            i_start_loc, \
+            j_start_loc, \
+            k_start_loc, \
+            i_end_loc, \
+            j_end_loc, \
+            k_end_loc, \
+            n_subdomains, \
+            inter_sub_rank);
+    }
+#endif
+*/
     stdout_by_main("Memory allocation done.");
 }
 
@@ -2264,67 +2264,68 @@ void Grid::calc_residual() {
     }
 }
 
+/*
+void Grid::initialize_gpu_grid(std::vector<std::vector<int>> &ijk_levels) {
+    // initialize gpu grid
 
-//void Grid::initialize_gpu_grid(std::vector<std::vector<int>> &ijk_levels) {
-//    // initialize gpu grid
-//
-//#ifdef USE_CUDA
-//
-//    // initialize gpu parameters
-//    cuda_init_gpu_params(gpu_grid, inter_sub_comm, ijk_levels, dr, dt, dp);
-//
-//    // allocate memory for device
-//    // transfer data to device
-//
-//    cuda_data_transfer_to_device(gpu_grid,
-//        loc_I, \
-//        loc_J, \
-//        loc_K, \
-//        n_grid_bound_i, \
-//        n_grid_bound_j, \
-//        n_grid_bound_k, \
-//        n_ghost_layers, \
-//        dr, \
-//        dt, \
-//        dp, \
-//        neighbors_id, \
-//        tau_old_loc, \
-//        tau_loc, \
-//        fac_a_loc, \
-//        fac_b_loc, \
-//        fac_c_loc, \
-//        fac_f_loc, \
-//        T0v_loc, \
-//        T0r_loc, \
-//        T0t_loc, \
-//        T0p_loc, \
-//        fun_loc, \
-//        Tadj_loc, \
-//        t_loc_1d, \
-//        r_loc_1d, \
-//        zeta_loc, \
-//        xi_loc, \
-//        eta_loc, \
-//        T_loc, \
-//        is_changed);
-//
-//
-//
-//#endif
-//
-//}
+#ifdef USE_CUDA
 
-//void Grid::reinitialize_gpu_grid(){
-//    if (subdom_main) {
-//        if(use_gpu){
-//#ifdef USE_CUDA
-//            cuda_reinitialize_grid(gpu_grid, fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc, \
-//                T0v_loc, T0r_loc, T0t_loc, T0p_loc, tau_loc, tau_old_loc, is_changed);
-//#endif
-//        }
-//    }
-//
-//}
+    // initialize gpu parameters
+    cuda_init_gpu_params(gpu_grid, inter_sub_comm, ijk_levels, dr, dt, dp);
+
+    // allocate memory for device
+    // transfer data to device
+
+    cuda_data_transfer_to_device(gpu_grid,
+        loc_I, \
+        loc_J, \
+        loc_K, \
+        n_grid_bound_i, \
+        n_grid_bound_j, \
+        n_grid_bound_k, \
+        n_ghost_layers, \
+        dr, \
+        dt, \
+        dp, \
+        neighbors_id, \
+        tau_old_loc, \
+        tau_loc, \
+        fac_a_loc, \
+        fac_b_loc, \
+        fac_c_loc, \
+        fac_f_loc, \
+        T0v_loc, \
+        T0r_loc, \
+        T0t_loc, \
+        T0p_loc, \
+        fun_loc, \
+        Tadj_loc, \
+        t_loc_1d, \
+        r_loc_1d, \
+        zeta_loc, \
+        xi_loc, \
+        eta_loc, \
+        T_loc, \
+        is_changed);
+
+
+
+#endif
+
+}
+
+void Grid::reinitialize_gpu_grid(){
+    if (subdom_main) {
+        if(use_gpu){
+#ifdef USE_CUDA
+            cuda_reinitialize_grid(gpu_grid, fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc, \
+                T0v_loc, T0r_loc, T0t_loc, T0p_loc, tau_loc, tau_old_loc, is_changed);
+#endif
+        }
+    }
+
+}
+*/
 
 void Grid::write_inversion_grid_file(){
 

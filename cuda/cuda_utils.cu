@@ -73,7 +73,7 @@ cudaError_t copy_device_to_host_cv(CUSTOMREAL* h_ptr, CUSTOMREAL* d_ptr, size_t 
 // allocate and copy to device
 cudaError_t allocate_and_copy_host_to_device_i(int* d_ptr, int* h_ptr, size_t size)
 {
-    cudaError_t err0 = allocate_memory_on_device_i((void**) &d_ptr, size);
+    cudaError_t err0 = allocate_memory_on_device_i((void**)&d_ptr, size);
     cudaError_t err1 = copy_host_to_device_i(d_ptr, h_ptr, size);
 
     return err1;
@@ -88,49 +88,59 @@ cudaError_t allocate_and_copy_host_to_device_cv(CUSTOMREAL* d_ptr, CUSTOMREAL* h
 }
 
 // allocate, flatten and copy from host to device
-cudaError_t allocate_memory_and_copy_host_to_device_flatten_i(int* d_ptr, std::vector<int*> const &h_v, size_t size_total, int* size_each)
+void flatten_arr_i(int* h_ptr_flattened, std::vector<int*>&h_v, int size_total, int* size_each)
 {
-    // allocate
-    cudaError_t err0 = allocate_memory_on_device_i((void**) &d_ptr, size_total);
+    // flatten
+    int counter = 0;
+    int n_v = h_v.size();
+
+    for (int i = 0; i < n_v; i++) { // levels
+        for (int j = 0; j < size_each[i]; j++) {
+            h_ptr_flattened[counter] = h_v.at(i)[j];
+            counter++;
+        }
+    }
+}
+
+void flatten_arr_cv(CUSTOMREAL* h_ptr_flattened, std::vector<CUSTOMREAL*> &h_v, int size_total, int* size_each)
+{
+    // flatten
+    int counter = 0;
+    int n_v = h_v.size();
+
+    for (int i = 0; i < n_v; i++) { // levels
+        for (int j = 0; j < size_each[i]; j++) {
+            h_ptr_flattened[counter] = h_v.at(i)[j];
+            counter++;
+        }
+    }
+}
+
+cudaError_t allocate_and_copy_host_to_device_flattened_i(int* d_ptr, std::vector<int*>& vh, int size_total, int* size_each){
     // flatten
     int* h_ptr_flattened = new int[size_total];
-    size_t counter = 0;
-    int n_v = h_v.size();
+    flatten_arr_i(h_ptr_flattened, vh, size_total, size_each);
 
-    for (int i = 0; i < n_v; i++) {
-        for (int j = 0; j < size_each[i]; j++) {
-            h_ptr_flattened[counter] = h_v.at(i)[j];
-            counter++;
-        }
-    }
+    // allocate and copy
+    cudaError_t err = allocate_and_copy_host_to_device_i(d_ptr, h_ptr_flattened, size_total);
 
-    cudaError_t err1 = copy_host_to_device_i(d_ptr, h_ptr_flattened, size_total);
-
+    // free
     delete[] h_ptr_flattened;
 
-    return err1;
+    return err;
 }
 
-// allocate, flatten and copy from host to device cv
-cudaError_t allocate_memory_and_copy_host_to_device_flatten_cv(CUSTOMREAL* d_ptr, std::vector<CUSTOMREAL*> const &h_v, size_t size_total, int* size_each)
-{
-    // allocate
-    cudaError_t err0 = allocate_memory_on_device_cv((void**) &d_ptr, size_total);
+cudaError_t allocate_and_copy_host_to_device_flattened_cv(CUSTOMREAL* d_ptr, std::vector<CUSTOMREAL*>& vh, int size_total, int* size_each){
     // flatten
     CUSTOMREAL* h_ptr_flattened = new CUSTOMREAL[size_total];
-    size_t counter = 0;
-    int n_v = h_v.size();
+    flatten_arr_cv(h_ptr_flattened, vh, size_total, size_each);
 
-    for (int i = 0; i < n_v; i++) {
-        for (int j = 0; j < size_each[i]; j++) {
-            h_ptr_flattened[counter] = h_v.at(i)[j];
-            counter++;
-        }
-    }
+    // allocate and copy
+    cudaError_t err = allocate_and_copy_host_to_device_cv(d_ptr, h_ptr_flattened, size_total);
 
-    cudaError_t err1 = copy_host_to_device_cv(d_ptr, h_ptr_flattened, size_total);
-
+    // free
     delete[] h_ptr_flattened;
 
-    return err1;
+    return err;
 }
+

@@ -379,14 +379,15 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
     else { // if use_gpu
 
 #if defined USE_CUDA
+
         // copy tau to device
-        cuda_copy_tau_to_device(grid.tau_loc, gpu_grid);
+        cuda_copy_tau_to_device(gpu_grid, grid.tau_loc);
 
         // run iteration
-        cuda_run_iteration(gpu_grid);
+        cuda_run_iteration_forward(gpu_grid, iswp);
 
         // copy tau to host
-        cuda_copy_tau_to_host(grid.tau_loc, gpu_grid);
+        cuda_copy_tau_to_host(gpu_grid, grid.tau_loc);
 
 #else // !defiend USE_CUDA
         // exit code

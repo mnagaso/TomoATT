@@ -6,6 +6,7 @@
 #include <cuda.h>
 
 #include <vector>
+#include <iostream>
 
 //#include "config.h"
 #include "cuda_constants.cuh"
@@ -18,9 +19,10 @@ typedef struct Grid_on_device {
     int loc_I_host, loc_J_host, loc_K_host;
     int n_nodes_total_host;
     int n_levels_host;
+    CUSTOMREAL dr_host, dt_host, dp_host;
 
     // index storage
-    int* n_nodes_on_levels;
+    int* n_nodes_on_levels, *n_nodes_on_levels_host;
 
     int* vv_i__j__k___0, *vv_i__j__k___1, *vv_i__j__k___2, *vv_i__j__k___3, *vv_i__j__k___4, *vv_i__j__k___5, *vv_i__j__k___6, *vv_i__j__k___7;
     int* vv_ip1j__k___0, *vv_ip1j__k___1, *vv_ip1j__k___2, *vv_ip1j__k___3, *vv_ip1j__k___4, *vv_ip1j__k___5, *vv_ip1j__k___6, *vv_ip1j__k___7;
@@ -64,49 +66,49 @@ typedef struct Grid_on_device {
 
 void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_device* grid_dv, int const& loc_I, int const& loc_J, int const& loc_K,
                 CUSTOMREAL const& dp, CUSTOMREAL const& dt, CUSTOMREAL const& dr, \
-                std::vector<std::vector<int*>>        const& vv_i__j__k__, \
-                std::vector<std::vector<int*>>        const& vv_ip1j__k__, \
-                std::vector<std::vector<int*>>        const& vv_im1j__k__, \
-                std::vector<std::vector<int*>>        const& vv_i__jp1k__, \
-                std::vector<std::vector<int*>>        const& vv_i__jm1k__, \
-                std::vector<std::vector<int*>>        const& vv_i__j__kp1, \
-                std::vector<std::vector<int*>>        const& vv_i__j__km1, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_a, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_b, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_c, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_f, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0v, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0r, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0t, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0p, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fun, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_change);
+                std::vector<std::vector<int*>>        & vv_i__j__k__, \
+                std::vector<std::vector<int*>>        & vv_ip1j__k__, \
+                std::vector<std::vector<int*>>        & vv_im1j__k__, \
+                std::vector<std::vector<int*>>        & vv_i__jp1k__, \
+                std::vector<std::vector<int*>>        & vv_i__jm1k__, \
+                std::vector<std::vector<int*>>        & vv_i__j__kp1, \
+                std::vector<std::vector<int*>>        & vv_i__j__km1, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_a, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_b, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_c, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_f, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0v, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0r, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0t, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0p, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fun, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_change);
 
 void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_device* grid_dv, int const& loc_I, int const& loc_J, int const& loc_K,
                 CUSTOMREAL const& dp, CUSTOMREAL const& dt, CUSTOMREAL const& dr, \
-                std::vector<std::vector<int*>>        const& vv_i__j__k__, \
-                std::vector<std::vector<int*>>        const& vv_ip1j__k__, \
-                std::vector<std::vector<int*>>        const& vv_im1j__k__, \
-                std::vector<std::vector<int*>>        const& vv_i__jp1k__, \
-                std::vector<std::vector<int*>>        const& vv_i__jm1k__, \
-                std::vector<std::vector<int*>>        const& vv_i__j__kp1, \
-                std::vector<std::vector<int*>>        const& vv_i__j__km1, \
-                std::vector<std::vector<int*>>        const& vv_ip2j__k__, \
-                std::vector<std::vector<int*>>        const& vv_im2j__k__, \
-                std::vector<std::vector<int*>>        const& vv_i__jp2k__, \
-                std::vector<std::vector<int*>>        const& vv_i__jm2k__, \
-                std::vector<std::vector<int*>>        const& vv_i__j__kp2, \
-                std::vector<std::vector<int*>>        const& vv_i__j__km2, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_a, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_b, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_c, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fac_f, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0v, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0r, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0t, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_T0p, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_fun, \
-                std::vector<std::vector<CUSTOMREAL*>> const& vv_change);
+                std::vector<std::vector<int*>>        & vv_i__j__k__, \
+                std::vector<std::vector<int*>>        & vv_ip1j__k__, \
+                std::vector<std::vector<int*>>        & vv_im1j__k__, \
+                std::vector<std::vector<int*>>        & vv_i__jp1k__, \
+                std::vector<std::vector<int*>>        & vv_i__jm1k__, \
+                std::vector<std::vector<int*>>        & vv_i__j__kp1, \
+                std::vector<std::vector<int*>>        & vv_i__j__km1, \
+                std::vector<std::vector<int*>>        & vv_ip2j__k__, \
+                std::vector<std::vector<int*>>        & vv_im2j__k__, \
+                std::vector<std::vector<int*>>        & vv_i__jp2k__, \
+                std::vector<std::vector<int*>>        & vv_i__jm2k__, \
+                std::vector<std::vector<int*>>        & vv_i__j__kp2, \
+                std::vector<std::vector<int*>>        & vv_i__j__km2, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_a, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_b, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_c, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fac_f, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0v, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0r, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0t, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_T0p, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_fun, \
+                std::vector<std::vector<CUSTOMREAL*>> & vv_change);
 
 
 // finalize

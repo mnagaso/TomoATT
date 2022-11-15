@@ -79,7 +79,11 @@ inline void print_simd_type() {
 #endif // __ARM_FEATURE_SVE
 }
 
-
+#else // USE_CUDA but not AVX dummy
+const int ALIGN = 32;
+const int NSIMD = 4;
 #endif // USE_SIMD
+
+
 
 #endif // SIMD_CONF_H

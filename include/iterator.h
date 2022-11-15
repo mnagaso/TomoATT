@@ -17,9 +17,9 @@
 #include "iterator_wrapper.cuh"
 #endif
 
-#ifdef USE_SIMD
+//#ifdef USE_SIMD
 #include "simd_conf.h"
-#endif
+//#endif
 
 class Iterator {
 public:
