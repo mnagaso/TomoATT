@@ -38,15 +38,15 @@ cudaError_t copy_device_to_host_i(int *h_ptr, int *d_ptr, size_t size);
 cudaError_t copy_device_to_host_cv(CUSTOMREAL *h_ptr, CUSTOMREAL *d_ptr, size_t size);
 
 // allocate and copy to device
-cudaError_t allocate_and_copy_host_to_device_i(int* d_ptr, int* h_ptr, size_t size);
-cudaError_t allocate_and_copy_host_to_device_cv(CUSTOMREAL* d_ptr, CUSTOMREAL* h_ptr, size_t size);
+void* allocate_and_copy_host_to_device_i(int* h_ptr, size_t size, int num);
+void* allocate_and_copy_host_to_device_cv(CUSTOMREAL* h_ptr, size_t size, int num);
 
 // allocate, flatten and copy to device
 void flatten_arr_i(int* h_ptr_flattened, std::vector<int*> &h_v, int size_total, int* size_each);
 void flatten_arr_cv(CUSTOMREAL* h_ptr_flattened, std::vector<CUSTOMREAL*> &h_v, int size_total, int* size_each);
 
-cudaError_t allocate_and_copy_host_to_device_flattened_i(int* d_ptr,         std::vector<int*>&vh, int size_total, int* size_each);
-cudaError_t allocate_and_copy_host_to_device_flattened_cv(CUSTOMREAL* d_ptr, std::vector<CUSTOMREAL*>& vh, int size_total, int* size_each);
+void* allocate_and_copy_host_to_device_flattened_i(std::vector<int*>&vh, int size_total, int* size_each, int num);
+void* allocate_and_copy_host_to_device_flattened_cv(std::vector<CUSTOMREAL*>& vh, int size_total, int* size_each, int num);
 
 
 // mpi send recv
@@ -139,6 +139,23 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
       if (abort) exit(code);
    }
+}
+
+inline void print_memory_usage(){
+    size_t free_byte ;
+    size_t total_byte ;
+    cudaError_t cuda_status = cudaMemGetInfo( &free_byte, &total_byte ) ;
+    if ( cudaSuccess != cuda_status ){
+        printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
+        exit(1);
+    }
+
+    double free_db = (double)free_byte ;
+    double total_db = (double)total_byte ;
+    double used_db = total_db - free_db ;
+
+    printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
+            used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
 }
 
 inline void print_CUDA_error_if_any(cudaError_t err, int num) {

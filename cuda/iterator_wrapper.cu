@@ -45,35 +45,44 @@ __device__ CUSTOMREAL cuda_calc_LF_Hamiltonian( \
 }
 
 __global__ void cuda_do_sweep_level_kernel_1st(\
-    int* i__j__k__,\
-    int* ip1j__k__,\
-    int* im1j__k__,\
-    int* i__jp1k__,\
-    int* i__jm1k__,\
-    int* i__j__kp1,\
-    int* i__j__km1,\
-    CUSTOMREAL* fac_a, \
-    CUSTOMREAL* fac_b, \
-    CUSTOMREAL* fac_c, \
-    CUSTOMREAL* fac_f, \
-    CUSTOMREAL* T0v, \
-    CUSTOMREAL* T0r, \
-    CUSTOMREAL* T0t, \
-    CUSTOMREAL* T0p, \
-    CUSTOMREAL* fun, \
-    CUSTOMREAL* changed, \
-    CUSTOMREAL* tau, \
-    int loc_I, \
-    int loc_J, \
-    int loc_K, \
-    CUSTOMREAL dr, \
-    CUSTOMREAL dt, \
-    CUSTOMREAL dp, \
-    int n_nodes_this_level \
+    const int i__j__k__[],\
+    const int ip1j__k__[],\
+    const int im1j__k__[],\
+    const int i__jp1k__[],\
+    const int i__jm1k__[],\
+    const int i__j__kp1[],\
+    const int i__j__km1[],\
+    const CUSTOMREAL fac_a[], \
+    const CUSTOMREAL fac_b[], \
+    const CUSTOMREAL fac_c[], \
+    const CUSTOMREAL fac_f[], \
+    const CUSTOMREAL T0v[], \
+    const CUSTOMREAL T0r[], \
+    const CUSTOMREAL T0t[], \
+    const CUSTOMREAL T0p[], \
+    const CUSTOMREAL fun[], \
+    const CUSTOMREAL changed[], \
+    CUSTOMREAL tau[], \
+    const int loc_I, \
+    const int loc_J, \
+    const int loc_K, \
+    const CUSTOMREAL dr, \
+    const CUSTOMREAL dt, \
+    const CUSTOMREAL dp, \
+    const int n_nodes_this_level, \
+    const int i_start \
 ){
-    unsigned int i_node = (blockIdx.x + blockIdx.y*gridDim.x)*blockDim.x + threadIdx.x;
 
-    if (i_node > n_nodes_this_level) return;
+    unsigned int i_node = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
+    //unsigned int i_node = (blockIdx.x + blockIdx.y*gridDim.x)*blockDim.x + threadIdx.x;
+
+    if (i_node >= n_nodes_this_level) return;
+
+    i_node += i_start;
+
+    if (i_node >= loc_I*loc_J*loc_K) return;
+
+    if (changed[i_node] != 1.0) return;
 
     CUSTOMREAL sigr = 1.0*sqrt(fac_a[i_node])*T0v[i_node];
     CUSTOMREAL sigt = 1.0*sqrt(fac_b[i_node])*T0v[i_node];
@@ -102,8 +111,8 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
                                                tau[i__j__k__[i_node]], \
                                                pp1, pp2, pt1, pt2, pr1, pr2);
 
-    tau[i__j__k__[i_node]] += coe*(fun[i_node] - Htau) \
-                            + coe*(sigr*(pr2-pr1)/2.0 + sigt*(pt2-pt1)/2.0 + sigp*(pp2-pp1)/2.0);
+    tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
+                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/2.0);
 
 }
 
@@ -138,18 +147,28 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
     CUSTOMREAL dr, \
     CUSTOMREAL dt, \
     CUSTOMREAL dp,  \
-    int n_nodes_this_level \
+    int n_nodes_this_level, \
+    int i_start \
 ){
 
     CUSTOMREAL pp1, pp2, pt1, pt2, pr1, pr2;
 
-    unsigned int i_node = (blockIdx.x + blockIdx.y*gridDim.x)*blockDim.x + threadIdx.x;
+    unsigned int i_node = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
+    //unsigned int i_node = (blockIdx.x + blockIdx.y*gridDim.x)*blockDim.x + threadIdx.x;
 
-    if (i_node > n_nodes_this_level) return;
+    if (i_node >= n_nodes_this_level) return;
 
-    int k = i_node/(loc_I*loc_J);
-    int j = (i_node - k*loc_I*loc_J)/loc_I;
-    int i = i_node - k*loc_I*loc_J - j*loc_I;
+    i_node += i_start;
+    if (i_node >= loc_I*loc_J*loc_K) return;
+
+
+    if (changed[i_node] != 1.0) return;
+
+    int k = i__j__k__[i_node]/(loc_I*loc_J);
+    int j = (i__j__k__[i_node] - k*loc_I*loc_J)/loc_I;
+    int i = i__j__k__[i_node] - k*loc_I*loc_J - j*loc_I;
+
+
     CUSTOMREAL DRinv = 1.0/dr;
     CUSTOMREAL DTinv = 1.0/dt;
     CUSTOMREAL DPinv = 1.0/dp;
@@ -157,9 +176,9 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
     CUSTOMREAL DTinv_half = DTinv*0.5;
     CUSTOMREAL DPinv_half = DPinv*0.5;
 
-    CUSTOMREAL sigr = 1.0*sqrt(fac_a[i__j__k__[i_node]])*T0v[i__j__k__[i_node]];
-    CUSTOMREAL sigt = 1.0*sqrt(fac_b[i__j__k__[i_node]])*T0v[i__j__k__[i_node]];
-    CUSTOMREAL sigp = 1.0*sqrt(fac_c[i__j__k__[i_node]])*T0v[i__j__k__[i_node]];
+    CUSTOMREAL sigr = 1.0*sqrt(fac_a[i_node])*T0v[i_node];
+    CUSTOMREAL sigt = 1.0*sqrt(fac_b[i_node])*T0v[i_node];
+    CUSTOMREAL sigp = 1.0*sqrt(fac_c[i_node])*T0v[i_node];
     CUSTOMREAL coe  = 1.0/((sigr/dr)+(sigt/dt)+(sigp/dp));
 
     // direction p
@@ -199,19 +218,19 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
     }
 
     CUSTOMREAL Htau = cuda_calc_LF_Hamiltonian(\
-                                               fac_a[i__j__k__[i_node]], \
-                                               fac_b[i__j__k__[i_node]], \
-                                               fac_c[i__j__k__[i_node]], \
-                                               fac_f[i__j__k__[i_node]], \
-                                               T0r[i__j__k__[i_node]], \
-                                               T0t[i__j__k__[i_node]], \
-                                               T0p[i__j__k__[i_node]], \
-                                               T0v[i__j__k__[i_node]], \
+                                               fac_a[i_node], \
+                                               fac_b[i_node], \
+                                               fac_c[i_node], \
+                                               fac_f[i_node], \
+                                               T0r[i_node], \
+                                               T0t[i_node], \
+                                               T0p[i_node], \
+                                               T0v[i_node], \
                                                tau[i__j__k__[i_node]], \
                                                pp1, pp2, pt1, pt2, pr1, pr2);
 
-    tau[i__j__k__[i_node]] += coe*(fun[i__j__k__[i_node]] - Htau) \
-                            + coe*(sigr*(pr2-pr1)/2.0 + sigt*(pt2-pt1)/2.0 + sigp*(pp2-pp1)/2.0);
+    tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
+                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/2.0);
 
 
 }
@@ -247,550 +266,566 @@ void initialize_sweep_params(Grid_on_device* grid_dv){
 
 }
 
-//        if (grid_dv->if_3rd_order) {
-//            print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
-//        } else {
-//            print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30002);
-//        }
+
+void finalize_sweep_params(Grid_on_device* grid_on_dv){
+    free(grid_on_dv->level_streams);
+}
 
 
-void run_kernel(Grid_on_device* grid_dv, int const& iswp, int const& i_node_offset, int const& i_level, \
+void run_kernel(Grid_on_device* grid_dv, int const& iswp, int& i_node_offset, int const& i_level, \
                 dim3& grid_each, dim3& threads_each, int& n_nodes_this_level){
 
         int id_stream = i_level % CUDA_MAX_NUM_STREAMS;
 
         if (grid_dv->if_3rd_order) {
            if (iswp == 0){
-                void *kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_0[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_0[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_0[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_0[i_node_offset]), \
-                    &(grid_dv->vv_T0v_0[i_node_offset]), \
-                    &(grid_dv->vv_T0r_0[i_node_offset]), \
-                    &(grid_dv->vv_T0t_0[i_node_offset]), \
-                    &(grid_dv->vv_T0p_0[i_node_offset]), \
-                    &(grid_dv->vv_fun_0[i_node_offset]), \
-                    &(grid_dv->vv_change_0[i_node_offset]), \
+                void *kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___0), \
+                    &(grid_dv->vv_ip1j__k___0), \
+                    &(grid_dv->vv_im1j__k___0), \
+                    &(grid_dv->vv_i__jp1k___0), \
+                    &(grid_dv->vv_i__jm1k___0), \
+                    &(grid_dv->vv_i__j__kp1_0), \
+                    &(grid_dv->vv_i__j__km1_0), \
+                    &(grid_dv->vv_ip2j__k___0), \
+                    &(grid_dv->vv_im2j__k___0), \
+                    &(grid_dv->vv_i__jp2k___0), \
+                    &(grid_dv->vv_i__jm2k___0), \
+                    &(grid_dv->vv_i__j__kp2_0), \
+                    &(grid_dv->vv_i__j__km2_0), \
+                    &(grid_dv->vv_fac_a_0    ), \
+                    &(grid_dv->vv_fac_b_0    ), \
+                    &(grid_dv->vv_fac_c_0    ), \
+                    &(grid_dv->vv_fac_f_0    ), \
+                    &(grid_dv->vv_T0v_0      ), \
+                    &(grid_dv->vv_T0r_0      ), \
+                    &(grid_dv->vv_T0t_0      ), \
+                    &(grid_dv->vv_T0p_0      ), \
+                    &(grid_dv->vv_fun_0      ), \
+                    &(grid_dv->vv_change_0   ), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 1){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_1[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_1[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_1[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_1[i_node_offset]), \
-                    &(grid_dv->vv_T0v_1[i_node_offset]), \
-                    &(grid_dv->vv_T0r_1[i_node_offset]), \
-                    &(grid_dv->vv_T0t_1[i_node_offset]), \
-                    &(grid_dv->vv_T0p_1[i_node_offset]), \
-                    &(grid_dv->vv_fun_1[i_node_offset]), \
-                    &(grid_dv->vv_change_1[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___1), \
+                    &(grid_dv->vv_i__jp1k___1), \
+                    &(grid_dv->vv_i__jm1k___1), \
+                    &(grid_dv->vv_i__j__kp1_1), \
+                    &(grid_dv->vv_i__j__km1_1), \
+                    &(grid_dv->vv_ip1j__k___1), \
+                    &(grid_dv->vv_im1j__k___1), \
+                    &(grid_dv->vv_ip2j__k___1), \
+                    &(grid_dv->vv_im2j__k___1), \
+                    &(grid_dv->vv_i__jp2k___1), \
+                    &(grid_dv->vv_i__jm2k___1), \
+                    &(grid_dv->vv_i__j__kp2_1), \
+                    &(grid_dv->vv_i__j__km2_1), \
+                    &(grid_dv->vv_fac_a_1    ), \
+                    &(grid_dv->vv_fac_b_1    ), \
+                    &(grid_dv->vv_fac_c_1    ), \
+                    &(grid_dv->vv_fac_f_1    ), \
+                    &(grid_dv->vv_T0v_1      ), \
+                    &(grid_dv->vv_T0r_1      ), \
+                    &(grid_dv->vv_T0t_1      ), \
+                    &(grid_dv->vv_T0p_1      ), \
+                    &(grid_dv->vv_fun_1      ), \
+                    &(grid_dv->vv_change_1   ), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 2){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_2[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_2[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___2[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_2[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_2[i_node_offset]), \
-                    &(grid_dv->vv_T0v_2[i_node_offset]), \
-                    &(grid_dv->vv_T0r_2[i_node_offset]), \
-                    &(grid_dv->vv_T0t_2[i_node_offset]), \
-                    &(grid_dv->vv_T0p_2[i_node_offset]), \
-                    &(grid_dv->vv_fun_2[i_node_offset]), \
-                    &(grid_dv->vv_change_2[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___2), \
+                    &(grid_dv->vv_i__j__kp1_2), \
+                    &(grid_dv->vv_i__j__km1_2), \
+                    &(grid_dv->vv_ip1j__k___2), \
+                    &(grid_dv->vv_im1j__k___2), \
+                    &(grid_dv->vv_i__jp1k___2), \
+                    &(grid_dv->vv_i__jm1k___2), \
+                    &(grid_dv->vv_ip2j__k___2), \
+                    &(grid_dv->vv_im2j__k___2), \
+                    &(grid_dv->vv_i__jp2k___2), \
+                    &(grid_dv->vv_i__jm2k___2), \
+                    &(grid_dv->vv_i__j__kp2_2), \
+                    &(grid_dv->vv_i__j__km2_2), \
+                    &(grid_dv->vv_fac_a_2), \
+                    &(grid_dv->vv_fac_b_2), \
+                    &(grid_dv->vv_fac_c_2), \
+                    &(grid_dv->vv_fac_f_2), \
+                    &(grid_dv->vv_T0v_2), \
+                    &(grid_dv->vv_T0r_2), \
+                    &(grid_dv->vv_T0t_2), \
+                    &(grid_dv->vv_T0p_2), \
+                    &(grid_dv->vv_fun_2), \
+                    &(grid_dv->vv_change_2), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 3){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_3[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_3[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_3[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_3[i_node_offset]), \
-                    &(grid_dv->vv_T0v_3[i_node_offset]), \
-                    &(grid_dv->vv_T0r_3[i_node_offset]), \
-                    &(grid_dv->vv_T0t_3[i_node_offset]), \
-                    &(grid_dv->vv_T0p_3[i_node_offset]), \
-                    &(grid_dv->vv_fun_3[i_node_offset]), \
-                    &(grid_dv->vv_change_3[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___3), \
+                    &(grid_dv->vv_ip1j__k___3), \
+                    &(grid_dv->vv_im1j__k___3), \
+                    &(grid_dv->vv_i__jp1k___3), \
+                    &(grid_dv->vv_i__jm1k___3), \
+                    &(grid_dv->vv_i__j__kp1_3), \
+                    &(grid_dv->vv_i__j__km1_3), \
+                    &(grid_dv->vv_ip2j__k___3), \
+                    &(grid_dv->vv_im2j__k___3), \
+                    &(grid_dv->vv_i__jp2k___3), \
+                    &(grid_dv->vv_i__jm2k___3), \
+                    &(grid_dv->vv_i__j__kp2_3), \
+                    &(grid_dv->vv_i__j__km2_3), \
+                    &(grid_dv->vv_fac_a_3), \
+                    &(grid_dv->vv_fac_b_3), \
+                    &(grid_dv->vv_fac_c_3), \
+                    &(grid_dv->vv_fac_f_3), \
+                    &(grid_dv->vv_T0v_3), \
+                    &(grid_dv->vv_T0r_3), \
+                    &(grid_dv->vv_T0t_3), \
+                    &(grid_dv->vv_T0p_3), \
+                    &(grid_dv->vv_fun_3), \
+                    &(grid_dv->vv_change_3), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 4){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_4[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_4[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_4[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_4[i_node_offset]), \
-                    &(grid_dv->vv_T0v_4[i_node_offset]), \
-                    &(grid_dv->vv_T0r_4[i_node_offset]), \
-                    &(grid_dv->vv_T0t_4[i_node_offset]), \
-                    &(grid_dv->vv_T0p_4[i_node_offset]), \
-                    &(grid_dv->vv_fun_4[i_node_offset]), \
-                    &(grid_dv->vv_change_4[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___4), \
+                    &(grid_dv->vv_ip1j__k___4), \
+                    &(grid_dv->vv_im1j__k___4), \
+                    &(grid_dv->vv_i__jp1k___4), \
+                    &(grid_dv->vv_i__jm1k___4), \
+                    &(grid_dv->vv_i__j__kp1_4), \
+                    &(grid_dv->vv_i__j__km1_4), \
+                    &(grid_dv->vv_ip2j__k___4), \
+                    &(grid_dv->vv_im2j__k___4), \
+                    &(grid_dv->vv_i__jp2k___4), \
+                    &(grid_dv->vv_i__jm2k___4), \
+                    &(grid_dv->vv_i__j__kp2_4), \
+                    &(grid_dv->vv_i__j__km2_4), \
+                    &(grid_dv->vv_fac_a_4), \
+                    &(grid_dv->vv_fac_b_4), \
+                    &(grid_dv->vv_fac_c_4), \
+                    &(grid_dv->vv_fac_f_4), \
+                    &(grid_dv->vv_T0v_4), \
+                    &(grid_dv->vv_T0r_4), \
+                    &(grid_dv->vv_T0t_4), \
+                    &(grid_dv->vv_T0p_4), \
+                    &(grid_dv->vv_fun_4), \
+                    &(grid_dv->vv_change_4), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 5) {
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_5[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_5[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_5[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_5[i_node_offset]), \
-                    &(grid_dv->vv_T0v_5[i_node_offset]), \
-                    &(grid_dv->vv_T0r_5[i_node_offset]), \
-                    &(grid_dv->vv_T0t_5[i_node_offset]), \
-                    &(grid_dv->vv_T0p_5[i_node_offset]), \
-                    &(grid_dv->vv_fun_5[i_node_offset]), \
-                    &(grid_dv->vv_change_5[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___5), \
+                    &(grid_dv->vv_ip1j__k___5), \
+                    &(grid_dv->vv_im1j__k___5), \
+                    &(grid_dv->vv_i__jp1k___5), \
+                    &(grid_dv->vv_i__jm1k___5), \
+                    &(grid_dv->vv_i__j__kp1_5), \
+                    &(grid_dv->vv_i__j__km1_5), \
+                    &(grid_dv->vv_ip2j__k___5), \
+                    &(grid_dv->vv_im2j__k___5), \
+                    &(grid_dv->vv_i__jp2k___5), \
+                    &(grid_dv->vv_i__jm2k___5), \
+                    &(grid_dv->vv_i__j__kp2_5), \
+                    &(grid_dv->vv_i__j__km2_5), \
+                    &(grid_dv->vv_fac_a_5), \
+                    &(grid_dv->vv_fac_b_5), \
+                    &(grid_dv->vv_fac_c_5), \
+                    &(grid_dv->vv_fac_f_5), \
+                    &(grid_dv->vv_T0v_5), \
+                    &(grid_dv->vv_T0r_5), \
+                    &(grid_dv->vv_T0t_5), \
+                    &(grid_dv->vv_T0p_5), \
+                    &(grid_dv->vv_fun_5), \
+                    &(grid_dv->vv_change_5), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 6) {
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_6[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_6[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_6[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_6[i_node_offset]), \
-                    &(grid_dv->vv_T0v_6[i_node_offset]), \
-                    &(grid_dv->vv_T0r_6[i_node_offset]), \
-                    &(grid_dv->vv_T0t_6[i_node_offset]), \
-                    &(grid_dv->vv_T0p_6[i_node_offset]), \
-                    &(grid_dv->vv_fun_6[i_node_offset]), \
-                    &(grid_dv->vv_change_6[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___6), \
+                    &(grid_dv->vv_ip1j__k___6), \
+                    &(grid_dv->vv_im1j__k___6), \
+                    &(grid_dv->vv_i__jp1k___6), \
+                    &(grid_dv->vv_i__jm1k___6), \
+                    &(grid_dv->vv_i__j__kp1_6), \
+                    &(grid_dv->vv_i__j__km1_6), \
+                    &(grid_dv->vv_ip2j__k___6), \
+                    &(grid_dv->vv_im2j__k___6), \
+                    &(grid_dv->vv_i__jp2k___6), \
+                    &(grid_dv->vv_i__jm2k___6), \
+                    &(grid_dv->vv_i__j__kp2_6), \
+                    &(grid_dv->vv_i__j__km2_6), \
+                    &(grid_dv->vv_fac_a_6), \
+                    &(grid_dv->vv_fac_b_6), \
+                    &(grid_dv->vv_fac_c_6), \
+                    &(grid_dv->vv_fac_f_6), \
+                    &(grid_dv->vv_T0v_6), \
+                    &(grid_dv->vv_T0r_6), \
+                    &(grid_dv->vv_T0t_6), \
+                    &(grid_dv->vv_T0p_6), \
+                    &(grid_dv->vv_fun_6), \
+                    &(grid_dv->vv_change_6), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else {
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_7[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_7[i_node_offset]), \
-                    &(grid_dv->vv_ip2j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_im2j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__jp2k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__jm2k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp2_7[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km2_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_7[i_node_offset]), \
-                    &(grid_dv->vv_T0v_7[i_node_offset]), \
-                    &(grid_dv->vv_T0r_7[i_node_offset]), \
-                    &(grid_dv->vv_T0t_7[i_node_offset]), \
-                    &(grid_dv->vv_T0p_7[i_node_offset]), \
-                    &(grid_dv->vv_fun_7[i_node_offset]), \
-                    &(grid_dv->vv_change_7[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___7), \
+                    &(grid_dv->vv_ip1j__k___7), \
+                    &(grid_dv->vv_im1j__k___7), \
+                    &(grid_dv->vv_i__jp1k___7), \
+                    &(grid_dv->vv_i__jm1k___7), \
+                    &(grid_dv->vv_i__j__kp1_7), \
+                    &(grid_dv->vv_i__j__km1_7), \
+                    &(grid_dv->vv_ip2j__k___7), \
+                    &(grid_dv->vv_im2j__k___7), \
+                    &(grid_dv->vv_i__jp2k___7), \
+                    &(grid_dv->vv_i__jm2k___7), \
+                    &(grid_dv->vv_i__j__kp2_7), \
+                    &(grid_dv->vv_i__j__km2_7), \
+                    &(grid_dv->vv_fac_a_7), \
+                    &(grid_dv->vv_fac_b_7), \
+                    &(grid_dv->vv_fac_c_7), \
+                    &(grid_dv->vv_fac_f_7), \
+                    &(grid_dv->vv_T0v_7), \
+                    &(grid_dv->vv_T0r_7), \
+                    &(grid_dv->vv_T0t_7), \
+                    &(grid_dv->vv_T0p_7), \
+                    &(grid_dv->vv_fun_7), \
+                    &(grid_dv->vv_change_7), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             }
         } else { // 1st order
             if (iswp == 0){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___0[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_0[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_0[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_0[i_node_offset]), \
-                    &(grid_dv->vv_T0v_0[i_node_offset]), \
-                    &(grid_dv->vv_T0r_0[i_node_offset]), \
-                    &(grid_dv->vv_T0t_0[i_node_offset]), \
-                    &(grid_dv->vv_T0p_0[i_node_offset]), \
-                    &(grid_dv->vv_fun_0[i_node_offset]), \
-                    &(grid_dv->vv_change_0[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___0), \
+                    &(grid_dv->vv_ip1j__k___0), \
+                    &(grid_dv->vv_im1j__k___0), \
+                    &(grid_dv->vv_i__jp1k___0), \
+                    &(grid_dv->vv_i__jm1k___0), \
+                    &(grid_dv->vv_i__j__kp1_0), \
+                    &(grid_dv->vv_i__j__km1_0), \
+                    &(grid_dv->vv_fac_a_0), \
+                    &(grid_dv->vv_fac_b_0), \
+                    &(grid_dv->vv_fac_c_0), \
+                    &(grid_dv->vv_fac_f_0), \
+                    &(grid_dv->vv_T0v_0), \
+                    &(grid_dv->vv_T0r_0), \
+                    &(grid_dv->vv_T0t_0), \
+                    &(grid_dv->vv_T0p_0), \
+                    &(grid_dv->vv_fun_0), \
+                    &(grid_dv->vv_change_0), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30000);
 
             } else if (iswp == 1){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___1[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_1[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_1[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___1[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_1[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_1[i_node_offset]), \
-                    &(grid_dv->vv_T0v_1[i_node_offset]), \
-                    &(grid_dv->vv_T0r_1[i_node_offset]), \
-                    &(grid_dv->vv_T0t_1[i_node_offset]), \
-                    &(grid_dv->vv_T0p_1[i_node_offset]), \
-                    &(grid_dv->vv_fun_1[i_node_offset]), \
-                    &(grid_dv->vv_change_1[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___1), \
+                    &(grid_dv->vv_i__jp1k___1), \
+                    &(grid_dv->vv_i__jm1k___1), \
+                    &(grid_dv->vv_i__j__kp1_1), \
+                    &(grid_dv->vv_i__j__km1_1), \
+                    &(grid_dv->vv_ip1j__k___1), \
+                    &(grid_dv->vv_im1j__k___1), \
+                    &(grid_dv->vv_fac_a_1), \
+                    &(grid_dv->vv_fac_b_1), \
+                    &(grid_dv->vv_fac_c_1), \
+                    &(grid_dv->vv_fac_f_1), \
+                    &(grid_dv->vv_T0v_1), \
+                    &(grid_dv->vv_T0r_1), \
+                    &(grid_dv->vv_T0t_1), \
+                    &(grid_dv->vv_T0p_1), \
+                    &(grid_dv->vv_fun_1), \
+                    &(grid_dv->vv_change_1), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
             } else if (iswp == 2){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_2[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_2[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___2[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___2[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_2[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_2[i_node_offset]), \
-                    &(grid_dv->vv_T0v_2[i_node_offset]), \
-                    &(grid_dv->vv_T0r_2[i_node_offset]), \
-                    &(grid_dv->vv_T0t_2[i_node_offset]), \
-                    &(grid_dv->vv_T0p_2[i_node_offset]), \
-                    &(grid_dv->vv_fun_2[i_node_offset]), \
-                    &(grid_dv->vv_change_2[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___2), \
+                    &(grid_dv->vv_i__j__kp1_2), \
+                    &(grid_dv->vv_i__j__km1_2), \
+                    &(grid_dv->vv_ip1j__k___2), \
+                    &(grid_dv->vv_im1j__k___2), \
+                    &(grid_dv->vv_i__jp1k___2), \
+                    &(grid_dv->vv_i__jm1k___2), \
+                    &(grid_dv->vv_fac_a_2), \
+                    &(grid_dv->vv_fac_b_2), \
+                    &(grid_dv->vv_fac_c_2), \
+                    &(grid_dv->vv_fac_f_2), \
+                    &(grid_dv->vv_T0v_2), \
+                    &(grid_dv->vv_T0r_2), \
+                    &(grid_dv->vv_T0t_2), \
+                    &(grid_dv->vv_T0p_2), \
+                    &(grid_dv->vv_fun_2), \
+                    &(grid_dv->vv_change_2), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30002);
 
             } else if (iswp == 3){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___3[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_3[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_3[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_3[i_node_offset]), \
-                    &(grid_dv->vv_T0v_3[i_node_offset]), \
-                    &(grid_dv->vv_T0r_3[i_node_offset]), \
-                    &(grid_dv->vv_T0t_3[i_node_offset]), \
-                    &(grid_dv->vv_T0p_3[i_node_offset]), \
-                    &(grid_dv->vv_fun_3[i_node_offset]), \
-                    &(grid_dv->vv_change_3[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___3), \
+                    &(grid_dv->vv_ip1j__k___3), \
+                    &(grid_dv->vv_im1j__k___3), \
+                    &(grid_dv->vv_i__jp1k___3), \
+                    &(grid_dv->vv_i__jm1k___3), \
+                    &(grid_dv->vv_i__j__kp1_3), \
+                    &(grid_dv->vv_i__j__km1_3), \
+                    &(grid_dv->vv_fac_a_3), \
+                    &(grid_dv->vv_fac_b_3), \
+                    &(grid_dv->vv_fac_c_3), \
+                    &(grid_dv->vv_fac_f_3), \
+                    &(grid_dv->vv_T0v_3), \
+                    &(grid_dv->vv_T0r_3), \
+                    &(grid_dv->vv_T0t_3), \
+                    &(grid_dv->vv_T0p_3), \
+                    &(grid_dv->vv_fun_3), \
+                    &(grid_dv->vv_change_3), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30003);
 
             } else if (iswp == 4){
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___4[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_4[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_4[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_4[i_node_offset]), \
-                    &(grid_dv->vv_T0v_4[i_node_offset]), \
-                    &(grid_dv->vv_T0r_4[i_node_offset]), \
-                    &(grid_dv->vv_T0t_4[i_node_offset]), \
-                    &(grid_dv->vv_T0p_4[i_node_offset]), \
-                    &(grid_dv->vv_fun_4[i_node_offset]), \
-                    &(grid_dv->vv_change_4[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___4), \
+                    &(grid_dv->vv_ip1j__k___4), \
+                    &(grid_dv->vv_im1j__k___4), \
+                    &(grid_dv->vv_i__jp1k___4), \
+                    &(grid_dv->vv_i__jm1k___4), \
+                    &(grid_dv->vv_i__j__kp1_4), \
+                    &(grid_dv->vv_i__j__km1_4), \
+                    &(grid_dv->vv_fac_a_4), \
+                    &(grid_dv->vv_fac_b_4), \
+                    &(grid_dv->vv_fac_c_4), \
+                    &(grid_dv->vv_fac_f_4), \
+                    &(grid_dv->vv_T0v_4), \
+                    &(grid_dv->vv_T0r_4), \
+                    &(grid_dv->vv_T0t_4), \
+                    &(grid_dv->vv_T0p_4), \
+                    &(grid_dv->vv_fun_4), \
+                    &(grid_dv->vv_change_4), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30004);
 
             } else if (iswp == 5) {
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___5[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_5[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_5[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_5[i_node_offset]), \
-                    &(grid_dv->vv_T0v_5[i_node_offset]), \
-                    &(grid_dv->vv_T0r_5[i_node_offset]), \
-                    &(grid_dv->vv_T0t_5[i_node_offset]), \
-                    &(grid_dv->vv_T0p_5[i_node_offset]), \
-                    &(grid_dv->vv_fun_5[i_node_offset]), \
-                    &(grid_dv->vv_change_5[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___5), \
+                    &(grid_dv->vv_ip1j__k___5), \
+                    &(grid_dv->vv_im1j__k___5), \
+                    &(grid_dv->vv_i__jp1k___5), \
+                    &(grid_dv->vv_i__jm1k___5), \
+                    &(grid_dv->vv_i__j__kp1_5), \
+                    &(grid_dv->vv_i__j__km1_5), \
+                    &(grid_dv->vv_fac_a_5), \
+                    &(grid_dv->vv_fac_b_5), \
+                    &(grid_dv->vv_fac_c_5), \
+                    &(grid_dv->vv_fac_f_5), \
+                    &(grid_dv->vv_T0v_5), \
+                    &(grid_dv->vv_T0r_5), \
+                    &(grid_dv->vv_T0t_5), \
+                    &(grid_dv->vv_T0p_5), \
+                    &(grid_dv->vv_fun_5), \
+                    &(grid_dv->vv_change_5), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30005);
 
             } else if (iswp == 6) {
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___6[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_6[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_6[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_6[i_node_offset]), \
-                    &(grid_dv->vv_T0v_6[i_node_offset]), \
-                    &(grid_dv->vv_T0r_6[i_node_offset]), \
-                    &(grid_dv->vv_T0t_6[i_node_offset]), \
-                    &(grid_dv->vv_T0p_6[i_node_offset]), \
-                    &(grid_dv->vv_fun_6[i_node_offset]), \
-                    &(grid_dv->vv_change_6[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___6), \
+                    &(grid_dv->vv_ip1j__k___6), \
+                    &(grid_dv->vv_im1j__k___6), \
+                    &(grid_dv->vv_i__jp1k___6), \
+                    &(grid_dv->vv_i__jm1k___6), \
+                    &(grid_dv->vv_i__j__kp1_6), \
+                    &(grid_dv->vv_i__j__km1_6), \
+                    &(grid_dv->vv_fac_a_6), \
+                    &(grid_dv->vv_fac_b_6), \
+                    &(grid_dv->vv_fac_c_6), \
+                    &(grid_dv->vv_fac_f_6), \
+                    &(grid_dv->vv_T0v_6), \
+                    &(grid_dv->vv_T0r_6), \
+                    &(grid_dv->vv_T0t_6), \
+                    &(grid_dv->vv_T0p_6), \
+                    &(grid_dv->vv_fun_6), \
+                    &(grid_dv->vv_change_6), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30006);
 
 
             } else {
-                void* kernelArgs[]= {\
-                    &(grid_dv->vv_i__j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_ip1j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_im1j__k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__jp1k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__jm1k___7[i_node_offset]), \
-                    &(grid_dv->vv_i__j__kp1_7[i_node_offset]), \
-                    &(grid_dv->vv_i__j__km1_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_a_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_b_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_c_7[i_node_offset]), \
-                    &(grid_dv->vv_fac_f_7[i_node_offset]), \
-                    &(grid_dv->vv_T0v_7[i_node_offset]), \
-                    &(grid_dv->vv_T0r_7[i_node_offset]), \
-                    &(grid_dv->vv_T0t_7[i_node_offset]), \
-                    &(grid_dv->vv_T0p_7[i_node_offset]), \
-                    &(grid_dv->vv_fun_7[i_node_offset]), \
-                    &(grid_dv->vv_change_7[i_node_offset]), \
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___7), \
+                    &(grid_dv->vv_ip1j__k___7), \
+                    &(grid_dv->vv_im1j__k___7), \
+                    &(grid_dv->vv_i__jp1k___7), \
+                    &(grid_dv->vv_i__jm1k___7), \
+                    &(grid_dv->vv_i__j__kp1_7), \
+                    &(grid_dv->vv_i__j__km1_7), \
+                    &(grid_dv->vv_fac_a_7    ), \
+                    &(grid_dv->vv_fac_b_7    ), \
+                    &(grid_dv->vv_fac_c_7    ), \
+                    &(grid_dv->vv_fac_f_7    ), \
+                    &(grid_dv->vv_T0v_7      ), \
+                    &(grid_dv->vv_T0r_7      ), \
+                    &(grid_dv->vv_T0t_7      ), \
+                    &(grid_dv->vv_T0p_7      ), \
+                    &(grid_dv->vv_fun_7      ), \
+                    &(grid_dv->vv_change_7   ), \
                     &(grid_dv->tau), \
-                    &grid_dv->loc_I_host, \
-                    &grid_dv->loc_J_host, \
-                    &grid_dv->loc_K_host, \
-                    &grid_dv->dr_host, \
-                    &grid_dv->dt_host, \
-                    &grid_dv->dp_host, \
-                    &n_nodes_this_level \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
                 };
 
                 print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30007);
+
             }
         }
 }
@@ -801,20 +836,24 @@ void cuda_run_iteration_forward(Grid_on_device* grid_dv, int const& iswp){
 
     initialize_sweep_params(grid_dv);
 
-    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
-    int num_blocks_x, num_blocks_y;
+//    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
+//    int num_blocks_x, num_blocks_y;
     int actual_end_level = grid_dv->n_levels_host;
     int i_node_offset=0;
 
     for (size_t i_level = 0; i_level < actual_end_level; i_level++){
-        get_block_xy(ceil(grid_dv->n_nodes_on_levels_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
-        dim3 grid_each(num_blocks_x, num_blocks_y);
-        dim3 threads_each(block_size, 1, 1);
+        //get_block_xy(ceil(grid_dv->n_nodes_on_levels_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
+        //dim3 grid_each(num_blocks_x, num_blocks_y);
+        //dim3 threads_each(block_size, 1, 1);
 
-        run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_each, threads_each, grid_dv->n_nodes_on_levels_host[i_level]);
+        //run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_each, threads_each, grid_dv->n_nodes_on_levels_host[i_level]);
+        run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_dv->grid_sweep_host, grid_dv->threads_sweep_host, grid_dv->n_nodes_on_levels_host[i_level]);
 
         i_node_offset += grid_dv->n_nodes_on_levels_host[i_level];
     }
-std::cout <<"aaa3"<<std::endl;
+
+    finalize_sweep_params(grid_dv);
+
+    print_memory_usage();
 
 }
