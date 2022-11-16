@@ -365,6 +365,15 @@ void Grid::memory_allocation() {
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
     // skip allocation of shm arrays if not using shm
     if (sub_nprocs <= 1) {
+#ifdef USE_CUDA
+        if(use_gpu)
+            cudaMallocHost((void**)&tau_loc, n_total_loc_grid_points * sizeof(CUSTOMREAL));
+        else
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+#else
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+#endif
+
         xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -375,7 +384,6 @@ void Grid::memory_allocation() {
         T0t_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T0p_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T0v_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_a_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_b_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_c_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -645,6 +653,15 @@ void Grid::shm_memory_deallocation() {
 void Grid::memory_deallocation() {
    // shm array deallocation is done in shm_memory_deallocation() if shm is used
     if (sub_nprocs <= 1) {
+
+#ifdef USE_CUDA
+        if(use_gpu)
+            cudaFree(tau_loc);
+        else
+            free(tau_loc);
+#else
+        free(tau_loc);
+#endif
         free(xi_loc);
         free(eta_loc);
         free(zeta_loc);
@@ -659,7 +676,6 @@ void Grid::memory_deallocation() {
         free(fac_b_loc);
         free(fac_c_loc);
         free(fac_f_loc);
-        free(tau_loc);
         free(fun_loc);
         free(is_changed);
 

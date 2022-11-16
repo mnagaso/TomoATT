@@ -30,12 +30,6 @@
 #define CUDA_L1_BLOCK_SIZE 128
 //#define CUDA_L1_BLOCK_SIZE 256
 
-// store device properties
-//inline cudaDeviceProp deviceProp;
-
-// do not use level-unified-kernel (currently set as true for strange block synchronization behavior)
-#define FORCE_UNUSE_UNIFIED_KERNEL true
-
 #define CUDA_MAX_NUM_STREAMS 32
 
 #endif // CUDA_CONSTANTS_H

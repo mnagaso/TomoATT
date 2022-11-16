@@ -1,9 +1,14 @@
 #include "iterator_wrapper.cuh"
 
-#define PLUS 1.0
-#define MINUS -1.0
-#define v_eps 1e-12
+const CUSTOMREAL PLUS = 1.0;
+const CUSTOMREAL MINUS = -1.0;
+const CUSTOMREAL v_eps = 1e-12;
 
+const CUSTOMREAL _0_5_CR   = 0.5;
+const CUSTOMREAL _1_CR     = 1.0;
+const CUSTOMREAL _2_CR     = 2.0;
+const CUSTOMREAL _3_CR     = 3.0;
+const CUSTOMREAL _4_CR     = 4.0;
 
 __device__ CUSTOMREAL my_square_cu(CUSTOMREAL const& x) {
     return x*x;
@@ -14,10 +19,10 @@ __device__ CUSTOMREAL calc_stencil_1st(CUSTOMREAL const& a, CUSTOMREAL const& b,
 }
 
 __device__ CUSTOMREAL calc_stencil_3rd(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c, CUSTOMREAL const& d, CUSTOMREAL const& Dinv_half, int const& sign){
-    CUSTOMREAL tmp1 = v_eps + my_square_cu(a-2.0*b+c);
-    CUSTOMREAL tmp2 = v_eps + my_square_cu(d-2.0*a+b);
-    CUSTOMREAL ww   = 1.0/(1.0+2.0*my_square_cu(tmp1/tmp2));
-    return sign*((1.0-ww)* (b-d)*Dinv_half + ww*(-3.0*a+4.0*b-c)*Dinv_half);
+    CUSTOMREAL tmp1 = v_eps + my_square_cu(a-_2_CR*b+c);
+    CUSTOMREAL tmp2 = v_eps + my_square_cu(d-_2_CR*a+b);
+    CUSTOMREAL ww   = _1_CR/(_1_CR+_2_CR*my_square_cu(tmp1/tmp2));
+    return sign*((_1_CR-ww)* (b-d)*Dinv_half + ww*(-_3_CR*a+_4_CR*b-c)*Dinv_half);
 }
 
 __device__ CUSTOMREAL cuda_calc_LF_Hamiltonian( \
@@ -36,11 +41,11 @@ __device__ CUSTOMREAL cuda_calc_LF_Hamiltonian( \
                                             ) {
     // LF Hamiltonian for T = T0 * tau
     return sqrt(
-              fac_a_ * (T0r_ * tau_ + T0v_ * (pr1+pr2)/2.0) * (T0r_ * tau_ + T0v_ * (pr1+pr2)/2.0)\
-    +         fac_b_ * (T0t_ * tau_ + T0v_ * (pt1+pt2)/2.0) * (T0t_ * tau_ + T0v_ * (pt1+pt2)/2.0)\
-    +         fac_c_ * (T0p_ * tau_ + T0v_ * (pp1+pp2)/2.0) * (T0p_ * tau_ + T0v_ * (pp1+pp2)/2.0)\
-    -     2.0*fac_f_ * (T0t_ * tau_ + T0v_ * (pt1+pt2)/2.0) \
-                     * (T0p_ * tau_ + T0v_ * (pp1+pp2)/2.0) \
+              fac_a_ * my_square_cu(T0r_ * tau_ + T0v_ * (pr1+pr2)/_2_CR) \
+    +         fac_b_ * my_square_cu(T0t_ * tau_ + T0v_ * (pt1+pt2)/_2_CR) \
+    +         fac_c_ * my_square_cu(T0p_ * tau_ + T0v_ * (pp1+pp2)/_2_CR) \
+    -   _2_CR*fac_f_ * (T0t_ * tau_ + T0v_ * (pt1+pt2)/_2_CR) \
+                     * (T0p_ * tau_ + T0v_ * (pp1+pp2)/_2_CR) \
     );
 }
 
@@ -80,23 +85,23 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
 
     i_node += i_start;
 
-    if (i_node >= loc_I*loc_J*loc_K) return;
+    //if (i_node >= loc_I*loc_J*loc_K) return;
 
-    if (changed[i_node] != 1.0) return;
+    if (changed[i_node] != _1_CR) return;
 
-    CUSTOMREAL sigr = 1.0*sqrt(fac_a[i_node])*T0v[i_node];
-    CUSTOMREAL sigt = 1.0*sqrt(fac_b[i_node])*T0v[i_node];
-    CUSTOMREAL sigp = 1.0*sqrt(fac_c[i_node])*T0v[i_node];
-    CUSTOMREAL coe  = 1.0/((sigr/dr)+(sigt/dt)+(sigp/dp));
+    CUSTOMREAL sigr = _1_CR*sqrt(fac_a[i_node])*T0v[i_node];
+    CUSTOMREAL sigt = _1_CR*sqrt(fac_b[i_node])*T0v[i_node];
+    CUSTOMREAL sigp = _1_CR*sqrt(fac_c[i_node])*T0v[i_node];
+    CUSTOMREAL coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
 
-    CUSTOMREAL pp1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[im1j__k__[i_node]],1.0/dp);
-    CUSTOMREAL pp2 = calc_stencil_1st(tau[ip1j__k__[i_node]],tau[i__j__k__[i_node]],1.0/dp);
+    CUSTOMREAL pp1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[im1j__k__[i_node]], _1_CR/dp);
+    CUSTOMREAL pp2 = calc_stencil_1st(tau[ip1j__k__[i_node]],tau[i__j__k__[i_node]], _1_CR/dp);
 
-    CUSTOMREAL pt1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__jm1k__[i_node]],1.0/dt);
-    CUSTOMREAL pt2 = calc_stencil_1st(tau[i__jp1k__[i_node]],tau[i__j__k__[i_node]],1.0/dt);
+    CUSTOMREAL pt1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__jm1k__[i_node]], _1_CR/dt);
+    CUSTOMREAL pt2 = calc_stencil_1st(tau[i__jp1k__[i_node]],tau[i__j__k__[i_node]], _1_CR/dt);
 
-    CUSTOMREAL pr1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__j__km1[i_node]],1.0/dr);
-    CUSTOMREAL pr2 = calc_stencil_1st(tau[i__j__kp1[i_node]],tau[i__j__k__[i_node]],1.0/dr);
+    CUSTOMREAL pr1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__j__km1[i_node]], _1_CR/dr);
+    CUSTOMREAL pr2 = calc_stencil_1st(tau[i__j__kp1[i_node]],tau[i__j__k__[i_node]], _1_CR/dr);
 
     // LF Hamiltonian
     CUSTOMREAL Htau = cuda_calc_LF_Hamiltonian(\
@@ -112,7 +117,7 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
                                                pp1, pp2, pt1, pt2, pr1, pr2);
 
     tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
-                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/2.0);
+                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
 
 }
 
@@ -159,27 +164,27 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
     if (i_node >= n_nodes_this_level) return;
 
     i_node += i_start;
-    if (i_node >= loc_I*loc_J*loc_K) return;
+    //if (i_node >= loc_I*loc_J*loc_K) return;
 
 
-    if (changed[i_node] != 1.0) return;
+    if (changed[i_node] != _1_CR) return;
 
     int k = i__j__k__[i_node]/(loc_I*loc_J);
     int j = (i__j__k__[i_node] - k*loc_I*loc_J)/loc_I;
     int i = i__j__k__[i_node] - k*loc_I*loc_J - j*loc_I;
 
 
-    CUSTOMREAL DRinv = 1.0/dr;
-    CUSTOMREAL DTinv = 1.0/dt;
-    CUSTOMREAL DPinv = 1.0/dp;
-    CUSTOMREAL DRinv_half = DRinv*0.5;
-    CUSTOMREAL DTinv_half = DTinv*0.5;
-    CUSTOMREAL DPinv_half = DPinv*0.5;
+    CUSTOMREAL DRinv = _1_CR/dr;
+    CUSTOMREAL DTinv = _1_CR/dt;
+    CUSTOMREAL DPinv = _1_CR/dp;
+    CUSTOMREAL DRinv_half = DRinv*_0_5_CR;
+    CUSTOMREAL DTinv_half = DTinv*_0_5_CR;
+    CUSTOMREAL DPinv_half = DPinv*_0_5_CR;
 
-    CUSTOMREAL sigr = 1.0*sqrt(fac_a[i_node])*T0v[i_node];
-    CUSTOMREAL sigt = 1.0*sqrt(fac_b[i_node])*T0v[i_node];
-    CUSTOMREAL sigp = 1.0*sqrt(fac_c[i_node])*T0v[i_node];
-    CUSTOMREAL coe  = 1.0/((sigr/dr)+(sigt/dt)+(sigp/dp));
+    CUSTOMREAL sigr = _1_CR*sqrt(fac_a[i_node])*T0v[i_node];
+    CUSTOMREAL sigt = _1_CR*sqrt(fac_b[i_node])*T0v[i_node];
+    CUSTOMREAL sigp = _1_CR*sqrt(fac_c[i_node])*T0v[i_node];
+    CUSTOMREAL coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
 
     // direction p
     if (i == 1) {
@@ -230,7 +235,7 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
                                                pp1, pp2, pt1, pt2, pr1, pr2);
 
     tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
-                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/2.0);
+                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
 
 
 }

@@ -313,11 +313,7 @@ std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
             else
                 nnodes_tmp = nnodes;
 
-            CUSTOMREAL* v;
-            if (!use_gpu)
-                v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
-            else
-                v = (CUSTOMREAL*) malloc(nnodes_tmp*sizeof(CUSTOMREAL));
+            CUSTOMREAL* v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
 
             // asign values
             for (int i_node=0; i_node<nnodes; i_node++){
@@ -358,16 +354,10 @@ void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
             else
                 n_nodes_tmp = n_nodes;
 
-            T* vi, *vj, *vk;
-            if(!use_gpu){
-                vi = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-                vj = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-                vk = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-            } else {
-                vi = (T*) malloc(n_nodes_tmp*sizeof(T));
-                vj = (T*) malloc(n_nodes_tmp*sizeof(T));
-                vk = (T*) malloc(n_nodes_tmp*sizeof(T));
-            }
+            T*  vi = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T*  vj = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T*  vk = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+
             for (int i_node = 0; i_node < n_nodes; i_node++) {
                 int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
                 V2I(tmp_ijk, iip, jjt, kkr);
@@ -432,11 +422,7 @@ void Iterator::preload_indices_1d(std::vector<std::vector<T*>> &vvv, \
             else
                 n_nodes_tmp = n_nodes;
 
-            T* v;
-            if (!use_gpu)
-                v = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
-            else
-                v = (T*) malloc(n_nodes_tmp*sizeof(T));
+            T* v = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
 
             for (int i_node = 0; i_node < n_nodes; i_node++) {
                 int tmp_ijk = ijk_for_this_subproc[i_level][i_node];

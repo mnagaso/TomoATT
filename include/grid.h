@@ -20,6 +20,10 @@
 #include "source.h"
 #include "io.h"
 
+#ifdef USE_CUDA
+#include <cuda_runtime.h>
+#include <cuda.h>
+#endif
 
 class Grid {
 public:
