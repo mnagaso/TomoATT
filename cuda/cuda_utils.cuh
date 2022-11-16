@@ -20,18 +20,15 @@ cudaError_t allocate_memory_on_device_cv(void** d_ptr, size_t size);
 cudaError_t allocate_memory_on_device_bl(void** d_ptr, size_t size);
 cudaError_t allocate_memory_on_device_cv_pinned(void** d_ptr, size_t size);
 
-
 // deallocate memory on device
 cudaError_t deallocate_memory_on_device_i(int *&d_ptr);
 cudaError_t deallocate_memory_on_device_cv(CUSTOMREAL *&d_ptr);
 cudaError_t deallocate_memory_on_device_bl(bool *&d_ptr);
 
-
 // copy memory from host to device
 cudaError_t copy_host_to_device_i(int *d_ptr, int *h_ptr, const size_t size);
 cudaError_t copy_host_to_device_cv(CUSTOMREAL *d_ptr, CUSTOMREAL *h_ptr, const size_t size);
 cudaError_t copy_host_to_device_bl(bool *d_ptr, bool *h_ptr, const size_t size);
-
 
 // copy memory from device to host
 cudaError_t copy_device_to_host_i(int *h_ptr, int *d_ptr, size_t size);

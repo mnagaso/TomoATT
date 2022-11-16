@@ -43,7 +43,7 @@ cudaError_t deallocate_memory_on_device_bl(bool*& d_ptr)
 }
 
 
-// copy memory from host to device
+// copy memory between host and device
 cudaError_t copy_host_to_device_i(int* d_ptr, int* h_ptr, const size_t size)
 {
     return cudaMemcpy(d_ptr, h_ptr, size * sizeof(int), cudaMemcpyHostToDevice);

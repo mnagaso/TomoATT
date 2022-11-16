@@ -1,14 +1,14 @@
 #include "iterator_wrapper.cuh"
 
-const CUSTOMREAL PLUS = 1.0;
-const CUSTOMREAL MINUS = -1.0;
-const CUSTOMREAL v_eps = 1e-12;
+__device__ const CUSTOMREAL PLUS = 1.0f;
+__device__ const CUSTOMREAL MINUS = -1.0f;
+__device__ const CUSTOMREAL v_eps = 1e-12;
 
-const CUSTOMREAL _0_5_CR   = 0.5;
-const CUSTOMREAL _1_CR     = 1.0;
-const CUSTOMREAL _2_CR     = 2.0;
-const CUSTOMREAL _3_CR     = 3.0;
-const CUSTOMREAL _4_CR     = 4.0;
+__device__ const CUSTOMREAL _0_5_CR   = 0.5f;
+__device__ const CUSTOMREAL _1_CR     = 1.0f;
+__device__ const CUSTOMREAL _2_CR     = 2.0f;
+__device__ const CUSTOMREAL _3_CR     = 3.0f;
+__device__ const CUSTOMREAL _4_CR     = 4.0f;
 
 __device__ CUSTOMREAL my_square_cu(CUSTOMREAL const& x) {
     return x*x;
@@ -18,7 +18,7 @@ __device__ CUSTOMREAL calc_stencil_1st(CUSTOMREAL const& a, CUSTOMREAL const& b,
     return Dinv*(a-b);
 }
 
-__device__ CUSTOMREAL calc_stencil_3rd(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c, CUSTOMREAL const& d, CUSTOMREAL const& Dinv_half, int const& sign){
+__device__ CUSTOMREAL calc_stencil_3rd(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c, CUSTOMREAL const& d, CUSTOMREAL const& Dinv_half, CUSTOMREAL const& sign){
     CUSTOMREAL tmp1 = v_eps + my_square_cu(a-_2_CR*b+c);
     CUSTOMREAL tmp2 = v_eps + my_square_cu(d-_2_CR*a+b);
     CUSTOMREAL ww   = _1_CR/(_1_CR+_2_CR*my_square_cu(tmp1/tmp2));
@@ -263,9 +263,15 @@ void initialize_sweep_params(Grid_on_device* grid_dv){
     grid_dv->grid_sweep_host = dim3(max_cooperative_blocks, 1, 1);
 
     // spawn streams
-    grid_dv->level_streams = (cudaStream_t*)malloc(CUDA_MAX_NUM_STREAMS*sizeof(cudaStream_t));
-    for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
-        cudaStreamCreate(&(grid_dv->level_streams[i]));
+    //grid_dv->level_streams = (cudaStream_t*)malloc(CUDA_MAX_NUM_STREAMS*sizeof(cudaStream_t));
+    //for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
+    grid_dv->level_streams = (cudaStream_t*)malloc(grid_dv->n_levels_host*sizeof(cudaStream_t));
+    for (int i = 0; i < grid_dv->n_levels_host; i++) {
+        //cudaStreamCreate(&(grid_dv->level_streams[i]));
+        // add null
+        //cudaStreamCreateWithFlags(&(grid_dv->level_streams[i]), cudaStreamNonBlocking);
+        grid_dv->level_streams[i] = nullptr;
+
     }
 
 
@@ -274,9 +280,10 @@ void initialize_sweep_params(Grid_on_device* grid_dv){
 
 void finalize_sweep_params(Grid_on_device* grid_on_dv){
     // destroy streams
-    for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
-        cudaStreamDestroy(grid_on_dv->level_streams[i]);
-    }
+    //for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
+    //for (int i = 0; i < grid_on_dv->n_levels_host; i++) {
+    //    cudaStreamDestroy(grid_on_dv->level_streams[i]);
+    //}
 
     free(grid_on_dv->level_streams);
 }
@@ -285,7 +292,7 @@ void finalize_sweep_params(Grid_on_device* grid_on_dv){
 void run_kernel(Grid_on_device* grid_dv, int const& iswp, int& i_node_offset, int const& i_level, \
                 dim3& grid_each, dim3& threads_each, int& n_nodes_this_level){
 
-        int id_stream = i_level % CUDA_MAX_NUM_STREAMS;
+        int id_stream = i_level;// % CUDA_MAX_NUM_STREAMS;
 
         if (grid_dv->if_3rd_order) {
            if (iswp == 0){
@@ -838,6 +845,9 @@ void run_kernel(Grid_on_device* grid_dv, int const& iswp, int& i_node_offset, in
 
             }
         }
+
+        // synchronize all streams
+        //print_CUDA_error_if_any(cudaStreamSynchronize(grid_dv->level_streams[id_stream]), 30008);
 }
 
 
@@ -846,18 +856,18 @@ void cuda_run_iteration_forward(Grid_on_device* grid_dv, int const& iswp){
 
     initialize_sweep_params(grid_dv);
 
-//    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
-//    int num_blocks_x, num_blocks_y;
+    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
+    int num_blocks_x, num_blocks_y;
     int actual_end_level = grid_dv->n_levels_host;
     int i_node_offset=0;
 
     for (size_t i_level = 0; i_level < actual_end_level; i_level++){
-        //get_block_xy(ceil(grid_dv->n_nodes_on_levels_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
-        //dim3 grid_each(num_blocks_x, num_blocks_y);
-        //dim3 threads_each(block_size, 1, 1);
+        get_block_xy(ceil(grid_dv->n_nodes_on_levels_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
+        dim3 grid_each(num_blocks_x, num_blocks_y);
+        dim3 threads_each(block_size, 1, 1);
 
-        //run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_each, threads_each, grid_dv->n_nodes_on_levels_host[i_level]);
-        run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_dv->grid_sweep_host, grid_dv->threads_sweep_host, grid_dv->n_nodes_on_levels_host[i_level]);
+        run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_each, threads_each, grid_dv->n_nodes_on_levels_host[i_level]);
+        //run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_dv->grid_sweep_host, grid_dv->threads_sweep_host, grid_dv->n_nodes_on_levels_host[i_level]);
 
         i_node_offset += grid_dv->n_nodes_on_levels_host[i_level];
     }
