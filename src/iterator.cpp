@@ -73,6 +73,10 @@ Iterator::~Iterator() {
 
         free(dump_c__);// center of stencil
 
+        free_preloaded_array(vv_iip);
+        free_preloaded_array(vv_jjt);
+        free_preloaded_array(vv_kkr);
+
         // free vv_* preloaded arrays
         free_preloaded_array(vv_i__j__k__);
         free_preloaded_array(vv_ip1j__k__);

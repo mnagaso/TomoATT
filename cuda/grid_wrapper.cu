@@ -655,6 +655,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_7), 10085);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_7), 10086);
 
+    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->tau), 10087);
 
 }
 

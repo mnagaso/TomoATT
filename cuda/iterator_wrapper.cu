@@ -117,38 +117,38 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
 }
 
 __global__ void cuda_do_sweep_level_kernel_3rd(\
-    int* i__j__k__,\
-    int* ip1j__k__,\
-    int* im1j__k__,\
-    int* i__jp1k__,\
-    int* i__jm1k__,\
-    int* i__j__kp1,\
-    int* i__j__km1,\
-    int* ip2j__k__,\
-    int* im2j__k__,\
-    int* i__jp2k__,\
-    int* i__jm2k__,\
-    int* i__j__kp2,\
-    int* i__j__km2,\
-    CUSTOMREAL* fac_a, \
-    CUSTOMREAL* fac_b, \
-    CUSTOMREAL* fac_c, \
-    CUSTOMREAL* fac_f, \
-    CUSTOMREAL* T0v, \
-    CUSTOMREAL* T0r, \
-    CUSTOMREAL* T0t, \
-    CUSTOMREAL* T0p, \
-    CUSTOMREAL* fun, \
-    CUSTOMREAL* changed, \
-    CUSTOMREAL* tau, \
-    int loc_I, \
-    int loc_J, \
-    int loc_K, \
-    CUSTOMREAL dr, \
-    CUSTOMREAL dt, \
-    CUSTOMREAL dp,  \
-    int n_nodes_this_level, \
-    int i_start \
+    const int i__j__k__[],\
+    const int ip1j__k__[],\
+    const int im1j__k__[],\
+    const int i__jp1k__[],\
+    const int i__jm1k__[],\
+    const int i__j__kp1[],\
+    const int i__j__km1[],\
+    const int ip2j__k__[],\
+    const int im2j__k__[],\
+    const int i__jp2k__[],\
+    const int i__jm2k__[],\
+    const int i__j__kp2[],\
+    const int i__j__km2[],\
+    const CUSTOMREAL fac_a[], \
+    const CUSTOMREAL fac_b[], \
+    const CUSTOMREAL fac_c[], \
+    const CUSTOMREAL fac_f[], \
+    const CUSTOMREAL T0v[], \
+    const CUSTOMREAL T0r[], \
+    const CUSTOMREAL T0t[], \
+    const CUSTOMREAL T0p[], \
+    const CUSTOMREAL fun[], \
+    const CUSTOMREAL changed[], \
+    CUSTOMREAL tau[], \
+    const int loc_I, \
+    const int loc_J, \
+    const int loc_K, \
+    const CUSTOMREAL dr, \
+    const CUSTOMREAL dt, \
+    const CUSTOMREAL dp,  \
+    const int n_nodes_this_level, \
+    const int i_start \
 ){
 
     CUSTOMREAL pp1, pp2, pt1, pt2, pr1, pr2;
@@ -268,6 +268,11 @@ void initialize_sweep_params(Grid_on_device* grid_dv){
 
 
 void finalize_sweep_params(Grid_on_device* grid_on_dv){
+    // destroy streams
+    for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
+        cudaStreamDestroy(grid_on_dv->level_streams[i]);
+    }
+
     free(grid_on_dv->level_streams);
 }
 
@@ -854,6 +859,7 @@ void cuda_run_iteration_forward(Grid_on_device* grid_dv, int const& iswp){
 
     finalize_sweep_params(grid_dv);
 
-    print_memory_usage();
+    // check memory leak
+    //print_memory_usage();
 
 }

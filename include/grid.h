@@ -20,10 +20,6 @@
 #include "source.h"
 #include "io.h"
 
-//#ifdef USE_CUDA
-//#include "cuda_constants.cuh"
-//#include "grid_wrapper.cuh"
-//#endif
 
 class Grid {
 public:
@@ -431,18 +427,6 @@ private:
     //const bool store_cartesian = true; // store both cartesian and spherical coordinates
     // vtk format cell type
     const int cell_type = 9;
-
-
-public:
-    //
-    // gpu grid object
-    //
-//#ifdef USE_CUDA
-//    Grid_on_device *gpu_grid;
-//#endif
-//    void initialize_gpu_grid(std::vector<std::vector<int>>&);
-//    void reinitialize_gpu_grid();
-
 
 
 };
