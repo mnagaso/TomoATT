@@ -18,7 +18,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0t, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0p, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_fun, \
-                std::vector<std::vector<CUSTOMREAL*>> & vv_change){
+                std::vector<std::vector<bool*>>       & vv_change){
 
     // store grid parameters
     grid_dv->loc_I_host = loc_I;
@@ -37,6 +37,10 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
     for (int i=0; i<grid_dv->n_levels_host; i++){
         grid_dv->n_nodes_on_levels_host[i] = ijk[i].size();
         grid_dv->n_nodes_total_host += grid_dv->n_nodes_on_levels_host[i];
+        // find max
+        if (grid_dv->n_nodes_on_levels_host[i] > grid_dv->n_nodes_max_host){
+            grid_dv->n_nodes_max_host = grid_dv->n_nodes_on_levels_host[i];
+        }
     }
 
     // allocate memory on device
@@ -115,7 +119,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 63);
        grid_dv->vv_T0p_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 64);
        grid_dv->vv_fun_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 65);
-    grid_dv->vv_change_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 66);
+    grid_dv->vv_change_0 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 66);
 
      grid_dv->vv_fac_a_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 67);
      grid_dv->vv_fac_b_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 68);
@@ -126,7 +130,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 73);
        grid_dv->vv_T0p_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 74);
        grid_dv->vv_fun_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 75);
-    grid_dv->vv_change_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 76);
+    grid_dv->vv_change_1 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 76);
 
      grid_dv->vv_fac_a_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -137,7 +141,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_2 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -148,7 +152,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_3 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -159,7 +163,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_4 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -170,7 +174,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_5 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -181,7 +185,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_6 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -192,7 +196,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_7 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
     // allocate tau (need full grid including boundary nodes)
     print_CUDA_error_if_any(allocate_memory_on_device_cv((void**)&(grid_dv->tau), loc_I*loc_J*loc_K), 87);
@@ -224,7 +228,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0t, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0p, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_fun, \
-                std::vector<std::vector<CUSTOMREAL*>> & vv_change){
+                std::vector<std::vector<bool*>>       & vv_change){
 
     grid_dv->if_3rd_order = true;
 
@@ -244,6 +248,10 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
     for (int i = 0; i < grid_dv->n_levels_host; i++){
         grid_dv->n_nodes_on_levels_host[i] = ijk.at(i).size();
         grid_dv->n_nodes_total_host += grid_dv->n_nodes_on_levels_host[i];
+        // find max
+        if (grid_dv->n_nodes_on_levels_host[i] > grid_dv->n_nodes_max_host){
+            grid_dv->n_nodes_max_host = grid_dv->n_nodes_on_levels_host[i];
+        }
     }
 
     // allocate memory on device
@@ -370,7 +378,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 63);
        grid_dv->vv_T0p_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 64);
        grid_dv->vv_fun_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 65);
-    grid_dv->vv_change_0 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 66);
+    grid_dv->vv_change_0 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(0), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 66);
 
      grid_dv->vv_fac_a_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 67);
      grid_dv->vv_fac_b_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 68);
@@ -381,7 +389,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 73);
        grid_dv->vv_T0p_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 74);
        grid_dv->vv_fun_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 75);
-    grid_dv->vv_change_1 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 76);
+    grid_dv->vv_change_1 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(1), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 76);
 
      grid_dv->vv_fac_a_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -392,7 +400,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_2 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_2 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(2), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -403,7 +411,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_3 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_3 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(3), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -414,7 +422,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_4 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_4 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(4), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -425,7 +433,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_5 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_5 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(5), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -436,7 +444,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_6 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_6 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(6), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
      grid_dv->vv_fac_a_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_a.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 77);
      grid_dv->vv_fac_b_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(  vv_fac_b.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 78);
@@ -447,7 +455,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
        grid_dv->vv_T0t_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0t.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 83);
        grid_dv->vv_T0p_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_T0p.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 84);
        grid_dv->vv_fun_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv(    vv_fun.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 85);
-    grid_dv->vv_change_7 = (CUSTOMREAL*) allocate_and_copy_host_to_device_flattened_cv( vv_change.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
+    grid_dv->vv_change_7 = (bool*)       allocate_and_copy_host_to_device_flattened_bl( vv_change.at(7), grid_dv->n_nodes_total_host, grid_dv->n_nodes_on_levels_host, 86);
 
     // allocate tau
     print_CUDA_error_if_any(allocate_memory_on_device_cv((void**)&(grid_dv->tau), loc_I*loc_J*loc_K), 87);
@@ -576,7 +584,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_0), 10063);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_0), 10064);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_0), 10065);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_0), 10066);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_0), 10066);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_1), 10067);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_1), 10068);
@@ -587,7 +595,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_1), 10073);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_1), 10074);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_1), 10075);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_1), 10076);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_1), 10076);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_2), 10077);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_2), 10078);
@@ -598,7 +606,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_2), 10083);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_2), 10084);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_2), 10085);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_2), 10086);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_2), 10086);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_3), 10077);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_3), 10078);
@@ -609,7 +617,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_3), 10083);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_3), 10084);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_3), 10085);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_3), 10086);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_3), 10086);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_4), 10077);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_4), 10078);
@@ -620,7 +628,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_4), 10083);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_4), 10084);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_4), 10085);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_4), 10086);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_4), 10086);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_5), 10077);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_5), 10078);
@@ -631,7 +639,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_5), 10083);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_5), 10084);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_5), 10085);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_5), 10086);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_5), 10086);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_6), 10077);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_6), 10078);
@@ -642,7 +650,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_6), 10083);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_6), 10084);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_6), 10085);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_6), 10086);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_6), 10086);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_a_7), 10077);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv( grid_dv->vv_fac_b_7), 10078);
@@ -653,7 +661,7 @@ void cuda_finalize_grid(Grid_on_device* grid_dv){
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0t_7), 10083);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_T0p_7), 10084);
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(   grid_dv->vv_fun_7), 10085);
-    print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->vv_change_7), 10086);
+    print_CUDA_error_if_any(deallocate_memory_on_device_bl(grid_dv->vv_change_7), 10086);
 
     print_CUDA_error_if_any(deallocate_memory_on_device_cv(grid_dv->tau), 10087);
 

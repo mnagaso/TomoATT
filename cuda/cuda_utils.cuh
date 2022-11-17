@@ -37,13 +37,18 @@ cudaError_t copy_device_to_host_cv(CUSTOMREAL *h_ptr, CUSTOMREAL *d_ptr, size_t 
 // allocate and copy to device
 void* allocate_and_copy_host_to_device_i(int* h_ptr, size_t size, int num);
 void* allocate_and_copy_host_to_device_cv(CUSTOMREAL* h_ptr, size_t size, int num);
+void* allocate_and_copy_host_to_device_bl(bool* h_ptr, size_t size, int num);
+
 
 // allocate, flatten and copy to device
 void flatten_arr_i(int* h_ptr_flattened, std::vector<int*> &h_v, int size_total, int* size_each);
 void flatten_arr_cv(CUSTOMREAL* h_ptr_flattened, std::vector<CUSTOMREAL*> &h_v, int size_total, int* size_each);
+void flatten_arr_bl(bool* h_ptr_flattened, std::vector<bool*> &h_v, int size_total, int* size_each);
+
 
 void* allocate_and_copy_host_to_device_flattened_i(std::vector<int*>&vh, int size_total, int* size_each, int num);
 void* allocate_and_copy_host_to_device_flattened_cv(std::vector<CUSTOMREAL*>& vh, int size_total, int* size_each, int num);
+void* allocate_and_copy_host_to_device_flattened_bl(std::vector<bool*>& vh, int size_total, int* size_each, int num);
 
 
 // mpi send recv

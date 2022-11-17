@@ -92,7 +92,9 @@ protected:
 #endif
     std::vector<std::vector<CUSTOMREAL*>> vv_iip, vv_jjt, vv_kkr;
 
-    std::vector<std::vector<CUSTOMREAL*>> vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change;
+    std::vector<std::vector<CUSTOMREAL*>> vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun;
+    std::vector<std::vector<CUSTOMREAL*>>vv_change;
+    std::vector<std::vector<bool*>>vv_change_bl;
 
     template <typename T>
     void preload_indices(std::vector<std::vector<T*>> &vi, std::vector<std::vector<T*>> &, std::vector<std::vector<T*>> &, int, int, int);
@@ -100,6 +102,7 @@ protected:
     void preload_indices_1d(std::vector<std::vector<T*>> &, int, int, int);
     template <typename T>
     std::vector<std::vector<CUSTOMREAL*>> preload_array(T* a);
+    std::vector<std::vector<bool*>> preload_array_bl(bool* a);
     template <typename T>
     void free_preloaded_array(std::vector<std::vector<T*>> &vvv){
         for (int iswap = 0; iswap < 8; iswap++){

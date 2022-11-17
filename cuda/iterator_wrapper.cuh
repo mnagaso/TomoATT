@@ -3,6 +3,8 @@
 
 #include <memory>
 #include <iostream>
+#include <algorithm>
+
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>

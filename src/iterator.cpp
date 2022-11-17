@@ -104,7 +104,10 @@ Iterator::~Iterator() {
         free_preloaded_array(vv_T0t);
         free_preloaded_array(vv_T0p);
         free_preloaded_array(vv_fun);
-        free_preloaded_array(vv_change);
+        if(!use_gpu)
+            free_preloaded_array(vv_change);
+        else
+            free_preloaded_array(vv_change_bl);
     }
 #endif
 
@@ -148,12 +151,12 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
         if (IP.get_stencil_order() == 1){
             cuda_initialize_grid_1st(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
                 vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
-                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
+                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change_bl);
         } else {
             cuda_initialize_grid_3rd(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
                 vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
                               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2, \
-                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change);
+                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change_bl);
         }
 
         std::cout << "gpu grid initialization done." << std::endl;
@@ -285,7 +288,10 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     vv_T0t   = preload_array(grid.T0t_loc);
     vv_T0p   = preload_array(grid.T0p_loc);
     vv_fun   = preload_array(grid.fun_loc);
-    vv_change= preload_array(grid.is_changed);
+    if(!use_gpu)
+        vv_change = preload_array(grid.is_changed);
+    else
+        vv_change_bl = preload_array_bl(grid.is_changed);
 
     // flag for preloading
     simd_allocated = true;
@@ -331,6 +337,40 @@ std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
     return vvv;
 }
 
+std::vector<std::vector<bool*>> Iterator::preload_array_bl(bool* a){
+
+    std::vector<std::vector<bool*>> vvv;
+
+    for (int iswap=0; iswap<8; iswap++){
+        int n_levels = ijk_for_this_subproc.size();
+        std::vector<bool*> vv;
+
+        for (int i_level=0; i_level<n_levels; i_level++){
+
+            int nnodes = ijk_for_this_subproc.at(i_level).size();
+            int nnodes_tmp;
+            if(!use_gpu)
+                nnodes_tmp = nnodes + ((nnodes % NSIMD == 0) ? 0 : (NSIMD - nnodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                nnodes_tmp = nnodes;
+
+            bool* v = (bool*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(bool));
+
+            // asign values
+            for (int i_node=0; i_node<nnodes; i_node++){
+                v[i_node] = (bool) a[vv_i__j__k__.at(iswap).at(i_level)[i_node]];
+            }
+            // assign dummy
+            for (int i_node=nnodes; i_node<nnodes_tmp; i_node++){
+                v[i_node] = 0.0;
+            }
+            vv.push_back(v);
+        }
+        vvv.push_back(vv);
+    }
+
+    return vvv;
+}
 
 
 template <typename T>

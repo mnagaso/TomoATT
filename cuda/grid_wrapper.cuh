@@ -18,6 +18,7 @@ typedef struct Grid_on_device {
     // parameters
     int loc_I_host, loc_J_host, loc_K_host;
     int n_nodes_total_host;
+    int n_nodes_max_host=0;
     int n_levels_host;
     CUSTOMREAL dr_host, dt_host, dp_host;
 
@@ -48,7 +49,7 @@ typedef struct Grid_on_device {
     CUSTOMREAL* vv_T0t_0, *vv_T0t_1, *vv_T0t_2, *vv_T0t_3, *vv_T0t_4, *vv_T0t_5, *vv_T0t_6, *vv_T0t_7;
     CUSTOMREAL* vv_T0p_0, *vv_T0p_1, *vv_T0p_2, *vv_T0p_3, *vv_T0p_4, *vv_T0p_5, *vv_T0p_6, *vv_T0p_7;
     CUSTOMREAL* vv_fun_0, *vv_fun_1, *vv_fun_2, *vv_fun_3, *vv_fun_4, *vv_fun_5, *vv_fun_6, *vv_fun_7;
-    CUSTOMREAL* vv_change_0, *vv_change_1, *vv_change_2, *vv_change_3, *vv_change_4, *vv_change_5, *vv_change_6, *vv_change_7;
+    bool*       vv_change_0, *vv_change_1, *vv_change_2, *vv_change_3, *vv_change_4, *vv_change_5, *vv_change_6, *vv_change_7;
 
     // temporary variables
     CUSTOMREAL* tau;
@@ -82,7 +83,7 @@ void cuda_initialize_grid_1st(std::vector< std::vector<int> >& ijk, Grid_on_devi
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0t, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0p, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_fun, \
-                std::vector<std::vector<CUSTOMREAL*>> & vv_change);
+                std::vector<std::vector<bool*>>       & vv_change);
 
 void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_device* grid_dv, int const& loc_I, int const& loc_J, int const& loc_K,
                 CUSTOMREAL const& dp, CUSTOMREAL const& dt, CUSTOMREAL const& dr, \
@@ -108,7 +109,7 @@ void cuda_initialize_grid_3rd(std::vector< std::vector<int> >& ijk, Grid_on_devi
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0t, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_T0p, \
                 std::vector<std::vector<CUSTOMREAL*>> & vv_fun, \
-                std::vector<std::vector<CUSTOMREAL*>> & vv_change);
+                std::vector<std::vector<bool*>>       & vv_change);
 
 
 // finalize

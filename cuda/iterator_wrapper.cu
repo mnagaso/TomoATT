@@ -1,14 +1,14 @@
 #include "iterator_wrapper.cuh"
 
-__device__ const CUSTOMREAL PLUS = 1.0f;
-__device__ const CUSTOMREAL MINUS = -1.0f;
+__device__ const CUSTOMREAL PLUS = 1.0;
+__device__ const CUSTOMREAL MINUS = -1.0;
 __device__ const CUSTOMREAL v_eps = 1e-12;
 
-__device__ const CUSTOMREAL _0_5_CR   = 0.5f;
-__device__ const CUSTOMREAL _1_CR     = 1.0f;
-__device__ const CUSTOMREAL _2_CR     = 2.0f;
-__device__ const CUSTOMREAL _3_CR     = 3.0f;
-__device__ const CUSTOMREAL _4_CR     = 4.0f;
+__device__ const CUSTOMREAL _0_5_CR   = 0.5;
+__device__ const CUSTOMREAL _1_CR     = 1.0;
+__device__ const CUSTOMREAL _2_CR     = 2.0;
+__device__ const CUSTOMREAL _3_CR     = 3.0;
+__device__ const CUSTOMREAL _4_CR     = 4.0;
 
 __device__ CUSTOMREAL my_square_cu(CUSTOMREAL const& x) {
     return x*x;
@@ -66,7 +66,7 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
     const CUSTOMREAL T0t[], \
     const CUSTOMREAL T0p[], \
     const CUSTOMREAL fun[], \
-    const CUSTOMREAL changed[], \
+    const bool changed[], \
     CUSTOMREAL tau[], \
     const int loc_I, \
     const int loc_J, \
@@ -79,7 +79,6 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
 ){
 
     unsigned int i_node = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
-    //unsigned int i_node = (blockIdx.x + blockIdx.y*gridDim.x)*blockDim.x + threadIdx.x;
 
     if (i_node >= n_nodes_this_level) return;
 
@@ -87,7 +86,7 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
 
     //if (i_node >= loc_I*loc_J*loc_K) return;
 
-    if (changed[i_node] != _1_CR) return;
+    if (changed[i_node] != true) return;
 
     CUSTOMREAL sigr = _1_CR*sqrt(fac_a[i_node])*T0v[i_node];
     CUSTOMREAL sigt = _1_CR*sqrt(fac_b[i_node])*T0v[i_node];
@@ -117,7 +116,9 @@ __global__ void cuda_do_sweep_level_kernel_1st(\
                                                pp1, pp2, pt1, pt2, pr1, pr2);
 
     tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
-                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
+                                  +(sigr*(pr2-pr1) \
+                                  + sigt*(pt2-pt1) \
+                                  + sigp*(pp2-pp1))/_2_CR);
 
 }
 
@@ -144,7 +145,7 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
     const CUSTOMREAL T0t[], \
     const CUSTOMREAL T0p[], \
     const CUSTOMREAL fun[], \
-    const CUSTOMREAL changed[], \
+    const bool changed[], \
     CUSTOMREAL tau[], \
     const int loc_I, \
     const int loc_J, \
@@ -159,19 +160,17 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
     CUSTOMREAL pp1, pp2, pt1, pt2, pr1, pr2;
 
     unsigned int i_node = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
-    //unsigned int i_node = (blockIdx.x + blockIdx.y*gridDim.x)*blockDim.x + threadIdx.x;
 
     if (i_node >= n_nodes_this_level) return;
 
     i_node += i_start;
     //if (i_node >= loc_I*loc_J*loc_K) return;
 
+    if (changed[i_node] != true) return;
 
-    if (changed[i_node] != _1_CR) return;
-
-    int k = i__j__k__[i_node]/(loc_I*loc_J);
+    int k =  i__j__k__[i_node] / (loc_I*loc_J);
     int j = (i__j__k__[i_node] - k*loc_I*loc_J)/loc_I;
-    int i = i__j__k__[i_node] - k*loc_I*loc_J - j*loc_I;
+    int i =  i__j__k__[i_node] - k*loc_I*loc_J - j*loc_I;
 
 
     CUSTOMREAL DRinv = _1_CR/dr;
@@ -235,7 +234,9 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
                                                pp1, pp2, pt1, pt2, pr1, pr2);
 
     tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
-                                  +(sigr*(pr2-pr1) + sigt*(pt2-pt1) + sigp*(pp2-pp1))/_2_CR);
+                                  +(sigr*(pr2-pr1) \
+                                  + sigt*(pt2-pt1) \
+                                  + sigp*(pp2-pp1))/_2_CR);
 
 
 }
@@ -244,23 +245,23 @@ __global__ void cuda_do_sweep_level_kernel_3rd(\
 void initialize_sweep_params(Grid_on_device* grid_dv){
 
     // check the numBlockPerSm and set the block size accordingly
-    int numBlocksPerSm = 0;
-    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
+    //int numBlocksPerSm = 0;
+    //int block_size = CUDA_SWEEPING_BLOCK_SIZE;
 
-    int device;
-    cudaGetDevice(&device);
+    //int device;
+    //cudaGetDevice(&device);
 
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, device);
-    if(grid_dv->if_3rd_order)
-        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_3rd, CUDA_SWEEPING_BLOCK_SIZE, 0);
-    else
-        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_1st, CUDA_SWEEPING_BLOCK_SIZE, 0);
+    //cudaDeviceProp deviceProp;
+    //cudaGetDeviceProperties(&deviceProp, device);
+    //if(grid_dv->if_3rd_order)
+    //    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_3rd, CUDA_SWEEPING_BLOCK_SIZE, 0);
+    //else
+    //    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_1st, CUDA_SWEEPING_BLOCK_SIZE, 0);
 
-    int max_cooperative_blocks = deviceProp.multiProcessorCount*numBlocksPerSm;
+    //int max_cooperative_blocks = deviceProp.multiProcessorCount*numBlocksPerSm;
 
-    grid_dv->threads_sweep_host = dim3(block_size, 1, 1);
-    grid_dv->grid_sweep_host = dim3(max_cooperative_blocks, 1, 1);
+    //grid_dv->threads_sweep_host = dim3(block_size, 1, 1);
+    //grid_dv->grid_sweep_host = dim3(max_cooperative_blocks, 1, 1);
 
     // spawn streams
     //grid_dv->level_streams = (cudaStream_t*)malloc(CUDA_MAX_NUM_STREAMS*sizeof(cudaStream_t));
@@ -858,10 +859,12 @@ void cuda_run_iteration_forward(Grid_on_device* grid_dv, int const& iswp){
 
     int block_size = CUDA_SWEEPING_BLOCK_SIZE;
     int num_blocks_x, num_blocks_y;
-    int actual_end_level = grid_dv->n_levels_host;
     int i_node_offset=0;
+    //get_block_xy(ceil(grid_dv->n_nodes_max_host/block_size+0.5), &num_blocks_x, &num_blocks_y);
+    //dim3 grid_each(num_blocks_x, num_blocks_y);
+    //dim3 threads_each(block_size, 1, 1);
 
-    for (size_t i_level = 0; i_level < actual_end_level; i_level++){
+    for (size_t i_level = 0; i_level < grid_dv->n_levels_host; i_level++){
         get_block_xy(ceil(grid_dv->n_nodes_on_levels_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
         dim3 grid_each(num_blocks_x, num_blocks_y);
         dim3 threads_each(block_size, 1, 1);
