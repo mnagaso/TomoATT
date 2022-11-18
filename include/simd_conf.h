@@ -10,7 +10,9 @@
 
 // forcely make USE_AVX and USE_AVX512 to be false if USE_ARM_SVE is true
 #if USE_ARM_SVE
+#undef USE_AVX
 #define USE_AVX     0
+#undef USE_AVX512
 #define USE_AVX512  0
 #endif
 
