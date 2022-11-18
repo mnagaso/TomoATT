@@ -598,8 +598,6 @@ void InputParams::parse_src_rec_file(){
                 rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
                 rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
                 rec.phase    = tokens[6];
-                // rec.epi_dist = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
-                // rec.arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[7]));
                 rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
 
                 // check if tokens[8] exists read weight
@@ -894,7 +892,6 @@ void InputParams::write_src_rec_file(int i_inv) {
                             << std::fixed << std::setprecision(4) << std::setw(9) << rec_points_out[i_src][i_rec].lon << " "
                             << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec_points_out[i_src][i_rec].dep*1000.0 << " "
                             << rec_points_out[i_src][i_rec].phase << " "
-                            // << rec_points_out[i_src][i_rec].epi_dist << " "  // no need to include this data, may consider to delete it
                             << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].arr_time << " "
                             << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].weight
                             << std::endl;

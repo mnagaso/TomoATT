@@ -160,7 +160,6 @@ mag_dummy = 3.0
 id_dummy = 1000
 st_name_dummy = 'AAAA'
 phase_dummy = 'P'
-dist_dummy = 100.0
 arriv_t_dummy = 0.0
 
 tt1deg = tt1 * 180.0/math.pi
@@ -230,7 +229,7 @@ for i_src in range(n_src):
         lat_rec  = lat_recs[i_rec]
         st_name_dummy = rec_names[i_rec]
 
-        rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, dist_dummy, arriv_t_dummy]
+        rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
         lines.append(rec)
 
         pos_rec.append([lon_rec,lat_rec,elev_rec])
