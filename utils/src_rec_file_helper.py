@@ -18,7 +18,6 @@ class AttSrcRec:
     _id_event    = None
     _data_source = None
     _phase       = None
-    _epi_dist    = None
     _arr_time    = None
     _name_rec    = None
 
@@ -39,7 +38,6 @@ class AttSrcRec:
                 id_event   = None,
                 data_source= None,
                 phase      = None,
-                epi_dist   = None,
                 arr_time   = None,
                 name_rec   = None):
 
@@ -60,7 +58,6 @@ class AttSrcRec:
         self._id_event    = id_event
         self._data_source = data_source
         self._phase       = phase
-        self._epi_dist    = epi_dist
         self._arr_time    = arr_time
         self._name_rec    = name_rec
 
@@ -88,7 +85,6 @@ def convert_to_pandas_df(event_list):
     list_id_event   = []
     list_data_source= []
     list_phase      = []
-    list_epi_dist   = []
     list_arr_time   = []
     list_name_rec   = []
     list_datetime   = []
@@ -110,7 +106,6 @@ def convert_to_pandas_df(event_list):
         list_id_event.append(ev._id_event)
         list_data_source.append(ev._data_source)
         list_phase.append(ev._phase)
-        list_epi_dist.append(ev._epi_dist)
         list_arr_time.append(ev._arr_time)
         list_name_rec.append(ev._name_rec)
         try:
@@ -137,7 +132,6 @@ def convert_to_pandas_df(event_list):
     df_ev['id_event']   = pd.Series(list_id_event)
     df_ev['data_source']= pd.Series(list_data_source)
     df_ev['phase']      = pd.Series(list_phase)
-    df_ev['epi_dist']   = pd.Series(list_epi_dist)
     df_ev['arr_time']   = pd.Series(list_arr_time)
     df_ev['name_rec']   = pd.Series(list_name_rec)
     df_ev['datetime']   = pd.Series(list_datetime)
@@ -217,7 +211,6 @@ def read_src_rec_file(fpath, two_station_names=False, data_source_flag=0, id_src
                             rec_lon  = float(ll[4])
                             rec_elev  = float(ll[5])
                             rec_phase = ll[6]
-                            rec_epi_dist = float(ll[7])
                             rec_arr_time = float(ll[8])
                         else:
                             #src_id   = int(ll[0])
@@ -228,13 +221,12 @@ def read_src_rec_file(fpath, two_station_names=False, data_source_flag=0, id_src
                             rec_lon  = float(ll[5])
                             rec_elev  = float(ll[6])
                             rec_phase = ll[7]
-                            rec_epi_dist = float(ll[8])
                             rec_arr_time = float(ll[9])
 
                         # store rec
                         #rec = AttArrival(src_id, rec_id, rec_name, rec_lat, rec_lon, rec_elev, rec_phase, rec_epi_dist, rec_arr_time)
                         #event_list[i_src].add_rec(rec)
-                        rec = AttSrcRec(src_id, rec_id, None, None, None, None, None, None, rec_lat, rec_lon, rec_elev, None, None, None, data_source_flag, rec_phase, rec_epi_dist, rec_arr_time, rec_name)
+                        rec = AttSrcRec(src_id, rec_id, None, None, None, None, None, None, rec_lat, rec_lon, rec_elev, None, None, None, data_source_flag, rec_phase, rec_arr_time, rec_name)
                         rec_list.append(rec)
 
                         nc+=1
@@ -272,7 +264,6 @@ def read_src_rec_file(fpath, two_station_names=False, data_source_flag=0, id_src
 if __name__ == "__main__":
     event_list = read_src_rec_file("./src_rec_test_out.dat")
     print(event_list[0].rec_list[0].name_rec)
-    print(event_list[0].rec_list[0].epi_dist)
     print(event_list[0].rec_list[0].arr_time)
     print(event_list[0].rec_list[0].id_rec)
     print(event_list[0].rec_list[0].id_src)
@@ -280,10 +271,8 @@ if __name__ == "__main__":
     print(event_list[0].rec_list[0].lon)
     print(event_list[0].rec_list[0].dep)
     print(event_list[0].rec_list[0].phase)
-    print(event_list[0].rec_list[0].epi_dist)
     print(event_list[0].rec_list[0].arr_time)
     print(event_list[0].rec_list[1].name_rec)
-    print(event_list[0].rec_list[1].epi_dist)
     print(event_list[0].rec_list[1].arr_time)
     print(event_list[0].rec_list[1].id_rec)
     print(event_list[0].rec_list[1].id_src)
@@ -291,7 +280,5 @@ if __name__ == "__main__":
     print(event_list[0].rec_list[1].lon)
     print(event_list[0].rec_list[1].dep)
     print(event_list[0].rec_list[1].phase)
-    print(event_list[0].rec_list[1].epi_dist)
     print(event_list[0].rec_list[1].arr_time)
     print(event_list[0].rec_list[2].name_rec)
-    print(event_list[0].rec_list[2].epi_dist)

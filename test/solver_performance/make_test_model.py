@@ -200,7 +200,6 @@ if __name__ == "__main__":
     id_dummy = 1000
     st_name_dummy = 'AAAA'
     phase_dummy = 'P'
-    dist_dummy = 100.0
     arriv_t_dummy = 0.0
 
     tt1deg = tt1 * 180.0/math.pi
@@ -245,7 +244,7 @@ if __name__ == "__main__":
             #lon_rec  = random.uniform(pp1deg,pp2deg)
             #lat_rec  = random.uniform(tt1deg,tt2deg)
 
-            rec = [i_src, i_rec, st_name_dummy+"_"+str(i_rec), lat_recs[i_rec], lon_recs[i_rec], elev_recs[i_rec], phase_dummy, dist_dummy, arriv_t_dummy]
+            rec = [i_src, i_rec, st_name_dummy+"_"+str(i_rec), lat_recs[i_rec], lon_recs[i_rec], elev_recs[i_rec], phase_dummy, arriv_t_dummy]
             lines.append(rec)
 
             pos_rec.append([lon_recs[i_rec],lat_recs[i_rec],elev_recs[i_rec]])

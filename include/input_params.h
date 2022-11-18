@@ -69,7 +69,6 @@ public:
     std::string name_src = "src_name_dummy";
     std::string name_rec = "rec_name_dummy";
     std::string phase    = "P";
-    CUSTOMREAL epi_dist  = 0;
 
     // original ids of source/receiver before swapping
     std::vector<int> id_srcs_ori;
