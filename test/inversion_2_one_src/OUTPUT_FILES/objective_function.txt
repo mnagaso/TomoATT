@@ -1,2 +1,0 @@
- iter,          v_obj,      step_size,
-    0,         335858,           0.01
