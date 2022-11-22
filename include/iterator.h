@@ -87,7 +87,7 @@ protected:
 #if USE_AVX512 || USE_AVX || defined USE_CUDA
     std::vector<std::vector<int*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
     std::vector<std::vector<int*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
-#elif defined ARM_FEATURE_SVE__
+#elif USE_ARM_SVE
     std::vector<std::vector<uint64_t*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
     std::vector<std::vector<uint64_t*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
 #endif
@@ -133,11 +133,11 @@ protected:
     CUSTOMREAL ap1, bp1, ap2, bp2, ap, bp;
     CUSTOMREAL at1, bt1, at2, bt2, at, bt;
     CUSTOMREAL ar1, br1, ar2, br2, ar, br;
-    
+
     CUSTOMREAL bc_f2, eqn_a, eqn_b, eqn_c, eqn_Delta;
     CUSTOMREAL tmp_tau;
     CUSTOMREAL T_r, T_t, T_p, charact_r, charact_t, charact_p;
-    bool is_causality; 
+    bool is_causality;
     int count_cand;
     std::vector<CUSTOMREAL> canditate = std::vector<CUSTOMREAL>(60);
 
