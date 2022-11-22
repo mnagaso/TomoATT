@@ -136,17 +136,17 @@ Source receiver file is a file which defines source and receiver positions and a
 
 Below is an example:
 ```
-1   1992  1  1  2 43  56.900    1.8000     98.9000 137.00  2.80    8    305644 <- source line   　
-1      1      PCBI       1.8900     98.9253   1000.0000  P   10.40  18.000     <- receiver 1
-1      2      MRPI       1.6125     99.3172   1100.0000  P   50.84  19.400     <- receiver 2
-1      3      HUTI       2.3153     98.9711   1600.0000  P   57.84  19.200
+1   1992  1  1  2 43  56.900    1.8000     98.9000 137.00  2.80    8    305644 <- source 1
+1      1      PCBI       1.8900     98.9253   1000.0000  P   18.000     <- receiver 1
+1      2      MRPI       1.6125     99.3172   1100.0000  P   19.400     <- receiver 2
+1      3      HUTI       2.3153     98.9711   1600.0000  P   19.200
      ....
 
 ```
 
 ```
 Source line : id_src year month day hour min sec lat lon dep_km magnitude num_recs id_event (weight)
-Receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arrival_time_sec (weight)
+Receiver line : id_src id_rec name_rec lat lon elevation_m phase arrival_time_sec (weight)
 ```
 
 `num_recs` (number of receivers for this source) need to be the same with the number of receiver lines.
