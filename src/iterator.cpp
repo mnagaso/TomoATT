@@ -181,7 +181,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 
             //if (iter_count==0)
                 // std::cout << "cp3, my world rank is: " << world_rank << std::endl;
-                std::cout << "id_sim, sub_rank, iter, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << iter_count << ", " <<cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+                //std::cout << "id_sim, sub_rank, iter, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << iter_count << ", " <<cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
                 // synchronize_all_world();
                 // goto iter_end;
 
