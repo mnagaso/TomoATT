@@ -792,43 +792,78 @@ Iterator_level_1st_order_tele::Iterator_level_1st_order_tele(InputParams& IP, Gr
 
 
 void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& IP){
-    // set sweep direction
-    set_sweep_direction(iswp);
 
-    int iip, jjt, kkr;
-    int n_levels = ijk_for_this_subproc.size();
+    if(!use_gpu) {
 
-    for (int i_level = 0; i_level < n_levels; i_level++) {
-        size_t n_nodes = ijk_for_this_subproc[i_level].size();
+#if !defined USE_SIMD
 
-        #pragma omp simd
-        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+        // set sweep direction
+        set_sweep_direction(iswp);
 
-            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+        int iip, jjt, kkr;
+        int n_levels = ijk_for_this_subproc.size();
 
-            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-            else            kkr = kkr-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-            else            jjt = jjt-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-iip; //ii-1;
-            else            iip = iip-1;  //np-ii;
+        for (int i_level = 0; i_level < n_levels; i_level++) {
+            size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            //
-            // calculate stencils
-            //
-            if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+            #pragma omp simd
+            for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+                V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+                if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+                else            kkr = kkr-1;  //nr-kk;
+                if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+                else            jjt = jjt-1;  //nt-jj;
+                if (p_dirc < 0) iip = np-iip; //ii-1;
+                else            iip = iip-1;  //np-ii;
+
+                //
                 // calculate stencils
-                calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
-            } else {
-                // update boundary
-                calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
-            }
-        } // end ijk
+                //
+                if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+                    // calculate stencils
+                    calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
+                } else {
+                    // update boundary
+                    calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
+                }
+            } // end ijk
 
-        // mpi synchronization
-        synchronize_all_sub();
+            // mpi synchronization
+            synchronize_all_sub();
 
-    } // end loop i_level
+        } // end loop i_level
+
+#elif USE_AVX512 || USE_AVX
+
+#elif USE_ARM_SVE
+
+#endif // ifndef USE_SIMD
+
+    } // end of if !use_gpu
+    else { // if use_gpu
+
+#if defined USE_CUDA
+
+        //// copy tau to device
+        //cuda_copy_tau_to_device(gpu_grid, grid.tau_loc);
+
+        //// run iteration
+        //cuda_run_iteration_forward_tele(gpu_grid, iswp);
+
+        //// copy tau to host
+        //cuda_copy_tau_to_host(gpu_grid, grid.tau_loc);
+
+#else // !defiend USE_CUDA
+        // exit code
+        std::cout << "Error: USE_CUDA is not defined" << std::endl;
+        exit(1);
+#endif
+
+    } // end of if use_gpu
+
+
 }
 
 
@@ -839,42 +874,76 @@ Iterator_level_3rd_order_tele::Iterator_level_3rd_order_tele(InputParams& IP, Gr
 
 
 void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& IP){
-    // set sweep direction
-    set_sweep_direction(iswp);
 
-    int iip, jjt, kkr;
-    int n_levels = ijk_for_this_subproc.size();
+    if(!use_gpu) {
 
-    for (int i_level = 0; i_level < n_levels; i_level++) {
-        size_t n_nodes = ijk_for_this_subproc[i_level].size();
+#if !defined USE_SIMD
 
-        #pragma omp simd
-        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+        // set sweep direction
+        set_sweep_direction(iswp);
 
-            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+        int iip, jjt, kkr;
+        int n_levels = ijk_for_this_subproc.size();
 
-            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-            else            kkr = kkr-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-            else            jjt = jjt-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-iip; //ii-1;
-            else            iip = iip-1;  //np-ii;
+        for (int i_level = 0; i_level < n_levels; i_level++) {
+            size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            //
-            // calculate stencils
-            //
-            if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+            #pragma omp simd
+            for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+                V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+                if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+                else            kkr = kkr-1;  //nr-kk;
+                if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+                else            jjt = jjt-1;  //nt-jj;
+                if (p_dirc < 0) iip = np-iip; //ii-1;
+                else            iip = iip-1;  //np-ii;
+
+                //
                 // calculate stencils
-                calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
-            } else {
-                // update boundary
-                calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
-            }
-        } // end ijk
+                //
+                if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+                    // calculate stencils
+                    calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
+                } else {
+                    // update boundary
+                    calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
+                }
+            } // end ijk
 
-        // mpi synchronization
-        synchronize_all_sub();
+            // mpi synchronization
+            synchronize_all_sub();
 
-    } // end loop i_level
+        } // end loop i_level
+
+#elif USE_AVX512 || USE_AVX
+
+#elif USE_ARM_SVE
+
+#endif // ifndef USE_SIMD
+
+    } // end of if !use_gpu
+    else { // if use_gpu
+
+#if defined USE_CUDA
+
+        //// copy tau to device
+        //cuda_copy_tau_to_device(gpu_grid, grid.tau_loc);
+
+        //// run iteration
+        //cuda_run_iteration_forward_tele(gpu_grid, iswp);
+
+        //// copy tau to host
+        //cuda_copy_tau_to_host(gpu_grid, grid.tau_loc);
+
+#else // !defiend USE_CUDA
+        // exit code
+        std::cout << "Error: USE_CUDA is not defined" << std::endl;
+        exit(1);
+#endif
+
+    } // end of if use_gpu
+
 
 }
