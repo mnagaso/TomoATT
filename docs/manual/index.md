@@ -160,7 +160,7 @@ If the source position is out of the global domain (defined in input parameter f
 ### 3. initial model file
 
 Initial model file is used for defining parameters of input mode.
-Necessary parameters are `fun` (slowness), `eta`, `xi`, `zeta`, `fac_a`, `fac_b`, `fac_c`, `fac_f`.
+Necessary parameters are `vel` (velocity), `eta`, `xi`, `zeta`.
 
 #### inital model file in HDF5 format
 
