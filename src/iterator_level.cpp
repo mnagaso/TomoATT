@@ -742,9 +742,9 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 }
 
-// Iterator_level_1st_order_upwind::Iterator_level_1st_order_upwind(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in) 
+// Iterator_level_1st_order_upwind::Iterator_level_1st_order_upwind(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in)
 //                                 : Iterator_level(IP, grid, src, io, first_init, is_teleseismic_in) {
-//     // initialization is done in the base class                              
+//     // initialization is done in the base class
 // }
 
 // void Iterator_level_1st_order_upwind::do_sweep(int iswp, Grid& grid, InputParams& IP){

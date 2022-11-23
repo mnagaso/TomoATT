@@ -1601,6 +1601,722 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
     }
 }
 
+void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, int&kkr){
+
+    // preparations
+
+    count_cand = 0;
+    // forward and backward partial differential discretization
+    //  T_p = (T0*tau)_p = T0p*tau + T0v*tau_p = ap*tau(iip, jjt, kkr)+bp;
+    //  T_t = (T0*tau)_t = T0t*tau + T0v*tau_t = at*tau(iip, jjt, kkr)+bt;
+    //  T_r = (T0*tau)_r = T0r*tau + T0v*tau_r = ar*tau(iip, jjt, kkr)+br;
+    if (iip > 0){
+        ap1 =  grid.T0p_loc[I2V(iip, jjt, kkr)] + grid.T0v_loc[I2V(iip, jjt, kkr)]/dp;
+        bp1 = -grid.T0v_loc[I2V(iip, jjt, kkr)]/dp*grid.tau_loc[I2V(iip-1, jjt, kkr)];
+    }
+    if (iip < np-1){
+        ap2 =  grid.T0p_loc[I2V(iip, jjt, kkr)] - grid.T0v_loc[I2V(iip, jjt, kkr)]/dp;
+        bp2 =  grid.T0v_loc[I2V(iip, jjt, kkr)]/dp*grid.tau_loc[I2V(iip+1, jjt, kkr)];
+    }
+
+    if (jjt > 0){
+        at1 =  grid.T0t_loc[I2V(iip, jjt, kkr)] + grid.T0v_loc[I2V(iip, jjt, kkr)]/dt;
+        bt1 = -grid.T0v_loc[I2V(iip, jjt, kkr)]/dt*grid.tau_loc[I2V(iip, jjt-1, kkr)];
+    }
+    if (jjt < nt-1){
+        at2 =  grid.T0t_loc[I2V(iip, jjt, kkr)] - grid.T0v_loc[I2V(iip, jjt, kkr)]/dt;
+        bt2 =  grid.T0v_loc[I2V(iip, jjt, kkr)]/dt*grid.tau_loc[I2V(iip, jjt+1, kkr)];
+    }
+
+    if (kkr > 0){
+        ar1 =  grid.T0r_loc[I2V(iip, jjt, kkr)] + grid.T0v_loc[I2V(iip, jjt, kkr)]/dr;
+        br1 = -grid.T0v_loc[I2V(iip, jjt, kkr)]/dr*grid.tau_loc[I2V(iip, jjt, kkr-1)];
+    }
+    if (kkr < nr-1){
+        ar2 =  grid.T0r_loc[I2V(iip, jjt, kkr)] - grid.T0v_loc[I2V(iip, jjt, kkr)]/dr;
+        br2 =  grid.T0v_loc[I2V(iip, jjt, kkr)]/dr*grid.tau_loc[I2V(iip, jjt, kkr+1)];
+    }
+    bc_f2 = grid.fac_b_loc[I2V(iip,jjt,kkr)]*grid.fac_c_loc[I2V(iip,jjt,kkr)] - std::pow(grid.fac_f_loc[I2V(iip,jjt,kkr)],_2_CR);
+
+    // start to find candidate solutions
+
+    // first catalog: characteristic travels through tetrahedron in 3D volume (8 cases)
+    for (int i_case = 0; i_case < 8; i_case++){
+
+        // determine discretization of T_p,T_t,T_r
+        switch (i_case) {
+            case 0:    // characteristic travels from -p, -t, -r
+                if (iip == 0 || jjt == 0 || kkr == 0)
+                    continue;
+                ap = ap1; bp = bp1;
+                at = at1; bt = bt1;
+                ar = ar1; br = br1;
+                break;
+            case 1:     // characteristic travels from -p, -t, +r
+                if (iip == 0 || jjt == 0 || kkr == nr-1)
+                    continue;
+                ap = ap1; bp = bp1;
+                at = at1; bt = bt1;
+                ar = ar2; br = br2;
+                break;
+            case 2:    // characteristic travels from -p, +t, -r
+                if (iip == 0 || jjt == nt-1 || kkr == 0)
+                    continue;
+                ap = ap1; bp = bp1;
+                at = at2; bt = bt2;
+                ar = ar1; br = br1;
+                break;
+            case 3:     // characteristic travels from -p, +t, +r
+                if (iip == 0 || jjt == nt-1 || kkr == nr-1)
+                    continue;
+                ap = ap1; bp = bp1;
+                at = at2; bt = bt2;
+                ar = ar2; br = br2;
+                break;
+            case 4:    // characteristic travels from +p, -t, -r
+                if (iip == np-1 || jjt == 0 || kkr == 0)
+                    continue;
+                ap = ap2; bp = bp2;
+                at = at1; bt = bt1;
+                ar = ar1; br = br1;
+                break;
+            case 5:     // characteristic travels from +p, -t, +r
+                if (iip == np-1 || jjt == 0 || kkr == nr-1)
+                    continue;
+                ap = ap2; bp = bp2;
+                at = at1; bt = bt1;
+                ar = ar2; br = br2;
+                break;
+            case 6:    // characteristic travels from +p, +t, -r
+                if (iip == np-1 || jjt == nt-1 || kkr == 0)
+                    continue;
+                ap = ap2; bp = bp2;
+                at = at2; bt = bt2;
+                ar = ar1; br = br1;
+                break;
+            case 7:     // characteristic travels from +p, +t, +r
+                if (iip == np-1 || jjt == nt-1 || kkr == nr-1)
+                    continue;
+                ap = ap2; bp = bp2;
+                at = at2; bt = bt2;
+                ar = ar2; br = br2;
+                break;
+        }
+
+        // plug T_p, T_t, T_r into eikonal equation, solving the quadratic equation with respect to tau(iip,jjt,kkr)
+        // that is a*(ar*tau+br)^2 + b*(at*tau+bt)^2 + c*(ap*tau+bp)^2 - 2*f*(at*tau+bt)*(ap*tau+bp) = s^2
+        eqn_a = grid.fac_a_loc[I2V(iip,jjt,kkr)] * std::pow(ar, _2_CR) + grid.fac_b_loc[I2V(iip,jjt,kkr)] * std::pow(at, _2_CR)
+              + grid.fac_c_loc[I2V(iip,jjt,kkr)] * std::pow(ap, _2_CR) - _2_CR*grid.fac_f_loc[I2V(iip,jjt,kkr)] * at * ap;
+        eqn_b = _2_CR*grid.fac_a_loc[I2V(iip,jjt,kkr)] * ar * br + _2_CR*grid.fac_b_loc[I2V(iip,jjt,kkr)] * at * bt
+              + _2_CR*grid.fac_c_loc[I2V(iip,jjt,kkr)] * ap * bp - _2_CR*grid.fac_f_loc[I2V(iip,jjt,kkr)] * (at*bp + bt*ap);
+        eqn_c = grid.fac_a_loc[I2V(iip,jjt,kkr)] * std::pow(br, _2_CR) + grid.fac_b_loc[I2V(iip,jjt,kkr)] * std::pow(bt, _2_CR)
+              + grid.fac_c_loc[I2V(iip,jjt,kkr)] * std::pow(bp, _2_CR) - _2_CR*grid.fac_f_loc[I2V(iip,jjt,kkr)] * bt * bp
+              - std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR);
+        eqn_Delta = std::pow(eqn_b, _2_CR) - _4_CR * eqn_a * eqn_c;
+
+        if (eqn_Delta >= 0){    // one or two real solutions
+            for (int i_solution = 0; i_solution < 2; i_solution++){
+                // solutions
+                switch (i_solution){
+                    case 0:
+                        tmp_tau = (-eqn_b + std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                    case 1:
+                        tmp_tau = (-eqn_b - std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                }
+
+                // check the causality condition: the characteristic passing through (iip,jjt,kkr) is in between used three sides
+                // characteristic direction is (dr/dt, dtheta/dt, tphi/dt) = (H_p1,H_p2,H_p3), p1 = T_r, p2 = T_t, p3 = T_p
+                T_r = ar*tmp_tau + br;
+                T_t = at*tmp_tau + bt;
+                T_p = ap*tmp_tau + bp;
+
+                charact_r = grid.fac_a_loc[I2V(iip,jjt,kkr)]*T_r;
+                charact_t = grid.fac_b_loc[I2V(iip,jjt,kkr)]*T_t - grid.fac_f_loc[I2V(iip,jjt,kkr)]*T_p;
+                charact_p = grid.fac_c_loc[I2V(iip,jjt,kkr)]*T_p - grid.fac_f_loc[I2V(iip,jjt,kkr)]*T_t;
+
+                is_causality = false;
+                switch (i_case){
+                    case 0:  //characteristic travels from -p, -t, -r
+                        if (charact_p >= 0 && charact_t >= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 1:  //characteristic travels from -p, -t, +r
+                        if (charact_p >= 0 && charact_t >= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 2:  //characteristic travels from -p, +t, -r
+                        if (charact_p >= 0 && charact_t <= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 3:  //characteristic travels from -p, +t, +r
+                        if (charact_p >= 0 && charact_t <= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 4:  //characteristic travels from +p, -t, -r
+                        if (charact_p <= 0 && charact_t >= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 5:  //characteristic travels from +p, -t, +r
+                        if (charact_p <= 0 && charact_t >= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 6:  //characteristic travels from +p, +t, -r
+                        if (charact_p <= 0 && charact_t <= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 7:  //characteristic travels from +p, +t, +r
+                        if (charact_p <= 0 && charact_t <= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                }
+
+                // if satisfying the causility condition, retain it as a canditate solution
+                if (is_causality) {
+                    canditate[count_cand] = tmp_tau;
+                    count_cand += 1;
+                }
+
+                // if (iip == 3 && jjt == 2 && kkr == 2){
+                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                //             << ", " << std::endl;
+            // }
+
+
+            }
+
+        }
+    }
+
+    // second catalog: characteristic travels through triangles in 2D volume (12 cases)
+    // case: 1-4
+    // characteristic on r-t plane, force H_p3 = H_(T_p) = 0, that is, c*T_p-f*T_t = 0
+    // plug the constraint into eikonal equation, we have the equation:  a*T_r^2 + (bc-f^2)/c*T_t^2 = s^2
+    for (int i_case = 0; i_case < 4; i_case++){
+        switch (i_case){
+            case 0:     //characteristic travels from  -t, -r
+                if (jjt ==  0 || kkr ==  0){
+                    continue;
+                }
+                at = at1; bt = bt1;
+                ar = ar1; br = br1;
+                break;
+            case 1:     //characteristic travels from  -t, +r
+                if (jjt ==  0 || kkr ==  nr-1){
+                    continue;
+                }
+                at = at1; bt = bt1;
+                ar = ar2; br = br2;
+                break;
+            case 2:     //characteristic travels from  +t, -r
+                if (jjt ==  nt-1 || kkr ==  0){
+                    continue;
+                }
+                at = at2; bt = bt2;
+                ar = ar1; br = br1;
+                break;
+            case 3:     //characteristic travels from  +t, +r
+                if (jjt ==  nt-1 || kkr ==  nr-1){
+                    continue;
+                }
+                at = at2; bt = bt2;
+                ar = ar2; br = br2;
+                break;
+        }
+
+        // plug T_t, T_r into eikonal equation, solve the quadratic equation:  a*(ar*tau+br)^2 + (bc-f^2)/c*(at*tau+bt)^2 = s^2
+        eqn_a = grid.fac_a_loc[I2V(iip,jjt,kkr)] * std::pow(ar, _2_CR) + bc_f2/grid.fac_c_loc[I2V(iip,jjt,kkr)] * std::pow(at, _2_CR);
+        eqn_b = _2_CR*grid.fac_a_loc[I2V(iip,jjt,kkr)] * ar * br + _2_CR*bc_f2/grid.fac_c_loc[I2V(iip,jjt,kkr)] * at * bt;
+        eqn_c = grid.fac_a_loc[I2V(iip,jjt,kkr)] * std::pow(br, _2_CR) + bc_f2/grid.fac_c_loc[I2V(iip,jjt,kkr)] * std::pow(bt, _2_CR)
+              - std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR);
+        eqn_Delta = std::pow(eqn_b, _2_CR) - _4_CR * eqn_a * eqn_c;
+
+        if (eqn_Delta >= 0){    // one or two real solutions
+            for (int i_solution = 0; i_solution < 2; i_solution++){
+                // solutions
+                switch (i_solution){
+                    case 0:
+                        tmp_tau = (-eqn_b + std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                    case 1:
+                        tmp_tau = (-eqn_b - std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                }
+
+                // check the causality condition:
+                T_r = ar*tmp_tau + br;
+                T_t = at*tmp_tau + bt;
+
+                charact_r = grid.fac_a_loc[I2V(iip,jjt,kkr)]*T_r;
+                charact_t = bc_f2/grid.fac_c_loc[I2V(iip,jjt,kkr)]*T_t;
+
+                is_causality = false;
+                switch (i_case){
+                    case 0:  //characteristic travels from -t, -r
+                        if (charact_t >= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 1:  //characteristic travels from -t, +r
+                        if (charact_t >= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 2:  //characteristic travels from +t, -r
+                        if (charact_t <= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 3:  //characteristic travels from +t, +r
+                        if (charact_t <= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                }
+
+                // if satisfying the causility condition, retain it as a canditate solution
+                if (is_causality) {
+                    canditate[count_cand] = tmp_tau;
+                    count_cand += 1;
+                }
+
+                // if (iip == 3 && jjt == 2 && kkr == 2){
+                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                //             << ", " << std::endl;
+            // }
+
+            }
+        }
+
+    }
+
+    // case: 5-8
+    // characteristic on r-p plane, force H_p2 = H_(T_t) = 0, that is, b*T_t-f*T_p = 0
+    // plug the constraint into eikonal equation, we have the equation:  a*T_r^2 + (bc-f^2)/b*T_p^2 = s^2
+    for (int i_case = 4; i_case < 8; i_case++){
+         switch (i_case){
+            case 4:     //characteristic travels from  -p, -r
+                if (iip ==  0 || kkr ==  0){
+                    continue;
+                }
+                ap = ap1; bp = bp1;
+                ar = ar1; br = br1;
+                break;
+            case 5:     //characteristic travels from  -p, +r
+                if (iip ==  0 || kkr ==  nr-1){
+                    continue;
+                }
+                ap = ap1; bp = bp1;
+                ar = ar2; br = br2;
+                break;
+            case 6:     //characteristic travels from  +p, -r
+                if (iip ==  np-1 || kkr ==  0){
+                    continue;
+                }
+                ap = ap2; bp = bp2;
+                ar = ar1; br = br1;
+                break;
+            case 7:     //characteristic travels from  +p, +r
+                if (iip ==  np-1 || kkr ==  nr-1){
+                    continue;
+                }
+                ap = ap2; bp = bp2;
+                ar = ar2; br = br2;
+                break;
+        }
+
+        // plug T_p, T_r into eikonal equation, solve the quadratic equation:  a*(ar*tau+br)^2 + (bc-f^2)/b*(ap*tau+bp)^2 = s^2
+        eqn_a = grid.fac_a_loc[I2V(iip,jjt,kkr)] * std::pow(ar, _2_CR) + bc_f2/grid.fac_b_loc[I2V(iip,jjt,kkr)] * std::pow(ap, _2_CR);
+        eqn_b = _2_CR*grid.fac_a_loc[I2V(iip,jjt,kkr)] * ar * br + _2_CR*bc_f2/grid.fac_b_loc[I2V(iip,jjt,kkr)] * ap * bp;
+        eqn_c = grid.fac_a_loc[I2V(iip,jjt,kkr)] * std::pow(br, _2_CR) + bc_f2/grid.fac_b_loc[I2V(iip,jjt,kkr)] * std::pow(bp, _2_CR)
+              - std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR);
+        eqn_Delta = std::pow(eqn_b, _2_CR) - _4_CR * eqn_a * eqn_c;
+
+        if (eqn_Delta >= 0){    // one or two real solutions
+            for (int i_solution = 0; i_solution < 2; i_solution++){
+                // solutions
+                switch (i_solution){
+                    case 0:
+                        tmp_tau = (-eqn_b + std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                    case 1:
+                        tmp_tau = (-eqn_b - std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                }
+
+                // check the causality condition:
+                T_r = ar*tmp_tau + br;
+                T_p = ap*tmp_tau + bp;
+
+                charact_r = grid.fac_a_loc[I2V(iip,jjt,kkr)]*T_r;
+                charact_p = bc_f2/grid.fac_b_loc[I2V(iip,jjt,kkr)]*T_p;
+
+                is_causality = false;
+                switch (i_case){
+                    case 4:  //characteristic travels from -p, -r
+                        if (charact_p >= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 5:  //characteristic travels from -p, +r
+                        if (charact_p >= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 6:  //characteristic travels from +p, -r
+                        if (charact_p <= 0 && charact_r >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 7:  //characteristic travels from +p, +r
+                        if (charact_p <= 0 && charact_r <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                }
+
+                // if satisfying the causility condition, retain it as a canditate solution
+                if (is_causality) {
+                    canditate[count_cand] = tmp_tau;
+                    count_cand += 1;
+                }
+
+                // if (iip == 3 && jjt == 2 && kkr == 2){
+                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                //             << ", " << std::endl;
+            // }
+
+            }
+        }
+    }
+
+    // case: 9-12
+    // characteristic on t-p plane, force H_p1 = H_(T_t) = 0, that is, T_r = 0
+    // plug the constraint into eikonal equation, we have the equation:  b*T_t^2 + c*T_p^2 - 2f*T_t*T_p = s^2
+    for (int i_case = 8; i_case < 12; i_case++){
+        switch (i_case){
+            case 8:     //characteristic travels from  -p, -t
+                if (iip ==  0 || jjt ==  0){
+                    continue;
+                }
+                ap = ap1; bp = bp1;
+                at = at1; bt = bt1;
+                break;
+            case 9:     //characteristic travels from  -p, +t
+                if (iip ==  0 || jjt ==  nt-1){
+                    continue;
+                }
+                ap = ap1; bp = bp1;
+                at = at2; bt = bt2;
+                break;
+            case 10:     //characteristic travels from  +p, -t
+                if (iip ==  np-1 || jjt ==  0){
+                    continue;
+                }
+                ap = ap2; bp = bp2;
+                at = at1; bt = bt1;
+                break;
+            case 11:     //characteristic travels from  +p, +t
+                if (iip ==  np-1 || jjt ==  nt-1){
+                    continue;
+                }
+                ap = ap2; bp = bp2;
+                at = at2; bt = bt2;
+                break;
+        }
+
+        // plug T_p, T_t into eikonal equation, solve the quadratic equation:  b*(at*tau+bt)^2 + c*(ap*tau+bp)^2 - 2f*(at*tau+bt)*(ap*tau+bp) = s^2
+        eqn_a = grid.fac_b_loc[I2V(iip,jjt,kkr)] * std::pow(at, _2_CR)
+              + grid.fac_c_loc[I2V(iip,jjt,kkr)] * std::pow(ap, _2_CR) - _2_CR*grid.fac_f_loc[I2V(iip,jjt,kkr)] * at * ap;
+        eqn_b = _2_CR*grid.fac_b_loc[I2V(iip,jjt,kkr)] * at * bt
+              + _2_CR*grid.fac_c_loc[I2V(iip,jjt,kkr)] * ap * bp - _2_CR*grid.fac_f_loc[I2V(iip,jjt,kkr)] * (at*bp + bt*ap);
+        eqn_c = grid.fac_b_loc[I2V(iip,jjt,kkr)] * std::pow(bt, _2_CR)
+              + grid.fac_c_loc[I2V(iip,jjt,kkr)] * std::pow(bp, _2_CR) - _2_CR*grid.fac_f_loc[I2V(iip,jjt,kkr)] * bt * bp
+              - std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR);
+        eqn_Delta = std::pow(eqn_b, _2_CR) - _4_CR * eqn_a * eqn_c;
+
+        if (eqn_Delta >= 0){    // one or two real solutions
+            for (int i_solution = 0; i_solution < 2; i_solution++){
+                // solutions
+                switch (i_solution){
+                    case 0:
+                        tmp_tau = (-eqn_b + std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                    case 1:
+                        tmp_tau = (-eqn_b - std::sqrt(eqn_Delta))/(_2_CR*eqn_a);
+                        break;
+                }
+
+                // check the causality condition:
+                T_t = at*tmp_tau + bt;
+                T_p = ap*tmp_tau + bp;
+
+                charact_t = grid.fac_b_loc[I2V(iip,jjt,kkr)]*T_t - grid.fac_f_loc[I2V(iip,jjt,kkr)]*T_p;
+                charact_p = grid.fac_c_loc[I2V(iip,jjt,kkr)]*T_p - grid.fac_f_loc[I2V(iip,jjt,kkr)]*T_t;
+
+                is_causality = false;
+                switch (i_case){
+                    case 8:  //characteristic travels from -p, -t
+                        if (charact_p >= 0 && charact_t >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 9:  //characteristic travels from -p, +t
+                        if (charact_p >= 0 && charact_t <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 10:  //characteristic travels from +p, -t
+                        if (charact_p <= 0 && charact_t >= 0){
+                            is_causality = true;
+                        }
+                        break;
+                    case 11:  //characteristic travels from +p, +t
+                        if (charact_p <= 0 && charact_t <= 0){
+                            is_causality = true;
+                        }
+                        break;
+                }
+
+                // if satisfying the causility condition, retain it as a canditate solution
+                if (is_causality) {
+                    canditate[count_cand] = tmp_tau;
+                    count_cand += 1;
+                }
+
+                // if (iip == 3 && jjt == 2 && kkr == 2){
+                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                //             << ", " << std::endl;
+            // }
+
+            }
+        }
+    }
+
+    // third catalog: characteristic travels through lines in 1D volume (6 cases)
+    // case: 1-2
+    // characteristic travels along r-axis, force H_p2, H_p3 = 0, that is, T_p = T_t = 0
+    // plug the constraint into eikonal equation, we have the equation:   a*T_r^2 = s^2
+    for (int i_case = 0; i_case < 2; i_case++){
+        switch (i_case){
+            case 0:     //characteristic travels from  -r
+                if (kkr ==  0){
+                    continue;
+                }
+                ar = ar1; br = br1;
+                break;
+            case 1:     //characteristic travels from  +r
+                if (kkr ==  nr-1){
+                    continue;
+                }
+                ar = ar2; br = br2;
+                break;
+        }
+
+        // plug T_t, T_r into eikonal equation, solve the quadratic equation:  a*(ar*tau+br)^2 = s^2
+        // simply, we have two solutions
+        for (int i_solution = 0; i_solution < 2; i_solution++){
+            // solutions
+            switch (i_solution){
+                case 0:
+                    tmp_tau = ( std::sqrt(std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR)/grid.fac_a_loc[I2V(iip,jjt,kkr)]) - br)/ar;
+                    break;
+                case 1:
+                    tmp_tau = (-std::sqrt(std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR)/grid.fac_a_loc[I2V(iip,jjt,kkr)]) - br)/ar;
+                    break;
+            }
+
+            // check the causality condition:
+
+            is_causality = false;
+            switch (i_case){
+                case 0:  //characteristic travels from -r (we can simply compare the traveltime, which is the same as check the direction of characteristic)
+                    if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt,kkr-1)] * grid.T0v_loc[I2V(iip,jjt,kkr-1)]
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt,kkr-1)]/_2_CR){   // this additional condition ensures the causality near the source
+                        is_causality = true;
+                    }
+                    break;
+                case 1:  //characteristic travels from +r
+                    if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt,kkr+1)] * grid.T0v_loc[I2V(iip,jjt,kkr+1)]
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt,kkr+1)]/_2_CR){
+                        is_causality = true;
+                    }
+                    break;
+            }
+
+            // if satisfying the causility condition, retain it as a canditate solution
+            if (is_causality) {
+                canditate[count_cand] = tmp_tau;
+                count_cand += 1;
+            }
+
+            // if (iip == 3 && jjt == 2 && kkr == 2){
+            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+            //                 << ", " << std::endl;
+            // }
+
+        }
+
+    }
+
+    // case: 3-4
+    // characteristic travels along t-axis, force H_p1, H_p3 = 0, that is, T_r = 0; c*T_p-f*T_t = 0
+    // plug the constraint into eikonal equation, we have the equation:   (bc-f^2)/c*T_t^2 = s^2
+    for (int i_case = 2; i_case < 4; i_case++){
+        switch (i_case){
+            case 2:     //characteristic travels from  -t
+                if (jjt ==  0){
+                    continue;
+                }
+                at = at1; bt = bt1;
+                break;
+            case 3:     //characteristic travels from  +t
+                if (jjt ==  nt-1){
+                    continue;
+                }
+                at = at2; bt = bt2;
+                break;
+        }
+
+        // plug T_p, T_r into eikonal equation, solve the quadratic equation:  (bc-f^2)/c*(at*tau+bt)^2 = s^2
+        // simply, we have two solutions
+        for (int i_solution = 0; i_solution < 2; i_solution++){
+            // solutions
+            switch (i_solution){
+                case 0:
+                    tmp_tau = ( std::sqrt(std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR)*grid.fac_c_loc[I2V(iip,jjt,kkr)]/bc_f2) - bt)/at;
+                    break;
+                case 1:
+                    tmp_tau = (-std::sqrt(std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR)*grid.fac_c_loc[I2V(iip,jjt,kkr)]/bc_f2) - bt)/at;
+                    break;
+            }
+
+            // check the causality condition:
+
+            is_causality = false;
+            switch (i_case){
+                case 2:  //characteristic travels from -t (we can simply compare the traveltime, which is the same as check the direction of characteristic)
+                    if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt-1,kkr)] * grid.T0v_loc[I2V(iip,jjt-1,kkr)]
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt-1,kkr)]/_2_CR){   // this additional condition ensures the causality near the source
+                        is_causality = true;
+                    }
+                    break;
+                case 3:  //characteristic travels from +t
+                    if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt+1,kkr)] * grid.T0v_loc[I2V(iip,jjt+1,kkr)]
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt+1,kkr)]/_2_CR){
+                        is_causality = true;
+                    }
+                    break;
+
+            }
+
+            // if satisfying the causility condition, retain it as a canditate solution
+            if (is_causality) {
+                canditate[count_cand] = tmp_tau;
+                count_cand += 1;
+            }
+
+            // if (iip == 3 && jjt == 2 && kkr == 2){
+            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+            //                 << ", " << std::endl;
+            // }
+
+        }
+    }
+
+    // case: 5-6
+    // characteristic travels along p-axis, force H_p1, H_p2 = 0, that is, T_r = 0; b*T_t-f*T_p = 0
+    // plug the constraint into eikonal equation, we have the equation:   (bc-f^2)/b*T_p^2 = s^2
+    for (int i_case = 4; i_case < 6; i_case++){
+        switch (i_case){
+            case 4:     //characteristic travels from  -p
+                if (iip ==  0){
+                    continue;
+                }
+                ap = ap1; bp = bp1;
+                break;
+            case 5:     //characteristic travels from  +p
+                if (iip ==  np-1){
+                    continue;
+                }
+                ap = ap2; bp = bp2;
+                break;
+
+        }
+
+        // plug T_t, T_r into eikonal equation, solve the quadratic equation:  (bc-f^2)/b*(ap*tau+bp)^2 = s^2
+        // simply, we have two solutions
+        for (int i_solution = 0; i_solution < 2; i_solution++){
+            // solutions
+            switch (i_solution){
+                case 0:
+                    tmp_tau = ( std::sqrt(std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR)*grid.fac_b_loc[I2V(iip,jjt,kkr)]/bc_f2) - bp)/ap;
+                    break;
+                case 1:
+                    tmp_tau = (-std::sqrt(std::pow(grid.fun_loc[I2V(iip,jjt,kkr)], _2_CR)*grid.fac_b_loc[I2V(iip,jjt,kkr)]/bc_f2) - bp)/ap;
+                    break;
+            }
+
+            // check the causality condition:
+
+            is_causality = false;
+            switch (i_case){
+                case 4:  //characteristic travels from -p (we can simply compare the traveltime, which is the same as check the direction of characteristic)
+                    if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip-1,jjt,kkr)] * grid.T0v_loc[I2V(iip-1,jjt,kkr)]
+                        && tmp_tau > grid.tau_loc[I2V(iip-1,jjt,kkr)]/_2_CR){   // this additional condition ensures the causality near the source
+                        is_causality = true;
+                    }
+                    break;
+                case 5:  //characteristic travels from +p
+                    if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip+1,jjt,kkr)] * grid.T0v_loc[I2V(iip+1,jjt,kkr)]
+                        && tmp_tau > grid.tau_loc[I2V(iip+1,jjt,kkr)]/_2_CR){
+                        is_causality = true;
+                    }
+                    break;
+
+            }
+
+            // if (iip == 3 && jjt == 2 && kkr == 2){
+            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
+            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+            //                 << ", " << std::endl;
+            // }
+
+            // if satisfying the causility condition, retain it as a canditate solution
+            if (is_causality) {
+                canditate[count_cand] = tmp_tau;
+                count_cand += 1;
+            }
+        }
+    }
+
+    // final, choose the minimum candidate solution as the updated value
+    for (int i_cand = 0; i_cand < count_cand; i_cand++){
+        grid.tau_loc[I2V(iip, jjt, kkr)] = std::min(grid.tau_loc[I2V(iip, jjt, kkr)], canditate[i_cand]);
+    }
+}
 
 void Iterator::calculate_stencil_1st_order(Grid& grid, int& iip, int& jjt, int&kkr){
     sigr = SWEEPING_COEFF*std::sqrt(grid.fac_a_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];

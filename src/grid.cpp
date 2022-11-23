@@ -938,12 +938,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
         io.read_model(f_model_path,"xi",   xi_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fun",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_a",fac_a_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_b",fac_b_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_c",fac_c_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_f",fac_f_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        //io.read_model(f_model_path,"vel",  velo_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
+        io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
         if(if_test) {
             // solver test
             io.read_model(f_model_path, "u", u_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
@@ -955,12 +950,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     broadcast_cr_inter_sim(xi_loc,    n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(eta_loc,   n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(zeta_loc,  n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_a_loc, n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_b_loc, n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_c_loc, n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_f_loc, n_total_loc_grid_points, 0);
-    //broadcast_cr_inter_sim(velo_loc,  n_total_loc_grid_points, 0);
+    broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0); // here passing velocity array
     if(if_test) {
         broadcast_cr_inter_sim(u_loc, n_total_loc_grid_points, 0);
     }
@@ -973,6 +963,15 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+
+                // convert velocity to slowness
+                fun_loc[I2V(i_lon, j_lat, k_r)] = _1_CR / fun_loc[I2V(i_lon, j_lat, k_r)];
+
+                // calculate fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc
+                fac_a_loc[I2V(i_lon, j_lat, k_r)] = _1_CR + _2_CR * zeta_loc[I2V(i_lon, j_lat, k_r)];
+                fac_b_loc[I2V(i_lon, j_lat, k_r)] = _1_CR - _2_CR *   xi_loc[I2V(i_lon, j_lat, k_r)];
+                fac_c_loc[I2V(i_lon, j_lat, k_r)] = _1_CR + _2_CR *   xi_loc[I2V(i_lon, j_lat, k_r)];
+                fac_f_loc[I2V(i_lon, j_lat, k_r)] =       - _2_CR *  eta_loc[I2V(i_lon, j_lat, k_r)];
 
                 // construct 3d coordinate arrays and node connectivity for visualization
                 // exclude the ghost nodes
