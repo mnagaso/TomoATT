@@ -86,7 +86,7 @@ Iterator::~Iterator() {
         free_preloaded_array(vv_i__j__kp1);
         free_preloaded_array(vv_i__j__km1);
 
-        if(simd_allocated_3rd){
+        if(simd_allocated_3rd || is_teleseismic){
             free_preloaded_array(vv_ip2j__k__);
             free_preloaded_array(vv_im2j__k__);
             free_preloaded_array(vv_i__jp2k__);
@@ -99,11 +99,13 @@ Iterator::~Iterator() {
         free_preloaded_array(vv_fac_b);
         free_preloaded_array(vv_fac_c);
         free_preloaded_array(vv_fac_f);
-        free_preloaded_array(vv_T0v);
-        free_preloaded_array(vv_T0r);
-        free_preloaded_array(vv_T0t);
-        free_preloaded_array(vv_T0p);
         free_preloaded_array(vv_fun);
+        if (!is_teleseismic){
+            free_preloaded_array(vv_T0v);
+            free_preloaded_array(vv_T0r);
+            free_preloaded_array(vv_T0t);
+            free_preloaded_array(vv_T0p);
+        }
         if(!use_gpu)
             free_preloaded_array(vv_change);
         else
@@ -263,7 +265,7 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     preload_indices_1d(vv_i__jm1k__, 0,-1, 0);
     preload_indices_1d(vv_i__j__km1, 0, 0,-1);
 
-    if(IP.get_stencil_order() == 3){
+    if(IP.get_stencil_order() == 3 || is_teleseismic){
         preload_indices_1d(vv_ip2j__k__, 2, 0, 0);
         preload_indices_1d(vv_i__jp2k__, 0, 2, 0);
         preload_indices_1d(vv_i__j__kp2, 0, 0, 2);
@@ -283,11 +285,13 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     vv_fac_b = preload_array(grid.fac_b_loc);
     vv_fac_c = preload_array(grid.fac_c_loc);
     vv_fac_f = preload_array(grid.fac_f_loc);
-    vv_T0v   = preload_array(grid.T0v_loc);
-    vv_T0r   = preload_array(grid.T0r_loc);
-    vv_T0t   = preload_array(grid.T0t_loc);
-    vv_T0p   = preload_array(grid.T0p_loc);
     vv_fun   = preload_array(grid.fun_loc);
+    if(!is_teleseismic) {
+        vv_T0v   = preload_array(grid.T0v_loc);
+        vv_T0r   = preload_array(grid.T0r_loc);
+        vv_T0t   = preload_array(grid.T0t_loc);
+        vv_T0p   = preload_array(grid.T0p_loc);
+    }
     if(!use_gpu)
         vv_change = preload_array(grid.is_changed);
     else
