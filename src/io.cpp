@@ -1077,7 +1077,7 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
                 std::cout << "--- read model data " << dset_name << " from ASCII file ---" << std::endl;
             }
 
-            CUSTOMREAL tmp_eta, tmp_xi, tmp_zeta, tmp_fun, tmp_vel, tmp_a, tmp_b, tmp_c, tmp_f, tmp_u;
+            CUSTOMREAL tmp_eta, tmp_xi, tmp_zeta, tmp_vel;
 
             // read data
 
@@ -1091,10 +1091,10 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
             int i,j,k;
 
             if (if_test) {
-                while(model_file >> tmp_eta >> tmp_xi >> tmp_zeta >> tmp_fun >> tmp_vel >> tmp_a >> tmp_b >> tmp_c >> tmp_f >> tmp_u) {
-                    k = line_count /   (ngrid_i*ngrid_j);
-                    j = (line_count - k*ngrid_i*ngrid_j) /  ngrid_i;
-                    i = line_count  - k*ngrid_i*ngrid_j - j*ngrid_i;
+                while(model_file >> tmp_eta >> tmp_xi >> tmp_zeta >> tmp_vel) {
+                    k =  line_count /   (ngrid_i*ngrid_j);
+                    j = (line_count  - k*ngrid_i*ngrid_j) /  ngrid_i;
+                    i =  line_count  - k*ngrid_i*ngrid_j - j*ngrid_i;
 
                     if (i>=offset_i && i<offset_i+loc_I && j>=offset_j && j<offset_j+loc_J && k>=offset_k && k<offset_k+loc_K) {
                         if (!dset_name.compare(std::string("xi")))
@@ -1103,24 +1103,14 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
                             darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_eta);
                         else if (!dset_name.compare(std::string("zeta")))
                             darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_zeta);
-                        else if (!dset_name.compare(std::string("fun")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_fun);
-                        else if (!dset_name.compare(std::string("fac_a")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_a);
-                        else if (!dset_name.compare(std::string("fac_b")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_b);
-                        else if (!dset_name.compare(std::string("fac_c")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_c);
-                        else if (!dset_name.compare(std::string("fac_f")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_f);
-                        else if (!dset_name.compare(std::string("u")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_u);
+                        else if (!dset_name.compare(std::string("vel")))
+                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_vel);
                     }
 
                     line_count++;
                 }
             } else {
-                while(model_file >> tmp_eta >> tmp_xi >> tmp_zeta >> tmp_fun >> tmp_vel >> tmp_a >> tmp_b >> tmp_c >> tmp_f) {
+                while(model_file >> tmp_eta >> tmp_xi >> tmp_zeta >> tmp_vel) {
                     k = line_count /(ngrid_i*ngrid_j);
                     j = (line_count - k*ngrid_i*ngrid_j) /  ngrid_i;
                     i = line_count  - k*ngrid_i*ngrid_j - j*ngrid_i;
@@ -1132,17 +1122,8 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
                             darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_eta);
                         else if (!dset_name.compare(std::string("zeta")))
                             darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_zeta);
-                        else if (!dset_name.compare(std::string("fun")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_fun);
-                        else if (!dset_name.compare(std::string("fac_a")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_a);
-                        else if (!dset_name.compare(std::string("fac_b")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_b);
-                        else if (!dset_name.compare(std::string("fac_c")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_c);
-                        else if (!dset_name.compare(std::string("fac_f")))
-                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_f);
-
+                        else if (!dset_name.compare(std::string("vel")))
+                            darr[I2V(i-offset_i,j-offset_j,k-offset_k)] = static_cast<CUSTOMREAL> (tmp_vel);
                     }
 
                     line_count++;

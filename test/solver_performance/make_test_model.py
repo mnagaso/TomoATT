@@ -64,10 +64,6 @@ if __name__ == "__main__":
         zeta_init = np.zeros(n_rtp)
         fun_init = np.zeros(n_rtp)
         vel_init = np.zeros(n_rtp)
-        a_init = np.zeros(n_rtp)
-        b_init = np.zeros(n_rtp)
-        c_init = np.zeros(n_rtp)
-        f_init = np.zeros(n_rtp)
 
         # true model
         eta_true = np.zeros(n_rtp)
@@ -75,10 +71,6 @@ if __name__ == "__main__":
         zeta_true = np.zeros(n_rtp)
         fun_true = np.zeros(n_rtp)
         vel_true = np.zeros(n_rtp)
-        a_true = np.zeros(n_rtp)
-        b_true = np.zeros(n_rtp)
-        c_true = np.zeros(n_rtp)
-        f_true = np.zeros(n_rtp)
 
         c=0
         for ir in range(n_rtp[2]):
@@ -98,10 +90,6 @@ if __name__ == "__main__":
                         fun_init[ir,it,ip] = 1.0/9.0
 
                     vel_init[ir,it,ip] = 1.0/fun_init[ir,it,ip]
-                    a_init[ir,it,ip] = 1.0 + 2.0*zeta_init[ir,it,ip]
-                    b_init[ir,it,ip] = 1.0 - 2.0*xi_init[ir,it,ip]
-                    c_init[ir,it,ip] = 1.0 + 2.0*xi_init[ir,it,ip]
-                    f_init[ir,it,ip] = -2.0 * eta_init[ir,it,ip]
 
                     # true model
                     if (tt[it] >= 30.0/180.0*math.pi and tt[it] <= 50.0/180.0*math.pi \
@@ -126,10 +114,6 @@ if __name__ == "__main__":
                     zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
                     fun_true[ir,it,ip] = fun_init[ir,it,ip]/(1.0+sigma*slow_p)
                     vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
-                    a_true[ir,it,ip] = 1.0 + 2.0*zeta_true[ir,it,ip]
-                    b_true[ir,it,ip] = 1.0 - 2.0*xi_true[ir,it,ip]
-                    c_true[ir,it,ip] = 1.0 + 2.0*xi_true[ir,it,ip]
-                    f_true[ir,it,ip] = -2.0 * eta_true[ir,it,ip]
 
 
 
@@ -150,22 +134,12 @@ if __name__ == "__main__":
         fout_init.create_dataset('eta',  data=eta_init)
         fout_init.create_dataset('xi',    data=xi_init)
         fout_init.create_dataset('zeta',data=zeta_init)
-        fout_init.create_dataset('fun',  data=fun_init)
-        fout_init.create_dataset('fac_a',  data=a_init)
-        fout_init.create_dataset('fac_b',  data=b_init)
-        fout_init.create_dataset('fac_c',  data=c_init)
-        fout_init.create_dataset('fac_f',  data=f_init)
         fout_init.create_dataset('vel',  data=vel_init)
 
         # writeout the arrays eta_true, xi_true, zeta_true, fun_true, a_true, b_true, c_true, f_true
         fout_true.create_dataset('eta',  data=eta_true)
         fout_true.create_dataset('xi',    data=xi_true)
         fout_true.create_dataset('zeta',data=zeta_true)
-        fout_true.create_dataset('fun',  data=fun_true)
-        fout_true.create_dataset('fac_a',  data=a_true)
-        fout_true.create_dataset('fac_b',  data=b_true)
-        fout_true.create_dataset('fac_c',  data=c_true)
-        fout_true.create_dataset('fac_f',  data=f_true)
         fout_true.create_dataset('vel',  data=vel_true)
 
         fout_init.close()

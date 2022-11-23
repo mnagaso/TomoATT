@@ -35,10 +35,6 @@ xi_init  = np.zeros(n_rtp)
 zeta_init = np.zeros(n_rtp)
 fun_init = np.zeros(n_rtp)
 vel_init = np.zeros(n_rtp)
-a_init = np.zeros(n_rtp)
-b_init = np.zeros(n_rtp)
-c_init = np.zeros(n_rtp)
-f_init = np.zeros(n_rtp)
 
 # true model
 eta_true = np.zeros(n_rtp)
@@ -46,10 +42,6 @@ xi_true  = np.zeros(n_rtp)
 zeta_true = np.zeros(n_rtp)
 fun_true = np.zeros(n_rtp)
 vel_true = np.zeros(n_rtp)
-a_true = np.zeros(n_rtp)
-b_true = np.zeros(n_rtp)
-c_true = np.zeros(n_rtp)
-f_true = np.zeros(n_rtp)
 
 c=0
 for ir in range(n_rtp[0]):
@@ -61,10 +53,6 @@ for ir in range(n_rtp[0]):
             zeta_init[ir,it,ip] = gamma*math.sqrt(eta_init[ir,it,ip]**2 + xi_init[ir,it,ip]**2)
             fun_init[ir,it,ip] = s0
             vel_init[ir,it,ip] = 1.0/s0
-            a_init[ir,it,ip] = 1.0 + 2.0*zeta_init[ir,it,ip]
-            b_init[ir,it,ip] = 1.0 - 2.0*xi_init[ir,it,ip]
-            c_init[ir,it,ip] = 1.0 + 2.0*xi_init[ir,it,ip]
-            f_init[ir,it,ip] = -2.0 * eta_init[ir,it,ip]
 
             # true model
             if (tt[it] >= 38.0/180.0*math.pi and tt[it] <= 42.0/180.0*math.pi \
@@ -86,11 +74,6 @@ for ir in range(n_rtp[0]):
             zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
             fun_true[ir,it,ip] = s0/(1.0+sigma*slow_p)
             vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
-            a_true[ir,it,ip] = 1.0 + 2.0*zeta_true[ir,it,ip]
-            b_true[ir,it,ip] = 1.0 - 2.0*xi_true[ir,it,ip]
-            c_true[ir,it,ip] = 1.0 + 2.0*xi_true[ir,it,ip]
-            f_true[ir,it,ip] = -2.0 * eta_true[ir,it,ip]
-
 
 
 #r_earth = 6378.1370
@@ -114,7 +97,7 @@ with open(fname_init, 'w') as f:
         for it in range(n_rtp[1]):
             for ip in range(n_rtp[2]):
                 # write out eta xi zeta fun fac_a fac_b fac_c fac_f
-                f.write("{}   {}   {}   {}   {}   {}   {}   {}   {}\n".format(eta_init[ir,it,ip],xi_init[ir,it,ip],zeta_init[ir,it,ip],fun_init[ir,it,ip],vel_init[ir,it,ip],a_init[ir,it,ip],b_init[ir,it,ip],c_init[ir,it,ip],f_init[ir,it,ip]))
+                f.write("{}   {}   {}   {}\n".format(eta_init[ir,it,ip],xi_init[ir,it,ip],zeta_init[ir,it,ip],vel_init[ir,it,ip]))
 
 
 # write true model
@@ -124,7 +107,7 @@ with open(fname_true, 'w') as f:
         for it in range(n_rtp[1]):
             for ip in range(n_rtp[2]):
                 # write out eta xi zeta fun fac_a fac_b fac_c fac_f
-                f.write("{}   {}   {}   {}   {}   {}   {}   {}   {}\n".format(eta_true[ir,it,ip],xi_true[ir,it,ip],zeta_true[ir,it,ip],fun_true[ir,it,ip],vel_true[ir,it,ip],a_true[ir,it,ip],b_true[ir,it,ip],c_true[ir,it,ip],f_true[ir,it,ip]))
+                f.write("{}   {}   {}   {}\n".format(eta_true[ir,it,ip],xi_true[ir,it,ip],zeta_true[ir,it,ip],vel_true[ir,it,ip]))
 
 
 
