@@ -1161,8 +1161,6 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 
     // std::cout << a0 << ' ' << b0 << ' ' << c0 << ' ' << f0 << ' ' << std::endl;
 
-
-
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {

@@ -109,9 +109,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
                 // write out model info
                 io.write_fun(grid, i_inv);
-                io.write_b(grid, i_inv);
-                io.write_c(grid, i_inv);
-                io.write_f(grid, i_inv);
             }
 
             if (IP.get_is_output_model_dat())        // output model_parameters_inv_0000.dat
@@ -121,6 +118,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // writeout temporary xdmf file
         if (IP.get_is_output_source_field())
             io.update_xdmf_file(IP.src_ids_this_sim.size());
+
+        // wait for all processes to finish
+        synchronize_all_world();
 
     } // end loop inverse
 

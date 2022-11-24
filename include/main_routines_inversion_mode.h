@@ -105,16 +105,6 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             if (heavily_output || (i_inv == 0 && i_src == 0) )
                 io.write_T(grid, i_inv);
 
-            // output T0v
-            //io.write_T0v(grid,i_inv); // initial Timetable
-            // output u (true solution)
-            //if (if_test)
-            //    io.write_u(grid);  // true Timetable
-            // output tau
-            //io.write_tau(grid, i_inv); // calculated deviation
-            // output residual (residual = true_solution - result)
-            //if (if_test)
-            //    io.write_residual(grid); // this will over write the u_loc, so we need to call write_u_h5 first
         }
 
         // calculate the arrival times at each receivers
