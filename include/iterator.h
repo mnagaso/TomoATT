@@ -23,7 +23,7 @@
 
 class Iterator {
 public:
-    Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool, bool);
+    Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool);
     virtual ~Iterator();
     // regional source
     void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
@@ -41,20 +41,10 @@ protected:
     virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
     void calculate_stencil_1st_order(Grid&, int&, int&, int&);     // calculate stencil for 1st order
     void calculate_stencil_3rd_order(Grid&, int&, int&, int&);     // calculate stencil for 3rd order
-    void calculate_stencil_1st_order_upwind(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
     void calculate_boundary_nodes(Grid&);                          // calculate boundary values
-//    // teleseismic source
-    void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order
-    void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&); // calculate stencil for 3rd order
-    void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);    // calculate boundary values for teleseismic source
-    void calculate_boundary_nodes_tele_adj(Grid&, int&, int&, int&);// calculate boundary values for teleseismic adjoint source
 
     // Hamiltonian calculation
     inline CUSTOMREAL calc_LF_Hamiltonian(Grid&, CUSTOMREAL& ,CUSTOMREAL& , \
-                                                 CUSTOMREAL& ,CUSTOMREAL& , \
-                                                 CUSTOMREAL& ,CUSTOMREAL&, \
-                                                 int&, int&, int& );
-    inline CUSTOMREAL calc_LF_Hamiltonian_tele(Grid&, CUSTOMREAL& ,CUSTOMREAL& , \
                                                  CUSTOMREAL& ,CUSTOMREAL& , \
                                                  CUSTOMREAL& ,CUSTOMREAL&, \
                                                  int&, int&, int& );
@@ -148,9 +138,6 @@ protected:
     CUSTOMREAL ini_err_L1  = HUGE_VAL, ini_err_Linf  = HUGE_VAL;
     CUSTOMREAL cur_diff_L1 = HUGE_VAL, cur_diff_Linf = HUGE_VAL;
     CUSTOMREAL cur_err_L1  = HUGE_VAL, cur_err_Linf  = HUGE_VAL;
-
-    // teleseismic flag
-    bool is_teleseismic = false;
 
     // second run for hybrid order method
     bool is_second_run = false;

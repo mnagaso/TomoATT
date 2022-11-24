@@ -85,9 +85,6 @@ int main(int argc, char *argv[])
     //
     if (IP.get_run_mode() == ONLY_FORWARD || IP.get_run_mode() == DO_INVERSION){
         run_forward_only_or_inversion(IP, grid, io);
-    } else if (IP.get_run_mode() == TELESEIS_PREPROCESS) {
-        // terminate the program here if the run mode is TELESEIS_PREPROCESS
-        // because prepare_teleseismic_boundary_conditions is already called.
     } else if (IP.get_run_mode() == SRC_RELOCATION) {
         run_earthquake_relocation(IP, grid, io);
     } else {
