@@ -124,6 +124,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         if (IP.get_is_output_source_field())
             io.update_xdmf_file(IP.src_ids_this_sim.size());
 
+        // wait for all processes to finish
+        synchronize_all_world();
+
     } // end loop inverse
 
     // close xdmf file
