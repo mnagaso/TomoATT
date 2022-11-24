@@ -461,85 +461,6 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
 }
 
 
-void IO_utils::write_2d_travel_time_field(CUSTOMREAL* T, CUSTOMREAL* r, CUSTOMREAL* t, int nr, int nt, CUSTOMREAL src_dep){
-
-    if (myrank == 0) {
-
-        if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-            auto str = std::to_string(src_dep);
-            std::string fname = output_dir + "/" + OUTPUT_DIR_2D + "/2d_travel_time_field_dep_" +str.substr(0,str.find(".")+4)+".h5";
-            // create and open h5 file
-            //plist_id_2d = H5Pcreate(H5P_FILE_ACCESS);
-            file_id_2d  = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-
-            // create dataset and write
-            int dims_T[2] = {nr, nt};
-            std::string str_dset = "T";
-            h5_create_and_write_dataset_2d(str_dset, 2, dims_T, custom_real_flag, T);
-            str_dset = "r";
-            h5_create_and_write_dataset_2d(str_dset, 1, &nr, custom_real_flag, r);
-            str_dset = "t";
-            h5_create_and_write_dataset_2d(str_dset, 1, &nt, custom_real_flag, t);
-
-            // close h5 file
-            //H5Pclose(plist_id_2d);
-            H5Fclose(file_id_2d);
-#else
-            std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-            exit(1);
-#endif
-        } else if (output_format==OUTPUT_FORMAT_ASCII){
-            // write out r t and T in ASCII
-            auto str = std::to_string(src_dep);
-            std::string fname = output_dir + "/" + OUTPUT_DIR_2D + "/2d_travel_time_field_dep_" +str.substr(0,str.find(".")+4)+".dat";
-            std::ofstream fout(fname.c_str());
-
-            // set precision
-            fout << std::fixed << std::setprecision(ASCII_OUTPUT_PRECISION);
-
-            for (int i=0; i<nr; i++)
-                for (int j=0; j<nt; j++)
-                    fout << r[i] << "   " << t[j] << "   " << T[i*nt+j] << "\n";
-            fout.close();
-        }
-    }
-
-}
-
-
-void IO_utils::read_2d_travel_time_field(std::string& fname, CUSTOMREAL* T, int nt, int nr){
-    if (myrank == 0) {
-        if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-            // open h5 file
-            file_id = H5Fopen(fname.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-            // open dataset
-            std::string str_dset = "T";
-            // read data
-            h5_read_array_simple(str_dset,  T);
-            // close h5 file
-            H5Fclose(file_id);
-#else
-            std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-            exit(1);
-#endif
-        } else if (output_format==OUTPUT_FORMAT_ASCII){
-            // read ascii file
-            std::ifstream fin(fname.c_str());
-            if (!fin.is_open()) {
-                std::cout << "ERROR: cannot open file " << fname << std::endl;
-                exit(1);
-            }
-            CUSTOMREAL r_dummy, t_dummy;
-            for (int i=0; i<nr; i++)
-                for (int j=0; j<nt; j++)
-                    fin >> r_dummy >> t_dummy >> T[i*nt+j];
-        }
-    }
-}
-
-
 std::string IO_utils::create_fname_ascii(std::string& dset_name){
     std::string fname = output_dir + "/" + dset_name \
     + "_src_" + int2string_zero_fill(id_sim_src) + ".dat";
@@ -610,8 +531,6 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "latitude" << " "
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "longitude" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
                     // << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "T" << " "
                     // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
@@ -630,8 +549,6 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
             CUSTOMREAL* nodes_coords_t = grid.get_nodes_coords_t();
             CUSTOMREAL* nodes_coords_r = grid.get_nodes_coords_r();
             std::vector<CUSTOMREAL> slowness = get_grid_data(grid.get_fun());
-            std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
-            std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
 
             for (int k = 0; k < loc_K_vis; k++){
                 for (int j = 0; j < loc_J_vis; j++){
@@ -641,8 +558,6 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                             << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_t[idx] << " "
                             << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_p[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
                             // << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << T[idx] << " "
                             // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << Ks[idx] << " "
@@ -799,40 +714,6 @@ void IO_utils::write_fun(Grid& grid, int i_inv) {
 }
 
 
-void IO_utils::write_xi(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "xi_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_xi());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "xi_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii_model(dset_name);
-        write_data_ascii(grid, fname, grid.get_xi());
-    }
-}
-
-
-void IO_utils::write_eta(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "eta_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_eta());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "eta_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii_model(dset_name);
-        write_data_ascii(grid, fname, grid.get_eta());
-    }
-}
-
-
 void IO_utils::write_a(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
@@ -919,40 +800,6 @@ void IO_utils::write_Ks(Grid& grid, int i_inv) {
 }
 
 
-void IO_utils::write_Kxi(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "Kxi_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Kxi());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "Kxi_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii_model(dset_name);
-        write_data_ascii(grid, fname, grid.get_Kxi());
-    }
-}
-
-
-void IO_utils::write_Keta(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "Keta_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Keta());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "Keta_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii_model(dset_name);
-        write_data_ascii(grid, fname, grid.get_Keta());
-    }
-}
-
-
 void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
@@ -966,40 +813,6 @@ void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
         std::string dset_name = "Ks_update_inv_" + int2string_zero_fill(i_inv);
         std::string fname = create_fname_ascii_model(dset_name);
         write_data_ascii(grid, fname, grid.get_Ks_update());
-    }
-}
-
-
-void IO_utils::write_Kxi_update(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "Kxi_update_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Kxi_update());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "Kxi_update_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii_model(dset_name);
-        write_data_ascii(grid, fname, grid.get_Kxi_update());
-    }
-}
-
-
-void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "Keta_update_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Keta_update());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "Keta_update_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii_model(dset_name);
-        write_data_ascii(grid, fname, grid.get_Keta_update());
     }
 }
 
@@ -1390,66 +1203,6 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
     }
 
     delete[] dims_all;
-}
-
-
-void IO_utils::h5_create_and_write_dataset_2d(std::string& dset_name, int ndims, int* dims, int dtype, CUSTOMREAL* data){
-    /*
-    create dataset in a group by all ranks
-
-    dset_name: name of the dataset
-    ndims: number of dimensions
-    dims: number of elements in each dimension
-    dtype: data type 0: bool, 1: int, 2: float, 3: double
-    */
-
-    hid_t space_id_2d=0, dset_id_2d=0;
-
-    // dataset is created only by the main rank
-    // thus the file need to be opened by the main rank
-    if (myrank == 0) {
-        // create a dataspace with the fixed size
-        hsize_t *dims_h5 = new hsize_t[ndims];
-        for (int i = 0; i < ndims; i++) {
-            dims_h5[i] = dims[i];
-        }
-        space_id_2d = H5Screate_simple(ndims, dims_h5, NULL);
-
-        // create dataset
-        switch (dtype)
-        {
-        case 0:
-            dset_id_2d = H5Dcreate(file_id_2d, dset_name.c_str(), H5T_NATIVE_HBOOL, space_id_2d, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            status     = H5Dwrite(dset_id_2d, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-            break;
-        case 1:
-            dset_id_2d = H5Dcreate(file_id_2d, dset_name.c_str(), H5T_NATIVE_INT, space_id_2d, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            status     = H5Dwrite(dset_id_2d, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-            break;
-        case 2:
-            dset_id_2d = H5Dcreate(file_id_2d, dset_name.c_str(), H5T_NATIVE_FLOAT, space_id_2d, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            status  = H5Dwrite(dset_id_2d, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-            break;
-        case 3:
-            dset_id_2d = H5Dcreate(file_id_2d, dset_name.c_str(), H5T_NATIVE_DOUBLE, space_id_2d, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            status     = H5Dwrite(dset_id_2d, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
-            break;
-        }
-
-        // error handle
-        if (dset_id_2d < 0) {
-            std::cout << "Error: H5Dcreate for " << dset_name << " failed" << std::endl;
-            exit(1);
-        }
-
-        // close dataset
-        H5Dclose(dset_id_2d);
-        // close dataspace
-        H5Sclose(space_id_2d);
-
-        delete[] dims_h5;
-    }
-
 }
 
 

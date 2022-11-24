@@ -182,14 +182,6 @@ InputParams::InputParams(std::string& input_file){
         }
 
         if (config["inv_strategy"]) {
-            // update which model parameters
-            if (config["inv_strategy"]["is_inv_slowness"])
-                is_inv_slowness = config["inv_strategy"]["is_inv_slowness"].as<int>();
-            if (config["inv_strategy"]["is_inv_azi_ani"])
-                is_inv_azi_ani = config["inv_strategy"]["is_inv_azi_ani"].as<int>();
-            if (config["inv_strategy"]["is_inv_rad_ani"])
-                is_inv_rad_ani = config["inv_strategy"]["is_inv_rad_ani"].as<int>();
-
             // taper kernel (now only for teleseismic tomography)
             if (config["inv_strategy"]["kernel_taper"]){
                 kernel_taper[0] = config["inv_strategy"]["kernel_taper"][0].as<CUSTOMREAL>();
@@ -236,10 +228,6 @@ InputParams::InputParams(std::string& input_file){
                     hybrid_stencil_order = true;
                     stencil_order = 1;
                 }
-            }
-            // stencil type
-            if (config["calculation"]["stencil_type"]) {
-                stencil_type = config["calculation"]["stencil_type"].as<int>();
             }
             // sweep type
             if (config["calculation"]["sweep_type"]) {
@@ -391,7 +379,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(max_iter, 0);
     broadcast_i_single(stencil_order, 0);
     broadcast_bool_single(hybrid_stencil_order, 0);
-    broadcast_i_single(stencil_type, 0);
     broadcast_i_single(sweep_type, 0);
     broadcast_i_single(output_format, 0);
     broadcast_bool_single(if_test, 0);
@@ -399,9 +386,6 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_bool_single(is_output_source_field, 0);
     broadcast_bool_single(is_output_model_dat, 0);
-    broadcast_bool_single(is_inv_slowness, 0);
-    broadcast_bool_single(is_inv_azi_ani, 0);
-    broadcast_bool_single(is_inv_rad_ani, 0);
     broadcast_cr(kernel_taper,2,0);
 
     // read src rec file by all processes #TODO: check if only subdomain's main requires this
@@ -422,18 +406,12 @@ InputParams::InputParams(std::string& input_file){
         src_points_back = src_points;
         rec_points_back = rec_points;
 
-        // check if src positions are within the domain or not (teleseismic source)
-        // detected teleseismic source is separated into tele_src_points and tele_rec_points
-        separate_region_and_tele_src();
-
         if (swap_src_rec) {
             // here only reginal events will be processed
             stdout_by_main("###### Swapping src and rec. (only regional events will be processed) ######\n");
             do_swap_src_rec();
         }
 
-        // concatenate resional and teleseismic src/rec points
-        merge_region_and_tele_src();
     }
 
     // check contradictory settings
@@ -447,25 +425,6 @@ InputParams::InputParams(std::string& input_file){
 
 InputParams::~InputParams(){
     // free memory
-    if (subdom_main) {
-        for (auto& id_src: src_ids_this_sim){
-            if (src_points[id_src].is_teleseismic){
-                if (j_last)
-                    free(src_points[id_src].arr_times_bound_N);
-                if (j_first)
-                    free(src_points[id_src].arr_times_bound_S);
-                if (i_last)
-                    free(src_points[id_src].arr_times_bound_E);
-                if (i_first)
-                    free(src_points[id_src].arr_times_bound_W);
-                if (k_first)
-                    free(src_points[id_src].arr_times_bound_Bot);
-
-                free(src_points[id_src].is_bound_src);
-            }
-        }
-    }
-
     delete [] dep_inv;
     delete [] lat_inv;
     delete [] lon_inv;
@@ -584,63 +543,27 @@ void InputParams::parse_src_rec_file(){
 
         } else {
 
-            // read single receiver or differential traveltime data
-            if (tokens.size() < 11) {
+            // read absolute traveltime
+            SrcRec rec;
+            //rec.id_src   = std::stoi(tokens[0]);
+            rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
+            //rec.id_rec   = std::stoi(tokens[1]);
+            rec.id_rec   = i_rec_now; // MNMN: here use id_rec of active receiver lines order of src rec file, which allow to comment out bad stations.
+            rec.name_rec = tokens[2];
+            rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+            rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+            rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+            rec.phase    = tokens[6];
+            rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
 
-                // read absolute traveltime
-                SrcRec rec;
-                //rec.id_src   = std::stoi(tokens[0]);
-                rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
-                //rec.id_rec   = std::stoi(tokens[1]);
-                rec.id_rec   = i_rec_now; // MNMN: here use id_rec of active receiver lines order of src rec file, which allow to comment out bad stations.
-                rec.name_rec = tokens[2];
-                rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
-                rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
-                rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
-                rec.phase    = tokens[6];
-                rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
-
-                // check if tokens[8] exists read weight
-                if (tokens.size() > 8)
-                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
-                else
-                    rec.weight = 1.0; // default weight
-                rec_points_tmp.push_back(rec);
-                cc++;
-                src_points.at(src_points.size()-1).n_rec++;
-
-            } else {
-
-                // read differential traveltime
-                SrcRec rec;
-                //rec.id_src    = std::stoi(tokens[0]);
-                rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
-                rec.id_rec_pair[0] = std::stoi(tokens[1]);
-                rec.name_rec_pair[0] = tokens[2];
-                rec.lat_pair[0] = static_cast<CUSTOMREAL>(std::stod(tokens[3]));        // in degree
-                rec.lon_pair[0] = static_cast<CUSTOMREAL>(std::stod(tokens[4]));        // in degree
-                rec.dep_pair[0] = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0);        // convert elevation in meter to depth in km
-                rec.id_rec_pair[1] = std::stoi(tokens[6]);
-                rec.name_rec_pair[1] = tokens[7];
-                rec.lat_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-                rec.lon_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
-                rec.dep_pair[1]      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
-                rec.phase    = tokens[11];
-                // rec.dif_arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[12]));
-                rec.dif_arr_time = 0.0;
-                rec.dif_arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
-
-                // check if tokens[9] exists read weight
-                if (tokens.size() > 13)
-                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
-                else
-                    rec.weight = 1.0; // default weight
-                rec.is_rec_pair = true;
-                rec_points_tmp.push_back(rec);
-                cc++;
-                src_points.at(src_points.size()-1).n_rec_pair++;
-
-            }
+            // check if tokens[8] exists read weight
+            if (tokens.size() > 8)
+                rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
+            else
+                rec.weight = 1.0; // default weight
+            rec_points_tmp.push_back(rec);
+            cc++;
+            src_points.at(src_points.size()-1).n_rec++;
 
             if (cc > ndata_tmp) {
                 // go to the next source
@@ -811,26 +734,6 @@ void InputParams::gather_all_arrival_times_to_main(){
 
 void InputParams::write_src_rec_file(int i_inv) {
 
-    // check src and rec:
-    // for (int i_proc = 0; i_proc<=world_nprocs; i_proc++){
-    //     if (i_proc == world_rank){
-    //         std::cout << "check src info" << std::endl;
-    //         for(auto& src: src_points){
-    //             std::cout << "world_rank: "<< world_rank <<", src name: " << src.name_rec << ", lat: " << src.lat << ", lon:"
-    //                     << src.lon << ", dep:" << src.dep << std::endl;
-    //         }
-    //         std::cout << "check rec info" << std::endl;
-    //         for(auto& rec: rec_points){
-    //             for (auto &data: rec){
-    //                 std::cout << "world_rank: "<< world_rank <<", rec name: " << data.name_src << ", lat: " << data.lat << ", lon:"
-    //                     << data.lon << ", dep:" << data.dep << ", arrival time: " << data.arr_time << std::endl;
-    //             }
-    //         }
-    //     }
-    //     synchronize_all_world();
-    // }
-
-
     if (src_rec_file_exist){
 
         std::ofstream ofs;
@@ -839,7 +742,6 @@ void InputParams::write_src_rec_file(int i_inv) {
         if (n_sims > 1)
             gather_all_arrival_times_to_main();
 
-        // store the calculated travel time to be output
         reverse_src_rec_points();
 
         if (run_mode == ONLY_FORWARD)
@@ -847,8 +749,6 @@ void InputParams::write_src_rec_file(int i_inv) {
         else if (run_mode == DO_INVERSION){
             // write out source and receiver points with current inversion iteration number
             src_rec_file_out = output_dir + "src_rec_file_step_" + int2string_zero_fill(i_inv) +".dat";
-        } else if (run_mode == TELESEIS_PREPROCESS) {
-            src_rec_file_out = output_dir + "src_rec_file_teleseis_pre.dat";
         } else if (run_mode == SRC_RELOCATION) {
             src_rec_file_out = output_dir + "src_rec_file_src_reloc.dat";
         } else {
@@ -882,38 +782,20 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << src_points_out[i_src].name_src << " "
                     << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << src_points_out[i_src].weight
                     << std::endl;
+
                 for (long unsigned int i_rec = 0; i_rec < rec_points_out[i_src].size(); i_rec++){
-                    if(!rec_points_out[i_src][i_rec].is_rec_pair){
-                        // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
-                        ofs << std::setw(7) << std::right << std::setfill(' ') << i_src << " "
-                            << std::setw(4) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].id_rec << " "
-                            << rec_points_out[i_src][i_rec].name_rec << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << rec_points_out[i_src][i_rec].lat << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << rec_points_out[i_src][i_rec].lon << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec_points_out[i_src][i_rec].dep*1000.0 << " "
-                            << rec_points_out[i_src][i_rec].phase << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].arr_time << " "
-                            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].weight
-                            << std::endl;
-                    } else {
-                        // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
-                        ofs << std::setw(7) << std::right << std::setfill(' ') <<  i_src << " "
-                            << std::setw(4) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].id_rec_pair[0] << " "
-                            << rec_points_out[i_src][i_rec].name_rec_pair[0] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].lat_pair[0] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].lon_pair[0] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec_points_out[i_src][i_rec].dep_pair[0]*1000.0 << " "
-                            << std::setw(4) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].id_rec_pair[1] << " "
-                            << rec_points_out[i_src][i_rec].name_rec_pair[1] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].lat_pair[1] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].lon_pair[1] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec_points_out[i_src][i_rec].dep_pair[1]*1000.0 << " "
-                            << rec_points_out[i_src][i_rec].phase << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].dif_arr_time << " "
-                            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].weight
-                            << std::endl;
-                    }
-                }
+                    // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
+                    ofs << std::setw(7) << std::right << std::setfill(' ') << i_src << " "
+                        << std::setw(4) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].id_rec << " "
+                        << rec_points_out[i_src][i_rec].name_rec << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << rec_points_out[i_src][i_rec].lat << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << rec_points_out[i_src][i_rec].lon << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec_points_out[i_src][i_rec].dep*1000.0 << " "
+                        << rec_points_out[i_src][i_rec].phase << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].arr_time << " "
+                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].weight
+                        << std::endl;
+               }
 
                 ofs.close();
             }
@@ -930,7 +812,7 @@ void InputParams::reverse_src_rec_points(){
     // loop swapped sources
     for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
         // swapped only the regional events && really need swap
-        if (src_points[i_src].is_teleseismic == false && swap_src_rec){
+        if (swap_src_rec){
 
             // int id_rec_orig = src_points[i_src].id_rec;
             // loop swapped receivers
@@ -954,7 +836,6 @@ void InputParams::reverse_src_rec_points(){
                 }
             }
         } else {
-            // teleseismic events are not swapped
             for (long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++){
                 int id_src_orig = rec_points[i_src][i_rec].id_src;
                 // store calculated arrival time in backuped receiver list
@@ -972,57 +853,6 @@ void InputParams::reverse_src_rec_points(){
 
 }
 
-
-void InputParams::separate_region_and_tele_src(){
-    // check if the source is inside the simulation boundary
-
-    // initialize vectors for teleseismic events
-    tele_src_points.clear();
-    tele_rec_points.clear();
-
-    // temporary store src and recs in another vector
-    std::vector<SrcRec> src_points_tmp = src_points;
-    std::vector<std::vector<SrcRec>> rec_points_tmp = rec_points;
-
-    // clear original src and recs
-    src_points.clear();
-    rec_points.clear();
-
-    int cc=0;
-    for (auto& src_point : src_points_tmp){
-
-        if (src_point.lat < min_lat || src_point.lat > max_lat \
-         || src_point.lon < min_lon || src_point.lon > max_lon \
-         || src_point.dep < min_dep || src_point.dep > max_dep){
-
-            // for teleseismic events
-            src_point.is_teleseismic = true;
-
-            // add this source to the list of tele sources
-            tele_src_points.push_back(src_point);
-            // add receivers to the list of tele receivers
-            tele_rec_points.push_back(rec_points_tmp[cc]);
-
-        } else {
-
-            // for local events
-            src_point.is_teleseismic = false;
-            // add this source to the list of local sources
-            src_points.push_back(src_point);
-            // add receivers to the list of local receivers
-            rec_points.push_back(rec_points_tmp[cc]);
-
-        }
-        cc++;
-    }
-}
-
-void InputParams::merge_region_and_tele_src(){
-    if(tele_src_points.size() > 0) {
-        src_points.insert(src_points.end(), tele_src_points.begin(), tele_src_points.end());
-        rec_points.insert(rec_points.end(), tele_rec_points.begin(), tele_rec_points.end());
-    }
-}
 
 // check contradictory parameters
 void InputParams::check_contradictions(){
@@ -1058,38 +888,3 @@ void InputParams::check_contradictions(){
 }
 
 
-void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, int src_id, \
-        bool i_first_in, bool i_last_in, bool j_first_in, bool j_last_in, bool k_first_in) {
-
-    i_first = i_first_in;
-    i_last  = i_last_in;
-    j_first = j_first_in;
-    j_last  = j_last_in;
-    k_first = k_first_in;
-
-    // allocate memory for teleseismic boundary sources
-    SrcRec& src = src_points[src_id];
-
-    // check if this src is teleseismic source
-    if (src.is_teleseismic){
-        // North boundary
-        if (j_last)
-            src.arr_times_bound_N = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
-        // South boundary
-        if (j_first)
-            src.arr_times_bound_S = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
-        // East boundary
-        if (i_last)
-            src.arr_times_bound_E = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
-        // West boundary
-        if (i_first)
-            src.arr_times_bound_W = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
-        // Bottom boundary
-        if (k_first)
-            src.arr_times_bound_Bot = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*np*N_LAYER_SRC_BOUND);
-
-        // boundary source flag
-        src.is_bound_src = (bool*)malloc(sizeof(bool)*5);
-    }
-
-}

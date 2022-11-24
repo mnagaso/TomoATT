@@ -52,13 +52,9 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
         // output updated velocity models
         io.write_Ks(grid, i_inv);
-        io.write_Keta(grid, i_inv);
-        io.write_Kxi(grid, i_inv);
 
         // output descent direction
         io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
     }
 
     // writeout temporary xdmf file
@@ -87,7 +83,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     smooth_kernels(grid, IP);
 
     // backup the initial model
-    if(subdom_main) grid.back_up_fun_xi_eta_bcf();
+    if(subdom_main) grid.back_up_fun_bcf();
 
     // update the model with the initial step size
     set_new_model(grid, step_size);
@@ -99,13 +95,9 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
 
         // output updated velocity models
         io.write_Ks(grid, i_inv);
-        io.write_Keta(grid, i_inv);
-        io.write_Kxi(grid, i_inv);
 
         // output descent direction
         io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
     }
 
     // writeout temporary xdmf file
@@ -133,7 +125,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
                     << "," << std::setw(15) << v_obj_new \
                     << "," << std::setw(15) << v_obj_old << std::endl;
 
-            if (subdom_main) grid.restore_fun_xi_eta_bcf();
+            if (subdom_main) grid.restore_fun_bcf();
             step_size /= _2_CR;
             set_new_model(grid, step_size);
 
@@ -202,7 +194,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     }
 
     // backup the initial model
-    if(subdom_main) grid.back_up_fun_xi_eta_bcf();
+    if(subdom_main) grid.back_up_fun_bcf();
 
     if (subdom_main) {
         // store kernel only in the first src datafile
@@ -210,13 +202,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
 
         // output updated velocity models
         io.write_Ks(grid, i_inv);
-        io.write_Keta(grid, i_inv);
-        io.write_Kxi(grid, i_inv);
 
         // output descent direction
         io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
     }
 
     // writeout temporary xdmf file
@@ -243,7 +231,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         //if (i_inv==0) init_bfgs=true;
 
         // update the model
-        if(subdom_main) grid.restore_fun_xi_eta_bcf();
+        if(subdom_main) grid.restore_fun_bcf();
         set_new_model(grid, step_size, init_bfgs);
 
         // check current objective function value #BUG: strange v_obj at the first sub iteration

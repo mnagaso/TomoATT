@@ -1,8 +1,6 @@
 #include "source.h"
 
-Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic) {
-
-    if (is_teleseismic) return;
+Source::Source(InputParams &IP, Grid &grid) {
 
     if (subdom_main) {
         if(if_verbose) stdout_by_main("--- start source initialization ---");
@@ -107,7 +105,7 @@ CUSTOMREAL Source::get_fac_at_source(CUSTOMREAL *loc_array) {
     // std::cout << "interp: " << dis_src_err_r << ' ' << dis_src_err_lat << ' ' << dis_src_err_lon << ' ' << get_fac_at_point(loc_array,0,0,0) << std::endl;
     return fac;
 
-    
+
 }
 
 

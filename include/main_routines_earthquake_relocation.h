@@ -46,23 +46,14 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         io.init_data_output_file(); // initialize data output file
         io.change_xdmf_obj(i_src); // change xmf file for next src
 
-        // check if the source is teleseismic or not
-        // because teleseismic source is not supported in this mode
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
-
-        if (is_teleseismic){
-            std::cout << "Error: Teleseismic source is not supported in source relocation mode." << std::endl;
-            exit(1);
-        }
-
-        Source src(IP, grid, is_teleseismic);
+        Source src(IP, grid);
 
         // initialize iterator object
         bool first_init = (i_src==0);
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
-        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+        select_iterator(IP, grid, src, io, first_init, It, false);
 
         /////////////////////////
         // run forward simulation

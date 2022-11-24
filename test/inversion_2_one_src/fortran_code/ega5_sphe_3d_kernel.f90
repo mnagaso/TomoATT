@@ -246,10 +246,10 @@ program eikonal_2d
                 !read(101,*) eta(iir,iit,iip)
                 !read(102,*) fun(iir,iit,iip)
 
-                a(iir,iit,iip)=1.0+2*zeta(iir,iit,iip);
-                b(iir,iit,iip)=1.0-2*xi(iir,iit,iip);
-                c(iir,iit,iip)=1.0+2*xi(iir,iit,iip);
-                f(iir,iit,iip)=-2*eta(iir,iit,iip);
+                a(iir,iit,iip)=1.0;
+                b(iir,iit,iip)=1.0;
+                c(iir,iit,iip)=1.0;
+                f(iir,iit,iip)=0.0;
 
                 Table(iir,iit,iip) = 0
 
@@ -275,9 +275,9 @@ program eikonal_2d
                     psi = 0
                 end if
 
-                etaT(iir,iit,iip)=ani_p*abs(sigma1)*sin(2*psi);
-                xiT(iir,iit,iip)=ani_p*abs(sigma1)*cos(2*psi);
-                zetaT(iir,iit,iip)=gamma*sqrt(etaT(iir,iit,iip)**2+xiT(iir,iit,iip)**2)
+                etaT(iir,iit,iip) =0.0;
+                xiT(iir,iit,iip)  =0.0;
+                zetaT(iir,iit,iip)=0.0;
 
                 aT(iir,iit,iip)=1.0+2*zetaT(iir,iit,iip);
                 bT(iir,iit,iip)=1.0-2*xiT(iir,iit,iip);

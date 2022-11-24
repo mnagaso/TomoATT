@@ -374,9 +374,6 @@ void Grid::memory_allocation() {
             tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 #endif
 
-        xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T_loc       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         tau_old_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
@@ -537,14 +534,8 @@ void Grid::memory_allocation() {
         t_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_J_loc * n_inv_grids);
         p_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_I_loc * n_inv_grids);
         Ks_loc          = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Kxi_loc         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
         Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         if (sub_nprocs <= 1)
             Tadj_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
@@ -552,8 +543,6 @@ void Grid::memory_allocation() {
             fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fac_f_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         }
 
@@ -561,45 +550,22 @@ void Grid::memory_allocation() {
             fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fac_f_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
             int n_total_loc_lbfgs = n_total_loc_grid_points * Mbfgs;
             Ks_grad_store_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_grad_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_grad_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Ks_model_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_model_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_model_store_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Ks_descent_dir_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_descent_dir_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Ks_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-
 
             // initialize
             for (int i = 0; i < n_total_loc_lbfgs; i++) {
                 Ks_grad_store_loc[i]    = _0_CR;
-                Kxi_grad_store_loc[i]   = _0_CR;
-                Keta_grad_store_loc[i]  = _0_CR;
                 Ks_model_store_loc[i]   = _0_CR;
-                Kxi_model_store_loc[i]  = _0_CR;
-                Keta_model_store_loc[i] = _0_CR;
                 Ks_descent_dir_loc[i]   = _0_CR;
-                Kxi_descent_dir_loc[i]  = _0_CR;
-                Keta_descent_dir_loc[i] = _0_CR;
                 fun_regularization_penalty_loc[i] = _0_CR;
-                xi_regularization_penalty_loc[i]  = _0_CR;
-                eta_regularization_penalty_loc[i] = _0_CR;
                 Ks_regularization_penalty_loc[i]   = _0_CR;
-                Kxi_regularization_penalty_loc[i]  = _0_CR;
-                Keta_regularization_penalty_loc[i] = _0_CR;
             }
         }
     } // end of if inverse_flag
@@ -618,9 +584,6 @@ void Grid::shm_memory_allocation() {
 
     prepare_shm_array_cr(n_total_loc_grid_points, T_loc, win_T_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, tau_old_loc, win_tau_old_loc);
-    prepare_shm_array_cr(n_total_loc_grid_points, xi_loc, win_xi_loc);
-    prepare_shm_array_cr(n_total_loc_grid_points, eta_loc, win_eta_loc);
-    prepare_shm_array_cr(n_total_loc_grid_points, zeta_loc, win_zeta_loc);
 
     prepare_shm_array_cr(n_total_loc_grid_points, T0r_loc, win_T0r_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, T0t_loc, win_T0t_loc);
@@ -662,9 +625,6 @@ void Grid::memory_deallocation() {
 #else
         free(tau_loc);
 #endif
-        free(xi_loc);
-        free(eta_loc);
-        free(zeta_loc);
         free(T_loc);
         free(tau_old_loc);
 
@@ -818,14 +778,8 @@ void Grid::memory_deallocation() {
         free(p_loc_inv);
         free(t_loc_inv);
         free(Ks_loc);
-        free(Kxi_loc);
-        free(Keta_loc);
         free(Ks_inv_loc);
-        free(Kxi_inv_loc);
-        free(Keta_inv_loc);
         free(Ks_update_loc);
-        free(Kxi_update_loc);
-        free(Keta_update_loc);
 
         if (sub_nprocs <= 1)
             free(Tadj_loc);
@@ -845,20 +799,10 @@ void Grid::memory_deallocation() {
             free(eta_loc_back);
 
             free(Ks_grad_store_loc   );
-            free(Kxi_grad_store_loc  );
-            free(Keta_grad_store_loc );
             free(Ks_model_store_loc  );
-            free(Kxi_model_store_loc );
-            free(Keta_model_store_loc);
             free(Ks_descent_dir_loc);
-            free(Kxi_descent_dir_loc);
-            free(Keta_descent_dir_loc);
             free(fun_regularization_penalty_loc);
-            free(xi_regularization_penalty_loc);
-            free(eta_regularization_penalty_loc);
             free(Ks_regularization_penalty_loc);
-            free(Kxi_regularization_penalty_loc);
-            free(Keta_regularization_penalty_loc);
         }
     } // end if inverse_flag
 
@@ -935,9 +879,6 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     if (id_sim == 0){
         // read init model
         std::string f_model_path = IP.get_init_model_path();
-        io.read_model(f_model_path,"xi",   xi_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
         if(if_test) {
             // solver test
@@ -947,9 +888,6 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 
     // broadcast
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
-    broadcast_cr_inter_sim(xi_loc,    n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(eta_loc,   n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(zeta_loc,  n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0); // here passing velocity array
     if(if_test) {
         broadcast_cr_inter_sim(u_loc, n_total_loc_grid_points, 0);
@@ -968,10 +906,10 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
                 fun_loc[I2V(i_lon, j_lat, k_r)] = _1_CR / fun_loc[I2V(i_lon, j_lat, k_r)];
 
                 // calculate fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc
-                fac_a_loc[I2V(i_lon, j_lat, k_r)] = _1_CR + _2_CR * zeta_loc[I2V(i_lon, j_lat, k_r)];
-                fac_b_loc[I2V(i_lon, j_lat, k_r)] = _1_CR - _2_CR *   xi_loc[I2V(i_lon, j_lat, k_r)];
-                fac_c_loc[I2V(i_lon, j_lat, k_r)] = _1_CR + _2_CR *   xi_loc[I2V(i_lon, j_lat, k_r)];
-                fac_f_loc[I2V(i_lon, j_lat, k_r)] =       - _2_CR *  eta_loc[I2V(i_lon, j_lat, k_r)];
+                fac_a_loc[I2V(i_lon, j_lat, k_r)] = _1_CR;
+                fac_b_loc[I2V(i_lon, j_lat, k_r)] = _1_CR;
+                fac_c_loc[I2V(i_lon, j_lat, k_r)] = _1_CR;
+                fac_f_loc[I2V(i_lon, j_lat, k_r)] = _0_CR;
 
                 // construct 3d coordinate arrays and node connectivity for visualization
                 // exclude the ghost nodes
@@ -1119,8 +1057,6 @@ void Grid::initialize_kernels(){
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
                     Ks_loc[  I2V(i,j,k)] = _0_CR;
-                    Kxi_loc[ I2V(i,j,k)] = _0_CR;
-                    Keta_loc[I2V(i,j,k)] = _0_CR;
                 }
             }
         }
@@ -1297,82 +1233,6 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 }
 
 
-void Grid::initialize_fields_teleseismic(Source& src, SrcRec& srcrec){
-    CUSTOMREAL inf_T = 2000.0;
-
-    for (int k_r = 0; k_r < loc_K; k_r++) {
-        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                is_changed[I2V(i_lon,j_lat,k_r)] = true;
-                T_loc[I2V(i_lon,j_lat,k_r)]      = inf_T;
-            }
-        }
-    }
-
-    // set boundary arrival time conditions
-
-    for (int l = 0; l < N_LAYER_SRC_BOUND; l++){
-        // West boundary
-        if (i_first() && srcrec.is_bound_src[2]) {
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-                    T_loc[I2V(l,j_lat,k_r)] = srcrec.arr_times_bound_W[JK2V(j_lat,k_r,l)];
-                    is_changed[I2V(l,j_lat,k_r)] = false;
-                }
-            }
-        }
-        // East boundary
-        if (i_last() && srcrec.is_bound_src[1]){
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-                    T_loc[I2V(loc_I-1-l,j_lat,k_r)] = srcrec.arr_times_bound_E[JK2V(j_lat,k_r,l)];
-                    is_changed[I2V(loc_I-1-l,j_lat,k_r)] = false;
-                }
-            }
-        }
-        // South boundary
-        if (j_first() && srcrec.is_bound_src[3]) {
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                    T_loc[I2V(i_lon,l,k_r)] = srcrec.arr_times_bound_S[IK2V(i_lon,k_r,l)];
-                    is_changed[I2V(i_lon,l,k_r)] = false;
-                }
-            }
-        }
-        // North boundary
-        if (j_last() && srcrec.is_bound_src[0]) {
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                    T_loc[I2V(i_lon,loc_J-1-l,k_r)] = srcrec.arr_times_bound_N[IK2V(i_lon,k_r,l)];
-                    is_changed[I2V(i_lon,loc_J-1-l,k_r)] = false;
-                }
-            }
-        }
-        // Bottom boundary
-        if (k_first() && srcrec.is_bound_src[4]) {
-            for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                    T_loc[I2V(i_lon,j_lat,l)] = srcrec.arr_times_bound_Bot[IJ2V(i_lon,j_lat,l)];
-                    is_changed[I2V(i_lon,j_lat,l)] = false;
-                }
-            }
-        }
-
-    }
-
-    // store initial field in T0v_loc for debugging
-    for (int k_r = 0; k_r < loc_K; k_r++) {
-        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                T0v_loc[I2V(i_lon,j_lat,k_r)] = T_loc[I2V(i_lon,j_lat,k_r)];
-                tau_old_loc[I2V(i_lon,j_lat,k_r)] = _0_CR; // initialize tau_old_loc to 0
-            }
-        }
-    }
-
-}
-
-
 // copy the tau values to tau_old
 void Grid::tau2tau_old() {
     std::memcpy(tau_old_loc, tau_loc, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
@@ -1391,24 +1251,19 @@ void Grid::update_Tadj() {
 }
 
 
-void Grid::back_up_fun_xi_eta_bcf() {
+void Grid::back_up_fun_bcf() {
     std::memcpy(fun_loc_back, fun_loc, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
-    std::memcpy(xi_loc_back,  xi_loc,  sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
-    std::memcpy(eta_loc_back, eta_loc, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
     std::memcpy(fac_b_loc_back, fac_b_loc, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
     std::memcpy(fac_c_loc_back, fac_c_loc, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
     std::memcpy(fac_f_loc_back, fac_f_loc, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
 }
 
 
-void Grid::restore_fun_xi_eta_bcf() {
+void Grid::restore_fun_bcf() {
     std::memcpy(fun_loc, fun_loc_back, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
-    std::memcpy(xi_loc,  xi_loc_back,  sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
-    std::memcpy(eta_loc, eta_loc_back, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
     std::memcpy(fac_b_loc, fac_b_loc_back, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
     std::memcpy(fac_c_loc, fac_c_loc_back, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
     std::memcpy(fac_f_loc, fac_f_loc_back, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
-
 }
 
 
@@ -1426,34 +1281,6 @@ void Grid::calc_L1_and_Linf_diff(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
                     L1_diff   +=                    std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)];
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)]);
                     // std::cout << R_earth-r_loc_3d[k_r] << ' ' << t_loc_3d[j_lat] << ' ' << p_loc_3d[i_lon] << ' ' << T0v_loc[I2V(i_lon,j_lat,k_r)] << ' ' << std::endl;
-                }
-            }
-        }
-
-        // sum up the values of all processes
-        obj_func_glob=0.0;
-        allreduce_cr_single(L1_diff, obj_func_glob);
-        L1_diff = obj_func_glob/((ngrid_i-2)*(ngrid_j-2)*(ngrid_k-2));
-        obj_func_glob=0.0;
-        allreduce_cr_single_max(Linf_diff, obj_func_glob);
-        Linf_diff = obj_func_glob;///(ngrid_i*ngrid_j*ngrid_k);
-    }
-}
-
-
-void Grid::calc_L1_and_Linf_diff_tele(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
-    if (subdom_main) {
-        L1_diff   = 0.0;
-        Linf_diff = 0.0;
-        CUSTOMREAL obj_func_glob = 0.0;
-
-        // calculate L1 error
-        for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
-            for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
-                #pragma omp simd reduction(+:L1_diff)
-                for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
-                    L1_diff   +=                    std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]); // tau_old is used as T_old_loc here
-                    Linf_diff  = std::max(Linf_diff,std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]));
                 }
             }
         }

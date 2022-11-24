@@ -79,9 +79,9 @@ for ir in range(n_rtp[2]):
             else:
                 psi = 0.0
 
-            eta_true[ir,it,ip] = ani_p*abs(sigma)*math.sin(2.0*psi)
-            xi_true[ir,it,ip]  = ani_p*abs(sigma)*math.cos(2.0*psi)
-            zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
+            eta_true[ir,it,ip]  = 0.0 #ani_p*abs(sigma)*math.sin(2.0*psi)
+            xi_true[ir,it,ip]   = 0.0 #ani_p*abs(sigma)*math.cos(2.0*psi)
+            zeta_true[ir,it,ip] = 0.0 #gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
             fun_true[ir,it,ip] = fun_init[ir,it,ip]/(1.0+sigma*slow_p)
             vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
 

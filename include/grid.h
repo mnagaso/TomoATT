@@ -38,12 +38,8 @@ public:
     void setup_factors(Source &);
     // calculate initial fields T0 T0r T0t T0p and initialize tau
     void initialize_fields(Source &, InputParams&);
-    // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
-    void initialize_fields_teleseismic(Source &, SrcRec&);
     // calculate L1 and Linf diff (sum of value change on the nodes)
     void calc_L1_and_Linf_diff(CUSTOMREAL&, CUSTOMREAL&);
-    // calculate L1 and Linf diff for teleseismic source (sum of value change on the nodes)
-    void calc_L1_and_Linf_diff_tele(CUSTOMREAL&, CUSTOMREAL&);
     // FOR TEST: calculate L1 and Linf error between analytic solution and current T
     void calc_L1_and_Linf_error(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for adjoint field
@@ -97,8 +93,6 @@ public:
 
     CUSTOMREAL* get_true_solution(){return get_array_for_vis(u_loc);}; // true solution
     CUSTOMREAL* get_fun()          {return get_array_for_vis(fun_loc);}; //
-    CUSTOMREAL* get_xi()           {return get_array_for_vis(xi_loc);}; //
-    CUSTOMREAL* get_eta()          {return get_array_for_vis(eta_loc);}; //
     CUSTOMREAL* get_a()            {return get_array_for_vis(fac_a_loc);}; //
     CUSTOMREAL* get_b()            {return get_array_for_vis(fac_b_loc);}; //
     CUSTOMREAL* get_c()            {return get_array_for_vis(fac_c_loc);}; //
@@ -112,11 +106,7 @@ public:
                                      return get_array_for_vis(u_loc);}; // calculate residual (T_loc over written!!)
     CUSTOMREAL* get_Tadj()         {return get_array_for_vis(Tadj_loc);}; // adjoint solution
     CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc);}; // Ks
-    CUSTOMREAL* get_Kxi()          {return get_array_for_vis(Kxi_loc);}; // Kxi
-    CUSTOMREAL* get_Keta()         {return get_array_for_vis(Keta_loc);}; // Keta
     CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc);}; // Ks_update
-    CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc);}; // Kxi_update
-    CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc);}; // Keta_update
 
     // get physical parameters
     CUSTOMREAL get_r_min()       {return r_min;};
@@ -151,11 +141,6 @@ public:
     int get_offset_j_excl_gl()           {return offset_j;};
     int get_offset_k_excl_gl()           {return offset_k;};
 
-
-    // CUSTOMREAL get_delta_lon_inv() {return dinv_p;}
-    // CUSTOMREAL get_delta_lat_inv() {return dinv_t;}
-    // CUSTOMREAL get_delta_r_inv()   {return dinv_r;}
-
     // return index of the first node excluding ghost layer
     int get_k_start_loc()        {return k_start_loc;};
     int get_k_end_loc()          {return k_end_loc;};
@@ -176,10 +161,10 @@ public:
     void T2tau_old();
     // copy tau to Tadj
     void update_Tadj();
-    // back up fun xi eta
-    void back_up_fun_xi_eta_bcf();
-    // restore fun xi eta
-    void restore_fun_xi_eta_bcf();
+    // back up fun
+    void back_up_fun_bcf();
+    // restore fun
+    void restore_fun_bcf();
 
     // write out inversion grid file
     void write_inversion_grid_file();
@@ -252,9 +237,6 @@ private:
 
 public:
     // 3d arrays
-    CUSTOMREAL *xi_loc;    // local xi
-    CUSTOMREAL *eta_loc;   // local eta
-    CUSTOMREAL *zeta_loc;  // local zeta
     CUSTOMREAL *fac_a_loc; // factor a
     CUSTOMREAL *fac_b_loc; // factor b
     CUSTOMREAL *fac_c_loc; // factor c
@@ -273,11 +255,11 @@ public:
     CUSTOMREAL *fac_c_loc_back;
     CUSTOMREAL *fac_f_loc_back;
     // for lbfgs
-    CUSTOMREAL *Ks_grad_store_loc, *Keta_grad_store_loc, *Kxi_grad_store_loc;
-    CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc;
-    CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
-    CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
-    CUSTOMREAL *Ks_regularization_penalty_loc, *Keta_regularization_penalty_loc, *Kxi_regularization_penalty_loc;
+    CUSTOMREAL *Ks_grad_store_loc;
+    CUSTOMREAL *Ks_model_store_loc;
+    CUSTOMREAL *Ks_descent_dir_loc;
+    CUSTOMREAL *fun_regularization_penalty_loc;
+    CUSTOMREAL *Ks_regularization_penalty_loc;
     // tmp array for file IO
     CUSTOMREAL *vis_data;
 
@@ -288,7 +270,6 @@ private:
     MPI_Win win_tau_loc, win_fun_loc;
     MPI_Win win_is_changed;
     MPI_Win win_T_loc, win_tau_old_loc;
-    MPI_Win win_xi_loc, win_eta_loc, win_zeta_loc;
     MPI_Win win_r_loc_1d, win_t_loc_1d, win_p_loc_1d;
 
     CUSTOMREAL *x_loc_3d;     // local (lon) x (global position)
@@ -317,16 +298,10 @@ public:
     CUSTOMREAL *t_loc_inv;
     CUSTOMREAL *p_loc_inv;
     CUSTOMREAL *Ks_loc;
-    CUSTOMREAL *Kxi_loc;
-    CUSTOMREAL *Keta_loc;
     CUSTOMREAL *Tadj_loc; // timetable for adjoint source
     CUSTOMREAL *Ks_inv_loc;
-    CUSTOMREAL *Kxi_inv_loc;
-    CUSTOMREAL *Keta_inv_loc;
     // model update para
     CUSTOMREAL *Ks_update_loc;
-    CUSTOMREAL *Kxi_update_loc;
-    CUSTOMREAL *Keta_update_loc;
 private:
     MPI_Win     win_Tadj_loc;
 

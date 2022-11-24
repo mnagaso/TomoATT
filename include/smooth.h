@@ -160,10 +160,6 @@ void smooth_inv_kernels_CG(Grid& grid, CUSTOMREAL lr, CUSTOMREAL lt, CUSTOMREAL 
 
     // smooth Ks
     CG_smooth(grid, grid.Ks_loc, grid.Ks_update_loc, lr, lt, lp);
-    // smooth Keta
-    CG_smooth(grid, grid.Keta_loc, grid.Keta_update_loc, lr, lt, lp);
-    // smooth Kxi
-    CG_smooth(grid, grid.Kxi_loc, grid.Kxi_update_loc, lr, lt, lp);
 
 }
 
@@ -198,8 +194,6 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
             for (int j = 0; j < n_inv_J_loc; j++) {
                 for (int i = 0; i < n_inv_I_loc; i++) {
                     grid.Ks_inv_loc[  I2V_INV_KNL(i,j,k)] = _0_CR;
-                    grid.Keta_inv_loc[I2V_INV_KNL(i,j,k)] = _0_CR;
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(i,j,k)] = _0_CR;
                 }
             }
         }
@@ -257,37 +251,14 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                     if (i_loc < 0 || i_loc > loc_I-1) continue;
 
                     // update Ks_inv Keta_inv Kxi_inv
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
-
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp  ,jdt  ,kdr  )] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp  ,jdt  ,kdr+1)] +=        r_r *(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp  ,jdt+1,kdr  )] += (_1_CR-r_r)*       r_t *(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt  ,kdr  )] += (_1_CR-r_r)*(_1_CR-r_t)*       r_p *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp  ,jdt+1,kdr+1)] +=        r_r *       r_t *(_1_CR-r_p)*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt  ,kdr+1)] +=        r_r *(_1_CR-r_t)*       r_p *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr  )] += (_1_CR-r_r)*       r_t *       r_p*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)] +=        r_r *       r_t *       r_p*grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)];
 
                 } // end for i
             } // end for j
@@ -295,8 +266,6 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
         // sum over all sub-domains
         allreduce_cr_inplace(grid.Ks_inv_loc,   n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
-        allreduce_cr_inplace(grid.Keta_inv_loc, n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
-        allreduce_cr_inplace(grid.Kxi_inv_loc,  n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
 
         //
         // update factors
@@ -364,49 +333,18 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                     if (i_loc < 0 || i_loc > loc_I-1) continue;
 
                     CUSTOMREAL pert_Ks = 0.0;
-                    CUSTOMREAL pert_Keta = 0.0;
-                    CUSTOMREAL pert_Kxi = 0.0;
 
-                    pert_Ks   += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)];
-                    pert_Keta += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr)];
-                    pert_Kxi  += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr)];
-
-                    pert_Ks    += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)];
-                    pert_Keta  += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr+1)];
-                    pert_Kxi   += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr+1)];
-
-                    pert_Ks    += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)];
-                    pert_Keta  += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr)];
-                    pert_Kxi   += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr)];
-
-                    pert_Ks    += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)];
-                    pert_Keta  += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr)];
-                    pert_Kxi   += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr)];
-
-                    pert_Ks    += r_r*r_t*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)];
-                    pert_Keta  += r_r*r_t*(_1_CR-r_p)*grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr+1)];
-                    pert_Kxi   += r_r*r_t*(_1_CR-r_p)*grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr+1)];
-
-                    pert_Ks    += r_r*(_1_CR-r_t)*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)];
-                    pert_Keta  += r_r*(_1_CR-r_t)*r_p*grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr+1)];
-                    pert_Kxi   += r_r*(_1_CR-r_t)*r_p*grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr+1)];
-
-                    pert_Ks    += (_1_CR-r_r)*r_t*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)];
-                    pert_Keta  += (_1_CR-r_r)*r_t*r_p*grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr)];
-                    pert_Kxi   += (_1_CR-r_r)*r_t*r_p*grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr)];
-
-                    pert_Ks    += r_r*r_t*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)];
-                    pert_Keta  += r_r*r_t*r_p*grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr+1)];
-                    pert_Kxi   += r_r*r_t*r_p*grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr+1)];
-
+                    pert_Ks += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)];
+                    pert_Ks +=        r_r *(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)];
+                    pert_Ks += (_1_CR-r_r)*       r_t *(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)];
+                    pert_Ks += (_1_CR-r_r)*(_1_CR-r_t)*       r_p *grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)];
+                    pert_Ks +=        r_r *       r_t *(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)];
+                    pert_Ks +=        r_r *(_1_CR-r_t)*       r_p *grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)];
+                    pert_Ks += (_1_CR-r_r)*       r_t *       r_p *grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)];
+                    pert_Ks +=        r_r*        r_t *       r_p *grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)];
 
                     // update para
                     grid.Ks_update_loc[  I2V(i_loc,j_loc,k_loc)] += weight * pert_Ks;
-                    grid.Keta_update_loc[I2V(i_loc,j_loc,k_loc)] += weight * pert_Keta;
-                    grid.Kxi_update_loc[ I2V(i_loc,j_loc,k_loc)] += weight * pert_Kxi;
-
-
-
 
                 } // end for i
             } // end for j
@@ -414,7 +352,7 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
     } // end i_grid
 
-    
+
 
 
 }

@@ -18,7 +18,6 @@
 #include "mpi_funcs.h"
 #include "grid.h"
 #include "config.h"
-#include "eikonal_solver_2d.h"
 
 class IO_utils {
 
@@ -70,10 +69,6 @@ public:
     void write_adjoint_field(Grid&, int);
     // write fun_loc
     void write_fun(Grid&, int);
-    // write xi
-    void write_xi(Grid&, int);
-    // write eta
-    void write_eta(Grid&, int);
     // write a
     void write_a(Grid&, int);
     // write b
@@ -84,25 +79,12 @@ public:
     void write_f(Grid&, int);
     // Ks
     void write_Ks(Grid&, int);
-    // Kxi
-    void write_Kxi(Grid&, int);
-    // Keta
-    void write_Keta(Grid&, int);
     // Ks_update
     void write_Ks_update(Grid&, int);
-    // Kxi_update
-    void write_Kxi_update(Grid&, int);
-    // Keta_update
-    void write_Keta_update(Grid&, int);
     // write all concerning parameters
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
     void write_concerning_parameters(Grid&, int);
 
-
-    // 2d traveltime field for teleseismic source
-    void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
-    void h5_create_and_write_dataset_2d(std::string&, int, int*, int, CUSTOMREAL*);
-    void read_2d_travel_time_field(std::string&, CUSTOMREAL*, int, int);
 
     //
     // read functions

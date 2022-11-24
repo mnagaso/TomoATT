@@ -109,8 +109,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
                 // write out model info
                 io.write_fun(grid, i_inv);
-                io.write_xi(grid, i_inv);
-                io.write_eta(grid, i_inv);
                 io.write_b(grid, i_inv);
                 io.write_c(grid, i_inv);
                 io.write_f(grid, i_inv);

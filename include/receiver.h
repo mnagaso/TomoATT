@@ -14,8 +14,6 @@ public:
 
     // adjoint source
     CUSTOMREAL calculate_adjoint_source(InputParams&);
-    // teleseismic source
-    CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&);
     // Gradient of traveltime
     void calculate_T_gradient(InputParams&, Grid&);
     // initialize variables for source relocation

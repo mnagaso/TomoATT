@@ -13,7 +13,7 @@
 
 class Source {
 public:
-    Source(InputParams &, Grid &, bool&);
+    Source(InputParams &, Grid &);
     ~Source();
 
     //

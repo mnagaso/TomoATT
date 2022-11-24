@@ -13,7 +13,6 @@
 #include "kernel.h"
 #include "model_update.h"
 #include "main_routines_calling.h"
-#include "eikonal_solver_2d.h"
 
 #ifdef USE_CUDA
 #include "cuda_initialize.cuh"
@@ -74,9 +73,6 @@ int main(int argc, char *argv[])
         // output grid data (grid data is only output in the main simulation)
         io.write_grid(grid);
     }
-
-    // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
-    prepare_teleseismic_boundary_conditions(IP, grid, io);
 
     synchronize_all_world();
 

@@ -63,11 +63,8 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             first_src = false;
         }
 
-        // get is_teleseismic flag
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
-
         // (re) initialize source object and set to grid
-        Source src(IP, grid, is_teleseismic);
+        Source src(IP, grid);
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
@@ -80,7 +77,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+            select_iterator(IP, grid, src, io, first_init, It, false);
             It->run_iteration_forward(IP, grid, io, first_init);
         } else {
             // hybrid stencil mode
@@ -90,13 +87,13 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             std::unique_ptr<Iterator> It_pre;
             IP.set_stencil_order(1);
             IP.set_conv_tol(IP.get_conv_tol()*100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It_pre, false);
+            select_iterator(IP, grid, src, io, first_init, It_pre, false);
             It_pre->run_iteration_forward(IP, grid, io, first_init);
 
             // run 3rd order forward simulation
             IP.set_stencil_order(3);
             IP.set_conv_tol(IP.get_conv_tol()/100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
+            select_iterator(IP, grid, src, io, first_init, It, true);
             It->run_iteration_forward(IP, grid, io, first_init);
         }
 
@@ -127,14 +124,14 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
-        
+
         if (IP.get_run_mode()==DO_INVERSION){
             // calculate adjoint source
             v_obj += recs.calculate_adjoint_source(IP);
 
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
-            
+
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
 
@@ -152,17 +149,17 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         // delete iterator object
 
     } // end loop sources
-    
+
 
     // wait for all processes to finish
     synchronize_all_world();
 
     // allreduce sum_adj_src
     allreduce_cr_sim_single(v_obj, v_obj);
-    
+
     // return current objective function value
     return v_obj;
-    
+
 }
 
 

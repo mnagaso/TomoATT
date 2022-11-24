@@ -48,7 +48,3 @@ output_setting :
   it_output_suorce_field : 1
   is_output_model_dat : 1
 
-inv_strategy :
-  is_inv_slowness : 1
-  is_inv_azi_ani : 1
-  is_inv_rad_ani : 1

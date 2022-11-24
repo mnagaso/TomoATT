@@ -161,9 +161,6 @@ public:
     bool get_is_output_source_field() {return is_output_source_field;};
     bool get_is_output_model_dat()    {return is_output_model_dat;};
 
-    bool get_is_inv_slowness()        {return is_inv_slowness;};
-    bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
-    bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
     CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
 private:
     // boundary information
@@ -246,17 +243,6 @@ private:
     bool swap_src_rec = false;     // whether the src/rec are swapped or not
     void reverse_src_rec_points(); // reverse the swapped src/rec
 
-    // tele seismic source management
-    void separate_region_and_tele_src();               // check if the source is tele seismic or not
-    void merge_region_and_tele_src();                  // merge tele seismic source to the region source
-    std::vector<SrcRec> tele_src_points;               // tele seismic source points
-    std::vector<std::vector<SrcRec> > tele_rec_points; // tele seismic receiver points
-    bool i_first=false, i_last=false, j_first=false, j_last=false, k_first=false; // store info if this subdomain has outer boundary
-
-public:
-    void allocate_memory_tele_boundaries(int, int, int, int,
-        bool, bool, bool, bool, bool); // allocate memory for tele boundaries
-private:
     // check contradictions in input parameters
     void check_contradictions();
 
@@ -272,11 +258,6 @@ private:
     // output setting
     bool is_output_source_field = true; // output out_data_sim_X.h or not.
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
-
-    // inversion setting
-    bool is_inv_slowness = true;  // update slowness (velocity) or not.
-    bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
-    bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
 };
