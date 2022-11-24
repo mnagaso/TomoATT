@@ -34,8 +34,8 @@ inversion :
 
 parallel :
   n_sims : 1 # number of simultaneous run
-  ndiv_rtp : [1,2,2] # number of subdomains
-  nproc_sub : 2      # number of subprocess used for each subdomain
+  ndiv_rtp : [1,1,1] # number of subdomains
+  nproc_sub : 8     # number of subprocess used for each subdomain
   use_gpu : 0
 
 calculation :

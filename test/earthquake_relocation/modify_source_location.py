@@ -7,15 +7,15 @@ from src_rec_file_helper import *
 
 # read file
 fpath = "./OUTPUT_FILES/src_rec_file_forward.dat"
-event_list = read_src_rec_file(fpath)
+df_events, df_recs = read_src_rec_file(fpath, no_epi_dist=True)
 
 # %%
-event_list[0]
+df_events
 
 # %%
 # copy event list
 import copy
-event_list_ori = copy.deepcopy(event_list)
+df_events_ori = copy.deepcopy(df_events)
 
 # %%
 # modify source location
@@ -33,24 +33,24 @@ center_lat = (tt1+tt2)/2
 # shift amount is 5 %
 factor_shift =  0.05
 
-for event in event_list:
-    # shift direction vector
-    v_lon = center_lon - event.lon
-    v_lat = center_lat - event.lat
+# shift direction vector
+for i in range(len(df_events)):
+    v_lon = center_lon - df_events.loc[i, "lon"]
+    v_lat = center_lat - df_events.loc[i, "lat"]
 
-    event.lon += v_lon * factor_shift
-    event.lat += v_lat * factor_shift
+    df_events.loc[i, "lon"] += v_lon * factor_shift
+    df_events.loc[i, "lat"] += v_lat * factor_shift
 
 
 # %%
 # plot original and modified source location
 import matplotlib.pyplot as plt
 
-for event in event_list_ori:
-    plt.plot(event.lon, event.lat, color="red", marker="o", markersize=1)
+for i in range(len(df_events_ori)):
+    plt.plot(df_events_ori.loc[i, "lon"], df_events_ori.loc[i, "lat"], color="red", marker="o", markersize=1)
 
-for event in event_list:
-    plt.plot(event.lon, event.lat, color="blue", marker="o", markersize=1)
+for i in range(len(df_events)):
+    plt.plot(df_events.loc[i, "lon"], df_events.loc[i, "lat"], color="blue", marker="o", markersize=1)
 
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
@@ -60,7 +60,7 @@ plt.show()
 # %%
 # write out
 fpath="src_rec_test_out_modified.dat"
-write_event_list(event_list, fpath)
+write_src_rec_file(df_events, df_recs, fpath)
 
 # %%
 

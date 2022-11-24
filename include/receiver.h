@@ -30,7 +30,6 @@ public:
 private:
     void interpolate_travel_time(Grid&, SrcRec&);
     void calculate_T_gradient_one_rec(Grid&, SrcRec&);
-    void interpolate_differential_travel_time(Grid&, SrcRec&);
 };
 
 #endif // RECEIVER_H

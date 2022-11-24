@@ -531,7 +531,6 @@ void InputParams::parse_src_rec_file(){
             src.n_data     = std::stoi(tokens[11]);
             ndata_tmp      = src.n_data;
             src.n_rec      = 0;
-            src.n_rec_pair = 0;
             src.name_src = tokens[12];
             // check if tokens[13] exists, then read weight
             if (tokens.size() > 13)

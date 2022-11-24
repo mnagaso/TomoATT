@@ -38,21 +38,6 @@ public:
     CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
     CUSTOMREAL weight=1.0;   // weight
 
-    //
-    // another case of receiver pair (now only for teleseismicity)
-    //
-    bool is_rec_pair = false;
-    int n_rec_pair = 0;
-
-    std::vector<int> id_rec_pair         = std::vector<int>(2);
-    std::vector<CUSTOMREAL> dep_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> lat_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> lon_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> ddt_adj_pair = std::vector<CUSTOMREAL>(2);    // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
-    std::vector<std::string> name_rec_pair    = std::vector<std::string>(2);
-    // name_rec_pair[0] = "rec1_name_dummy";
-    // name_rec_pair[1] = "rec2_name_dummy";
-
     CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
     CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
 
