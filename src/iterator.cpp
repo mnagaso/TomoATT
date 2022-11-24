@@ -2250,14 +2250,14 @@ void Iterator::calculate_boundary_nodes_tele(Grid& grid, int& iip, int& jjt, int
         }
 
     // South
-    if (jjt == nt-1 && grid.j_first())
+    if (jjt == 0 && grid.j_first())
         if (grid.is_changed[I2V(iip,0,kkr)]){
             v0 = _2_CR * grid.T_loc[I2V(iip,1,kkr)] - grid.T_loc[I2V(iip,2,kkr)];
             v1 = grid.T_loc[I2V(iip,2,kkr)];
             grid.T_loc[I2V(iip,0,kkr)] = std::max({v0,v1});
         }
     // North
-    if (jjt == 0 && grid.j_last())
+    if (jjt == nt-1 && grid.j_last())
         if (grid.is_changed[I2V(iip,nt-1,kkr)]){
             v0 = _2_CR * grid.T_loc[I2V(iip,nt-2,kkr)] - grid.T_loc[I2V(iip,nt-3,kkr)];
             v1 = grid.T_loc[I2V(iip,nt-3,kkr)];
