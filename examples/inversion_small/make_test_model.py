@@ -27,18 +27,11 @@ pp = np.array([pp1 + x*dp for x in range(n_rtp[2])])
 gamma = 0.0
 s0 = 1.0/6.0
 slow_p=0.06
-ani_p=0.04
 
-eta_init = np.zeros(n_rtp)
-xi_init  = np.zeros(n_rtp)
-zeta_init = np.zeros(n_rtp)
 fun_init = np.zeros(n_rtp)
 vel_init = np.zeros(n_rtp)
 
 # true model
-eta_true = np.zeros(n_rtp)
-xi_true  = np.zeros(n_rtp)
-zeta_true = np.zeros(n_rtp)
 fun_true = np.zeros(n_rtp)
 vel_true = np.zeros(n_rtp)
 
@@ -47,9 +40,6 @@ for ir in range(n_rtp[0]):
     for it in range(n_rtp[1]):
         for ip in range(n_rtp[2]):
             # already initialized above
-            #eta_init[ir,it,ip] = 0.0
-            #xi_init[ir,it,ip]  = 0.0
-            zeta_init[ir,it,ip] = gamma*math.sqrt(eta_init[ir,it,ip]**2 + xi_init[ir,it,ip]**2)
             fun_init[ir,it,ip] = s0
             vel_init[ir,it,ip] = 1.0/s0
 
@@ -68,9 +58,6 @@ for ir in range(n_rtp[0]):
             else:
                 psi = 0.0
 
-            eta_true[ir,it,ip] = ani_p*abs(sigma)*math.sin(2.0*psi)
-            xi_true[ir,it,ip]  = ani_p*abs(sigma)*math.cos(2.0*psi)
-            zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
             fun_true[ir,it,ip] = s0/(1.0+sigma*slow_p)
             vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
 
@@ -87,16 +74,10 @@ import h5py
 fout_init = h5py.File('test_model_init.h5', 'w')
 fout_true = h5py.File('test_model_true.h5', 'w')
 
-# write out the arrays eta_init, xi_init, zeta_init, fun_init, a_init, b_init, c_init, f_init
-fout_init.create_dataset('eta', data=eta_init)
-fout_init.create_dataset('xi', data=xi_init)
-fout_init.create_dataset('zeta', data=zeta_init)
+# write out the arrays vel_init
 fout_init.create_dataset('vel', data=vel_init)
 
-# writeout the arrays eta_true, xi_true, zeta_true, fun_true, a_true, b_true, c_true, f_true
-fout_true.create_dataset('eta', data=eta_true)
-fout_true.create_dataset('xi', data=xi_true)
-fout_true.create_dataset('zeta', data=zeta_true)
+# writeout the arrays vel_true
 fout_true.create_dataset('vel', data=vel_true)
 
 fout_init.close()
