@@ -63,10 +63,6 @@ InputParams::InputParams(std::string& input_file){
             if (config["model"]["init_model_path"]) {
                 init_model_path = config["model"]["init_model_path"].as<std::string>();
             }
-            // model file path
-            if (config["model"]["model_1d_name"]) {
-                model_1d_name = config["model"]["model_1d_name"].as<std::string>();
-            }
         }
 
         if (config["inversion"]) {
@@ -598,8 +594,6 @@ void InputParams::parse_src_rec_file(){
 void InputParams::do_swap_src_rec(){
 
     // swap src/rec points
-    // at this moment, all the sources are divided into src_points (regional) and tele_src_points (teleseismic)
-
     std::vector<SrcRec> new_srcs; // new src points
     std::vector<std::vector<SrcRec>> new_recs;
 

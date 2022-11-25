@@ -162,7 +162,6 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     // allocate memory for process range
     std::vector<int> n_nodes_of_levels;
 
-    // teleseismic case need to iterate outermost layer
     int st_id, st_id2;
     st_id  = 2;
     st_id2 = 1;
@@ -590,7 +589,6 @@ iter_end:
     }
 
     // calculate T
-    // teleseismic case will update T_loc, so T = T0*tau is not necessary.
     if (subdom_main) grid.calc_T_plus_tau();
 
     // check the time for iteration

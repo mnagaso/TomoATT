@@ -29,9 +29,6 @@ public:
     void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
     void run_iteration_adjoint(InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
 
-    // teleseismic source (teleseismic adjoint use the same function with reginal source)
-    //void run_iteration_forward_teleseismic(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
-
     void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
 
 protected:

@@ -72,15 +72,14 @@ inline const CUSTOMREAL _3_CR     = 3.0;
 inline const CUSTOMREAL _4_CR     = 4.0;
 inline const CUSTOMREAL _8_CR     = 8.0;
 inline const CUSTOMREAL TAU_INITIAL_VAL = 1.0;
-inline const CUSTOMREAL TAU_INF_VAL = 20.0;
+inline const CUSTOMREAL TAU_INF_VAL     = 20.0;
 inline const int        SWEEPING_COEFF  = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
 
 // ASCII output precision
 typedef std::numeric_limits< CUSTOMREAL > dbl;
-inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
+inline const int ASCII_OUTPUT_PRECISION = dbl::max_digits10;
 
 // radious of the earth in km
-//inline CUSTOMREAL R_earth = 6378.1370;
 inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
 inline const CUSTOMREAL GAMMA          = 0.0;
 inline const CUSTOMREAL r_kermel_mask  = 40.0;
@@ -90,7 +89,7 @@ inline CUSTOMREAL       step_size_lbfgs;
 // RUN MODE TYPE FLAG
 inline const int ONLY_FORWARD        = 0;
 inline const int DO_INVERSION        = 1;
-inline const int SRC_RELOCATION      = 3;
+inline const int SRC_RELOCATION      = 2;
 
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
