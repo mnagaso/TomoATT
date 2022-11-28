@@ -1129,7 +1129,7 @@ void Grid::initialize_kernels(){
 
 
 // get a part of pointers from the requested array for visualization
-CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
+CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr, bool inverse_value) {
 
     //send_recev_boundary_data(arr);
     // add a routine for communication the boundary value
@@ -1146,7 +1146,10 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
                     int j_loc_tmp = j_lat - j_start_vis;
                     int k_loc_tmp = k_r   - k_start_vis;
 
-                    vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    if(!inverse_value)
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    else
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr[I2V(i_lon,j_lat,k_r)]; // used for convert from slowness to velocity
                  }
             }
         }

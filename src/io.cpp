@@ -1,6 +1,6 @@
 #include "io.h"
 
-IO_utils::IO_utils() {
+IO_utils::IO_utils(InputParams& IP) {
     if (subdom_main) {
          stdout_by_main("--- IO object initialization ---");
 
@@ -19,9 +19,29 @@ IO_utils::IO_utils() {
         }
 
         // initialize an output file for grid data
-        if (output_format==OUTPUT_FORMAT_HDF5 && id_sim==0){
+        if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-            h5_create_file_by_group_main(h5_output_grid_fname); // file for grid data
+            // grid data is output by only simulation group 0
+            if(id_sim==0)
+                h5_create_file_by_group_main(h5_output_grid_fname); // file for grid+whole simulation data
+            // initialize simulation data file.
+            if (n_sims > 1){
+                // for simultaneous run, data file is created for each simulation group
+                h5_output_fname = "./out_data_sim_group_" + std::to_string(id_sim) + ".h5";
+                xdmf_output_fname = "./out_data_sim_group_"+std::to_string(id_sim_src)+".xmf";
+            } else {
+                // otherwise, only one single data file is created for storing model params
+                h5_output_fname = "./out_data_sim.h5";
+                xdmf_output_fname = "./out_data_sim.xmf";
+            }
+            // create data file
+            h5_create_file_by_group_main(h5_output_fname);
+
+            // create xdmf file for visualization of simulation data
+            if (id_subdomain == 0)
+                write_xdmf_file_grid();
+            //store_xdmf_obj();
+
 #endif
         }
     }
@@ -31,12 +51,25 @@ IO_utils::~IO_utils() {
     stdout_by_main("--- IO object finalization ---");
 }
 
+void IO_utils::change_group_name_for_source() {
+#ifdef USE_HDF5
+    // change group name for source
+    h5_group_name_data = "/src_" + std::to_string(id_sim_src);
+#endif
+}
+
+void IO_utils::change_group_name_for_model(){
+#ifdef USE_HDF5
+    // change group name for model
+    h5_group_name_data = "/model";
+#endif
+}
 
 void IO_utils::finalize_data_output_file(int n_src){
     if (output_format==OUTPUT_FORMAT_HDF5 && id_sim==0){
         // close file
         if (subdom_main && id_subdomain==0)
-            for (int i_src=0; i_src<n_src; i_src++)
+            for (size_t i_src=0; i_src<xmfname_vec.size(); i_src++)
                 finalize_xdmf_file(i_src);
     }
 }
@@ -51,12 +84,12 @@ void IO_utils::init_data_output_file() {
         h5_output_fname   = "./out_data_sim_"+std::to_string(id_sim_src)+".h5";
         xdmf_output_fname = "./out_data_sim_"+std::to_string(id_sim_src)+".xmf";
 
-        if (subdom_main ) {
+        if (subdom_main) {
             // write xdmf file
             if (id_subdomain == 0)
                 write_xdmf_file_grid();
 
-            store_xdmf_obj();
+            //store_xdmf_obj();
             // create output file
             h5_create_file_by_group_main(h5_output_fname); // file for field data
         }
@@ -64,43 +97,6 @@ void IO_utils::init_data_output_file() {
     }
 }
 
-
-void IO_utils::store_xdmf_obj() {
-    if (output_format==OUTPUT_FORMAT_HDF5) {
-        if(if_verbose) stdout_by_main("--- store xdmf object ---");
-
-        // store xdmf object
-        if (subdom_main && id_subdomain == 0) {
-            doc_vec.push_back(doc);
-            xdmf_vec.push_back(xdmf);
-            domain_vec.push_back(domain);
-            grid_vec.push_back(grid);
-        }
-        // store file names
-        fname_vec.push_back(h5_output_fname);
-        xmfname_vec.push_back(xdmf_output_fname);
-    }
-}
-
-
-void IO_utils::change_xdmf_obj(int i_src){
-
-    if (output_format==OUTPUT_FORMAT_HDF5) {
-        if(if_verbose) stdout_by_main("--- change xdmf object ---");
-
-        // change xdmf object
-        if (subdom_main && id_subdomain == 0) {
-            doc    = doc_vec[i_src];
-            xdmf   = xdmf_vec[i_src];
-            domain = domain_vec[i_src];
-            grid   = grid_vec[i_src];
-        }
-        if (subdom_main) {
-            h5_output_fname = fname_vec[i_src];
-            xdmf_output_fname = xmfname_vec[i_src];
-        }
-    }
-}
 
 
 void IO_utils::write_grid(Grid& grid) {
@@ -348,7 +344,7 @@ void IO_utils::write_xdmf_file_grid() {
 void IO_utils::update_xdmf_file(int n_src) {
     if (output_format==OUTPUT_FORMAT_HDF5){
         if (subdom_main && id_subdomain==0)
-            for (int i_src=0; i_src<n_src; i_src++)
+            for (size_t i_src=0; i_src<xmfname_vec.size(); i_src++)
                 write_xdmf_file(i_src);
     }
 }
@@ -358,9 +354,9 @@ void IO_utils::write_xdmf_file(int i_src)
 {
     if (output_format==OUTPUT_FORMAT_HDF5){
         if (subdom_main && id_subdomain==0) {
-            xdmf_output_fname = xmfname_vec[i_src];
+            //xdmf_output_fname = xmfname_vec[i_src];
             std::string fout = output_dir+"/"+xdmf_output_fname;
-            doc_vec[i_src]->SaveFile(fout.c_str(), false); // true: compact format
+            doc->SaveFile(fout.c_str(), false); // true: compact format
         }
     }
 }
@@ -372,7 +368,7 @@ void IO_utils::finalize_xdmf_file(int i_src){
             stdout_by_main("--- finalize xdmf file ---");
 
         write_xdmf_file(i_src);
-        delete doc_vec[i_src];
+        //delete doc_vec[i_src];
     }
 }
 
@@ -570,13 +566,23 @@ void IO_utils::write_true_solution(Grid& grid) {
 }
 
 
-// UNUSED ROUTINES BUT KEEPED FOR FUTURE USE
-void IO_utils::write_velocity_model_h5(Grid& grid) {
-    if (id_sim == 0) {
-        std::string h5_dset_name = "velocity_model";
-        //write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_true_velo());
+void IO_utils::write_vel(Grid& grid, int i_inv) {
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "vel_inv_" + int2string_zero_fill(i_inv);
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_vel());
+#else
+
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if (output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "vel_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii(dset_name);
+        write_data_ascii(grid, fname, grid.get_vel());
     }
 }
+
 
 std::vector<CUSTOMREAL> IO_utils::get_grid_data(CUSTOMREAL* data) {
 
@@ -1140,7 +1146,8 @@ void IO_utils::read_T(Grid& grid) {
         if (output_format == OUTPUT_FORMAT_HDF5) {
             // read traveltime field from HDF5 file
 #ifdef USE_HDF5
-            std::string h5_dset_name = "T_res_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(0);
+            h5_group_name_data = "SRC_" + std::to_string(id_sim_src);
+            std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
             read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else
             std::cerr << "Error: HDF5 is not enabled." << std::endl;

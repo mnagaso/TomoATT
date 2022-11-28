@@ -160,6 +160,7 @@ public:
 
     bool get_is_output_source_field() {return is_output_source_field;};
     bool get_is_output_model_dat()    {return is_output_model_dat;};
+    bool get_is_verbose_output()      {return is_verbose_output;};
 
     bool get_is_inv_slowness()        {return is_inv_slowness;};
     bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
@@ -270,8 +271,9 @@ public:
 
 private:
     // output setting
-    bool is_output_source_field = true; // output out_data_sim_X.h or not.
+    bool is_output_source_field = false; // output out_data_sim_X.h or not.
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
+    bool is_verbose_output      = false; // output verbose information or not.
 
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.

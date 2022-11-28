@@ -176,10 +176,6 @@ inline bool if_verbose = false;
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
 
-// heavy output mode (if true, traveltime field for all sources will be output)
-// this flag effects only for forward and inversion mode but not earthquake relocation mode.
-inline bool heavily_output = false;
-
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
 inline       CUSTOMREAL rmin_2d             = 3370.5;

@@ -44,7 +44,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
 
         io.init_data_output_file(); // initialize data output file
-        io.change_xdmf_obj(i_src); // change xmf file for next src
+        //io.change_xdmf_obj(i_src); // change xmf file for next src
 
         // check if the source is teleseismic or not
         // because teleseismic source is not supported in this mode
@@ -90,12 +90,10 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // iterate over all sources for calculating optimal origin time
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
-        // reset the file name to be read
-        io.change_xdmf_obj(i_src);
-
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-
+        // change target group to be read
+        io.change_group_name_for_source();
         // load travel time field on grid.T_loc
         io.read_T(grid);
 
@@ -112,11 +110,11 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // iterate over all sources for calculating gradient of objective function
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
-        // reset the file name to be read
-        io.change_xdmf_obj(i_src);
-
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+
+        // reset the file name to be read
+        io.change_group_name_for_source();
 
         // load travel time field on grid.T_loc
         io.read_T(grid);

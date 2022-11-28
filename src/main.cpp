@@ -58,13 +58,12 @@ int main(int argc, char *argv[])
     IP.prepare_src_list();
 
     // initialize file IO object
-    IO_utils io; // create IO object for main and non-main process as well
+    IO_utils io(IP); // create IO object for main and non-main process as well
 
     // initialize compute grids
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
 
     // output inversion grid file (by main process)
-
     grid.write_inversion_grid_file();
 
     // initialize inversion grids (by other process)

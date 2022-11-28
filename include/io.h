@@ -18,12 +18,14 @@
 #include "mpi_funcs.h"
 #include "grid.h"
 #include "config.h"
+#include "input_params.h"
 #include "eikonal_solver_2d.h"
+
 
 class IO_utils {
 
 public:
-    IO_utils();
+    IO_utils(InputParams&);
     ~IO_utils();
 
     // initialize data output file
@@ -34,6 +36,11 @@ public:
     void change_xdmf_obj(int);
     // output for updating xdmf file
     void update_xdmf_file(int);
+
+    // change group name for source
+    void change_group_name_for_source();
+    // change group name for model
+    void change_group_name_for_model();
 
     //
     // write functions
@@ -53,7 +60,7 @@ public:
     // write true solution
     void write_true_solution(Grid&);
     // write velocity model
-    void write_velocity_model_h5(Grid&);
+    void write_vel(Grid&, int);
     // write T0v
     void write_T0v(Grid&, int);
     // write u
@@ -98,6 +105,9 @@ public:
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
     void write_concerning_parameters(Grid&, int);
 
+    // functions for writing out the final models
+    void write_final_models(Grid&);
+    void write_data_3d(Grid&);
 
     // 2d traveltime field for teleseismic source
     void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
