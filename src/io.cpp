@@ -344,7 +344,7 @@ void IO_utils::write_xdmf_file_grid() {
     inversions = grid->InsertEndChild( doc->NewElement( "Grid" ) );
     inversions->ToElement()->SetAttribute("Name", "Inversions");
     inversions->ToElement()->SetAttribute("GridType", "Collection");
-
+    inversions->ToElement()->SetAttribute("CollectionType", "Temporal");
     // close file
     //finalize_xdmf_file();
 }
@@ -1030,7 +1030,6 @@ void IO_utils::prepare_grid_inv_xdmf(int i_inv) {
         inv_grid = inversions->InsertEndChild(doc->NewElement("Grid"));
         inv_grid->ToElement()->SetAttribute("Name", str_inv.c_str());
         inv_grid->ToElement()->SetAttribute("GridType", "Uniform");
-        inv_grid->ToElement()->SetAttribute("CollectionType", "Temporal");
 
         // Topology node in grid
         tinyxml2::XMLNode* topology_grid = inv_grid->InsertEndChild( doc->NewElement( "Topology" ) );
