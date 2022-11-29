@@ -56,14 +56,14 @@ axs[1].pcolormesh(p[0,it_slice,:], r[:,it_slice,0], data[:,it_slice,:], shading=
 axs[1].set_title('r-lon')
 axs[1].set_xlabel('longitude')
 axs[1].set_ylabel('latitude')
-axs[1].set_aspect(10)
+axs[1].set_aspect(0.02)
 
 ip_slice=15
 axs[2].pcolormesh(t[0,:,ip_slice], r[:,0,ip_slice], data[:,:,ip_slice], shading='auto')
 axs[2].set_title('r-lat')
 axs[2].set_xlabel('longitude')
 axs[2].set_ylabel('latitude')
-axs[2].set_aspect(10)
+axs[2].set_aspect(0.02)
 
 plt.tight_layout()
 plt.show()
