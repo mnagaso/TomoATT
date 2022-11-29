@@ -591,7 +591,7 @@ void IO_utils::write_vel(Grid& grid, int i_inv) {
 #endif
     } else if (output_format==OUTPUT_FORMAT_ASCII){
         std::string dset_name = "vel_inv_" + int2string_zero_fill(i_inv);
-        std::string fname = create_fname_ascii(dset_name);
+        std::string fname = create_fname_ascii_model(dset_name);
         write_data_ascii(grid, fname, grid.get_vel());
     }
 }
@@ -1024,7 +1024,7 @@ void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
 
 
 void IO_utils::prepare_grid_inv_xdmf(int i_inv) {
-    if (id_subdomain==0 && subdom_main){
+    if ((output_format==OUTPUT_FORMAT_HDF5) && id_subdomain==0 && subdom_main){
         std::string str_inv = "inv_" + int2string_zero_fill(i_inv);
 
         inv_grid = inversions->InsertEndChild(doc->NewElement("Grid"));
