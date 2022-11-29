@@ -10,7 +10,7 @@ domain :
 source :
   #src_dep_lat_lon : [5.0,40.0,24.0] # source depth in km, latitude, longitude in degree
   #src_dep_lat_lon : [5750.6370,46.0,36.0] # source depth in km, latitude, longitude in degree
-  src_rec_file : 'src_rec_test.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file : './src_rec_test_out_modified.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec : 1 # swap source and receiver
 
 model :
@@ -18,23 +18,30 @@ model :
   init_model_path : './test_model_true.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  run_mode : 0 # 0 for forward simulation only, 1 for inversion
-  n_inversion_grid : 1
+  run_mode : 3 # 0 for forward simulation only, 1 for inversion
+  n_inversion_grid : 5  # number of inversion grid sets
+  n_inv_dep_lat_lon : [11,10,10] # number of the base inversion grid points
+  min_max_dep_inv : [-29.0, 301.0] # depth in km with R = 6371.0
+  min_max_lat_inv : [30.0,50.0] # latitude in degree
+  min_max_lon_inv : [15.0,40.0] # longitude in degree
+
+  #smooth_method : 1 # 0: multigrid parametrization, 1: laplacian smoothing with CG
+  #l_smooth_rtp : [0.9,0.9,0.9] # smoothing coefficients for each direction
+
+  max_iterations_inv : 1 # maximum number of inversion iterations
+  step_size : 0.01  # step size for inversion
 
 
 parallel :
   n_sims : 1 # number of simultaneous run
-  ndiv_rtp : [1,2,2] # number of subdomains
-  nproc_sub : 2      # number of subprocess used for each subdomain
+  ndiv_rtp : [1,1,1] # number of subdomains
+  nproc_sub : 1     # number of subprocess used for each subdomain
+  use_gpu : 0
 
 calculation :
   convergence_tolerance : 1e-4
-  max_iterations : 200
+  max_iterations : 1000
   stencil_order : 3 # 1 or 3
   sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
 
-output_setting :
-  is_output_source_field : 1      # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
-  is_verbose_output : 0           # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0
-  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
 

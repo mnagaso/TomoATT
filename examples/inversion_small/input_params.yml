@@ -16,7 +16,7 @@ model :
 inversion :
   run_mode : 1 # 0 for forward simulation only, 1 for inversion
   optim_method : 0 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs",
-  max_iterations_inv : 100  # maximum number of inversion iterations
+  max_iterations_inv : 20  # maximum number of inversion iterations
   step_size : 0.01  # step size for inversion
 
   # parameters for multiparametric inversion
@@ -43,6 +43,7 @@ calculation :
   sweep_type : 1    # 0: legacy, 1: cuthill-mckee with shm parallelization
 
 output_setting :
-  is_output_source_field : 1      # output out_data_sim_X.h or not.                 1 for yes; 0 for no;  default: 1
-  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.    1 for yes; 0 for no;  default: 1
+  is_output_source_field : 0      # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
+  is_verbose_output : 0           # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0
+  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
 

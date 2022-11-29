@@ -71,6 +71,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         old_v_obj = v_obj;
 
+        // prepare inverstion iteration group in xdmf file
+        io.prepare_grid_inv_xdmf(i_inv);
+
         ///////////////////////////////////////////////////////
         // run (forward and adjoint) simulation for each source
         ///////////////////////////////////////////////////////
@@ -104,16 +107,21 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         // output updated model
         if (subdom_main && id_sim==0) {
-            if (IP.get_is_output_source_field()){
-                io.change_xdmf_obj(0); // change xmf file for next src
+            //io.change_xdmf_obj(0); // change xmf file for next src
+            io.change_group_name_for_model();
 
-                // write out model info
-                io.write_fun(grid, i_inv);
-                io.write_xi(grid, i_inv);
-                io.write_eta(grid, i_inv);
+            // write out model info
+            io.write_vel(grid, i_inv);
+            io.write_xi(grid, i_inv);
+            io.write_eta(grid, i_inv);
+            //io.write_zeta(grid, i_inv);
+
+            if (IP.get_is_verbose_output()){
+                io.write_a(grid, i_inv);
                 io.write_b(grid, i_inv);
                 io.write_c(grid, i_inv);
                 io.write_f(grid, i_inv);
+                io.write_fun(grid, i_inv);
             }
 
             if (IP.get_is_output_model_dat())        // output model_parameters_inv_0000.dat
@@ -121,8 +129,10 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         }
 
         // writeout temporary xdmf file
-        if (IP.get_is_output_source_field())
-            io.update_xdmf_file(IP.src_ids_this_sim.size());
+        io.update_xdmf_file();
+
+        // wait for all processes to finish
+        synchronize_all_world();
 
         // wait for all processes to finish
         synchronize_all_world();
@@ -130,8 +140,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     } // end loop inverse
 
     // close xdmf file
-    if (IP.get_is_output_source_field())
-        io.finalize_data_output_file(IP.src_ids_this_sim.size());
+    io.finalize_data_output_file();
 
 }
 
@@ -205,8 +214,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     IP.write_src_rec_file(0);
 
     // close xdmf file
-    if (IP.get_is_output_source_field())
-        io.finalize_data_output_file(IP.src_ids_this_sim.size());
+    io.finalize_data_output_file();
+
 }
 
 

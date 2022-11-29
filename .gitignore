@@ -17,7 +17,6 @@ external_libs/openmpi*
 external_libs/local_mpi_hdf5
 external_libs/local_mpi_hdf5_intel
 
-
 base_proj
 
 include_copy*

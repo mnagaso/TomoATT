@@ -365,6 +365,15 @@ void Grid::memory_allocation() {
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
     // skip allocation of shm arrays if not using shm
     if (sub_nprocs <= 1) {
+#ifdef USE_CUDA
+        if(use_gpu)
+            cudaMallocHost((void**)&tau_loc, n_total_loc_grid_points * sizeof(CUSTOMREAL));
+        else
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+#else
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+#endif
+
         xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -375,7 +384,6 @@ void Grid::memory_allocation() {
         T0t_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T0p_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T0v_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_a_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_b_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_c_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -596,35 +604,6 @@ void Grid::memory_allocation() {
         }
     } // end of if inverse_flag
 
-#ifdef USE_CUDA
-    if (use_gpu){
-        // structure storing device memory
-        gpu_grid = new Grid_on_device();
-        // allocate memory for device
-        cuda_allocate_memory_for_grid(gpu_grid, \
-            ngrid_i, ngrid_j, ngrid_k, \
-            loc_I, \
-            loc_J, \
-            loc_K, \
-            loc_I_excl_ghost, \
-            loc_J_excl_ghost, \
-            loc_K_excl_ghost, \
-            n_grid_bound_i, \
-            n_grid_bound_j, \
-            n_grid_bound_k, \
-            n_ghost_layers, \
-            inverse_flag, \
-            i_start_loc, \
-            j_start_loc, \
-            k_start_loc, \
-            i_end_loc, \
-            j_end_loc, \
-            k_end_loc, \
-            n_subdomains, \
-            inter_sub_rank);
-    }
-#endif
-
     stdout_by_main("Memory allocation done.");
 }
 
@@ -632,17 +611,6 @@ void Grid::memory_allocation() {
 void Grid::shm_memory_allocation() {
 
     synchronize_all_sub();
-
-#ifdef USE_CUDA
-    // free memory on device before host arrays
-    // otherwise the program crashes
-    if (use_gpu) {
-        // free memory on device
-        cuda_free_memory_for_grid(gpu_grid);
-
-        delete gpu_grid;
-    }
-#endif
 
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
     if (sub_rank != 0)
@@ -685,6 +653,15 @@ void Grid::shm_memory_deallocation() {
 void Grid::memory_deallocation() {
    // shm array deallocation is done in shm_memory_deallocation() if shm is used
     if (sub_nprocs <= 1) {
+
+#ifdef USE_CUDA
+        if(use_gpu)
+            cudaFree(tau_loc);
+        else
+            free(tau_loc);
+#else
+        free(tau_loc);
+#endif
         free(xi_loc);
         free(eta_loc);
         free(zeta_loc);
@@ -699,7 +676,6 @@ void Grid::memory_deallocation() {
         free(fac_b_loc);
         free(fac_c_loc);
         free(fac_f_loc);
-        free(tau_loc);
         free(fun_loc);
         free(is_changed);
 
@@ -1153,7 +1129,7 @@ void Grid::initialize_kernels(){
 
 
 // get a part of pointers from the requested array for visualization
-CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
+CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr, bool inverse_value) {
 
     //send_recev_boundary_data(arr);
     // add a routine for communication the boundary value
@@ -1170,7 +1146,10 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
                     int j_loc_tmp = j_lat - j_start_vis;
                     int k_loc_tmp = k_r   - k_start_vis;
 
-                    vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    if(!inverse_value)
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    else
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr[I2V(i_lon,j_lat,k_r)]; // used for convert from slowness to velocity
                  }
             }
         }
@@ -1445,6 +1424,7 @@ void Grid::calc_L1_and_Linf_diff(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
         // calculate L1 error
         for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
             for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+                #pragma omp simd reduction(+:L1_diff)
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)];
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)]);
@@ -1473,6 +1453,7 @@ void Grid::calc_L1_and_Linf_diff_tele(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff
         // calculate L1 error
         for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
             for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+                #pragma omp simd reduction(+:L1_diff)
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]); // tau_old is used as T_old_loc here
                     Linf_diff  = std::max(Linf_diff,std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]));
@@ -1502,6 +1483,7 @@ void Grid::calc_L1_and_Linf_diff_adj(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff)
         // calculate L1 error
         for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
             for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+                #pragma omp simd
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     // Adjoint simulation use only Linf
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - Tadj_loc[I2V(i_lon,j_lat,k_r)]));
@@ -1525,6 +1507,7 @@ void Grid::calc_L1_and_Linf_error(CUSTOMREAL& L1_error, CUSTOMREAL& Linf_error) 
     // calculate L1 error
     for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
         for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+            #pragma omp simd reduction(+:L1_error)
             for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                 L1_error   +=                     std::abs(u_loc[I2V(i_lon,j_lat,k_r)] - T0v_loc[I2V(i_lon,j_lat,k_r)] * tau_loc[I2V(i_lon,j_lat,k_r)]);
                 Linf_error  = std::max(Linf_error,std::abs(u_loc[I2V(i_lon,j_lat,k_r)] - T0v_loc[I2V(i_lon,j_lat,k_r)] * tau_loc[I2V(i_lon,j_lat,k_r)]));
@@ -1550,6 +1533,7 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[0] != -1) {
         for (int i = 0; i < n_ghost_layers; i++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int j = j_start_loc; j <= j_end_loc; j++) {
                     bin_s[i*loc_J_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_J_excl_ghost + (j-j_start_loc)] = arr[I2V(i+n_ghost_layers,j,k)];
                 }
@@ -1560,6 +1544,7 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[1] != -1) {
         for (int i = 0; i < n_ghost_layers; i++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int j = j_start_loc; j <= j_end_loc; j++) {
                     bip_s[i*loc_J_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_J_excl_ghost + (j-j_start_loc)] = arr[I2V(loc_I-n_ghost_layers*2+i,j,k)];
                 }
@@ -1570,6 +1555,7 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[2] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bjn_s[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,j+n_ghost_layers,k)];
                 }
@@ -1580,6 +1566,7 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[3] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bjp_s[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,loc_J-n_ghost_layers*2+j,k)];
                 }
@@ -1591,6 +1578,7 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[4] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bkn_s[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,j,k+n_ghost_layers)];
                 }
@@ -1601,6 +1589,7 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[5] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bkp_s[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,j,loc_K-n_ghost_layers*2+k)];
                 }
@@ -1629,6 +1618,7 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[1] != -1) {
         for (int i = 0; i < n_ghost_layers; i++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int j = j_start_loc; j <= j_end_loc; j++) {
                      arr[I2V(loc_I-n_ghost_layers+i,j,k)] = bip_r[i*loc_J_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_J_excl_ghost + (j-j_start_loc)];
                 }
@@ -1639,6 +1629,7 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[2] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,j,k)] = bjn_r[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -1649,6 +1640,7 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[3] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,loc_J-n_ghost_layers+j,k)] = bjp_r[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -1660,6 +1652,7 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[4] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,j,k)] = bkn_r[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -1670,6 +1663,7 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[5] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
+                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,j,loc_K-n_ghost_layers+k)] = bkp_r[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -2239,6 +2233,7 @@ void Grid::calc_T_plus_tau() {
     // calculate T_plus_tau
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            #pragma omp simd
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
                 // T0*tau
                 T_loc[I2V(i_lon,j_lat,k_r)] = T0v_loc[I2V(i_lon,j_lat,k_r)] * tau_loc[I2V(i_lon,j_lat,k_r)];
@@ -2252,72 +2247,12 @@ void Grid::calc_T_plus_tau() {
 void Grid::calc_residual() {
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            #pragma omp simd
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
                 u_loc[I2V(i_lon,j_lat,k_r)] = u_loc[I2V(i_lon,j_lat,k_r)] - T_loc[I2V(i_lon,j_lat,k_r)];
             }
         }
     }
-}
-
-
-void Grid::initialize_gpu_grid(std::vector<std::vector<std::vector<int>>> &ijk_levels) {
-    // initialize gpu grid
-#ifdef USE_CUDA
-
-    // initialize gpu parameters
-    cuda_init_gpu_params(gpu_grid, inter_sub_comm, ijk_levels, dr, dt, dp);
-
-    // allocate memory for device
-    // transfer data to device
-
-    cuda_data_transfer_to_device(gpu_grid,
-        loc_I, \
-        loc_J, \
-        loc_K, \
-        n_grid_bound_i, \
-        n_grid_bound_j, \
-        n_grid_bound_k, \
-        n_ghost_layers, \
-        dr, \
-        dt, \
-        dp, \
-        neighbors_id, \
-        tau_old_loc, \
-        tau_loc, \
-        fac_a_loc, \
-        fac_b_loc, \
-        fac_c_loc, \
-        fac_f_loc, \
-        T0v_loc, \
-        T0r_loc, \
-        T0t_loc, \
-        T0p_loc, \
-        fun_loc, \
-        Tadj_loc, \
-        t_loc_1d, \
-        r_loc_1d, \
-        zeta_loc, \
-        xi_loc, \
-        eta_loc, \
-        T_loc, \
-        is_changed);
-
-
-
-#endif
-
-}
-
-void Grid::reinitialize_gpu_grid(){
-    if (subdom_main) {
-        if(use_gpu){
-#ifdef USE_CUDA
-            cuda_reinitialize_grid(gpu_grid, fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc, \
-                T0v_loc, T0r_loc, T0t_loc, T0p_loc, tau_loc, tau_old_loc, is_changed);
-#endif
-        }
-    }
-
 }
 
 void Grid::write_inversion_grid_file(){

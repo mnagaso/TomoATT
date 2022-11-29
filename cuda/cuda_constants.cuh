@@ -22,19 +22,13 @@
 //#define CUDA_SWEEPING_BLOCK_SIZE 32 // 15.254 s
 //#define CUDA_SWEEPING_BLOCK_SIZE 64 // 15.281 s
 //#define CUDA_SWEEPING_BLOCK_SIZE 128 // 15.378 s
-#define CUDA_SWEEPING_BLOCK_SIZE 256 //　s
-//#define CUDA_SWEEPING_BLOCK_SIZE 512 //
+//#define CUDA_SWEEPING_BLOCK_SIZE 256 //　s
+#define CUDA_SWEEPING_BLOCK_SIZE 512 //
 //#define CUDA_SWEEPING_BLOCK_SIZE 1024 //
 
 
 #define CUDA_L1_BLOCK_SIZE 128
 //#define CUDA_L1_BLOCK_SIZE 256
-
-// store device properties
-//inline cudaDeviceProp deviceProp;
-
-// do not use level-unified-kernel (currently set as true for strange block synchronization behavior)
-#define FORCE_UNUSE_UNIFIED_KERNEL true
 
 #define CUDA_MAX_NUM_STREAMS 32
 

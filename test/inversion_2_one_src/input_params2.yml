@@ -34,8 +34,8 @@ inversion :
 
 parallel :
   n_sims : 1 # number of simultaneous run
-  ndiv_rtp : [1,2,2] # number of subdomains
-  nproc_sub : 2      # number of subprocess used for each subdomain
+  ndiv_rtp : [1,1,1] # number of subdomains
+  nproc_sub : 1      # number of subprocess used for each subdomain
   use_gpu : 0
 
 calculation :
@@ -45,12 +45,10 @@ calculation :
   sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
 
 output_setting :
-  is_output_source_field : 1      # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
-  is_verbose_output : 0           # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0
-  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
+  it_output_suorce_field : 1
+  is_output_model_dat : 1
 
 inv_strategy :
   is_inv_slowness : 1
   is_inv_azi_ani : 1
   is_inv_rad_ani : 1
-

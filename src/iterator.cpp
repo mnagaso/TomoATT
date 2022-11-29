@@ -64,7 +64,67 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 }
 
 
-Iterator::~Iterator() {}
+Iterator::~Iterator() {
+
+#if defined USE_SIMD || defined USE_CUDA
+
+    if (simd_allocated){
+        // if use_gpu == false, simd_allocated is also false here
+
+        free(dump_c__);// center of stencil
+
+        free_preloaded_array(vv_iip);
+        free_preloaded_array(vv_jjt);
+        free_preloaded_array(vv_kkr);
+
+        // free vv_* preloaded arrays
+        free_preloaded_array(vv_i__j__k__);
+        free_preloaded_array(vv_ip1j__k__);
+        free_preloaded_array(vv_im1j__k__);
+        free_preloaded_array(vv_i__jp1k__);
+        free_preloaded_array(vv_i__jm1k__);
+        free_preloaded_array(vv_i__j__kp1);
+        free_preloaded_array(vv_i__j__km1);
+
+        if(simd_allocated_3rd || is_teleseismic){
+            free_preloaded_array(vv_ip2j__k__);
+            free_preloaded_array(vv_im2j__k__);
+            free_preloaded_array(vv_i__jp2k__);
+            free_preloaded_array(vv_i__jm2k__);
+            free_preloaded_array(vv_i__j__kp2);
+            free_preloaded_array(vv_i__j__km2);
+        }
+
+        free_preloaded_array(vv_fac_a);
+        free_preloaded_array(vv_fac_b);
+        free_preloaded_array(vv_fac_c);
+        free_preloaded_array(vv_fac_f);
+        free_preloaded_array(vv_fun);
+        if (!is_teleseismic){
+            free_preloaded_array(vv_T0v);
+            free_preloaded_array(vv_T0r);
+            free_preloaded_array(vv_T0t);
+            free_preloaded_array(vv_T0p);
+        }
+        if(!use_gpu)
+            free_preloaded_array(vv_change);
+        else
+            free_preloaded_array(vv_change_bl);
+    }
+#endif
+
+#ifdef USE_CUDA
+    // free memory on device before host arrays
+    // otherwise the program crashes
+    if (use_gpu) {
+        // free memory on device
+        cuda_finalize_grid(gpu_grid);
+
+        delete gpu_grid;
+    }
+#endif
+
+}
 
 
 void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
@@ -85,9 +145,368 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     }
 
     // assign processes for each sweeping level
-    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels();
+    if (IP.get_sweep_type() == SWEEP_TYPE_LEVEL) assign_processes_for_levels(grid, IP);
+
+#ifdef USE_CUDA
+    if(use_gpu){
+        gpu_grid = new Grid_on_device();
+        if (IP.get_stencil_order() == 1){
+            cuda_initialize_grid_1st(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+                vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
+                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change_bl);
+        } else {
+            cuda_initialize_grid_3rd(ijk_for_this_subproc, gpu_grid, loc_I, loc_J, loc_K, dp, dt, dr, \
+                vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1, \
+                              vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2, \
+                vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change_bl);
+        }
+
+        std::cout << "gpu grid initialization done." << std::endl;
+    }
+#endif
+
 }
 
+
+// assign intra-node processes for each sweeping level
+void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
+    // allocate memory for process range
+    std::vector<int> n_nodes_of_levels;
+
+    // teleseismic case need to iterate outermost layer
+    int st_id, st_id2;
+    if (!is_teleseismic){
+        st_id  = 2;
+        st_id2 = 1;
+    } else {
+        st_id  = 1;
+        st_id2 = 0;
+    }
+
+    for (int level = st_level; level <= ed_level; level++) {
+        int kleft  = std::max(st_id, level-np-nt+2);
+        int kright = std::min(level-4, nr-1)   ;
+
+        int count_n_nodes = 0;
+
+        for (int kk = kleft; kk <= kright; kk++) {
+            int jleft  = std::max(st_id, level-kk-np+st_id2);
+            int jright = std::min(level-kk-2, nt-1);
+
+            int n_jlines = jright - jleft + 1;
+            count_n_nodes += n_jlines;
+        } // end loop kk
+
+        n_nodes_of_levels.push_back(count_n_nodes); // store the number of nodes of each level
+    } // end loop level
+
+    // find max in n_nodes_of_levels
+    max_n_nodes_plane = 0;
+    for (size_t i = 0; i < n_nodes_of_levels.size(); i++)
+        if (n_nodes_of_levels[i] > max_n_nodes_plane)
+            max_n_nodes_plane = n_nodes_of_levels[i];
+
+
+    int n_grids_this_subproc = 0; // count the number of grids calculated by this subproc
+
+    // assign nodes on each level plane to processes
+    for (int level = st_level; level <= ed_level; level++) {
+        int kleft  = std::max(st_id, level-np-nt+2);
+        int kright = std::min(level-4, nr-1)   ;
+
+        std::vector<int> asigned_nodes_on_this_level;
+        int grid_count = 0;
+
+        // n grids calculated by each subproc
+        int n_grids_each = static_cast<int>(n_nodes_of_levels[level-st_level] / n_subprocs);
+        int n_grids_by_this = n_grids_each;
+        int i_grid_start = n_grids_each*sub_rank;
+
+        // add modulo for last sub_rank
+        if (sub_rank == n_subprocs-1)
+            n_grids_by_this += static_cast<int>(n_nodes_of_levels[level-st_level] % n_subprocs);
+
+
+        for (int kk = kleft; kk <= kright; kk++) {
+            int jleft  = std::max(st_id, level-kk-np+st_id2);
+            int jright = std::min(level-kk-2, nt-1);
+
+            for (int jj = jleft; jj <= jright; jj++) {
+                int ii = level - kk - jj;
+
+                // check if this node should be assigned to this process
+                //if (grid_count%n_subprocs == sub_rank) {
+                if (grid_count >= i_grid_start && grid_count < i_grid_start+n_grids_by_this) {
+                    int tmp_ijk = I2V(ii,jj,kk);
+                    asigned_nodes_on_this_level.push_back(tmp_ijk);
+                    n_grids_this_subproc++;
+                }
+
+                grid_count++;
+
+            } // end loop jj
+        } // end loop kk
+
+        // store the node ids of each level
+        ijk_for_this_subproc.push_back(asigned_nodes_on_this_level);
+    } // end loop level
+
+    if(if_verbose)
+        std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
+
+#if defined USE_SIMD || defined USE_CUDA
+
+    preload_indices(vv_iip, vv_jjt, vv_kkr,  0, 0, 0);
+    preload_indices_1d(vv_i__j__k__, 0, 0, 0);
+    preload_indices_1d(vv_ip1j__k__, 1, 0, 0);
+    preload_indices_1d(vv_i__jp1k__, 0, 1, 0);
+    preload_indices_1d(vv_i__j__kp1, 0, 0, 1);
+    preload_indices_1d(vv_im1j__k__,-1, 0, 0);
+    preload_indices_1d(vv_i__jm1k__, 0,-1, 0);
+    preload_indices_1d(vv_i__j__km1, 0, 0,-1);
+
+    if(IP.get_stencil_order() == 3 || is_teleseismic){
+        preload_indices_1d(vv_ip2j__k__, 2, 0, 0);
+        preload_indices_1d(vv_i__jp2k__, 0, 2, 0);
+        preload_indices_1d(vv_i__j__kp2, 0, 0, 2);
+        preload_indices_1d(vv_im2j__k__,-2, 0, 0);
+        preload_indices_1d(vv_i__jm2k__, 0,-2, 0);
+        preload_indices_1d(vv_i__j__km2, 0, 0,-2);
+        simd_allocated_3rd = true;
+    }
+
+    int dump_length = NSIMD;
+    // stencil dumps
+    // first orders
+    dump_c__ = (CUSTOMREAL*) aligned_alloc(ALIGN, dump_length*sizeof(CUSTOMREAL));// center of stencil
+
+    // preload the stencil dumps
+    vv_fac_a = preload_array(grid.fac_a_loc);
+    vv_fac_b = preload_array(grid.fac_b_loc);
+    vv_fac_c = preload_array(grid.fac_c_loc);
+    vv_fac_f = preload_array(grid.fac_f_loc);
+    vv_fun   = preload_array(grid.fun_loc);
+    if(!is_teleseismic) {
+        vv_T0v   = preload_array(grid.T0v_loc);
+        vv_T0r   = preload_array(grid.T0r_loc);
+        vv_T0t   = preload_array(grid.T0t_loc);
+        vv_T0p   = preload_array(grid.T0p_loc);
+    }
+    if(!use_gpu)
+        vv_change = preload_array(grid.is_changed);
+    else
+        vv_change_bl = preload_array_bl(grid.is_changed);
+
+    // flag for preloading
+    simd_allocated = true;
+#endif // USE_SIMD
+
+}
+
+#if defined USE_SIMD || defined USE_CUDA
+
+template <typename T>
+std::vector<std::vector<CUSTOMREAL*>> Iterator::preload_array(T* a){
+
+    std::vector<std::vector<CUSTOMREAL*>> vvv;
+
+    for (int iswap=0; iswap<8; iswap++){
+        int n_levels = ijk_for_this_subproc.size();
+        std::vector<CUSTOMREAL*> vv;
+
+        for (int i_level=0; i_level<n_levels; i_level++){
+
+            int nnodes = ijk_for_this_subproc.at(i_level).size();
+            int nnodes_tmp;
+            if(!use_gpu)
+                nnodes_tmp = nnodes + ((nnodes % NSIMD == 0) ? 0 : (NSIMD - nnodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                nnodes_tmp = nnodes;
+
+            CUSTOMREAL* v = (CUSTOMREAL*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(CUSTOMREAL));
+
+            // asign values
+            for (int i_node=0; i_node<nnodes; i_node++){
+                v[i_node] = (CUSTOMREAL) a[vv_i__j__k__.at(iswap).at(i_level)[i_node]];
+            }
+            // assign dummy
+            for (int i_node=nnodes; i_node<nnodes_tmp; i_node++){
+                v[i_node] = 0.0;
+            }
+            vv.push_back(v);
+        }
+        vvv.push_back(vv);
+    }
+
+    return vvv;
+}
+
+std::vector<std::vector<bool*>> Iterator::preload_array_bl(bool* a){
+
+    std::vector<std::vector<bool*>> vvv;
+
+    for (int iswap=0; iswap<8; iswap++){
+        int n_levels = ijk_for_this_subproc.size();
+        std::vector<bool*> vv;
+
+        for (int i_level=0; i_level<n_levels; i_level++){
+
+            int nnodes = ijk_for_this_subproc.at(i_level).size();
+            int nnodes_tmp;
+            if(!use_gpu)
+                nnodes_tmp = nnodes + ((nnodes % NSIMD == 0) ? 0 : (NSIMD - nnodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                nnodes_tmp = nnodes;
+
+            bool* v = (bool*) aligned_alloc(ALIGN, nnodes_tmp*sizeof(bool));
+
+            // asign values
+            for (int i_node=0; i_node<nnodes; i_node++){
+                v[i_node] = (bool) a[vv_i__j__k__.at(iswap).at(i_level)[i_node]];
+            }
+            // assign dummy
+            for (int i_node=nnodes; i_node<nnodes_tmp; i_node++){
+                v[i_node] = 0.0;
+            }
+            vv.push_back(v);
+        }
+        vvv.push_back(vv);
+    }
+
+    return vvv;
+}
+
+
+template <typename T>
+void Iterator::preload_indices(std::vector<std::vector<T*>> &vvvi, \
+                               std::vector<std::vector<T*>> &vvvj, \
+                               std::vector<std::vector<T*>> &vvvk, \
+                               int shift_i, int shift_j, int shift_k) {
+
+    int iip, jjt, kkr;
+    for (int iswp=0; iswp < 8; iswp++){
+        set_sweep_direction(iswp);
+
+        std::vector<T*> vvi, vvj, vvk;
+
+        int n_levels = ijk_for_this_subproc.size();
+        for (int i_level = 0; i_level < n_levels; i_level++) {
+            int n_nodes = ijk_for_this_subproc[i_level].size();
+            int n_nodes_tmp;
+            if(!use_gpu)
+                n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                n_nodes_tmp = n_nodes;
+
+            T*  vi = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T*  vj = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+            T*  vk = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+
+            for (int i_node = 0; i_node < n_nodes; i_node++) {
+                int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
+                V2I(tmp_ijk, iip, jjt, kkr);
+                if (r_dirc < 0) kkr = loc_K-kkr; //kk-1;
+                else            kkr = kkr-1;  //nr-kk;
+                if (t_dirc < 0) jjt = loc_J-jjt; //jj-1;
+                else            jjt = jjt-1;  //nt-jj;
+                if (p_dirc < 0) iip = loc_I-iip; //ii-1;
+                else            iip = iip-1;  //np-ii;
+
+                kkr += shift_k;
+                jjt += shift_j;
+                iip += shift_i;
+
+                if (kkr >= loc_K) kkr = 0;
+                if (jjt >= loc_J) jjt = 0;
+                if (iip >= loc_I) iip = 0;
+
+                if (kkr < 0) kkr = 0;
+                if (jjt < 0) jjt = 0;
+                if (iip < 0) iip = 0;
+
+                vi[i_node] = (T)iip;
+                vj[i_node] = (T)jjt;
+                vk[i_node] = (T)kkr;
+
+            }
+            // assign dummy
+            for (int i=n_nodes; i<n_nodes_tmp; i++){
+                vi[i] = (T)0;
+                vj[i] = (T)0;
+                vk[i] = (T)0;
+            }
+
+            vvi.push_back(vi);
+            vvj.push_back(vj);
+            vvk.push_back(vk);
+        }
+        vvvi.push_back(vvi);
+        vvvj.push_back(vvj);
+        vvvk.push_back(vvk);
+    }
+}
+
+
+template <typename T>
+void Iterator::preload_indices_1d(std::vector<std::vector<T*>> &vvv, \
+                               int shift_i, int shift_j, int shift_k) {
+
+    int iip, jjt, kkr;
+    for (int iswp=0; iswp < 8; iswp++){
+        set_sweep_direction(iswp);
+
+        std::vector<T*> vv;
+
+        int n_levels = ijk_for_this_subproc.size();
+        for (int i_level = 0; i_level < n_levels; i_level++) {
+            int n_nodes = ijk_for_this_subproc[i_level].size();
+            int n_nodes_tmp;
+            if(!use_gpu)
+                n_nodes_tmp = n_nodes + ((n_nodes % NSIMD == 0) ? 0 : (NSIMD - n_nodes % NSIMD)); // length needs to be multiple of NSIMD
+            else
+                n_nodes_tmp = n_nodes;
+
+            T* v = (T*) aligned_alloc(ALIGN, n_nodes_tmp*sizeof(T));
+
+            for (int i_node = 0; i_node < n_nodes; i_node++) {
+                int tmp_ijk = ijk_for_this_subproc[i_level][i_node];
+                V2I(tmp_ijk, iip, jjt, kkr);
+                if (r_dirc < 0) kkr = loc_K-kkr; //kk-1;
+                else            kkr = kkr-1;  //nr-kk;
+                if (t_dirc < 0) jjt = loc_J-jjt; //jj-1;
+                else            jjt = jjt-1;  //nt-jj;
+                if (p_dirc < 0) iip = loc_I-iip; //ii-1;
+                else            iip = iip-1;  //np-ii;
+
+                kkr += shift_k;
+                jjt += shift_j;
+                iip += shift_i;
+
+                if (kkr >= loc_K) kkr = 0;
+                if (jjt >= loc_J) jjt = 0;
+                if (iip >= loc_I) iip = 0;
+
+                if (kkr < 0) kkr = 0;
+                if (jjt < 0) jjt = 0;
+                if (iip < 0) iip = 0;
+
+                v[i_node] = (T)I2V(iip, jjt, kkr);
+
+            }
+            // assign dummy
+            for (int i=n_nodes; i<n_nodes_tmp; i++){
+                v[i] = (T)0;
+            }
+
+            vv.push_back(v);
+        }
+
+        vvv.push_back(vv);
+    }
+}
+
+
+#endif // USE_SIMD || USE_CUDA
 
 void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, bool& first_init) {
 
@@ -97,58 +516,43 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
     std::string iter_str = "iteration_forward";
     Timer timer_iter(iter_str);
 
-    if(!use_gpu){
-        // in cpu mode
-        iter_count = 0; cur_diff_L1 = HUGE_VAL; cur_diff_Linf = HUGE_VAL;
+    // in cpu mode
+    iter_count = 0; cur_diff_L1 = HUGE_VAL; cur_diff_Linf = HUGE_VAL;
 
-        // calculate the differcence from the true solution
-        if (if_test && subdom_main) {
-            if (!is_teleseismic)
-                grid.calc_L1_and_Linf_error(ini_err_L1, ini_err_Linf);
+    // calculate the differcence from the true solution
+    if (if_test && subdom_main) {
+        if (!is_teleseismic)
+            grid.calc_L1_and_Linf_error(ini_err_L1, ini_err_Linf);
+        else
+            grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
+
+        if (myrank==0)
+            std::cout << "initial err values L1, inf: " << ini_err_L1 << ", " << ini_err_Linf << std::endl;
+    }
+
+    if (subdom_main) {
+        grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
+        if (myrank==0 && if_verbose)
+            std::cout << "initial diff values L1, inf: " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+    }
+
+    // start iteration
+    while (true) {
+
+        // store tau for comparison
+        if (subdom_main){
+            if(!is_teleseismic)
+                grid.tau2tau_old();
             else
-                grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
-
-            if (myrank==0)
-                std::cout << "initial err values L1, inf: " << ini_err_L1 << ", " << ini_err_Linf << std::endl;
+                grid.T2tau_old();
         }
 
-        if (subdom_main) {
-            grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
-            if (myrank==0 && if_verbose)
-                std::cout << "initial diff values L1, inf: " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
-        }
-
-        // start iteration
-        while (true) {
-
-            // store tau for comparison
-            if (subdom_main){
-                if(!is_teleseismic)
-                    grid.tau2tau_old();
-                else
-                    grid.T2tau_old();
-            }
-
-            // do sweeping for all direction
-            for (int iswp = nswp-1; iswp > -1; iswp--) {
-            // for (int iswp = nswp-1; iswp > nswp-2; iswp--) {
-                // std::cout << "cp1, my world rank is: " << world_rank << std::endl;
-                do_sweep(iswp, grid, IP);
+        // do sweeping for all direction
+        for (int iswp = nswp-1; iswp > -1; iswp--) {
+            do_sweep(iswp, grid, IP);
 
 #ifdef FREQ_SYNC_GHOST
-                // synchronize ghost cells everytime after sweeping of each direction
-                if (subdom_main){
-                    if (!is_teleseismic)
-                        grid.send_recev_boundary_data(grid.tau_loc);
-                    else
-                        grid.send_recev_boundary_data(grid.T_loc);
-                }
-#endif
-            }
-
-#ifndef FREQ_SYNC_GHOST
-            // synchronize ghost cells everytime after sweeping of all directions
-            // as the same method with Detrixhe2016
+            // synchronize ghost cells everytime after sweeping of each direction
             if (subdom_main){
                 if (!is_teleseismic)
                     grid.send_recev_boundary_data(grid.tau_loc);
@@ -156,88 +560,73 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
                     grid.send_recev_boundary_data(grid.T_loc);
             }
 #endif
-
-            // calculate the objective function
-            // if converged, break the loop
-            if (subdom_main) {
-                if (!is_teleseismic)
-                    grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
-                else
-                    grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
-
-                if(if_test) {
-                    grid.calc_L1_and_Linf_error(cur_err_L1, cur_err_Linf);
-                    //std::cout << "Theoretical difference: " << cur_err_L1 << ' ' << cur_err_Linf << std::endl;
-                }
-            }
-
-            // broadcast the diff values
-            broadcast_cr_single_sub(cur_diff_L1, 0);
-            broadcast_cr_single_sub(cur_diff_Linf, 0);
-            if (if_test) {
-                broadcast_cr_single_sub(cur_err_L1, 0);
-                broadcast_cr_single_sub(cur_err_Linf, 0);
-            }
-
-            //if (iter_count==0)
-                // std::cout << "cp3, my world rank is: " << world_rank << std::endl;
-                //std::cout << "id_sim, sub_rank, iter, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << iter_count << ", " <<cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
-                // synchronize_all_world();
-                // goto iter_end;
-
-
-            // debug store temporal T fields
-            //io.write_tmp_tau_h5(grid, iter_count);
-
-            //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
-            if (cur_diff_L1 < IP.get_conv_tol()) {
-                //stdout_by_main("--- iteration converged. ---");
-                goto iter_end;
-            } else if (IP.get_max_iter() <= iter_count) {
-                stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
-                goto iter_end;
-            } else {
-                if(myrank==0 && if_verbose)
-                    std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
-                iter_count++;
-            }
         }
 
-    iter_end:
-        if (myrank==0){
-            if (if_verbose){
-                std::cout << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
-            }
-            if (if_test)
-                std::cout << "errors at iteration " << iter_count << ": " << cur_err_L1 << ", " << cur_err_Linf << std::endl;
-        }
-
-        // calculate T
-        // teleseismic case will update T_loc, so T = T0*tau is not necessary.
-        if (subdom_main && !is_teleseismic) grid.calc_T_plus_tau();
-
-    } else {
-
-        // GPU mode
-    #ifdef USE_CUDA
-        if (!is_teleseismic){
-            // transfer field to GPU grid for iteration (only need to call for the first source of first inversion step)
-            if(first_init)
-                grid.initialize_gpu_grid(ijk_for_this_subproc);
+#ifndef FREQ_SYNC_GHOST
+        // synchronize ghost cells everytime after sweeping of all directions
+        // as the same method with Detrixhe2016
+        if (subdom_main){
+            if (!is_teleseismic)
+                grid.send_recev_boundary_data(grid.tau_loc);
             else
-                grid.reinitialize_gpu_grid(); // update only fac_abcf
-
-            // run iteration
-            cuda_run_iterate_forward(grid.gpu_grid, IP.get_conv_tol(), IP.get_max_iter(), IP.get_stencil_order());
-            // copy result on device to host
-            cuda_copy_T_loc_tau_loc_to_host(grid.T_loc, grid.tau_loc, grid.gpu_grid);
-        } else {
-            std::cout << "ERROR: GPU mode does not support teleseismic source." << std::endl;
-            exit(1);
+                grid.send_recev_boundary_data(grid.T_loc);
         }
-    #endif
+#endif
 
+        // calculate the objective function
+        // if converged, break the loop
+        if (subdom_main) {
+            if (!is_teleseismic)
+                grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
+            else
+                grid.calc_L1_and_Linf_diff_tele(cur_diff_L1, cur_diff_Linf);
+
+            if(if_test) {
+                grid.calc_L1_and_Linf_error(cur_err_L1, cur_err_Linf);
+                //std::cout << "Theoretical difference: " << cur_err_L1 << ' ' << cur_err_Linf << std::endl;
+            }
+        }
+
+        // broadcast the diff values
+        broadcast_cr_single_sub(cur_diff_L1, 0);
+        broadcast_cr_single_sub(cur_diff_Linf, 0);
+        if (if_test) {
+            broadcast_cr_single_sub(cur_err_L1, 0);
+            broadcast_cr_single_sub(cur_err_Linf, 0);
+        }
+
+        //if (iter_count==0)
+        //    std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+
+        // debug store temporal T fields
+        //io.write_tmp_tau_h5(grid, iter_count);
+
+        //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
+        if (cur_diff_L1 < IP.get_conv_tol()) {
+            //stdout_by_main("--- iteration converged. ---");
+            goto iter_end;
+        } else if (IP.get_max_iter() <= iter_count) {
+            stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
+            goto iter_end;
+        } else {
+            if(myrank==0 && if_verbose)
+                std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
+            iter_count++;
+        }
     }
+
+iter_end:
+    if (myrank==0){
+        if (if_verbose){
+            std::cout << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+        }
+        if (if_test)
+            std::cout << "errors at iteration " << iter_count << ": " << cur_err_L1 << ", " << cur_err_Linf << std::endl;
+    }
+
+    // calculate T
+    // teleseismic case will update T_loc, so T = T0*tau is not necessary.
+    if (subdom_main && !is_teleseismic) grid.calc_T_plus_tau();
 
     // check the time for iteration
     if (inter_sub_rank==0 && subdom_main) {
@@ -249,7 +638,6 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         ofs << "Converged at iteration " << iter_count << ", L1 " << cur_diff_L1 << ", Linf " << cur_diff_Linf << ", total time[s] " << timer_iter.get_t() << std::endl;
 
     }
-
 
 }
 
@@ -498,86 +886,6 @@ void Iterator::fix_boundary_Tadj(Grid& grid) {
 
 }
 
-
-// assign intra-node processes for each sweeping level
-void Iterator::assign_processes_for_levels() {
-    // allocate memory for process range
-    std::vector<int> n_nodes_of_levels;
-
-    // teleseismic case need to iterate outermost layer
-    int st_id, st_id2;
-    if (!is_teleseismic){
-        st_id  = 2;
-        st_id2 = 1;
-    } else {
-        st_id  = 1;
-        st_id2 = 0;
-    }
-
-    for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(st_id, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
-
-        int count_n_nodes = 0;
-
-        for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(st_id, level-kk-np+st_id2);
-            int jright = std::min(level-kk-2, nt-1);
-
-            int n_jlines = jright - jleft + 1;
-            count_n_nodes += n_jlines;
-        } // end loop kk
-
-        n_nodes_of_levels.push_back(count_n_nodes); // store the number of nodes of each level
-    } // end loop level
-
-    int n_grids_this_subproc = 0; // count the number of grids calculated by this subproc
-
-    // assign nodes on each level plane to processes
-    for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(st_id, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
-
-        std::vector< std::vector<int> > asigned_nodes_on_this_level;
-        int grid_count = 0;
-
-        // n grids calculated by each subproc
-        int n_grids_each = static_cast<int>(n_nodes_of_levels[level-st_level] / n_subprocs);
-        int n_grids_by_this = n_grids_each;
-        int i_grid_start = n_grids_each*sub_rank;
-        // add modulo for last sub_rank
-        if (sub_rank == n_subprocs-1)
-            n_grids_by_this += static_cast<int>(n_nodes_of_levels[level-st_level] % n_subprocs);
-
-
-        for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(st_id, level-kk-np+st_id2);
-            int jright = std::min(level-kk-2, nt-1);
-
-            for (int jj = jleft; jj <= jright; jj++) {
-                int ii = level - kk - jj;
-
-                // check if this node should be assigned to this process
-                //if (grid_count%n_subprocs == sub_rank) {
-                if (grid_count >= i_grid_start && grid_count < i_grid_start+n_grids_by_this) {
-                    std::vector<int> tmp_ijk = {ii,jj,kk};
-                    asigned_nodes_on_this_level.push_back(tmp_ijk);
-                    n_grids_this_subproc++;
-                }
-
-                grid_count++;
-
-            } // end loop jj
-        } // end loop kk
-
-        // store the node ids of each level
-        ijk_for_this_subproc.push_back(asigned_nodes_on_this_level);
-    } // end loop level
-
-    if(if_verbose)
-        std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
-
-}
 
 void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, int&kkr){
 
@@ -1296,7 +1604,6 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
     }
 }
 
-
 void Iterator::calculate_stencil_1st_order(Grid& grid, int& iip, int& jjt, int&kkr){
     sigr = SWEEPING_COEFF*std::sqrt(grid.fac_a_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
     sigt = SWEEPING_COEFF*std::sqrt(grid.fac_b_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
@@ -1326,6 +1633,7 @@ void Iterator::calculate_stencil_3rd_order(Grid& grid, int& iip, int& jjt, int&k
     sigt = SWEEPING_COEFF*std::sqrt(grid.fac_b_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
     sigp = SWEEPING_COEFF*std::sqrt(grid.fac_c_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];
     coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
+
 
     // direction p
     if (iip == 1) {
@@ -1884,6 +2192,7 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
 
     //plane
     for (int jjt = 0; jjt < nt; jjt++){
+        #pragma omp simd
         for (int iip = 0; iip < np; iip++){
             v0 = _2_CR * grid.tau_loc[I2V(iip,jjt,1)] - grid.tau_loc[I2V(iip,jjt,2)];
             v1 = grid.tau_loc[I2V(iip,jjt,2)];
@@ -1895,6 +2204,7 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
     }
 
     for (int kkr = 0; kkr < nr; kkr++){
+        #pragma omp simd
         for (int iip = 0; iip < np; iip++){
             v0 = _2_CR * grid.tau_loc[I2V(iip,1,kkr)] - grid.tau_loc[I2V(iip,2,kkr)];
             v1 = grid.tau_loc[I2V(iip,2,kkr)];
@@ -1906,6 +2216,7 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
     }
 
     for (int kkr = 0; kkr < nr; kkr++){
+        #pragma omp simd
         for (int jjt = 0; jjt < nt; jjt++){
             v0 = _2_CR * grid.tau_loc[I2V(1,jjt,kkr)] - grid.tau_loc[I2V(2,jjt,kkr)];
             v1 = grid.tau_loc[I2V(2,jjt,kkr)];
@@ -1938,14 +2249,15 @@ void Iterator::calculate_boundary_nodes_tele(Grid& grid, int& iip, int& jjt, int
             grid.T_loc[I2V(iip,jjt,nr-1)] = std::max({v0,v1});
         }
 
-    // North
+    // South
     if (jjt == 0 && grid.j_first())
         if (grid.is_changed[I2V(iip,0,kkr)]){
             v0 = _2_CR * grid.T_loc[I2V(iip,1,kkr)] - grid.T_loc[I2V(iip,2,kkr)];
             v1 = grid.T_loc[I2V(iip,2,kkr)];
             grid.T_loc[I2V(iip,0,kkr)] = std::max({v0,v1});
         }
-    // South
+
+    // North
     if (jjt == nt-1 && grid.j_last())
         if (grid.is_changed[I2V(iip,nt-1,kkr)]){
             v0 = _2_CR * grid.T_loc[I2V(iip,nt-2,kkr)] - grid.T_loc[I2V(iip,nt-3,kkr)];

@@ -13,8 +13,13 @@
 #include "timer.h"
 
 #ifdef USE_CUDA
+#include "grid_wrapper.cuh"
 #include "iterator_wrapper.cuh"
 #endif
+
+//#ifdef USE_SIMD
+#include "simd_conf.h"
+//#endif
 
 class Iterator {
 public:
@@ -30,7 +35,7 @@ public:
     void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
 
 protected:
-    void assign_processes_for_levels(); // assign intra-node processes for each sweeping level
+    void assign_processes_for_levels(Grid&, InputParams&); // assign intra-node processes for each sweeping level
     void set_sweep_direction(int);      // set sweep direction
     // regional source
     virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
@@ -54,7 +59,6 @@ protected:
                                                  CUSTOMREAL& ,CUSTOMREAL&, \
                                                  int&, int&, int& );
 
-
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
@@ -71,7 +75,52 @@ protected:
     MPI_Win win_nr, win_nt, win_np; // windows for grid point information
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
-    std::vector< std::vector< std::vector<int> > > ijk_for_this_subproc; // ii,jj,kk for this process (level, kk)
+    std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, ijk)
+    int max_n_nodes_plane;          // maximum number of nodes on a plane
+
+
+#if defined USE_SIMD || defined USE_CUDA
+    // stencil dumps
+    // first orders
+    CUSTOMREAL *dump_c__;// center of C
+    // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
+#if USE_AVX512 || USE_AVX || defined USE_CUDA
+    std::vector<std::vector<int*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
+    std::vector<std::vector<int*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
+#elif USE_ARM_SVE
+    std::vector<std::vector<uint64_t*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
+    std::vector<std::vector<uint64_t*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
+#endif
+    std::vector<std::vector<CUSTOMREAL*>> vv_iip, vv_jjt, vv_kkr;
+
+    std::vector<std::vector<CUSTOMREAL*>> vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun;
+    std::vector<std::vector<CUSTOMREAL*>>vv_change;
+    std::vector<std::vector<bool*>>vv_change_bl;
+
+    template <typename T>
+    void preload_indices(std::vector<std::vector<T*>> &vi, std::vector<std::vector<T*>> &, std::vector<std::vector<T*>> &, int, int, int);
+    template <typename T>
+    void preload_indices_1d(std::vector<std::vector<T*>> &, int, int, int);
+    template <typename T>
+    std::vector<std::vector<CUSTOMREAL*>> preload_array(T* a);
+    std::vector<std::vector<bool*>> preload_array_bl(bool* a);
+    template <typename T>
+    void free_preloaded_array(std::vector<std::vector<T*>> &vvv){
+        for (int iswap = 0; iswap < 8; iswap++){
+            for (auto& vv : vvv.at(iswap)) free(vv);
+        }
+    }
+    // flag for deallocation
+    bool simd_allocated     = false;
+    bool simd_allocated_3rd = false;
+
+#endif // USE_SIMD || USE_CUDA
+
+#ifdef USE_CUDA
+    Grid_on_device *gpu_grid;
+#endif
+
+
     const int nswp = 8;          // number of sweeping directions
     int r_dirc, t_dirc, p_dirc;  // sweeping directions
     CUSTOMREAL sigr, sigt, sigp; //
@@ -84,11 +133,11 @@ protected:
     CUSTOMREAL ap1, bp1, ap2, bp2, ap, bp;
     CUSTOMREAL at1, bt1, at2, bt2, at, bt;
     CUSTOMREAL ar1, br1, ar2, br2, ar, br;
-    
+
     CUSTOMREAL bc_f2, eqn_a, eqn_b, eqn_c, eqn_Delta;
     CUSTOMREAL tmp_tau;
     CUSTOMREAL T_r, T_t, T_p, charact_r, charact_t, charact_p;
-    bool is_causality; 
+    bool is_causality;
     int count_cand;
     std::vector<CUSTOMREAL> canditate = std::vector<CUSTOMREAL>(60);
 

@@ -271,6 +271,8 @@ InputParams::InputParams(std::string& input_file){
                 is_output_source_field = config["output_setting"]["is_output_source_field"].as<int>();
             if (config["output_setting"]["is_output_model_dat"])
                 is_output_model_dat = config["output_setting"]["is_output_model_dat"].as<int>();
+            if (config["output_setting"]["is_verbose_output"])
+                is_verbose_output = config["output_setting"]["is_verbose_output"].as<int>();
         }
 
         if (config["debug"]) {
@@ -399,6 +401,7 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_bool_single(is_output_source_field, 0);
     broadcast_bool_single(is_output_model_dat, 0);
+    broadcast_bool_single(is_verbose_output, 0);
     broadcast_bool_single(is_inv_slowness, 0);
     broadcast_bool_single(is_inv_azi_ani, 0);
     broadcast_bool_single(is_inv_rad_ani, 0);

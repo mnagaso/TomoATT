@@ -12,15 +12,20 @@ endif()
 #
 # for production
 #
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -ftree-vectorize -fopenmp")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -mavx512dq -march=native -ftree-vectorize -fopenmp")
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -march=skylake-avx512 -ftree-vectorize -fopenmp")
+set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -g -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+
 #
 # for debugging
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -funroll-loops") # debug
-#
+#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -mavx -march=native")
+
 # for vtune profiling
 # with vectorization report
-#set(gcc_coverage_compile_flags "-wall -pedantic -lm -g -o3 -shared-libgcc  -ftree-vectorizer-verbose=2") # debug
+#set(gcc_coverage_compile_flags "-lm -g -O3") # debug
 #set(GCC_COVERAGE_COMPILE_FLAGS "-g") # debug
 #
 # for FUGAKU (use clang mode)
@@ -38,10 +43,11 @@ message(STATUS "MPI_VERSION: ${MPI_VERSION}")
 
 # find openmp
 find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
+if(OPENMP_FOUND)
+  message(STATUS "OpenMP found")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${OpenMP_SHARED_LINKER_FLAGS}")
   add_definitions(-DUSE_OMP)
 endif()
 
@@ -54,6 +60,9 @@ if(HDF5_FOUND)
   message(STATUS "HDF5_FOUND: ${HDF5_FOUND}")
   add_definitions(-DUSE_HDF5)
 endif()
+
+# use SIMD
+add_definitions(-DUSE_SIMD)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)
@@ -79,12 +88,17 @@ if(CUDA_FOUND) # TODO : add HIP here in the future
   set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
   #
   # for debugging
-  #set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -O0 -gencode arch=compute_61,code=sm_61")
+  #set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -G -O0 -gencode arch=compute_61,code=sm_61")
   set(CMAKE_CUDA_STANDARD "11")
   message(STATUS, "TomoATT will be compiled with cuda.")
 else()
   message(STATUS "TomoATT will be compiled without cuda, because cuda is not found or -DUSE_CUDA=True was not specified.")
 endif()
+
+# synchronize the adjuscent ghost layers for each direction oft the sweep
+# which is more frequent than the referred paper but necessary
+add_definitions(-DFREQ_SYNC_GHOST)
+
 
 
 # submodules
