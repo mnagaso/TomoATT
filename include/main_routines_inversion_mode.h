@@ -47,6 +47,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         //if (IP.get_is_output_source_field())
         //    io.change_xdmf_obj(i_src); // change xmf file for next src
 
+        // set group name to be used for output in h5
         io.change_group_name_for_source();
 
         // output initial field
@@ -143,10 +144,8 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             }
        }
 
-        // delete iterator object
 
     } // end loop sources
-
 
     // wait for all processes to finish
     synchronize_all_world();

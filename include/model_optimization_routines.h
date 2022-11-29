@@ -63,7 +63,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     // writeout temporary xdmf file
     if (IP.get_is_verbose_output())
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+        io.update_xdmf_file();
 
     synchronize_all_world();
 
@@ -110,7 +110,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
 
     // writeout temporary xdmf file
     if (IP.get_is_verbose_output())
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+        io.update_xdmf_file();
 
     synchronize_all_world();
 
@@ -221,7 +221,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
 
     // writeout temporary xdmf file
     if (IP.get_is_verbose_output())
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+        io.update_xdmf_file();
 
     synchronize_all_world();
 

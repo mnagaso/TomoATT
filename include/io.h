@@ -31,16 +31,18 @@ public:
     // initialize data output file
     void init_data_output_file();
     // finalize data/grid outpiut file (xdmf)
-    void finalize_data_output_file(int);
+    void finalize_data_output_file();
     // change the output file name and xdmf objects
     void change_xdmf_obj(int);
     // output for updating xdmf file
-    void update_xdmf_file(int);
+    void update_xdmf_file();
 
     // change group name for source
     void change_group_name_for_source();
     // change group name for model
     void change_group_name_for_model();
+    // prepare grid for each inversion iteration
+    void prepare_grid_inv_xdmf(int);
 
     //
     // write functions
@@ -54,7 +56,7 @@ public:
     // write grid data to output file
     void write_grid(Grid&);
     // general function for write out data in hdf5
-    void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*);
+    void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*, int, bool);
     // general function for write out data in hdf5
     void write_data_ascii(Grid&, std::string&, CUSTOMREAL*);
     // write true solution
@@ -68,7 +70,7 @@ public:
     // write tau
     void write_tau(Grid&, int);
     // write temporal tau fields
-    void write_tmp_tau(Grid&, int);
+    //void write_tmp_tau(Grid&, int);
     // write result timetable T
     void write_T(Grid&, int);
     // write residual (resudual = true_solution - result)
@@ -164,17 +166,18 @@ private:
     // helper for xdmf/xml file io
     tinyxml2::XMLDocument* doc;
     tinyxml2::XMLNode* xdmf, *domain, *grid;
+    tinyxml2::XMLNode* inversions, *inv_grid;
     void init_xdmf_file();
-    void write_xdmf_file(int);
-    void finalize_xdmf_file(int);
-    void insert_data_xdmf(std::string& group, std::string& dset);
+    void write_xdmf_file();
+    void finalize_xdmf_file();
+    void insert_data_xdmf(std::string&, std::string&, std::string&);
     // vectors for storing tinyxml2 objects
-    std::vector<tinyxml2::XMLDocument*> doc_vec;
-    std::vector<tinyxml2::XMLNode*>     xdmf_vec;
-    std::vector<tinyxml2::XMLNode*>     domain_vec;
-    std::vector<tinyxml2::XMLNode*>     grid_vec;
-    std::vector<std::string>            fname_vec;
-    std::vector<std::string>            xmfname_vec;
+//    std::vector<tinyxml2::XMLDocument*> doc_vec;
+//    std::vector<tinyxml2::XMLNode*>     xdmf_vec;
+//    std::vector<tinyxml2::XMLNode*>     domain_vec;
+//    std::vector<tinyxml2::XMLNode*>     grid_vec;
+//    std::vector<std::string>            fname_vec;
+//    std::vector<std::string>            xmfname_vec;
     void store_xdmf_obj();
 
 #ifdef USE_HDF5
@@ -224,6 +227,9 @@ private:
     std::string create_fname_ascii(std::string&);
     std::string create_fname_ascii_model(std::string&);
 
+    // flag for data type
+    const bool model_data = true;
+    const bool src_data = false;
 
 };
 
