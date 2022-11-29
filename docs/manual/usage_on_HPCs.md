@@ -18,7 +18,7 @@ mkdir build
 
 # compile TomoATT
 cd build
-CC=/usr/local/gcc-9.3.0/bin/gcc CXX=/usr/local/bin/gcc-9.3.0/bin/g++ cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
+CC=/usr/local/gcc-9.3.0/bin/gcc CXX=/usr/local/gcc-9.3.0/bin/g++ cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
 
 make -j16
 ```
