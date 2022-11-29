@@ -28,7 +28,7 @@ IO_utils::IO_utils(InputParams& IP) {
             if (n_sims > 1){
                 // for simultaneous run, data file is created for each simulation group
                 h5_output_fname = "./out_data_sim_group_" + std::to_string(id_sim) + ".h5";
-                xdmf_output_fname = "./out_data_sim_group_"+std::to_string(id_sim_src)+".xmf";
+                xdmf_output_fname = "./out_data_sim_group_"+std::to_string(id_sim)+".xmf";
             } else {
                 // otherwise, only one single data file is created for storing model params
                 h5_output_fname = "./out_data_sim.h5";
@@ -64,7 +64,7 @@ void IO_utils::change_group_name_for_model(){
 }
 
 void IO_utils::finalize_data_output_file(){
-    if (output_format==OUTPUT_FORMAT_HDF5 && id_sim==0){
+    if (output_format==OUTPUT_FORMAT_HDF5){
         // close file
         if (subdom_main && id_subdomain==0)
             finalize_xdmf_file();
@@ -1048,7 +1048,7 @@ void IO_utils::prepare_grid_inv_xdmf(int i_inv) {
 
 void IO_utils::insert_data_xdmf(std::string& group_name, std::string& dset_name_xdmf, std::string& dset_name_h5) {
 
-    if (id_subdomain==0){ // only the main of each subdomain write
+    if (id_subdomain==0 && subdom_main){ // only the main of each subdomain write
         std::string num_nodes = std::to_string(nnodes_glob);
 
         // Attribute node in grid

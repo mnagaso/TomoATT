@@ -44,9 +44,6 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
 
-        //if (IP.get_is_output_source_field())
-        //    io.change_xdmf_obj(i_src); // change xmf file for next src
-
         // set group name to be used for output in h5
         io.change_group_name_for_source();
 

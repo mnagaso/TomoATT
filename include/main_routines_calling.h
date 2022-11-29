@@ -71,6 +71,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         old_v_obj = v_obj;
 
+        // prepare inverstion iteration group in xdmf file
         io.prepare_grid_inv_xdmf(i_inv);
 
         ///////////////////////////////////////////////////////
