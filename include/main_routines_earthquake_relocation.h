@@ -34,6 +34,9 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     // reinitialize factors
     grid.reinitialize_abcf();
 
+    // prepare inverstion iteration group in xdmf file
+    io.prepare_grid_inv_xdmf(0);
+
     ///////////////////////
     // loop for each source
     ///////////////////////
@@ -43,8 +46,8 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
 
-        io.init_data_output_file(); // initialize data output file
-        //io.change_xdmf_obj(i_src); // change xmf file for next src
+        // set group name to be used for output in h5
+        io.change_group_name_for_source();
 
         // check if the source is teleseismic or not
         // because teleseismic source is not supported in this mode
