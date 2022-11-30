@@ -10,7 +10,7 @@ mkdir local_mpi_hdf5
 
 # install openmpi
 
-# download source 
+# download source
 wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.gz
 
 # Extract it
