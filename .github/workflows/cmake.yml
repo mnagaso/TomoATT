@@ -19,6 +19,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: devel
     - name: Configure env
 #       uses: conda-incubator/setup-miniconda@v2
 #           auto-update-conda: true
