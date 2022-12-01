@@ -4,32 +4,46 @@ cmake_minimum_required(VERSION 3.14)
 set(CMAKE_PROJECT_NAME "TOMOATT")
 project(${CMAKE_PROJECT_NAME} C CXX)
 
+# check compiler type
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  #set flag
+  set(CMAKE_CXX_COMPILER "clang++")
+  set(CXX_ADDITIONAL_FLAGS "-stdlib=libstdc++ -Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
+
+  MESSAGE("Compiler type: Clang")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  MESSAGE("Compiler type: GNU")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+  #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -mavx -march=native")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  MESSAGE("Compiler type: Intel")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+  # check fujitsu compiler
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu")
+  # not supported
+  MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
+  # fujitsu clang
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
+  MESSAGE("Compiler type: FujitsuClang")
+  set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17")
+else()
+  MESSAGE(FATAL_ERROR "Compiler type: Unknown")
+endif()
+
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
-#
-# for production
-#
-set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+#""
 
 #
 # for debugging
 #
 #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -g -funroll-loops") # debug
-#set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -mavx -march=native")
 
-# for vtune profiling
-# with vectorization report
-#set(gcc_coverage_compile_flags "-lm -g -O3") # debug
-#set(GCC_COVERAGE_COMPILE_FLAGS "-g") # debug
-#
-# for FUGAKU (use clang mode)
-#
-#set(GCC_COVERAGE_COMPILE_FLAGS "-Nclang -Ofast -std=c++17")
-#
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_ADDITIONAL_FLAGS}")
 
 # find installed MPI
 message(STATUS "Running CMAKE FindMPI.cmake...")
@@ -82,7 +96,7 @@ if(CUDA_FOUND) # TODO : add HIP here in the future
   # cuda flag
   #
   # for production
-  set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
+  set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization -gencode arch=compute_61,code=sm_61")
   #
   # for debugging
   #set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -G -O0 -gencode arch=compute_61,code=sm_61")
