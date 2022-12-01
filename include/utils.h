@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <iomanip>
+#include <sstream>
 
 #include "config.h"
 

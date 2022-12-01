@@ -8,10 +8,8 @@ project(${CMAKE_PROJECT_NAME} C CXX)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   #set flag
   set(CMAKE_CXX_COMPILER "clang++")
-  set(CXX_ADDITIONAL_FLAGS "-stdlib=libc++ -rtlib=compiler-rt -unwindlib=libgcc -Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp=libomp")
-  # set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=lstdc++ -v")
-  #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=lstdc++ -lc++abi")
+  set(CXX_ADDITIONAL_FLAGS "-stdlib=libstdc++ -Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
 
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -98,7 +96,7 @@ if(CUDA_FOUND) # TODO : add HIP here in the future
   # cuda flag
   #
   # for production
-  set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization  -gencode arch=compute_61,code=sm_61")
+  set(CMAKE_CUDA_FLAGS "-fPIC -O3 -use_fast_math -extra-device-vectorization -gencode arch=compute_61,code=sm_61")
   #
   # for debugging
   #set(CMAKE_CUDA_FLAGS "-fPIC -lineinfo -g -G -O0 -gencode arch=compute_61,code=sm_61")

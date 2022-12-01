@@ -8,36 +8,13 @@ cd ./external_libs
 # make a local install pass
 mkdir local_mpi_hdf5_clang
 
-# install openmpi
-
-# download source
-#wget https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.3.tar.gz
-
-# Extract it
-#tar -xvf openmpi-4.1.3.tar.gz
-cd openmpi-4.1.3
-
-# configure
-
-# cuda aware mpi
-#CC=clang CXX=clang++ ./configure --prefix=$(pwd)/../local_mpi_hdf5_clang  --with-cuda
-# without cuda extension
-#./configure --prefix=$(pwd)/../local_mpi_hdf5
-
-
-
-# make
-make -j16 && make install
-
-#
-cd ../
-
 # download hdf5 source
-#wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz
+wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz
 
 #Extract the downloaded directory
-#tar -xvf hdf5-1.13.2.tar.gz
+tar -xvf hdf5-1.13.2.tar.gz
 cd hdf5-1.13.2
+./autogen.sh
 
 # Configure the code. (the pathes to mpicc, mpicxx should vary on the environment)
 OMPI_CXX=clang++  OMPI_MPICC=clang \
@@ -49,3 +26,5 @@ CFLAGS="-stdlib=libc++ -rtlib=compiler-rt -unwindlib=libgcc" CXXFLAGS="-stdlib=l
 OMPI_CXX=clang++  OMPI_MPICC=clang make -j16 && make install
 
 # now openmpi and hdf5 executables are in external_libs/local_mpi_hdf5/bin
+# cmake command would be something like this:
+#OMPI_CXX=clang++ OMPI_MPICC=clang CC=clang CXX=clang++ cmake .. -DUSE_CUDA=True -DCMAKE_PREFIX_PATH=./../external_libs/local_mpi_hdf5_clang

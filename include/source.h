@@ -38,10 +38,6 @@ private:
     CUSTOMREAL src_lon;
     CUSTOMREAL src_r;
 
-    // discretize source position ids (GLOBAL
-    int i_src;
-    int j_src;
-    int k_src;
     // discretize source position ids (LOCAL)
     int i_src_loc;
     int j_src_loc;

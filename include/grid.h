@@ -231,8 +231,6 @@ private:
 
     // number of points on each boundary surface
     int n_grid_bound_i, n_grid_bound_j, n_grid_bound_k;
-    int n_grid_bound_i_inv, n_grid_bound_j_inv, n_grid_bound_k_inv;
-
 
     // mpi parameters
     int offset_nnodes=0, offset_nelms=0;
