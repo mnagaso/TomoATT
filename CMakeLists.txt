@@ -12,11 +12,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
   #set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -pedantic -lm -O0 -g -mavx -march=native")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -fopenmp")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
   # check fujitsu compiler
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu")
   # not supported
@@ -33,8 +33,6 @@ endif()
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
-
-#""
 
 #
 # for debugging
@@ -108,15 +106,11 @@ endif()
 # which is more frequent than the referred paper but necessary
 add_definitions(-DFREQ_SYNC_GHOST)
 
-
-
 # submodules
 # yaml parser
 add_subdirectory(external_libs)
-#include_directories(${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
 
 # add include directory
-#include_directories(${PROJECT_SOURCE_DIR})
 include_directories(include cuda)
 
 # list of source files
@@ -153,10 +147,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC MPI::MPI_CXX)
 # link yaml-app:
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC yaml-cpp)
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
-
-# link openmp
-#target_link_libraries(Grid PUBLIC MPI::MPI_CXX OpenMP::OpenMP_CXX)
-#target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC MPI::MPI_CXX OpenMP::OpenMP_CXX)
 
 # link HDF5
 if(HDF5_FOUND)
