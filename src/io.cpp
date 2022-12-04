@@ -379,6 +379,7 @@ void IO_utils::finalize_xdmf_file(){
 }
 
 #ifdef USE_HDF5
+// function to write data to HDF5 file without merging subdomains
 void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& str_dset, CUSTOMREAL* array, int i_inv, bool model_data) {
     std::string str_dset_h5   = str_dset + "_inv_" + int2string_zero_fill(i_inv);
     std::string str_dset_xdmf;
@@ -426,6 +427,58 @@ void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& st
     insert_data_xdmf(str_group, str_dset_xdmf, str_dset_h5);
 
 }
+
+// function to write data to HDF5 file with merging subdomains
+void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::string& str_group, std::string& str_dset, CUSTOMREAL* array, bool inverse_field, bool no_group) {
+
+    // write true solution to h5 file
+    if (myrank == 0 && if_verbose)
+        std::cout << "--- write data " << str_dset << " to h5 file " << h5_output_fname << " ---" << std::endl;
+
+    const int ndims = 3;
+    // allocate temporary array
+    CUSTOMREAL* array_tmp = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+
+    // get array data except ghost nodes
+    grid.get_array_for_3d_output(array, array_tmp, inverse_field);
+
+    // open h5 file
+    h5_open_file_by_group_main(str_filename);
+
+    if (!no_group){
+        h5_create_group_by_group_main(str_group);
+        h5_open_group_by_group_main(str_group);
+    }
+
+    // dataset size of whole domain
+    int dims_ngrid[ndims] = {ngrid_i, ngrid_j, ngrid_k};
+    // create datasets
+    h5_create_dataset(str_dset, ndims, dims_ngrid, custom_real_flag, no_group);
+
+    // close and reopen file from all processes
+    if(!no_group) h5_close_group_by_group_main();
+    h5_close_file_by_group_main();
+
+    h5_open_file_collective(str_filename);
+    if(!no_group) h5_open_group_collective(str_group); // Open group "Grid"
+
+    // write datasets
+    int offsets[3];
+    grid.get_offsets_3d(offsets);
+    h5_write_array(str_dset, ndims, dims_ngrid, array, offsets[0], offsets[1], offsets[2], no_group);
+
+    // close group "Grid"
+    if(!no_group) h5_close_group_collective();
+    // close file
+    h5_close_file_collective();
+
+    // add xdmf file in
+    //insert_data_xdmf(str_group, str_dset_xdmf, str_dset);
+
+    delete [] array_tmp;
+
+}
+
 #endif // USE_HDF5
 
 
@@ -1023,6 +1076,40 @@ void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
 }
 
 
+void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
+
+    // this function is called only from simulation group == 0
+    if (id_sim == 0 && subdom_main) {
+
+        if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+            // create file
+            std::string fname = "final_model.h5";
+            h5_create_file_by_group_main(fname);
+
+            std::string gname_dummy = "dummy";
+            std::string dset_name = "vel";
+            bool inverse_field = true;
+            write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.fun_loc, inverse_field);
+            dset_name = "eta";
+            inverse_field = false;
+            write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.eta_loc, inverse_field);
+            dset_name = "xi";
+            inverse_field = false;
+            write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.xi_loc, inverse_field);
+
+#else
+            std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+            exit(1);
+#endif
+        } else if (output_format==OUTPUT_FORMAT_ASCII){
+        }
+
+
+    } // end id_sim == 0 && subdom_main
+}
+
+
 void IO_utils::prepare_grid_inv_xdmf(int i_inv) {
     if ((output_format==OUTPUT_FORMAT_HDF5) && id_subdomain==0 && subdom_main){
         std::string str_inv = "inv_" + int2string_zero_fill(i_inv);
@@ -1370,7 +1457,7 @@ void IO_utils::h5_close_group_collective(){
 }
 
 
-void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, int dtype){
+void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, int dtype, bool no_group){
     /*
     create dataset in a group by all ranks
 
@@ -1378,7 +1465,11 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
     ndims: number of dimensions
     dims: number of elements in each dimension
     dtype: data type 0: bool, 1: int, 2: float, 3: double
+    no_group: if true, create dataset in the file, not in a group
     */
+
+    if (no_group)
+        group_id = file_id; // create dataset in the file
 
     // gather data size from all rank in this simulation group
     // subdomain dependent size need to be in the first element of dims
@@ -1521,8 +1612,12 @@ void IO_utils::h5_close_dataset(){
 }
 
 template <typename T>
-void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T* data, int offset_in) {
+void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T* data, int offset_in, int offset_in2, int offset_in3, bool no_group) {
     // write a data array to a dataset by all ranks
+
+    // use group_id as file_id if no_group is true
+    if (no_group)
+        group_id = file_id;
 
     hsize_t* offset = new hsize_t[rank];
     hsize_t* count  = new hsize_t[rank];
@@ -1532,8 +1627,17 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     for (int i_rank = 0; i_rank < rank; i_rank++) {
         if (i_rank == 0)
             offset[i_rank] = offset_in;
-        else
-            offset[i_rank] = 0;
+        else {
+            if(rank < 3)
+                offset[i_rank] = 0;
+            else if(rank == 3) {
+                if (i_rank == 1)
+                    offset[i_rank] = offset_in2;
+                else if (i_rank == 2)
+                    offset[i_rank] = offset_in3;
+            }
+        }
+
         count[i_rank]  = dims_in[i_rank];
         stride[i_rank] = 1;
         block[i_rank]  = 1;

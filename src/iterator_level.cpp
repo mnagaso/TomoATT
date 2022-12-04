@@ -457,12 +457,12 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         __mTd v_DR_inv_half = _mmT_set1_pd(1.0/dr*0.5);
 
         // store stencil coefs
-        __mTd v_pp1;
-        __mTd v_pp2;
-        __mTd v_pt1;
-        __mTd v_pt2;
-        __mTd v_pr1;
-        __mTd v_pr2;
+        __mTd v_pp1 = _mmT_set1_pd(0.0);
+        __mTd v_pp2 = _mmT_set1_pd(0.0);
+        __mTd v_pt1 = _mmT_set1_pd(0.0);
+        __mTd v_pt2 = _mmT_set1_pd(0.0);
+        __mTd v_pr1 = _mmT_set1_pd(0.0);
+        __mTd v_pr2 = _mmT_set1_pd(0.0);
 
         // measure time for only loop
         //auto start = std::chrono::high_resolution_clock::now();
@@ -533,7 +533,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
                                           v_DP_inv_half, v_DT_inv_half, v_DR_inv_half, \
                                           loc_I, loc_J, loc_K);
 
-                //// calculate updated value on c
+                // calculate updated value on c
                 vect_stencil_1st_3rd_apre_simd(v_c__, v_fac_a[_i_vec], v_fac_b[_i_vec], v_fac_c[_i_vec], v_fac_f[_i_vec], \
                                                v_T0v[_i_vec], v_T0p[_i_vec]  , v_T0t[_i_vec]  , v_T0r[_i_vec]  , v_fun[_i_vec]  , v_change[_i_vec], \
                                                v_pp1, v_pp2, v_pt1, v_pt2, v_pr1, v_pr2, \

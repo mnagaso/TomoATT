@@ -75,6 +75,11 @@ public:
     int get_nelms_total_excl_ghost(){return loc_nelms;};
     int get_offset_nnodes()         {return offset_nnodes;};
     int get_offset_elms()           {return offset_nelms;};
+    void get_offsets_3d(int* arr) {
+        arr[0] = offset_i;
+        arr[1] = offset_j;
+        arr[2] = offset_k;
+    };
 
     int get_ngrid_total_vis()  {return loc_nnodes_vis;};
     int get_nelms_total_vis()  {return loc_nelms_vis;};
@@ -405,6 +410,7 @@ private:
 
     CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr, bool);  // get array for visualization
 public:
+    void get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_field);  // get array for 3d output
     void        set_array_from_vis(CUSTOMREAL *arr); // set vis array to local array
 
     // finalize the Time table
