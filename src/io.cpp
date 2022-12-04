@@ -462,10 +462,14 @@ void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::s
     h5_open_file_collective(str_filename);
     if(!no_group) h5_open_group_collective(str_group); // Open group "Grid"
 
-    // write datasets
+    // offset info for this subdomain
     int offsets[3];
     grid.get_offsets_3d(offsets);
-    h5_write_array(str_dset, ndims, dims_ngrid, array, offsets[0], offsets[1], offsets[2], no_group);
+    // dimensions of this subdomain
+    int dims_ngrid_loc[ndims] = {loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost};
+
+    // write datasets
+    h5_write_array(str_dset, ndims, dims_ngrid_loc, array, offsets[0], offsets[1], offsets[2], no_group);
 
     // close group "Grid"
     if(!no_group) h5_close_group_collective();
@@ -1474,13 +1478,20 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
     // gather data size from all rank in this simulation group
     // subdomain dependent size need to be in the first element of dims
     int *dims_all = new int[ndims];
-    for (int i = 0; i < ndims; i++) {
-        if (i==0)
-            allreduce_i_single(dims[i], dims_all[i]);
-        else
-            dims_all[i] = dims[i];
-    }
 
+    // for 1d array
+    if (ndims != 3) {
+        for (int i = 0; i < ndims; i++) {
+            if (i==0)
+                allreduce_i_single(dims[i], dims_all[i]);
+            else
+                dims_all[i] = dims[i];
+        }
+    } else {
+        for (int i = 0; i < ndims; i++) {
+            dims_all[i] = dims[i];
+        }
+    }
     // dataset is created only by the main rank
     // thus the file need to be opened by the main rank
     if (myrank == 0) {
