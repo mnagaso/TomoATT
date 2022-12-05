@@ -352,9 +352,9 @@ void Grid::setup_inversion_grids(InputParams& IP) {
 
     // +1 grid is added here for placing the inversion grid homogeneousily at the end of the domain
     // TODO : check if new inv grid type accept this +1
-    n_inv_I_loc = ngrid_i_inv+1;
-    n_inv_J_loc = ngrid_j_inv+1;
-    n_inv_K_loc = ngrid_k_inv+1;
+    n_inv_I_loc = ngrid_i_inv;
+    n_inv_J_loc = ngrid_j_inv;
+    n_inv_K_loc = ngrid_k_inv;
 
 }
 
@@ -1065,7 +1065,7 @@ void Grid::initialize_kernels(){
 
 
 // get a part of pointers from the requested array for visualization
-CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
+CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr, bool inverse_value) {
 
     //send_recev_boundary_data(arr);
     // add a routine for communication the boundary value
@@ -1082,7 +1082,10 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
                     int j_loc_tmp = j_lat - j_start_vis;
                     int k_loc_tmp = k_r   - k_start_vis;
 
-                    vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    if (!inverse_value)
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    else
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr[I2V(i_lon,j_lat,k_r)];
                  }
             }
         }
@@ -1114,6 +1117,25 @@ void Grid::set_array_from_vis(CUSTOMREAL* arr) {
     // set values to ghost layer
     send_recev_boundary_data(arr);
 
+}
+
+
+// get a part of pointers from the requested array for visualization
+void Grid::get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_value) {
+
+    for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+        for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+            for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
+                    int i_loc_tmp = i_lon - i_start_loc;
+                    int j_loc_tmp = j_lat - j_start_loc;
+                    int k_loc_tmp = k_r   - k_start_loc;
+                    if (!inverse_value)
+                        arr_out[I2V_3D(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr_in[I2V(i_lon,j_lat,k_r)];
+                    else
+                        arr_out[I2V_3D(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr_in[I2V(i_lon,j_lat,k_r)]; // used for convert from slowness to velocity
+            }
+        }
+    }
 }
 
 

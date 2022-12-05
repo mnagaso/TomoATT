@@ -255,6 +255,10 @@ InputParams::InputParams(std::string& input_file){
                 is_output_source_field = config["output_setting"]["is_output_source_field"].as<int>();
             if (config["output_setting"]["is_output_model_dat"])
                 is_output_model_dat = config["output_setting"]["is_output_model_dat"].as<int>();
+            if (config["output_setting"]["is_verbose_output"])
+                is_verbose_output = config["output_setting"]["is_verbose_output"].as<int>();
+            if (config["output_setting"]["is_output_final_model"])
+                is_output_final_model = config["output_setting"]["is_output_final_model"].as<int>();
         }
 
         if (config["debug"]) {
@@ -382,6 +386,8 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_bool_single(is_output_source_field, 0);
     broadcast_bool_single(is_output_model_dat, 0);
+    broadcast_bool_single(is_verbose_output, 0);
+    broadcast_bool_single(is_output_final_model, 0);
     broadcast_cr(kernel_taper,2,0);
 
     // read src rec file by all processes #TODO: check if only subdomain's main requires this

@@ -18,21 +18,29 @@
 #include "mpi_funcs.h"
 #include "grid.h"
 #include "config.h"
+#include "input_params.h"
 
 class IO_utils {
 
 public:
-    IO_utils();
+    IO_utils(InputParams&);
     ~IO_utils();
 
     // initialize data output file
     void init_data_output_file();
     // finalize data/grid outpiut file (xdmf)
-    void finalize_data_output_file(int);
+    void finalize_data_output_file();
     // change the output file name and xdmf objects
     void change_xdmf_obj(int);
     // output for updating xdmf file
-    void update_xdmf_file(int);
+    void update_xdmf_file();
+
+    // change group name for source
+    void change_group_name_for_source();
+    // change group name for model
+    void change_group_name_for_model();
+    // prepare grid for each inversion iteration
+    void prepare_grid_inv_xdmf(int);
 
     //
     // write functions
@@ -46,13 +54,17 @@ public:
     // write grid data to output file
     void write_grid(Grid&);
     // general function for write out data in hdf5
-    void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*);
-    // general function for write out data in hdf5
+    void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*, int, bool);
+    // general function for write out data in hdf5 with merging subdomains
+    void write_data_merged_h5(Grid&, std::string&, std::string&, std::string&, CUSTOMREAL*, bool, bool no_group=true);
+    // general function for write out data in ascii
     void write_data_ascii(Grid&, std::string&, CUSTOMREAL*);
+    // general function for write out data in ascii with merging subdomains
+    void write_data_merged_ascii(Grid&, std::string&);
     // write true solution
     void write_true_solution(Grid&);
     // write velocity model
-    void write_velocity_model_h5(Grid&);
+    void write_vel(Grid&, int);
     // write T0v
     void write_T0v(Grid&, int);
     // write u
@@ -60,7 +72,7 @@ public:
     // write tau
     void write_tau(Grid&, int);
     // write temporal tau fields
-    void write_tmp_tau(Grid&, int);
+    //void write_tmp_tau(Grid&, int);
     // write result timetable T
     void write_T(Grid&, int);
     // write residual (resudual = true_solution - result)
@@ -85,6 +97,9 @@ public:
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
     void write_concerning_parameters(Grid&, int);
 
+    // merged model
+    void write_final_model(Grid&, InputParams&);
+    bool node_of_this_subdomain(int*, const int&, const int&, const int&);
 
     //
     // read functions
@@ -136,17 +151,18 @@ private:
     // helper for xdmf/xml file io
     tinyxml2::XMLDocument* doc;
     tinyxml2::XMLNode* xdmf, *domain, *grid;
+    tinyxml2::XMLNode* inversions, *inv_grid;
     void init_xdmf_file();
-    void write_xdmf_file(int);
-    void finalize_xdmf_file(int);
-    void insert_data_xdmf(std::string& group, std::string& dset);
+    void write_xdmf_file();
+    void finalize_xdmf_file();
+    void insert_data_xdmf(std::string&, std::string&, std::string&);
     // vectors for storing tinyxml2 objects
-    std::vector<tinyxml2::XMLDocument*> doc_vec;
-    std::vector<tinyxml2::XMLNode*>     xdmf_vec;
-    std::vector<tinyxml2::XMLNode*>     domain_vec;
-    std::vector<tinyxml2::XMLNode*>     grid_vec;
-    std::vector<std::string>            fname_vec;
-    std::vector<std::string>            xmfname_vec;
+    //std::vector<tinyxml2::XMLDocument*> doc_vec;
+    //std::vector<tinyxml2::XMLNode*>     xdmf_vec;
+    //std::vector<tinyxml2::XMLNode*>     domain_vec;
+    //std::vector<tinyxml2::XMLNode*>     grid_vec;
+    //std::vector<std::string>            fname_vec;
+    //std::vector<std::string>            xmfname_vec;
     void store_xdmf_obj();
 
 #ifdef USE_HDF5
@@ -175,13 +191,13 @@ private:
     void h5_close_group_by_group_main();
     void h5_close_group_collective();
 
-    void h5_create_dataset(std::string&, int, int*, int);
+    void h5_create_dataset(std::string&, int, int*, int, bool no_group = false);
     void h5_open_dataset(std::string&);
     void h5_open_dataset_no_group(std::string&);
     void h5_close_dataset();
 
     template <typename T>
-    void h5_write_array(std::string&, int, int*, T*, int);
+    void h5_write_array(std::string&, int, int*, T*, int offset_one, int offset_two=0, int offset_three=0, bool no_group=false);
 
     template <typename T>
     void h5_read_array(std::string&, int, int*, T*, int*, bool);
@@ -196,6 +212,9 @@ private:
     std::string create_fname_ascii(std::string&);
     std::string create_fname_ascii_model(std::string&);
 
+    // flag for data type
+    const bool model_data = true;
+    const bool src_data = false;
 
 };
 

@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     IP.prepare_src_list();
 
     // initialize file IO object
-    IO_utils io; // create IO object for main and non-main process as well
+    IO_utils io(IP); // create IO object for main and non-main process as well
 
     // initialize compute grids
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
@@ -86,6 +86,11 @@ int main(int argc, char *argv[])
     } else {
         std::cerr << "Error: invalid run mode is specified." << std::endl;
         exit(1);
+    }
+
+    // output final state of the model
+    if (IP.get_is_output_final_model()) {
+        io.write_final_model(grid, IP);
     }
 
     // finalize cuda

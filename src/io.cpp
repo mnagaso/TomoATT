@@ -1,6 +1,6 @@
 #include "io.h"
 
-IO_utils::IO_utils() {
+IO_utils::IO_utils(InputParams& IP) {
     if (subdom_main) {
          stdout_by_main("--- IO object initialization ---");
 
@@ -19,25 +19,58 @@ IO_utils::IO_utils() {
         }
 
         // initialize an output file for grid data
-        if (output_format==OUTPUT_FORMAT_HDF5 && id_sim==0){
+        if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-            h5_create_file_by_group_main(h5_output_grid_fname); // file for grid data
+            // grid data is output by only simulation group 0
+            if(id_sim==0)
+                h5_create_file_by_group_main(h5_output_grid_fname); // file for grid+whole simulation data
+            // initialize simulation data file.
+            if (n_sims > 1){
+                // for simultaneous run, data file is created for each simulation group
+                h5_output_fname = "./out_data_sim_group_" + std::to_string(id_sim) + ".h5";
+                xdmf_output_fname = "./out_data_sim_group_"+std::to_string(id_sim)+".xmf";
+            } else {
+                // otherwise, only one single data file is created for storing model params
+                h5_output_fname = "./out_data_sim.h5";
+                xdmf_output_fname = "./out_data_sim.xmf";
+            }
+            // create data file
+            h5_create_file_by_group_main(h5_output_fname);
+#else
+            std::cout << "Error: TOMOATT was not compiled with HDF5" << std::endl;
+            std::cout << "Exiting..." << std::endl;
+            exit(1);
 #endif
         }
     }
 }
+
 
 IO_utils::~IO_utils() {
     stdout_by_main("--- IO object finalization ---");
 }
 
 
-void IO_utils::finalize_data_output_file(int n_src){
-    if (output_format==OUTPUT_FORMAT_HDF5 && id_sim==0){
+void IO_utils::change_group_name_for_source() {
+#ifdef USE_HDF5
+    // change group name for source
+    h5_group_name_data = "src_" + std::to_string(id_sim_src);
+#endif
+}
+
+void IO_utils::change_group_name_for_model(){
+#ifdef USE_HDF5
+    // change group name for model
+    h5_group_name_data = "model";
+#endif
+}
+
+
+void IO_utils::finalize_data_output_file(){
+    if (output_format==OUTPUT_FORMAT_HDF5){
         // close file
         if (subdom_main && id_subdomain==0)
-            for (int i_src=0; i_src<n_src; i_src++)
-                finalize_xdmf_file(i_src);
+            finalize_xdmf_file();
     }
 }
 
@@ -51,54 +84,15 @@ void IO_utils::init_data_output_file() {
         h5_output_fname   = "./out_data_sim_"+std::to_string(id_sim_src)+".h5";
         xdmf_output_fname = "./out_data_sim_"+std::to_string(id_sim_src)+".xmf";
 
-        if (subdom_main ) {
+        if (subdom_main) {
             // write xdmf file
             if (id_subdomain == 0)
                 write_xdmf_file_grid();
 
-            store_xdmf_obj();
             // create output file
             h5_create_file_by_group_main(h5_output_fname); // file for field data
         }
 #endif
-    }
-}
-
-
-void IO_utils::store_xdmf_obj() {
-    if (output_format==OUTPUT_FORMAT_HDF5) {
-        if(if_verbose) stdout_by_main("--- store xdmf object ---");
-
-        // store xdmf object
-        if (subdom_main && id_subdomain == 0) {
-            doc_vec.push_back(doc);
-            xdmf_vec.push_back(xdmf);
-            domain_vec.push_back(domain);
-            grid_vec.push_back(grid);
-        }
-        // store file names
-        fname_vec.push_back(h5_output_fname);
-        xmfname_vec.push_back(xdmf_output_fname);
-    }
-}
-
-
-void IO_utils::change_xdmf_obj(int i_src){
-
-    if (output_format==OUTPUT_FORMAT_HDF5) {
-        if(if_verbose) stdout_by_main("--- change xdmf object ---");
-
-        // change xdmf object
-        if (subdom_main && id_subdomain == 0) {
-            doc    = doc_vec[i_src];
-            xdmf   = xdmf_vec[i_src];
-            domain = domain_vec[i_src];
-            grid   = grid_vec[i_src];
-        }
-        if (subdom_main) {
-            h5_output_fname = fname_vec[i_src];
-            xdmf_output_fname = xmfname_vec[i_src];
-        }
     }
 }
 
@@ -113,6 +107,10 @@ void IO_utils::write_grid(Grid& grid) {
 
         allreduce_i_single(dims_ngrid[0], nnodes_glob);
         allreduce_i_single(dims_conn[0], nelms_glob);
+
+        // create xdmf file for visualization of simulation data
+        if (id_subdomain == 0)
+            write_xdmf_file_grid();
 
         if (id_sim == 0) {
             // open file
@@ -157,8 +155,7 @@ void IO_utils::write_grid(Grid& grid) {
             // close file
             h5_close_file_collective();
         }
-        // write xdmf file
-        //write_xdmf_file_grid();
+
 #else
         std::cout << "Error: HDF5 is not enabled.\n";
         exit(1);
@@ -317,16 +314,21 @@ void IO_utils::write_xdmf_file_grid() {
     // Grid model
     grid = domain->InsertEndChild( doc->NewElement( "Grid" ) );
     grid->ToElement()->SetAttribute("Name", "Data");
-    grid->ToElement()->SetAttribute("GridType", "Uniform");
+    grid->ToElement()->SetAttribute("GridType", "Tree");
+
+    // procid Grid
+    tinyxml2::XMLNode* grid_proc = grid->InsertEndChild( doc->NewElement( "Grid" ) );
+    grid_proc->ToElement()->SetAttribute("Name", "procid");
+    grid_proc->ToElement()->SetAttribute("GridType", "Uniform");
 
     // Topology node in grid
-    tinyxml2::XMLNode* topology_grid = grid->InsertEndChild( doc->NewElement( "Topology" ) );
+    tinyxml2::XMLNode* topology_grid = grid_proc->InsertEndChild( doc->NewElement( "Topology" ) );
     topology_grid->ToElement()->SetAttribute("Reference", "/Xdmf/Domain/Topology");
     // Geometry node in grid
-    tinyxml2::XMLNode* geometry_grid = grid->InsertEndChild( doc->NewElement( "Geometry" ) );
+    tinyxml2::XMLNode* geometry_grid = grid_proc->InsertEndChild( doc->NewElement( "Geometry" ) );
     geometry_grid->ToElement()->SetAttribute("Reference", "/Xdmf/Domain/Geometry");
     // Attribute node in grid
-    tinyxml2::XMLNode* attribute_grid = grid->InsertEndChild( doc->NewElement( "Attribute" ) );
+    tinyxml2::XMLNode* attribute_grid = grid_proc->InsertEndChild( doc->NewElement( "Attribute" ) );
     attribute_grid->ToElement()->SetAttribute("Name", "procid");
     attribute_grid->ToElement()->SetAttribute("AttributeType", "Scalar");
     attribute_grid->ToElement()->SetAttribute("Center", "Node");
@@ -340,44 +342,54 @@ void IO_utils::write_xdmf_file_grid() {
     // set dataset path in dataItem
     dataItem_procid->InsertEndChild( doc->NewText( h5_whole_name_proc.c_str() ) );
 
+    // prepare inversion iteration collection
+    inversions = grid->InsertEndChild( doc->NewElement( "Grid" ) );
+    inversions->ToElement()->SetAttribute("Name", "Inversions");
+    inversions->ToElement()->SetAttribute("GridType", "Collection");
+    inversions->ToElement()->SetAttribute("CollectionType", "Temporal");
+
     // close file
     //finalize_xdmf_file();
 }
 
 
-void IO_utils::update_xdmf_file(int n_src) {
+void IO_utils::update_xdmf_file() {
     if (output_format==OUTPUT_FORMAT_HDF5){
         if (subdom_main && id_subdomain==0)
-            for (int i_src=0; i_src<n_src; i_src++)
-                write_xdmf_file(i_src);
+            write_xdmf_file();
     }
 }
 
 
-void IO_utils::write_xdmf_file(int i_src)
+void IO_utils::write_xdmf_file()
 {
     if (output_format==OUTPUT_FORMAT_HDF5){
         if (subdom_main && id_subdomain==0) {
-            xdmf_output_fname = xmfname_vec[i_src];
             std::string fout = output_dir+"/"+xdmf_output_fname;
-            doc_vec[i_src]->SaveFile(fout.c_str(), false); // true: compact format
+            doc->SaveFile(fout.c_str(), false); // true: compact format
         }
     }
 }
 
 
-void IO_utils::finalize_xdmf_file(int i_src){
+void IO_utils::finalize_xdmf_file(){
     if (output_format==OUTPUT_FORMAT_HDF5){
-        if (i_src == 0)
-            stdout_by_main("--- finalize xdmf file ---");
+        stdout_by_main("--- finalize xdmf file ---");
 
-        write_xdmf_file(i_src);
-        delete doc_vec[i_src];
+        write_xdmf_file();
     }
 }
 
 #ifdef USE_HDF5
-void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& str_dset, CUSTOMREAL* array) {
+// function to write data to HDF5 file without merging subdomains
+void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& str_dset, CUSTOMREAL* array, int i_inv, bool model_data) {
+    std::string str_dset_h5   = str_dset + "_inv_" + int2string_zero_fill(i_inv);
+    std::string str_dset_xdmf;
+    if (!model_data)
+        str_dset_xdmf = str_dset + "_src_" + int2string_zero_fill(id_sim_src); // use different name for xdmf
+    else
+        str_dset_xdmf = str_dset; // use different name for xdmf
+
     // write true solution to h5 file
     if (myrank == 0 && if_verbose)
         std::cout << "--- write data " << str_dset << " to h5 file " << h5_output_fname << " ---" << std::endl;
@@ -396,7 +408,7 @@ void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& st
     allreduce_i_single(dims_ngrid[0], nnodes_glob);
     //allreduce_i_single(dims_conn[0], nelms_glob);
 
-    h5_create_dataset(str_dset, 1, dims_ngrid, custom_real_flag);
+    h5_create_dataset(str_dset_h5, 1, dims_ngrid, custom_real_flag);
 
     // close and reopen file from all processes
     h5_close_group_by_group_main();
@@ -406,7 +418,7 @@ void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& st
     h5_open_group_collective(str_group); // Open group "Grid"
 
     // write datasets
-    h5_write_array(str_dset, 1, dims_ngrid, array, grid.get_offset_nnodes_vis());
+    h5_write_array(str_dset_h5, 1, dims_ngrid, array, grid.get_offset_nnodes_vis());
 
     // close group "Grid"
     h5_close_group_collective();
@@ -414,9 +426,67 @@ void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& st
     h5_close_file_collective();
 
     // add xdmf file in
-    insert_data_xdmf(str_group, str_dset);
+    insert_data_xdmf(str_group, str_dset_xdmf, str_dset_h5);
 
 }
+
+
+// function to write data to HDF5 file with merging subdomains
+void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::string& str_group, std::string& str_dset, CUSTOMREAL* array, bool inverse_field, bool no_group) {
+
+    // write true solution to h5 file
+    if (myrank == 0 && if_verbose)
+        std::cout << "--- write data " << str_dset << " to h5 file " << h5_output_fname << " ---" << std::endl;
+
+    const int ndims = 3;
+    // allocate temporary array
+    CUSTOMREAL* array_tmp = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+
+    // get array data except ghost nodes
+    grid.get_array_for_3d_output(array, array_tmp, inverse_field);
+
+    // open h5 file
+    h5_open_file_by_group_main(str_filename);
+
+    if (!no_group){
+        h5_create_group_by_group_main(str_group);
+        h5_open_group_by_group_main(str_group);
+    }
+
+    // dataset size of whole domain
+    int dims_ngrid[ndims] = {ngrid_k, ngrid_j, ngrid_i};
+    // create datasets
+    h5_create_dataset(str_dset, ndims, dims_ngrid, custom_real_flag, no_group);
+
+    // close and reopen file from all processes
+    if(!no_group) h5_close_group_by_group_main();
+    h5_close_file_by_group_main();
+
+    h5_open_file_collective(str_filename);
+    if(!no_group) h5_open_group_collective(str_group); // Open group "Grid"
+
+    // offset info for this subdomain
+    int offsets[3];
+    grid.get_offsets_3d(offsets);
+    // dimensions of this subdomain
+    int dims_ngrid_loc[ndims] = {loc_K_excl_ghost, loc_J_excl_ghost, loc_I_excl_ghost};
+
+    // write datasets
+    h5_write_array(str_dset, ndims, dims_ngrid_loc, array_tmp, offsets[0], offsets[1], offsets[2], no_group);
+
+    // close group "Grid"
+    if(!no_group) h5_close_group_collective();
+    // close file
+    h5_close_file_collective();
+
+    // add xdmf file in
+    //insert_data_xdmf(str_group, str_dset_xdmf, str_dset);
+
+    delete [] array_tmp;
+
+}
+
+
 #endif // USE_HDF5
 
 
@@ -425,7 +495,7 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
     if (myrank == 0 && if_verbose)
         std::cout << "--- write data to ascii file " << fname << " ---" << std::endl;
 
-    // collective write
+    // independent write
     for (int i_rank = 0; i_rank < n_subdomains; i_rank++) {
         if (i_rank == myrank){
             std::ofstream fout;
@@ -461,6 +531,62 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
 }
 
 
+bool IO_utils::node_of_this_subdomain(int* offsets, const int& i, const int& j, const int& k){
+    // check if node is in this subdomain
+    if (i >= offsets[0] && i < offsets[0] + loc_I_excl_ghost &&
+        j >= offsets[1] && j < offsets[1] + loc_J_excl_ghost &&
+        k >= offsets[2] && k < offsets[2] + loc_K_excl_ghost)
+        return true;
+    else
+        return false;
+}
+
+void IO_utils::write_data_merged_ascii(Grid& grid, std::string& fname){
+    // write data in ascii file
+    if (myrank == 0 && if_verbose)
+        std::cout << "--- write data to ascii file " << fname << " ---" << std::endl;
+
+    // allocate temporary array
+    CUSTOMREAL* array_vel  = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+
+    // offset info for this subdomain
+    int offsets[3];
+    grid.get_offsets_3d(offsets);
+
+    // get array data except ghost nodes
+    grid.get_array_for_3d_output(grid.fun_loc, array_vel, true);
+
+    // create output file
+    std::ofstream fout;
+    if (myrank == 0){
+        fout.open(fname.c_str());
+        fout.close();
+    }
+
+    // This way of writing is not parallelized and very slow
+    // thus user is strongly encouraged to use h5 output
+    for (int k = 0; k < ngrid_k; k++){
+        for (int j = 0; j < ngrid_j; j++){
+            for (int i = 0; i < ngrid_i; i++){
+                if (node_of_this_subdomain(offsets, i,j,k)){
+                    // open file
+                    fout.open(fname.c_str(), std::ios_base::app); // append
+                    int idx = I2V_3D(i-offsets[0],j-offsets[1],k-offsets[2]);
+                    // write eta xi zeta vel
+                    fout << 0.0 << "   " << 0.0 << "   " << 0.0 << "   " << array_vel[idx] << "\n";
+                    fout.close();
+                }
+                // synchronize
+                synchronize_all_inter();
+            }
+        }
+    }
+
+    delete [] array_vel;
+
+}
+
+
 std::string IO_utils::create_fname_ascii(std::string& dset_name){
     std::string fname = output_dir + "/" + dset_name \
     + "_src_" + int2string_zero_fill(id_sim_src) + ".dat";
@@ -478,7 +604,7 @@ void IO_utils::write_true_solution(Grid& grid) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "true_solution";
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_true_solution());
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_true_solution(), 0, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -491,13 +617,23 @@ void IO_utils::write_true_solution(Grid& grid) {
 }
 
 
-// UNUSED ROUTINES BUT KEEPED FOR FUTURE USE
-void IO_utils::write_velocity_model_h5(Grid& grid) {
-    if (id_sim == 0) {
-        std::string h5_dset_name = "velocity_model";
-        //write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_true_velo());
+void IO_utils::write_vel(Grid& grid, int i_inv) {
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "vel";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_vel(),i_inv, model_data);
+#else
+
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if (output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "vel_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii_model(dset_name);
+        write_data_ascii(grid, fname, grid.get_vel());
     }
 }
+
 
 std::vector<CUSTOMREAL> IO_utils::get_grid_data(CUSTOMREAL* data) {
 
@@ -580,8 +716,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
 void IO_utils::write_T0v(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "T0v_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T0v());
+        std::string h5_dset_name = "T0v";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T0v(), i_inv, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -598,7 +734,7 @@ void IO_utils::write_u(Grid& grid) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "u";
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_u());
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_u(), 0, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -614,8 +750,8 @@ void IO_utils::write_u(Grid& grid) {
 void IO_utils::write_tau(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "tau_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_tau());
+        std::string h5_dset_name = "tau";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_tau(), i_inv, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -628,28 +764,28 @@ void IO_utils::write_tau(Grid& grid, int i_inv) {
 }
 
 
-void IO_utils::write_tmp_tau(Grid& grid, int i_iter) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-        std::string h5_dset_name = "tau_iter_" + std::to_string(i_iter);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_tau());
-#else
-        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-        exit(1);
-#endif
-    } else if (output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "tau_tmp_iter_" + int2string_zero_fill(i_iter);
-        std::string fname = create_fname_ascii(dset_name);
-        write_data_ascii(grid, fname, grid.get_tau());
-    }
-}
+//void IO_utils::write_tmp_tau(Grid& grid, int i_iter) {
+//    if (output_format==OUTPUT_FORMAT_HDF5){
+//#ifdef USE_HDF5
+//        std::string h5_dset_name = "tau_iter_" + std::to_string(i_iter);
+//        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_tau());
+//#else
+//        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+//        exit(1);
+//#endif
+//    } else if (output_format==OUTPUT_FORMAT_ASCII){
+//        std::string dset_name = "tau_tmp_iter_" + int2string_zero_fill(i_iter);
+//        std::string fname = create_fname_ascii(dset_name);
+//        write_data_ascii(grid, fname, grid.get_tau());
+//    }
+//}
 
 
 void IO_utils::write_T(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "T_res_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T());
+        std::string h5_dset_name = "T_res";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T(), i_inv, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -665,8 +801,8 @@ void IO_utils::write_T(Grid& grid, int i_inv) {
 void IO_utils::write_residual(Grid& grid) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "residual_" + std::to_string(id_sim_src);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_residual());
+        std::string h5_dset_name = "residual";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_residual(), 0, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -683,8 +819,8 @@ void IO_utils::write_residual(Grid& grid) {
 void IO_utils::write_adjoint_field(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "adjoint_field_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Tadj());
+        std::string h5_dset_name = "adjoint_field";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Tadj(), i_inv, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -700,8 +836,8 @@ void IO_utils::write_adjoint_field(Grid& grid, int i_inv) {
 void IO_utils::write_fun(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "fun_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_fun());
+        std::string h5_dset_name = "fun_inv";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_fun(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -717,8 +853,8 @@ void IO_utils::write_fun(Grid& grid, int i_inv) {
 void IO_utils::write_a(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "fac_a_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_a());
+        std::string h5_dset_name = "fac_a";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_a(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -734,8 +870,8 @@ void IO_utils::write_a(Grid& grid, int i_inv) {
 void IO_utils::write_b(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "fac_b_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_b());
+        std::string h5_dset_name = "fac_b";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_b(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -752,8 +888,8 @@ void IO_utils::write_b(Grid& grid, int i_inv) {
 void IO_utils::write_c(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "fac_c_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_c());
+        std::string h5_dset_name = "fac_c";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_c(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -769,8 +905,8 @@ void IO_utils::write_c(Grid& grid, int i_inv) {
 void IO_utils::write_f(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "fac_f_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_f());
+        std::string h5_dset_name = "fac_f";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_f(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -786,8 +922,8 @@ void IO_utils::write_f(Grid& grid, int i_inv) {
 void IO_utils::write_Ks(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "Ks_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Ks());
+        std::string h5_dset_name = "Ks";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Ks(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -803,8 +939,8 @@ void IO_utils::write_Ks(Grid& grid, int i_inv) {
 void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "Ks_update_inv_" + int2string_zero_fill(i_inv);
-        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Ks_update());
+        std::string h5_dset_name = "Ks_update";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Ks_update(), i_inv, model_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
@@ -817,14 +953,68 @@ void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
 }
 
 
-void IO_utils::insert_data_xdmf(std::string& group_name, std::string& dset_name) {
+void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
 
-    if (id_subdomain==0){ // only the main of each subdomain write
+    // this function is called only from simulation group == 0
+    if (id_sim == 0 && subdom_main) {
+
+        if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+            // create file
+            std::string fname = "final_model.h5";
+            h5_create_file_by_group_main(fname);
+
+            std::string gname_dummy = "dummy";
+            std::string dset_name = "vel";
+            bool inverse_field = true;
+            write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.fun_loc, inverse_field);
+#else
+            std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+            exit(1);
+#endif
+        } else if (output_format==OUTPUT_FORMAT_ASCII){
+            std::string fname = "final_model";
+            fname = create_fname_ascii_model(fname);
+            write_data_merged_ascii(grid, fname);
+        }
+
+
+    } // end id_sim == 0 && subdom_main
+}
+
+
+void IO_utils::prepare_grid_inv_xdmf(int i_inv) {
+    if ((output_format==OUTPUT_FORMAT_HDF5) && id_subdomain==0 && subdom_main){
+        std::string str_inv = "inv_" + int2string_zero_fill(i_inv);
+
+        inv_grid = inversions->InsertEndChild(doc->NewElement("Grid"));
+        inv_grid->ToElement()->SetAttribute("Name", str_inv.c_str());
+        inv_grid->ToElement()->SetAttribute("GridType", "Uniform");
+
+        // Topology node in grid
+        tinyxml2::XMLNode* topology_grid = inv_grid->InsertEndChild( doc->NewElement( "Topology" ) );
+        topology_grid->ToElement()->SetAttribute("Reference", "/Xdmf/Domain/Topology");
+        // Geometry node in grid
+        tinyxml2::XMLNode* geometry_grid = inv_grid->InsertEndChild( doc->NewElement( "Geometry" ) );
+        geometry_grid->ToElement()->SetAttribute("Reference", "/Xdmf/Domain/Geometry");
+        // insert time
+        tinyxml2::XMLNode* time = inv_grid->InsertEndChild( doc->NewElement( "Time" ) );
+        time->ToElement()->SetAttribute("Value", std::to_string(i_inv).c_str());
+
+    }
+}
+
+
+
+
+void IO_utils::insert_data_xdmf(std::string& group_name, std::string& dset_name_xdmf, std::string& dset_name_h5) {
+
+    if (id_subdomain==0 && subdom_main){ // only the main of each subdomain write
         std::string num_nodes = std::to_string(nnodes_glob);
 
         // Attribute node in grid
-        tinyxml2::XMLNode* attribute = grid->InsertEndChild( doc->NewElement( "Attribute" ) );
-        attribute->ToElement()->SetAttribute("Name", dset_name.c_str());
+        tinyxml2::XMLNode* attribute = inv_grid->InsertEndChild( doc->NewElement( "Attribute" ) );
+        attribute->ToElement()->SetAttribute("Name", dset_name_xdmf.c_str());
         attribute->ToElement()->SetAttribute("AttributeType", "Scalar");
         attribute->ToElement()->SetAttribute("Center", "Node");
         // DataItem node in attribute
@@ -835,7 +1025,7 @@ void IO_utils::insert_data_xdmf(std::string& group_name, std::string& dset_name)
         dataItem->ToElement()->SetAttribute("Precision", type_size.c_str());
         dataItem->ToElement()->SetAttribute("Dimensions", num_nodes.c_str());
         // set dataset path in dataItem
-        std::string h5_dset_path = h5_output_fname + ":/" + group_name + "/" + dset_name;
+        std::string h5_dset_path = h5_output_fname + ":/" + group_name + "/" + dset_name_h5;
         dataItem->InsertEndChild( doc->NewText( h5_dset_path.c_str() ) );
     }
 }
@@ -953,7 +1143,8 @@ void IO_utils::read_T(Grid& grid) {
         if (output_format == OUTPUT_FORMAT_HDF5) {
             // read traveltime field from HDF5 file
 #ifdef USE_HDF5
-            std::string h5_dset_name = "T_res_src_" + std::to_string(id_sim_src) + "_inv_" + int2string_zero_fill(0);
+            h5_group_name_data = "src_" + std::to_string(id_sim_src);
+            std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
             read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else
             std::cerr << "Error: HDF5 is not enabled." << std::endl;
@@ -1141,7 +1332,7 @@ void IO_utils::h5_close_group_collective(){
 }
 
 
-void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, int dtype){
+void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, int dtype, bool no_group){
     /*
     create dataset in a group by all ranks
 
@@ -1149,16 +1340,28 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
     ndims: number of dimensions
     dims: number of elements in each dimension
     dtype: data type 0: bool, 1: int, 2: float, 3: double
+    no_group: if true, create dataset in the file, not in a group
     */
+
+    if (no_group)
+        group_id = file_id; // create dataset in the file
 
     // gather data size from all rank in this simulation group
     // subdomain dependent size need to be in the first element of dims
     int *dims_all = new int[ndims];
-    for (int i = 0; i < ndims; i++) {
-        if (i==0)
-            allreduce_i_single(dims[i], dims_all[i]);
-        else
+
+    // for 1d array
+    if (ndims != 3) {
+        for (int i = 0; i < ndims; i++) {
+            if (i==0)
+                allreduce_i_single(dims[i], dims_all[i]);
+            else
+                dims_all[i] = dims[i];
+        }
+    } else {
+        for (int i = 0; i < ndims; i++) {
             dims_all[i] = dims[i];
+        }
     }
 
     // dataset is created only by the main rank
@@ -1232,22 +1435,48 @@ void IO_utils::h5_close_dataset(){
 }
 
 template <typename T>
-void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T* data, int offset_in) {
+void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T* data, int offset_in, int offset_in2, int offset_in3, bool no_group) {
     // write a data array to a dataset by all ranks
+
+    // use group_id as file_id if no_group is true
+    if (no_group)
+        group_id = file_id;
 
     hsize_t* offset = new hsize_t[rank];
     hsize_t* count  = new hsize_t[rank];
     hsize_t* stride = new hsize_t[rank];
     hsize_t* block  = new hsize_t[rank];
 
-    for (int i_rank = 0; i_rank < rank; i_rank++) {
-        if (i_rank == 0)
-            offset[i_rank] = offset_in;
-        else
-            offset[i_rank] = 0;
-        count[i_rank]  = dims_in[i_rank];
-        stride[i_rank] = 1;
-        block[i_rank]  = 1;
+    if (rank != 3){
+        for (int i_rank = 0; i_rank < rank; i_rank++) {
+            if (i_rank == 0)
+                offset[i_rank] = offset_in;
+            else if (i_rank == 1)
+                offset[i_rank] = offset_in2;
+            else if (i_rank == 2)
+                offset[i_rank] = offset_in3;
+            count[i_rank]  = dims_in[i_rank];
+            block[i_rank]  = 1;
+            stride[i_rank] = 1;
+        }
+    } else {
+        for (int i_rank = 0; i_rank < rank; i_rank++) {
+            if (i_rank == 0){
+                offset[i_rank] = offset_in;
+                count[i_rank]  = dims_in[0];
+            }
+            else if (i_rank == 1){
+                offset[i_rank] = offset_in2;
+                count[i_rank]  = dims_in[1];
+            }
+            else if (i_rank == 2){
+                offset[i_rank] = offset_in3;
+                count[i_rank]  = dims_in[2];
+            }
+
+            block[i_rank]  = 1;
+            stride[i_rank] = 1;
+        }
     }
 
     // check data type of array

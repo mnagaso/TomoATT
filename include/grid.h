@@ -71,6 +71,11 @@ public:
     int get_nelms_total_excl_ghost(){return loc_nelms;};
     int get_offset_nnodes()         {return offset_nnodes;};
     int get_offset_elms()           {return offset_nelms;};
+    void get_offsets_3d(int* arr) {
+        arr[0] = offset_k;
+        arr[1] = offset_j;
+        arr[2] = offset_i;
+    };
 
     int get_ngrid_total_vis()  {return loc_nnodes_vis;};
     int get_nelms_total_vis()  {return loc_nelms_vis;};
@@ -91,22 +96,22 @@ public:
     CUSTOMREAL* get_nodes_coords_r(){return r_loc_3d;}; // r
     int*        get_proc_dump()     {return my_proc_dump;}; // array storing the process ids
 
-    CUSTOMREAL* get_true_solution(){return get_array_for_vis(u_loc);}; // true solution
-    CUSTOMREAL* get_fun()          {return get_array_for_vis(fun_loc);}; //
-    CUSTOMREAL* get_a()            {return get_array_for_vis(fac_a_loc);}; //
-    CUSTOMREAL* get_b()            {return get_array_for_vis(fac_b_loc);}; //
-    CUSTOMREAL* get_c()            {return get_array_for_vis(fac_c_loc);}; //
-    CUSTOMREAL* get_f()            {return get_array_for_vis(fac_f_loc);}; //
-    //CUSTOMREAL* get_true_velo()    {return get_array_for_vis(velo_loc);}; // true velocity field
-    CUSTOMREAL* get_T0v()          {return get_array_for_vis(T0v_loc);}; // initial T0
-    CUSTOMREAL* get_u()            {return get_array_for_vis(u_loc);}; // current solution
-    CUSTOMREAL* get_tau()          {return get_array_for_vis(tau_loc);}; // current tau
-    CUSTOMREAL* get_T()            {return get_array_for_vis(T_loc);};
+    CUSTOMREAL* get_true_solution(){return get_array_for_vis(u_loc,     false);}; // true solution
+    CUSTOMREAL* get_fun()          {return get_array_for_vis(fun_loc,   false);}; //
+    CUSTOMREAL* get_a()            {return get_array_for_vis(fac_a_loc, false);}; //
+    CUSTOMREAL* get_b()            {return get_array_for_vis(fac_b_loc, false);}; //
+    CUSTOMREAL* get_c()            {return get_array_for_vis(fac_c_loc, false);}; //
+    CUSTOMREAL* get_f()            {return get_array_for_vis(fac_f_loc, false);}; //
+    CUSTOMREAL* get_T0v()          {return get_array_for_vis(T0v_loc,   false);}; // initial T0
+    CUSTOMREAL* get_vel()          {return get_array_for_vis(fun_loc,   true);}; // true velocity field
+    CUSTOMREAL* get_u()            {return get_array_for_vis(u_loc,     false);}; // current solution
+    CUSTOMREAL* get_tau()          {return get_array_for_vis(tau_loc,   false);}; // current tau
+    CUSTOMREAL* get_T()            {return get_array_for_vis(T_loc,     false);};
     CUSTOMREAL* get_residual()     { calc_residual();
-                                     return get_array_for_vis(u_loc);}; // calculate residual (T_loc over written!!)
-    CUSTOMREAL* get_Tadj()         {return get_array_for_vis(Tadj_loc);}; // adjoint solution
-    CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc);}; // Ks
-    CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc);}; // Ks_update
+                                     return get_array_for_vis(u_loc,    false);}; // calculate residual (T_loc over written!!)
+    CUSTOMREAL* get_Tadj()         {return get_array_for_vis(Tadj_loc,  false);}; // adjoint solution
+    CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc,    false);}; // Ks
+    CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc, false);}; // Ks_update
 
     // get physical parameters
     CUSTOMREAL get_r_min()       {return r_min;};
@@ -380,8 +385,9 @@ private:
     void shm_memory_allocation();            // allocate memory for shared memory
     void shm_memory_deallocation();          // deallocate memory from shared memory
 
-    CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr);  // get array for visualization
+    CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr, bool);  // get array for visualization
 public:
+    void get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_field);  // get array for 3d output
     void        set_array_from_vis(CUSTOMREAL *arr); // set vis array to local array
 
     // finalize the Time table

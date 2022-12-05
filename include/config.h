@@ -39,6 +39,7 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
 //#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
 #define I2V_VIS(A,B,C)         ((C)* loc_I_vis   * loc_J_vis +    (B)* loc_I_vis    + A)
+#define I2V_3D(A,B,C)          ((C)* loc_I_excl_ghost*loc_J_excl_ghost + (B)* loc_I_excl_ghost + A)
 #define I2V_ELM_CONN(A,B,C)    ((C)*(loc_I_vis-1)*(loc_J_vis-1) + (B)*(loc_I_vis-1) + A)
 #define I2VLBFGS(A,B,C,D)      ((A)*loc_I*loc_J*loc_K + (D)*loc_I*loc_J + (C)*loc_I + B)
 
@@ -173,10 +174,6 @@ inline bool if_verbose = false;
 
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
-
-// heavy output mode (if true, traveltime field for all sources will be output)
-// this flag effects only for forward and inversion mode but not earthquake relocation mode.
-inline bool heavily_output = false;
 
 // earthquake relocation
 inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation

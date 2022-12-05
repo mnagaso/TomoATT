@@ -44,11 +44,8 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
 
-        if (i_inv == 0 && !line_search_mode && IP.get_is_output_source_field())
-            io.init_data_output_file(); // initialize data output file
-
-        if (IP.get_is_output_source_field())
-            io.change_xdmf_obj(i_src); // change xmf file for next src
+        // set group name to be used for output in h5
+        io.change_group_name_for_source();
 
         // output initial field
         if(first_src && IP.get_is_output_source_field()) {
@@ -102,8 +99,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
 
             // output T (result timetable)
-            if (heavily_output || (i_inv == 0 && i_src == 0) )
-                io.write_T(grid, i_inv);
+            io.write_T(grid, i_inv);
 
         }
 
@@ -125,14 +121,10 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
 
-            if (!line_search_mode && IP.get_is_output_source_field()) {
+            if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
                 // adjoint field will be output only at the end of subiteration
                 // output the result of adjoint simulation
-                if (subdom_main) {
-                    // adjoint field
-                    if (heavily_output || (i_inv == 0 && i_src == 0) )
-                        io.write_adjoint_field(grid,i_inv);
-                }
+                io.write_adjoint_field(grid,i_inv);
             }
        }
 

@@ -133,6 +133,8 @@ public:
 
     bool get_is_output_source_field() {return is_output_source_field;};
     bool get_is_output_model_dat()    {return is_output_model_dat;};
+    bool get_is_verbose_output()      {return is_verbose_output;};
+    bool get_is_output_final_model()  {return is_output_final_model;};
 
     CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
 private:
@@ -227,8 +229,10 @@ public:
 
 private:
     // output setting
-    bool is_output_source_field = true; // output out_data_sim_X.h or not.
+    bool is_output_source_field = false; // output out_data_sim_X.h or not.
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
+    bool is_verbose_output      = false; // output verbose information or not.
+    bool is_output_final_model  = true;  // output merged final model or not.
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
 };

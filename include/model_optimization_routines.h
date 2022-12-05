@@ -48,7 +48,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     if (subdom_main && IP.get_is_output_source_field()) {
         // store kernel only in the first src datafile
-        io.change_xdmf_obj(0); // change xmf file for next src
+        io.change_group_name_for_model();
 
         // output updated velocity models
         io.write_Ks(grid, i_inv);
@@ -58,12 +58,10 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     }
 
     // writeout temporary xdmf file
-    if (IP.get_is_output_source_field())
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_verbose_output())
+        io.update_xdmf_file();
 
     synchronize_all_world();
-
-
 
 }
 
@@ -89,9 +87,9 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     set_new_model(grid, step_size);
 
 
-    if (subdom_main && IP.get_is_output_source_field()) {
+    if (subdom_main && IP.get_is_verbose_output()) {
         // store kernel only in the first src datafile
-        io.change_xdmf_obj(0); // change xmf file for next src
+        io.change_group_name_for_model();
 
         // output updated velocity models
         io.write_Ks(grid, i_inv);
@@ -101,8 +99,8 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     }
 
     // writeout temporary xdmf file
-    if (IP.get_is_output_source_field())
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_verbose_output())
+        io.update_xdmf_file();
 
     synchronize_all_world();
 
@@ -196,9 +194,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     // backup the initial model
     if(subdom_main) grid.back_up_fun_bcf();
 
-    if (subdom_main) {
+    if (subdom_main && IP.get_is_verbose_output()) {
         // store kernel only in the first src datafile
-        io.change_xdmf_obj(0); // change xmf file for next src
+        io.change_group_name_for_model();
 
         // output updated velocity models
         io.write_Ks(grid, i_inv);
@@ -208,8 +206,8 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     }
 
     // writeout temporary xdmf file
-    if (IP.get_is_output_source_field())
-        io.update_xdmf_file(IP.src_ids_this_sim.size());
+    if (IP.get_is_verbose_output())
+        io.update_xdmf_file();
 
     synchronize_all_world();
 
