@@ -469,7 +469,7 @@ void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::s
     int dims_ngrid_loc[ndims] = {loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost};
 
     // write datasets
-    h5_write_array(str_dset, ndims, dims_ngrid_loc, array, offsets[0], offsets[1], offsets[2], no_group);
+    h5_write_array(str_dset, ndims, dims_ngrid_loc, array_tmp, offsets[0], offsets[1], offsets[2], no_group);
 
     // close group "Grid"
     if(!no_group) h5_close_group_collective();
@@ -1635,23 +1635,36 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     hsize_t* stride = new hsize_t[rank];
     hsize_t* block  = new hsize_t[rank];
 
-    for (int i_rank = 0; i_rank < rank; i_rank++) {
-        if (i_rank == 0)
-            offset[i_rank] = offset_in;
-        else {
-            if(rank < 3)
-                offset[i_rank] = 0;
-            else if(rank == 3) {
-                if (i_rank == 1)
-                    offset[i_rank] = offset_in2;
-                else if (i_rank == 2)
-                    offset[i_rank] = offset_in3;
-            }
+    if (rank != 3){
+        for (int i_rank = 0; i_rank < rank; i_rank++) {
+            if (i_rank == 0)
+                offset[i_rank] = offset_in;
+            else if (i_rank == 1)
+                offset[i_rank] = offset_in2;
+            else if (i_rank == 2)
+                offset[i_rank] = offset_in3;
+            count[i_rank]  = dims_in[i_rank];
+            block[i_rank]  = 1;
+            stride[i_rank] = 1;
         }
+    } else {
+        for (int i_rank = 0; i_rank < rank; i_rank++) {
+            if (i_rank == 0){
+                offset[i_rank] = offset_in3;
+                count[i_rank]  = dims_in[2];
+            }
+            else if (i_rank == 1){
+                offset[i_rank] = offset_in2;
+                count[i_rank]  = dims_in[1];
+            }
+            else if (i_rank == 2){
+                offset[i_rank] = offset_in;
+                count[i_rank]  = dims_in[0];
+            }
 
-        count[i_rank]  = dims_in[i_rank];
-        stride[i_rank] = 1;
-        block[i_rank]  = 1;
+            block[i_rank]  = 1;
+            stride[i_rank] = 1;
+        }
     }
 
     // check data type of array

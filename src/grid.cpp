@@ -1185,9 +1185,9 @@ void Grid::set_array_from_vis(CUSTOMREAL* arr) {
 // get a part of pointers from the requested array for visualization
 void Grid::get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_value) {
 
-    for (int k_r = k_start_loc; k_r < k_end_loc; k_r++) {
-        for (int j_lat = j_start_loc; j_lat < j_end_loc; j_lat++) {
-            for (int i_lon = i_start_loc; i_lon < i_end_loc; i_lon++) {
+    for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+        for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+            for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     int i_loc_tmp = i_lon - i_start_loc;
                     int j_loc_tmp = j_lat - j_start_loc;
                     int k_loc_tmp = k_r   - k_start_loc;
