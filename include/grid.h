@@ -76,9 +76,9 @@ public:
     int get_offset_nnodes()         {return offset_nnodes;};
     int get_offset_elms()           {return offset_nelms;};
     void get_offsets_3d(int* arr) {
-        arr[0] = offset_i;
+        arr[0] = offset_k;
         arr[1] = offset_j;
-        arr[2] = offset_k;
+        arr[2] = offset_i;
     };
 
     int get_ngrid_total_vis()  {return loc_nnodes_vis;};

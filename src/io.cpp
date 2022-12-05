@@ -451,7 +451,7 @@ void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::s
     }
 
     // dataset size of whole domain
-    int dims_ngrid[ndims] = {ngrid_i, ngrid_j, ngrid_k};
+    int dims_ngrid[ndims] = {ngrid_k, ngrid_j, ngrid_i};
     // create datasets
     h5_create_dataset(str_dset, ndims, dims_ngrid, custom_real_flag, no_group);
 
@@ -466,7 +466,7 @@ void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::s
     int offsets[3];
     grid.get_offsets_3d(offsets);
     // dimensions of this subdomain
-    int dims_ngrid_loc[ndims] = {loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost};
+    int dims_ngrid_loc[ndims] = {loc_K_excl_ghost, loc_J_excl_ghost, loc_I_excl_ghost};
 
     // write datasets
     h5_write_array(str_dset, ndims, dims_ngrid_loc, array_tmp, offsets[0], offsets[1], offsets[2], no_group);
@@ -1718,16 +1718,16 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     } else {
         for (int i_rank = 0; i_rank < rank; i_rank++) {
             if (i_rank == 0){
-                offset[i_rank] = offset_in3;
-                count[i_rank]  = dims_in[2];
+                offset[i_rank] = offset_in;
+                count[i_rank]  = dims_in[0];
             }
             else if (i_rank == 1){
                 offset[i_rank] = offset_in2;
                 count[i_rank]  = dims_in[1];
             }
             else if (i_rank == 2){
-                offset[i_rank] = offset_in;
-                count[i_rank]  = dims_in[0];
+                offset[i_rank] = offset_in3;
+                count[i_rank]  = dims_in[2];
             }
 
             block[i_rank]  = 1;
