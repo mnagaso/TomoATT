@@ -51,14 +51,16 @@ public:
     // xdmf write out for grid data
     void write_xdmf_file_grid();
 
-
-
     // write grid data to output file
     void write_grid(Grid&);
     // general function for write out data in hdf5
     void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*, int, bool);
-    // general function for write out data in hdf5
+    // general function for write out data in hdf5 with merging subdomains
+    void write_data_merged_h5(Grid&, std::string&, std::string&, std::string&, CUSTOMREAL*, bool, bool no_group=true);
+    // general function for write out data in ascii
     void write_data_ascii(Grid&, std::string&, CUSTOMREAL*);
+    // general function for write out data in ascii with merging subdomains
+    void write_data_merged_ascii(Grid&, std::string&);
     // write true solution
     void write_true_solution(Grid&);
     // write velocity model
@@ -107,14 +109,14 @@ public:
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
     void write_concerning_parameters(Grid&, int);
 
-    // functions for writing out the final models
-    void write_final_models(Grid&);
-    void write_data_3d(Grid&);
-
     // 2d traveltime field for teleseismic source
     void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
     void h5_create_and_write_dataset_2d(std::string&, int, int*, int, CUSTOMREAL*);
     void read_2d_travel_time_field(std::string&, CUSTOMREAL*, int, int);
+
+    // merged model
+    void write_final_model(Grid&, InputParams&);
+    bool node_of_this_subdomain(int*, const int&, const int&, const int&);
 
     //
     // read functions
@@ -206,13 +208,13 @@ private:
     void h5_close_group_by_group_main();
     void h5_close_group_collective();
 
-    void h5_create_dataset(std::string&, int, int*, int);
+    void h5_create_dataset(std::string&, int, int*, int, bool no_group = false);
     void h5_open_dataset(std::string&);
     void h5_open_dataset_no_group(std::string&);
     void h5_close_dataset();
 
     template <typename T>
-    void h5_write_array(std::string&, int, int*, T*, int);
+    void h5_write_array(std::string&, int, int*, T*, int offset_one, int offset_two=0, int offset_three=0, bool no_group=false);
 
     template <typename T>
     void h5_read_array(std::string&, int, int*, T*, int*, bool);

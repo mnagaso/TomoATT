@@ -94,6 +94,12 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    // output final state of the model
+    if (IP.get_is_output_final_model()) {
+        io.write_final_model(grid, IP);
+    }
+
+
     // finalize cuda
 #ifdef USE_CUDA
     if (use_gpu) finalize_cuda();

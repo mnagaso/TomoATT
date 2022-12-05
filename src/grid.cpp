@@ -1182,6 +1182,26 @@ void Grid::set_array_from_vis(CUSTOMREAL* arr) {
 }
 
 
+// get a part of pointers from the requested array for visualization
+void Grid::get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_value) {
+
+    for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+        for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+            for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
+                    int i_loc_tmp = i_lon - i_start_loc;
+                    int j_loc_tmp = j_lat - j_start_loc;
+                    int k_loc_tmp = k_r   - k_start_loc;
+                    if (!inverse_value)
+                        arr_out[I2V_3D(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr_in[I2V(i_lon,j_lat,k_r)];
+                    else
+                        arr_out[I2V_3D(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr_in[I2V(i_lon,j_lat,k_r)]; // used for convert from slowness to velocity
+            }
+        }
+    }
+}
+
+
+
 void Grid::reinitialize_abcf(){
     if (subdom_main) {
         for (int k_r = 0; k_r < loc_K; k_r++) {
