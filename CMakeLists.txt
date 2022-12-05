@@ -61,6 +61,12 @@ find_package(HDF5)
 if(HDF5_FOUND)
   message(STATUS "HDF5_FOUND: ${HDF5_FOUND}")
   add_definitions(-DUSE_HDF5)
+  # check if HD5 PARALLEL is available
+  if(HDF5_IS_PARALLEL)
+    message(STATUS "HDF5 parallel is available.")
+  else()
+    message(FATAL "TomoATT requires HDF5 compiled with parallel IO option.")
+  endif()
 endif()
 
 # use SIMD
