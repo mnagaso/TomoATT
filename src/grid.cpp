@@ -350,11 +350,9 @@ void Grid::setup_inversion_grids(InputParams& IP) {
         exit(1);
     }
 
-    // +1 grid is added here for placing the inversion grid homogeneousily at the end of the domain
-    // TODO : check if new inv grid type accept this +1
-    n_inv_I_loc = ngrid_i_inv+1;
-    n_inv_J_loc = ngrid_j_inv+1;
-    n_inv_K_loc = ngrid_k_inv+1;
+    n_inv_I_loc = ngrid_i_inv;
+    n_inv_J_loc = ngrid_j_inv;
+    n_inv_K_loc = ngrid_k_inv;
 
 }
 
