@@ -24,7 +24,7 @@ ndiv_z = 1
 
 # read data
 _src_id = 0
-_inv_id = 2
+_inv_id = 99
 
 # filling 0 for digit
 inv_id = str(_inv_id).zfill(4)

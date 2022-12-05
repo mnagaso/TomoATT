@@ -73,7 +73,7 @@ for ir in range(n_rtp[0]):
             xi_true[ir,it,ip]  = ani_p*abs(sigma)*math.cos(2.0*psi)
             zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
             fun_true[ir,it,ip] = s0/(1.0+sigma*slow_p)
-            vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
+            vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]*((ir+1)*1.01)
 
 
 #r_earth = 6378.1370

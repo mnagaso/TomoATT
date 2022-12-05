@@ -491,7 +491,7 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
     if (myrank == 0 && if_verbose)
         std::cout << "--- write data to ascii file " << fname << " ---" << std::endl;
 
-    // collective write
+    // independent write
     for (int i_rank = 0; i_rank < n_subdomains; i_rank++) {
         if (i_rank == myrank){
             std::ofstream fout;
@@ -523,6 +523,71 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
         synchronize_all_inter();
 
     } // end for i_rank
+
+}
+
+
+bool IO_utils::node_of_this_subdomain(int* offsets, const int& i, const int& j, const int& k){
+    // check if node is in this subdomain
+    if (i >= offsets[0] && i < offsets[0] + loc_I_excl_ghost &&
+        j >= offsets[1] && j < offsets[1] + loc_J_excl_ghost &&
+        k >= offsets[2] && k < offsets[2] + loc_K_excl_ghost)
+        return true;
+    else
+        return false;
+}
+
+void IO_utils::write_data_merged_ascii(Grid& grid, std::string& fname){
+    // write data in ascii file
+    if (myrank == 0 && if_verbose)
+        std::cout << "--- write data to ascii file " << fname << " ---" << std::endl;
+
+    // allocate temporary array
+    CUSTOMREAL* array_eta  = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+    CUSTOMREAL* array_xi   = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+    //CUSTOMREAL* array_zeta = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+    CUSTOMREAL* array_vel  = new CUSTOMREAL[loc_I_excl_ghost*loc_J_excl_ghost*loc_K_excl_ghost];
+
+    // offset info for this subdomain
+    int offsets[3];
+    grid.get_offsets_3d(offsets);
+
+    // get array data except ghost nodes
+    grid.get_array_for_3d_output(grid.eta_loc, array_eta, false);
+    grid.get_array_for_3d_output(grid.xi_loc, array_xi, false);
+    //grid.get_array_for_3d_output(grid.zeta_loc, array_zeta, false);
+    grid.get_array_for_3d_output(grid.fun_loc, array_vel, true);
+
+    // create output file
+    std::ofstream fout;
+    if (myrank == 0){
+        fout.open(fname.c_str());
+        fout.close();
+    }
+
+    // This way of writing is not parallelized and very slow
+    // thus user is strongly encouraged to use h5 output
+    for (int k = 0; k < ngrid_k; k++){
+        for (int j = 0; j < ngrid_j; j++){
+            for (int i = 0; i < ngrid_i; i++){
+                if (node_of_this_subdomain(offsets, i,j,k)){
+                    // open file
+                    fout.open(fname.c_str(), std::ios_base::app); // append
+                    int idx = I2V_3D(i-offsets[0],j-offsets[1],k-offsets[2]);
+                    // write eta xi zeta vel
+                    fout << array_eta[idx] << "   " << array_xi[idx] << "   " << 0.0 << "   " << array_vel[idx] << "\n";
+                    fout.close();
+                }
+                // synchronize
+                synchronize_all_inter();
+            }
+        }
+    }
+
+    delete [] array_eta;
+    delete [] array_xi;
+    //delete [] array_zeta;
+    delete [] array_vel;
 
 }
 
@@ -1107,6 +1172,9 @@ void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
             exit(1);
 #endif
         } else if (output_format==OUTPUT_FORMAT_ASCII){
+            std::string fname = "final_model";
+            fname = create_fname_ascii_model(fname);
+            write_data_merged_ascii(grid, fname);
         }
 
 

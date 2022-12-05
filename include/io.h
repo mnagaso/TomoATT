@@ -57,8 +57,10 @@ public:
     void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*, int, bool);
     // general function for write out data in hdf5 with merging subdomains
     void write_data_merged_h5(Grid&, std::string&, std::string&, std::string&, CUSTOMREAL*, bool, bool no_group=true);
-    // general function for write out data in hdf5
+    // general function for write out data in ascii
     void write_data_ascii(Grid&, std::string&, CUSTOMREAL*);
+    // general function for write out data in ascii with merging subdomains
+    void write_data_merged_ascii(Grid&, std::string&);
     // write true solution
     void write_true_solution(Grid&);
     // write velocity model
@@ -114,6 +116,7 @@ public:
 
     // merged model
     void write_final_model(Grid&, InputParams&);
+    bool node_of_this_subdomain(int*, const int&, const int&, const int&);
 
     //
     // read functions
