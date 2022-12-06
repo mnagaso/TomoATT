@@ -95,7 +95,7 @@ make -j16
 
 ### 0. load necessary modules
 ```bash
-module load intel/19.0.0.117 intelmpi autoconf/2.69
+module load intel/19.0.0.117 autoconf/2.69 cmake/3.14.4
 ```
 
 ### 1. Download hdf5 source code and compile it
@@ -137,7 +137,7 @@ mkdir build
 
 # compile TomoATT
 cd build
-cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
+CC=icc CXX=icpc ls cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
 
 make -j16
 ```
