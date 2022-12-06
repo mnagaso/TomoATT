@@ -137,7 +137,7 @@ mkdir build
 
 # compile TomoATT
 cd build
-CC=icc CXX=icpc ls cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
+CC=icc CXX=icpc cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
 
 make -j16
 ```
