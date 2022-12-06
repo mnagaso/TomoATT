@@ -120,7 +120,7 @@ tar -xvf hdf5-1.13.2.tar.gz && cd hdf5-1.13.2
 ./autogen.sh
 
 # configure the code
-CC=mpiicc  CFLAGS="-I/app/intel/compilers_and_libraries_2016.1.150/linux/mpi/intel64/include -L/app/intel/compilers_and_libraries_2016.1.150/linux/mpi/intel64/lib -fPIC -O3 -xHost -ip -fno-alias -align"  CXX=mpiicpc  CXXFLAGS="-I/app/intel/compilers_and_libraries_2016.1.150/linux/mpi/intel64/include -L/app/intel/compilers_and_libraries_2016.1.150/linux/mpi/intel64/lib -fPIC -O3 -xHost -ip -fno-alias -align" ./configure --with-pic --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
+CC=mpiicc  CFLAGS="-I/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/include -L/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/lib -fPIC -O3 -xHost -ip -fno-alias -align"  CXX=mpiicpc  CXXFLAGS="-I/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/include -L/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/lib -fPIC -O3 -xHost -ip -fno-alias -align" ./configure --with-pic --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
 
 # make and install to the prefix
 make -j16 && make install
