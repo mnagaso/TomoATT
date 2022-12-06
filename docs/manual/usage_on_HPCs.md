@@ -42,7 +42,10 @@ pjsub --interact -g hp220155 -L "node=1" -L "rscgrp=int" -L "elapse=1:00:00" --s
 . /vol0004/apps/oss/spack/share/spack/setup-env.sh
 # load Fujitsu mpi
 spack load /jfzaut5
+# or load gnu 11.2.0
+spack load /nphnrhl /cvur4ou
 ```
+
 
 
 ### 2. Download hdf5 source code and compile it
@@ -69,6 +72,22 @@ make -j16 && make install
 # now hdf5 executables are in external_libs/local_mpi_hdf5/bin
 ```
 
+or with gnu 11.2.0
+```bash
+
+# download hdf5 source
+wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz
+#Extract the downloaded directory
+tar -xvf hdf5-1.13.2.tar.gz
+cd hdf5-1.13.2
+# Configure the code. (the pathes to mpicc, mpicxx should vary on the environment)
+CC=mpicc CXX=mpic++ ./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
+# make
+make -j12 && make install
+
+```
+
+
 ### 3. Compile TomoATT
 ```bash
 # cd to TomoATT directory
@@ -79,7 +98,10 @@ mkdir build
 
 # compile TomoATT
 cd build
+
 CC=mpifcc CXX=mpiFCC cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
+# or for gnu 11.2.0
+cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../external_libs/local_mpi_hdf5
 
 make -j16
 ```
