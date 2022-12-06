@@ -282,6 +282,11 @@ calculation :
   stencil_order : 3 # 1 or 3
   sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
 
+output_setting :
+  is_output_source_field : 0      # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
+  is_verbose_output : 0           # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0
+  is_output_model_dat : 0         # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
+
 """.format(n_rtp[0],n_rtp[1],n_rtp[2],n_rtp[0],n_rtp[1],n_rtp[2], ndiv_rtp[0],ndiv_rtp[1],ndiv_rtp[2], n_sweep, use_gpu)
 
 str_nsweep_ndiv_rtp = str(n_sweep) + '-' + str(ndiv_rtp[0]) + '-' + str(ndiv_rtp[1]) + '-' + str(ndiv_rtp[2])
