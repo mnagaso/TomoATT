@@ -586,9 +586,9 @@ inline void vect_stencil_1st_3rd_apre_simd_tele(
     Htau = svadd_f64_z(pg, Htau, svmul_f64_z(pg, v_fac_c, my_square_v(pg, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pp1, v_pp2)))));
 
     // tmp1 = (v_pt1 + v_pt2)*0.5
-    __mTd tmp1 = svadd_f64_z(pg, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pt1, v_pt2)));
+    __mTd tmp1 = svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pt1, v_pt2));
     // tmp2 = (v_pp1 + v_pp2)*0.5
-    __mTd tmp2 = svadd_f64_z(pg, svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pp1, v_pp2)));
+    __mTd tmp2 = svmul_f64_z(pg, v_half, svadd_f64_z(pg, v_pp1, v_pp2));
     // tmp3 = -2.0 * v_fac_f * tmp1 * tmp2;
     __mTd tmp3 = svmul_f64_z(pg, v_m2, svmul_f64_z(pg, v_fac_f, svmul_f64_z(pg, tmp1, tmp2)));
 
@@ -721,27 +721,27 @@ inline void calculate_boundary_nodes_tele_simd(
     // mask for bottom boundary
     svbool_t mask_bot = svand_b_z(pg, \
         svcmpeq_f64(pg, v_kkr, v_0), \
-        svcmpeq_b64(pg, v_change, v_1));
+        svcmpeq_f64(pg, v_change, v_1));
     // mask for top boundary
     svbool_t mask_top = svand_b_z(pg, \
         svcmpeq_f64(pg, v_kkr, v_loc_K_minus_1), \
-        svcmpeq_b64(pg, v_change, v_1));
+        svcmpeq_f64(pg, v_change, v_1));
     // mask for south boundary
     svbool_t mask_south = svand_b_z(pg, \
         svcmpeq_f64(pg, v_jjt, v_0), \
-        svcmpeq_b64(pg, v_change, v_1));
+        svcmpeq_f64(pg, v_change, v_1));
     // mask for north boundary
     svbool_t mask_north = svand_b_z(pg, \
         svcmpeq_f64(pg, v_jjt, v_loc_J_minus_1), \
-        svcmpeq_b64(pg, v_change, v_1));
+        svcmpeq_f64(pg, v_change, v_1));
     // mask for west boundary
     svbool_t mask_west = svand_b_z(pg, \
         svcmpeq_f64(pg, v_iip, v_0), \
-        svcmpeq_b64(pg, v_change, v_1));
+        svcmpeq_f64(pg, v_change, v_1));
     // mask for east boundary
     svbool_t mask_east = svand_b_z(pg, \
         svcmpeq_f64(pg, v_iip, v_loc_I_minus_1), \
-        svcmpeq_b64(pg, v_change, v_1));
+        svcmpeq_f64(pg, v_change, v_1));
 
     // if mask_bot, v_c__ = max(2*v___p - v_____pp, v_____pp)
     v_c__ = svsel_f64(mask_bot, \
