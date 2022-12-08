@@ -117,19 +117,19 @@ make -j12
 
 ### 0. load necessary modules
 ```bash
-module load intel/19.0.0.117 autoconf/2.69 cmake/3.14.4
+module purge
+export PATH=/app/gcc/9.5.0/bin:$PATH && export LD_LIBRARY_PATH=/app/gcc/9.5.0/lib:$LD_LIBRARY_PATH
+module load intel/19.0.0.117
 ```
 
 ### 1. Download hdf5 source code and compile it
 ```bash
 
-# on your LOCAL MACHINE (intel compilor requires hdf5 version 1.13.0 or higher)
-#wget https://gamma.hdfgroup.org/ftp/pub/outgoing/hdf5/snapshots/v113/hdf5-1.13.0-rc6.tar.gz
-wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz
-
+# download openmpi and hdf5 source code on your LOCAL MACHINE
+wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
 
 # then upload it to NSCC (for example)
-scp hdf5-1.13.2.tar.gz aspire1:~/(where TomoATT placed)/external_libs/
+scp -rC hdf5-1.13.3.tar.gz aspire1:~/(where TomoATT placed)/external_libs/
 
 # on ASPIURE 1
 cd external_libs
@@ -137,12 +137,11 @@ cd external_libs
 mkdir local_mpi_hdf5
 
 # extract tar file and cd to the directory
-tar -xvf hdf5-1.13.2.tar.gz && cd hdf5-1.13.2
-
-./autogen.sh
+tar -xvf hdf5-1.13.3.tar.gz && cd hdf5-1.13.3
 
 # configure the code
-CC=mpiicc  CFLAGS="-I/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/include -L/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/lib -fPIC -O3 -xHost -ip -fno-alias -align"  CXX=mpiicpc  CXXFLAGS="-I/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/include -L/app/intel/xe2019/compilers_and_libraries_2019.0.117/linux/mpi/intel64/lib -fPIC -O3 -xHost -ip -fno-alias -align" ./configure --with-pic --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
+CC=mpiicc  CXX=mpiicpc \
+./configure --enable-parallel --enable-unsupported --enable-shared --enable-cxx --prefix=$(pwd)/../local_mpi_hdf5
 
 # make and install to the prefix
 make -j16 && make install
