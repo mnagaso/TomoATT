@@ -232,22 +232,33 @@ inline void split_mpi_comm(){
     // gather all the node names in std::vector
     allgather_node_name(mpi_node_names_pre[world_rank], mpi_node_names_pre);
 
-    // define node id for each nodea
+    // define node id for each node
     mpi_node_ids = define_node_ids(mpi_node_names_pre);
 
-    // sort mpi_node_names and change world rank accordingly
-    std::vector<size_t>      node_reorder = node_reordering(mpi_node_names_pre);
-    std::vector<std::string> mpi_node_names_sorted(world_nprocs);
-    std::vector<int>         mpi_node_ids_sorted(world_nprocs);
-    for (int irank = 0; irank < world_nprocs; irank++){
-        mpi_node_names_sorted[irank] = mpi_node_names_pre[node_reorder[irank]];
-        mpi_node_ids_sorted[irank]   = mpi_node_ids[node_reorder[irank]];
-    }
-    mpi_node_names = mpi_node_names_sorted;
-    mpi_node_ids   = mpi_node_ids_sorted;
+    // total number of nodes (unique)
+    int n_compute_nodes = count_number_compute_nodes(mpi_node_names_pre);
 
-    // renumbering this process's rank
-    world_rank = node_reorder[world_rank];
+    // reorder if the number of unique mpi_node_ids != 1
+    if (n_compute_nodes > 1){
+
+        // sort mpi_node_names and change world rank accordingly
+        std::vector<size_t>      node_reorder = node_reordering(mpi_node_names_pre);
+        std::vector<std::string> mpi_node_names_sorted(world_nprocs);
+        std::vector<int>         mpi_node_ids_sorted(world_nprocs);
+        for (int irank = 0; irank < world_nprocs; irank++){
+            mpi_node_names_sorted[irank] = mpi_node_names_pre[node_reorder[irank]];
+            mpi_node_ids_sorted[irank]   = mpi_node_ids[node_reorder[irank]];
+        }
+        mpi_node_names = mpi_node_names_sorted;
+        mpi_node_ids   = mpi_node_ids_sorted;
+
+        // renumbering this process's rank
+        world_rank = node_reorder[world_rank];
+
+    } else {
+        mpi_node_names = mpi_node_names_pre;
+        mpi_node_ids   = mpi_node_ids;
+    }
 
     // debug out
 //    if (world_rank == 0){
@@ -256,9 +267,6 @@ inline void split_mpi_comm(){
 //        }
 //    }
 //    synchronize_all_world();
-
-    // total number of nodes (unique)
-    int n_compute_nodes = count_number_compute_nodes(mpi_node_names);
 
     // show node name and number summary
     if (world_rank == 0){
@@ -290,8 +298,8 @@ inline void split_mpi_comm(){
 
         // create communicator for simulation group
         MPI_Comm_split(MPI_COMM_WORLD, id_sim, world_rank, &sim_comm);
-        MPI_Comm_rank(sim_comm, &sim_rank);
-        MPI_Comm_size(sim_comm, &sim_nprocs);
+        MPI_Comm_rank(sim_comm, &sim_rank);   // rank in simulation group
+        MPI_Comm_size(sim_comm, &sim_nprocs); // number of processes in simulation group
 
         // recreate node_names and node_ids for this simulation group
         std::vector<std::string> mpi_node_names_tmp(sim_nprocs);
@@ -319,7 +327,7 @@ inline void split_mpi_comm(){
         sim_nprocs = world_nprocs;
     }
 
-    // inter-communicator
+    // inter-communicator (between simulation groups)
     MPI_Comm_split(MPI_COMM_WORLD, sim_rank, sim_rank, &inter_sim_comm);
     MPI_Comm_rank(inter_sim_comm, &inter_sim_rank);
 
