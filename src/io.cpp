@@ -529,9 +529,9 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
 
 bool IO_utils::node_of_this_subdomain(int* offsets, const int& i, const int& j, const int& k){
     // check if node is in this subdomain
-    if (i >= offsets[0] && i < offsets[0] + loc_I_excl_ghost &&
+    if (i >= offsets[2] && i < offsets[2] + loc_I_excl_ghost &&
         j >= offsets[1] && j < offsets[1] + loc_J_excl_ghost &&
-        k >= offsets[2] && k < offsets[2] + loc_K_excl_ghost)
+        k >= offsets[0] && k < offsets[0] + loc_K_excl_ghost)
         return true;
     else
         return false;
@@ -573,7 +573,7 @@ void IO_utils::write_data_merged_ascii(Grid& grid, std::string& fname){
                 if (node_of_this_subdomain(offsets, i,j,k)){
                     // open file
                     fout.open(fname.c_str(), std::ios_base::app); // append
-                    int idx = I2V_3D(i-offsets[0],j-offsets[1],k-offsets[2]);
+                    int idx = I2V_3D(i-offsets[2],j-offsets[1],k-offsets[0]);
                     // write eta xi zeta vel
                     fout << array_eta[idx] << "   " << array_xi[idx] << "   " << 0.0 << "   " << array_vel[idx] << "\n";
                     fout.close();
