@@ -60,7 +60,16 @@ calculation :
   convergence_tolerance : 1e-6
   max_iterations : 100
   stencil_order : 3 # 1 or 3
-  sweep_type : 2   # 0: legacy, 1: cuthill-mckee. 2: cuthill-mckee with shm parallelization
+  sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
+
+output_setting :
+  # output the calculated field of all sources. 1 for yes; 0 for no; default: 1
+  is_output_source_field : 0
+  # output internal parameters, if no, only model parameters are out. 1 for yes; 0 for no;  default: 0
+  is_verbose_output : 0           
+  # output model_parameters_inv_0000.dat or not. 1 for yes; 0 for no; default: 1
+  is_output_model_dat : 0         
+
 ```
 
 There are categories and sub-categories with setup parameters.
@@ -129,6 +138,11 @@ The total number of mpi processes (i.e. mpirun -n NUMBER) must be n_sims\*ndiv_r
 - `stencil_order` :  `1` or `3`. The order of stencil for sweeping.
 - `sweep_type` :  `0`or `1`. 0 is for sweeping in legacy order (threefold loops on r,t and p), 1 for cuthill-mckee node ordering with sweeping parallelization.
 - `output_file_format` : `0` or `1` for selecting input and output file format. `0` is for HDF5 format, `1` is for ASCII format.
+
+#### output_setting :
+- `is_output_source_field` : `0`(no) or `1`(yes). if output the calculated field of all sources.
+- `is_verbose_output` : `0` or `1`. if output internal parameters, if no, only model parameters are out.
+- `is_output_model_dat` : `0` or `1`. if output model_parameters_inv_0000.dat or not.
 
 
 ### 2. source receiver file
@@ -199,14 +213,17 @@ As the node order in the output file is not in the global domain but each subdom
 `utils/tomoatt_data_retrieval.py` includes functions for this post processing.
 Please refer the concrete example in `inversion_small/data_post_process.py` for HDF5 mode, and `inversion_small_ASCII/data_post_process.py` for ASCII mode.
 
+Only the final iteration result will be saved in 3D matrix form as `final_model.h5` or `final_model.dat`, thus it is not necessary to do post-processing for the final result.
+
 
 ### HDF5 I/O mode
 In HDF5 mode, the code will carry out collective writing from all MPI processes into one single output file, which will try to maximize the I/O bandwidth for efficient I/O.
 
-TomoATT produces output files like (for i-th event):
+TomoATT produces output files like below:
 - out_data_grid.h5 : grid coordinate and connectivity data
-- out_data_sim_i.h5 : field data
-- out_data_sim_i.xmf : XDMF index data for visualizing 3D data. This may be open by Paraview.
+- out_data_sim.h5 : field data
+- out_data_sim.xmf : XDMF index data for visualizing 3D data. This may be open by Paraview.
+- final_model.h5 : final model parameters
 
 Travel time field for i-th source may be visualized by reading `OUTPUT_FILES/out_data_sim_i.xmf`.
 All the inversed parameters from all the sources and receivers are saved in `out_data_sim_0.xmf`.
@@ -228,28 +245,21 @@ The composition of out_data_grid.h5 is :
 ```
 
 
-out_data_sim_i.h5 is :
+out_data_sim.h5 is :
 ```
-/                          Group
-/Data                      Group
-/Data/Keta_inv_000j        Dataset {26010}         # Kernel eta of j-th inversion iteration     
-/Data/Keta_update_inv_000j Dataset {26010}         # Smoothed kernel eta of j-th inversion iteration
-/Data/Ks_inv_000j          Dataset {26010}         # Kernel s(lowness)
-/Data/Ks_update_inv_000j   Dataset {26010}         # Smoothed Kernel s
-/Data/Kxi_inv_000j         Dataset {26010}         # Kernel xi
-/Data/Kxi_update_inv_000j  Dataset {26010}         # Smoothed kernel xi
-/Data/T0v_src_i_inv_000j   Dataset {26010}         # initial travel time field for i-th source
-/Data/T_res_src_i_inv_000j Dataset {26010}         # calculated travel time field
-/Data/adjoint_field_src_0_inv_000j Dataset {26010} # adjoint field
-/Data/eta_inv_000j         Dataset {26010}         # eta
-/Data/fac_b_inv_000j       Dataset {26010}         # factor b
-/Data/fac_c_inv_000j       Dataset {26010}         # factor c
-/Data/fac_f_inv_000j       Dataset {26010}         # factor f
-/Data/fun_inv_000j         Dataset {26010}         # fun (slowness)
-/Data/tau_src_0_inv_000j   Dataset {26010}         # tau (T0*tau = T_res)
-/Data/xi_inv_000j          Dataset {26010}         # xi
+/model                   Group
+/model/eta_inv_000j      Dataset {25000} # eta at j-th inversion
+/model/xi_inv_000j       Dataset {25000} # xi
+/model/vel_inv_000j      Dataset {25000} # velocity field at j-th inversion
 ```
 
+then final_model.h5 is :
+```
+eta                      Dataset {10, 50, 50}
+vel                      Dataset {10, 50, 50}
+xi                       Dataset {10, 50, 50}
+```
+The internal composition of the final_model.h5 is exactly the same with the initial model file. Thus it is possible to use the final model file as the initial model file for the next run by specifying `initial_model_file` in input parameter file.
 
 ### ASCII I/O mode
 In ASCII mode, code will be do independent writing, (i.e. each MPI process do I/O process sequencially) in a single output file.
@@ -257,24 +267,11 @@ In ASCII mode, code will be do independent writing, (i.e. each MPI process do I/
 The files that TomoATT creates in OUPUT_FILES directory are :
 
 ```
-adjoint_field_inv_000j_src_000i.dat  # adjoint field for i-th src and j-th inversion
-eta_inv_000j.dat                     # eta
-fac_b_inv_000j.dat                   # factor b
-fac_c_inv_000j.dat                   # factor c
-fac_f_inv_000j.dat                   # factor f
-fun_inv_000j.dat                     # fun (slowness)
-Keta_inv_000j.dat                    # Kernel eta
-Keta_update_inv_000j.dat             # Smoothed kernel eta
-Ks_inv_000j.dat                      # Kernel s(lownless)
-Ks_update_inv_000j.dat               # Smoothed Kernel s
-Kxi_inv_000j.dat                     # Kernel xi
-Kxi_update_inv_000j.dat              # Smoothed kernel xi
 out_grid_conn.dat                    # node connectivity
 out_grid_ptr.dat                     # grid coordinate lon (degree), lat (degree), radius (km)
 out_grid_xyz.dat                     # grid coordinate in WGS84
-T0v_inv_000j_src_000i.dat            # inital travel time field
-tau_inv_000j_src_000i.dat            # tau (T0*tau = T_res)
-T_res_inv_000j_src_000i.dat          # calculated travel time field
+eta_inv_000j.dat                     # eta
 xi_inv_000j.dat                      # xi 
+vel_inv_000j.dat                     # velocity
 ```
 
