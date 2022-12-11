@@ -161,7 +161,7 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change_bl);
         }
 
-        std::cout << "gpu grid initialization done." << std::endl;
+        //std::cout << "gpu grid initialization done." << std::endl;
     }
 #endif
 
