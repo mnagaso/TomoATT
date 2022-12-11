@@ -60,7 +60,16 @@ calculation :
   convergence_tolerance : 1e-6
   max_iterations : 100
   stencil_order : 3 # 1 or 3
-  sweep_type : 2   # 0: legacy, 1: cuthill-mckee. 2: cuthill-mckee with shm parallelization
+  sweep_type : 1   # 0: legacy, 1: cuthill-mckee with shm parallelization
+
+output_setting :
+  # output the calculated field of all sources. 1 for yes; 0 for no; default: 1
+  is_output_source_field : 0
+  # output internal parameters, if no, only model parameters are out. 1 for yes; 0 for no;  default: 0
+  is_verbose_output : 0           
+  # output model_parameters_inv_0000.dat or not. 1 for yes; 0 for no; default: 1
+  is_output_model_dat : 0         
+
 ```
 
 There are categories and sub-categories with setup parameters.
@@ -81,13 +90,11 @@ Source category is used for setting about source and receiver definitions.
 
 #### model :
 - `init_model_path` : File path for 3D initial model file. Details will be explained in the following section.
--  `model_1d_name` : the name of 1d model used for teleseismic tomography. `ak135` and `iasp91` are available. User defined model can be used by modifying the file `1d_models.h` in `include` directory, by changing `model_1d_prem` part and setting this `model_1d_name` parameter as `user_defined`. 
 #### inversion :
 - `run_mode` : 
   - `0` for running only a forward simulation. 
   - `1` for do inversion. 
-  - `2` for only precalculation of 2d traveltime field for teleseismic sources. This is an optional step for teleseismic case. If 2d traveltime field is not precalculated, it will be calculated during mode `0` or `1`. This is useful for calculations on HPC as 2d eikonal solver has not been parallelized. Users can run it on a local machine beforehand to reduce CPU time on HPC.
-  - `3` run earthquake relocation. For using this mode, `sources : swap_src_rec` need to be set to 1. Otherwise the program will exit with an error message.
+  - `2` run earthquake relocation. For using this mode, `sources : swap_src_rec` need to be set to 1. Otherwise the program will exit with an error message.
 - `n_inversion_grid` :  the number of inversion grid.
 - `n_inv_dep_lat_lon` : the numbers of inversion grids for r, t and p direction.
 - `min_max_dep_inv` : `[dep1, dep2]` minimum and maximum depth of inversion grid in kilo meter.
@@ -109,17 +116,11 @@ and the coordinates where the main inversion grids are placed,
 other parameers for inversion seetting.
 - `max_iterations_inv` :  The limit of iteration number for inversion.
 - `step_size` :  Maximum step size ratio for updating model.
-- `smooth_method` : `0` or `1`. 0 for multigrid parametrization ([Ping Tong 2019](https://doi.org/10.1093/gji/ggz151)). 1 for laplacian smoothing with CG method.
-- `l_smooth_rtp` : `[lr, lt, lp]` smoothing coefficients for laplacian smoothing on r,t and p direction.
-- `optim_method` : `0`, `1` or `2`. 0 for gradient descent, 1 for gradient descent with halve-stepping, 2 for L-BFGS (THIS MODE IS EXPERIMENTAL AND CURRENTLY NOT WORKING.).
-- `regularization_weight`: regularization weight, USED ONLY L-BFGS mode.
-- `max_sub_iterations` : maximum number of sub iteration. Used for optim_method 1 and 2.
 
 #### parallel :
 - `n_sims` : number of simulutaneous run
 - `ndiv_rtp` : `[ndiv_r, ndiv_t, ndiv_p]`  number of domain decomposition on r, t and p direction
 - `nproc_sub` : number of processes used for sweeping parallelization
-- `use_gpu` :  `0` or `1`. Set 1 for using GPU. (Currently gpu mode is used only for a forward simulation. n_sims, ndiv_rtp and nproc_sub need to be 1.)
 
 The total number of mpi processes (i.e. mpirun -n NUMBER) must be n_sims\*ndiv_r\*ndiv_t\*ndiv_p\*nproc_sub, otherwise the code will stop instantly.
 
@@ -129,6 +130,11 @@ The total number of mpi processes (i.e. mpirun -n NUMBER) must be n_sims\*ndiv_r
 - `stencil_order` :  `1` or `3`. The order of stencil for sweeping.
 - `sweep_type` :  `0`or `1`. 0 is for sweeping in legacy order (threefold loops on r,t and p), 1 for cuthill-mckee node ordering with sweeping parallelization.
 - `output_file_format` : `0` or `1` for selecting input and output file format. `0` is for HDF5 format, `1` is for ASCII format.
+
+#### output_setting :
+- `is_output_source_field` : `0`(no) or `1`(yes). if output the calculated field of all sources.
+- `is_verbose_output` : `0` or `1`. if output internal parameters, if no, only model parameters are out.
+- `is_output_model_dat` : `0` or `1`. if output model_parameters_inv_0000.dat or not.
 
 
 ### 2. source receiver file
@@ -199,14 +205,17 @@ As the node order in the output file is not in the global domain but each subdom
 `utils/tomoatt_data_retrieval.py` includes functions for this post processing.
 Please refer the concrete example in `inversion_small/data_post_process.py` for HDF5 mode, and `inversion_small_ASCII/data_post_process.py` for ASCII mode.
 
+Only the final iteration result will be saved in 3D matrix form as `final_model.h5` or `final_model.dat`, thus it is not necessary to do post-processing for the final result.
+
 
 ### HDF5 I/O mode
 In HDF5 mode, the code will carry out collective writing from all MPI processes into one single output file, which will try to maximize the I/O bandwidth for efficient I/O.
 
-TomoATT produces output files like (for i-th event):
+TomoATT produces output files like below:
 - out_data_grid.h5 : grid coordinate and connectivity data
-- out_data_sim_i.h5 : field data
-- out_data_sim_i.xmf : XDMF index data for visualizing 3D data. This may be open by Paraview.
+- out_data_sim.h5 : field data
+- out_data_sim.xmf : XDMF index data for visualizing 3D data. This may be open by Paraview.
+- final_model.h5 : final model parameters
 
 Travel time field for i-th source may be visualized by reading `OUTPUT_FILES/out_data_sim_i.xmf`.
 All the inversed parameters from all the sources and receivers are saved in `out_data_sim_0.xmf`.
@@ -228,28 +237,21 @@ The composition of out_data_grid.h5 is :
 ```
 
 
-out_data_sim_i.h5 is :
+out_data_sim.h5 is :
 ```
-/                          Group
-/Data                      Group
-/Data/Keta_inv_000j        Dataset {26010}         # Kernel eta of j-th inversion iteration     
-/Data/Keta_update_inv_000j Dataset {26010}         # Smoothed kernel eta of j-th inversion iteration
-/Data/Ks_inv_000j          Dataset {26010}         # Kernel s(lowness)
-/Data/Ks_update_inv_000j   Dataset {26010}         # Smoothed Kernel s
-/Data/Kxi_inv_000j         Dataset {26010}         # Kernel xi
-/Data/Kxi_update_inv_000j  Dataset {26010}         # Smoothed kernel xi
-/Data/T0v_src_i_inv_000j   Dataset {26010}         # initial travel time field for i-th source
-/Data/T_res_src_i_inv_000j Dataset {26010}         # calculated travel time field
-/Data/adjoint_field_src_0_inv_000j Dataset {26010} # adjoint field
-/Data/eta_inv_000j         Dataset {26010}         # eta
-/Data/fac_b_inv_000j       Dataset {26010}         # factor b
-/Data/fac_c_inv_000j       Dataset {26010}         # factor c
-/Data/fac_f_inv_000j       Dataset {26010}         # factor f
-/Data/fun_inv_000j         Dataset {26010}         # fun (slowness)
-/Data/tau_src_0_inv_000j   Dataset {26010}         # tau (T0*tau = T_res)
-/Data/xi_inv_000j          Dataset {26010}         # xi
+/model                   Group
+/model/eta_inv_000j      Dataset {25000} # eta at j-th inversion
+/model/xi_inv_000j       Dataset {25000} # xi
+/model/vel_inv_000j      Dataset {25000} # velocity field at j-th inversion
 ```
 
+then final_model.h5 is :
+```
+eta                      Dataset {10, 50, 50}
+vel                      Dataset {10, 50, 50}
+xi                       Dataset {10, 50, 50}
+```
+The internal composition of the final_model.h5 is exactly the same with the initial model file. Thus it is possible to use the final model file as the initial model file for the next run by specifying `initial_model_file` in input parameter file.
 
 ### ASCII I/O mode
 In ASCII mode, code will be do independent writing, (i.e. each MPI process do I/O process sequencially) in a single output file.
@@ -257,24 +259,11 @@ In ASCII mode, code will be do independent writing, (i.e. each MPI process do I/
 The files that TomoATT creates in OUPUT_FILES directory are :
 
 ```
-adjoint_field_inv_000j_src_000i.dat  # adjoint field for i-th src and j-th inversion
-eta_inv_000j.dat                     # eta
-fac_b_inv_000j.dat                   # factor b
-fac_c_inv_000j.dat                   # factor c
-fac_f_inv_000j.dat                   # factor f
-fun_inv_000j.dat                     # fun (slowness)
-Keta_inv_000j.dat                    # Kernel eta
-Keta_update_inv_000j.dat             # Smoothed kernel eta
-Ks_inv_000j.dat                      # Kernel s(lownless)
-Ks_update_inv_000j.dat               # Smoothed Kernel s
-Kxi_inv_000j.dat                     # Kernel xi
-Kxi_update_inv_000j.dat              # Smoothed kernel xi
 out_grid_conn.dat                    # node connectivity
 out_grid_ptr.dat                     # grid coordinate lon (degree), lat (degree), radius (km)
 out_grid_xyz.dat                     # grid coordinate in WGS84
-T0v_inv_000j_src_000i.dat            # inital travel time field
-tau_inv_000j_src_000i.dat            # tau (T0*tau = T_res)
-T_res_inv_000j_src_000i.dat          # calculated travel time field
+eta_inv_000j.dat                     # eta
 xi_inv_000j.dat                      # xi 
+vel_inv_000j.dat                     # velocity
 ```
 
