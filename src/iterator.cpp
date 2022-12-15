@@ -881,7 +881,8 @@ void Iterator::fix_boundary_Tadj(Grid& grid) {
         for (int ir = 0; ir < nr; ir++)
             for (int it = 0; it < nt; it++)
                 for (int ip = 0; ip < np; ip++)
-                    calculate_boundary_nodes_tele_adj(grid,ir,it,ip);
+//                     calculate_boundary_nodes_tele_adj(grid,ir,it,ip);
+                    calculate_boundary_nodes_tele_adj(grid,ip,it,ir);
     }
 
 }
