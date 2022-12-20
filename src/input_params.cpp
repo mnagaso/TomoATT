@@ -560,6 +560,8 @@ void InputParams::parse_src_rec_file(){
                 tokens.push_back(token);
         }
 
+try {
+
         // store values into structure
         if (cc == 0){
             SrcRec src;
@@ -659,6 +661,12 @@ void InputParams::parse_src_rec_file(){
                 i_rec_now++;
             }
         }
+} catch (std::invalid_argument& e) {
+        std::cout << "Error: invalid argument in src_rec_file. Abort." << std::endl;
+        std::cout << "problematic line: \n\n" << line << std::endl;
+
+        MPI_Abort(MPI_COMM_WORLD, 1);
+}
 
     /*
         // print for DEBUG
