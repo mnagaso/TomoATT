@@ -29,14 +29,14 @@ public:
     int n_rec  = 0;
     int n_data = 0;  // = n_rec + n_rec_pair
 
-    CUSTOMREAL dep; // stored as depth (km), so need to depth2radious function when using it in other part of the code
-    CUSTOMREAL lat; // stored in degree, but convarted to radian when passed through get_src_* function
-    CUSTOMREAL lon; // stored in degree, but convarted to radian when passed through get_src_* function
+    CUSTOMREAL dep = 0.0; // stored as depth (km), so need to depth2radious function when using it in other part of the code
+    CUSTOMREAL lat = 0.0; // stored in degree, but convarted to radian when passed through get_src_* function
+    CUSTOMREAL lon = 0.0; // stored in degree, but convarted to radian when passed through get_src_* function
 
-    CUSTOMREAL arr_time = 0.0;     // calculated arrival time will be stored and updated during the simulation
+    CUSTOMREAL arr_time     = 0.0;     // calculated arrival time will be stored and updated during the simulation
     CUSTOMREAL arr_time_ori = 0.0; // recorded/original arrival time (written in the input file)
-    CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
-    CUSTOMREAL weight=1.0;   // weight
+    CUSTOMREAL t_adj        = 0.0;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
+    CUSTOMREAL weight       = 1.0;   // weight
 
     //
     // another case of receiver pair (now only for teleseismicity)
@@ -44,17 +44,17 @@ public:
     bool is_rec_pair = false;
     int n_rec_pair = 0;
 
-    std::vector<int> id_rec_pair         = std::vector<int>(2);
-    std::vector<CUSTOMREAL> dep_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> lat_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> lon_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> ddt_adj_pair = std::vector<CUSTOMREAL>(2);    // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
-    std::vector<std::string> name_rec_pair    = std::vector<std::string>(2);
+    std::vector<int> id_rec_pair{std::vector<int>(2)};
+    std::vector<CUSTOMREAL> dep_pair{std::vector<CUSTOMREAL>(2)};
+    std::vector<CUSTOMREAL> lat_pair{std::vector<CUSTOMREAL>(2)};
+    std::vector<CUSTOMREAL> lon_pair{std::vector<CUSTOMREAL>(2)};
+    std::vector<CUSTOMREAL> ddt_adj_pair{std::vector<CUSTOMREAL>(2)}; // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
+    std::vector<std::string> name_rec_pair = std::vector<std::string>(2);
     // name_rec_pair[0] = "rec1_name_dummy";
     // name_rec_pair[1] = "rec2_name_dummy";
 
-    CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
-    CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
+    CUSTOMREAL dif_arr_time     = 0.0;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
+    CUSTOMREAL dif_arr_time_ori = 0.0; // recorded/original differential arrival time (written in the input file)
 
 
     // common parameters for both cases

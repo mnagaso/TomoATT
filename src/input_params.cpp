@@ -412,17 +412,12 @@ InputParams::InputParams(std::string& input_file){
 
     // read src rec file by all processes #TODO: check if only subdomain's main requires this
     if (src_rec_file_exist) {
-        for (int i_proc = 0; i_proc < world_nprocs; i_proc++){
-            if (i_proc == world_rank) {
-                // store all src/rec info
-                parse_src_rec_file();
-            }
-            synchronize_all_world();
-        }
+
+        parse_src_rec_file();
+
         // define src/rec file name for output
         // size_t ext = src_rec_file.find_last_of(".");
         // src_rec_file_out = src_rec_file.substr(0, ext) + "_out.dat";
-
 
         // backup original src/rec list
         src_points_back = src_points;
@@ -530,7 +525,11 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 void InputParams::parse_src_rec_file(){
     // #TODO: add error handling
 
-    std::ifstream ifs(src_rec_file);
+    std::ifstream ifs; // dummy for all processes except world_rank 0
+    // only world_rank 0 reads the file
+    if (world_rank == 0)
+        ifs.open(src_rec_file);
+
     std::string line;
     int cc =0; // count the number of lines
     int i_src_now = 0; // count the number of srcs
@@ -541,8 +540,33 @@ void InputParams::parse_src_rec_file(){
     rec_points_tmp.clear();
     rec_points.clear();
 
+    bool end_of_file = false;
 
-    while (std::getline(ifs, line)) {
+    while (true) {
+
+        if (world_rank == 0) {
+            // read a line
+            if (!std::getline(ifs, line)) {
+                // send -1 to all processes
+                end_of_file = true;
+                broadcast_bool_single(end_of_file, 0);
+                // close
+                ifs.close();
+            } else {
+                end_of_file = false;
+                broadcast_bool_single(end_of_file, 0);
+            }
+        } else {
+            // receive a line
+            broadcast_bool_single(end_of_file, 0);
+        }
+
+        if (end_of_file)
+            break;
+
+        // broadcast the line
+        broadcast_str(line, 0);
+
         // skip comment and empty lines
         if (line[0] == '#' || line.empty())
             continue;
@@ -551,122 +575,145 @@ void InputParams::parse_src_rec_file(){
         line.erase(line.find_last_not_of(" \n\r\t")+1);
 
         // parse the line with arbitrary number of spaces
-        std::stringstream ss(line);
+        std::stringstream ss;
+        if (world_rank == 0)
+            ss << line;
+            //std::stringstream ss(line);
         std::string token;
         std::vector<std::string> tokens;
+        int ntokens = 0;
 
-        while (std::getline(ss, token, ' ')) {
-            if (token.size() > 0) // skip the first spaces and multiple spaces
-                tokens.push_back(token);
-        }
+        if (world_rank == 0){
+            while (std::getline(ss, token, ' ')) {
+                if (token.size() > 0) // skip the first spaces and multiple spaces
+                    tokens.push_back(token);
+            }
+            // broadcast the number of tokens
+            ntokens = tokens.size();
+            broadcast_i_single(ntokens, 0);
 
-try {
-
-        // store values into structure
-        if (cc == 0){
-            SrcRec src;
-            //src.id_src     = std::stoi(tokens[0]);
-            src.id_src     = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
-            src.year       = std::stoi(tokens[1]);
-            src.month      = std::stoi(tokens[2]);
-            src.day        = std::stoi(tokens[3]);
-            src.hour       = std::stoi(tokens[4]);
-            src.min        = std::stoi(tokens[5]);
-            src.sec        = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
-            src.lat        = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
-            src.lon        = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-            src.dep        = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
-            src.mag        = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
-            src.n_data     = std::stoi(tokens[11]);
-            ndata_tmp      = src.n_data;
-            src.n_rec      = 0;
-            src.n_rec_pair = 0;
-            src.name_src = tokens[12];
-            // check if tokens[13] exists, then read weight
-            if (tokens.size() > 13)
-                src.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
-            else
-                src.weight = 1.0; // default weight
-            src_points.push_back(src);
-            cc++;
+            // broadcast the tokens
+            for (auto& tok: tokens)
+                broadcast_str(tok, 0);
 
         } else {
-
-            // read single receiver or differential traveltime data
-            if (tokens.size() < 11) {
-
-                // read absolute traveltime
-                SrcRec rec;
-                //rec.id_src   = std::stoi(tokens[0]);
-                rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
-                //rec.id_rec   = std::stoi(tokens[1]);
-                rec.id_rec   = i_rec_now; // MNMN: here use id_rec of active receiver lines order of src rec file, which allow to comment out bad stations.
-                rec.name_rec = tokens[2];
-                rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
-                rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
-                rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
-                rec.phase    = tokens[6];
-                rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
-
-                // check if tokens[8] exists read weight
-                if (tokens.size() > 8)
-                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
-                else
-                    rec.weight = 1.0; // default weight
-                rec_points_tmp.push_back(rec);
-                cc++;
-                src_points.at(src_points.size()-1).n_rec++;
-
-            } else {
-
-                // read differential traveltime
-                SrcRec rec;
-                //rec.id_src    = std::stoi(tokens[0]);
-                rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
-                rec.id_rec_pair[0] = std::stoi(tokens[1]);
-                rec.name_rec_pair[0] = tokens[2];
-                rec.lat_pair[0] = static_cast<CUSTOMREAL>(std::stod(tokens[3]));        // in degree
-                rec.lon_pair[0] = static_cast<CUSTOMREAL>(std::stod(tokens[4]));        // in degree
-                rec.dep_pair[0] = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0);        // convert elevation in meter to depth in km
-                rec.id_rec_pair[1] = std::stoi(tokens[6]);
-                rec.name_rec_pair[1] = tokens[7];
-                rec.lat_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-                rec.lon_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
-                rec.dep_pair[1]      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
-                rec.phase    = tokens[11];
-                // rec.dif_arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[12]));
-                rec.dif_arr_time = 0.0;
-                rec.dif_arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
-
-                // check if tokens[9] exists read weight
-                if (tokens.size() > 13)
-                    rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
-                else
-                    rec.weight = 1.0; // default weight
-                rec.is_rec_pair = true;
-                rec_points_tmp.push_back(rec);
-                cc++;
-                src_points.at(src_points.size()-1).n_rec_pair++;
-
-            }
-
-            if (cc > ndata_tmp) {
-                // go to the next source
-                cc = 0;
-                rec_points.push_back(rec_points_tmp);
-                rec_points_tmp.clear();
-                i_src_now++;
-                i_rec_now = 0;
-            } else {
-                i_rec_now++;
+            // receive the number of tokens
+            broadcast_i_single(ntokens, 0);
+            // receive the tokens
+            for (int i=0; i<ntokens; i++){
+                broadcast_str(token, 0);
+                tokens.push_back(token);
             }
         }
-} catch (std::invalid_argument& e) {
-        std::cout << "Error: invalid argument in src_rec_file. Abort." << std::endl;
-        std::cout << "problematic line: \n\n" << line << std::endl;
 
-        MPI_Abort(MPI_COMM_WORLD, 1);
-}
+        try { // check failure of parsing line by line
+
+            // store values into structure
+            if (cc == 0){
+                SrcRec src;
+                //src.id_src     = std::stoi(tokens[0]);
+                src.id_src     = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
+                src.year       = std::stoi(tokens[1]);
+                src.month      = std::stoi(tokens[2]);
+                src.day        = std::stoi(tokens[3]);
+                src.hour       = std::stoi(tokens[4]);
+                src.min        = std::stoi(tokens[5]);
+                src.sec        = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
+                src.lat        = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
+                src.lon        = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                src.dep        = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
+                src.mag        = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
+                src.n_data     = std::stoi(tokens[11]);
+                ndata_tmp      = src.n_data;
+                src.n_rec      = 0;
+                src.n_rec_pair = 0;
+                src.name_src = tokens[12];
+                // check if tokens[13] exists, then read weight
+                if (tokens.size() > 13)
+                    src.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
+                else
+                    src.weight = 1.0; // default weight
+                src_points.push_back(src);
+                cc++;
+
+            } else {
+
+                // read single receiver or differential traveltime data
+                if (tokens.size() < 11) {
+
+                    // read absolute traveltime
+                    SrcRec rec;
+                    //rec.id_src   = std::stoi(tokens[0]);
+                    rec.id_src   = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
+                    //rec.id_rec   = std::stoi(tokens[1]);
+                    rec.id_rec   = i_rec_now; // MNMN: here use id_rec of active receiver lines order of src rec file, which allow to comment out bad stations.
+                    rec.name_rec = tokens[2];
+                    rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                    rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                    rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+                    rec.phase    = tokens[6];
+                    rec.arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
+
+                    // check if tokens[8] exists read weight
+                    if (tokens.size() > 8)
+                        rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
+                    else
+                        rec.weight = 1.0; // default weight
+                    rec_points_tmp.push_back(rec);
+                    cc++;
+                    src_points.at(src_points.size()-1).n_rec++;
+
+                } else {
+
+                    // read differential traveltime
+                    SrcRec rec;
+                    //rec.id_src    = std::stoi(tokens[0]);
+                    rec.id_src           = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
+                    rec.id_rec_pair[0]   = std::stoi(tokens[1]);
+                    rec.name_rec_pair[0] = tokens[2];
+                    rec.lat_pair[0]      = static_cast<CUSTOMREAL>(std::stod(tokens[3]));        // in degree
+                    rec.lon_pair[0]      = static_cast<CUSTOMREAL>(std::stod(tokens[4]));        // in degree
+                    rec.dep_pair[0]      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0);        // convert elevation in meter to depth in km
+                    rec.id_rec_pair[1]   = std::stoi(tokens[6]);
+                    rec.name_rec_pair[1] = tokens[7];
+                    rec.lat_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                    rec.lon_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                    rec.dep_pair[1]      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
+                    rec.phase            = tokens[11];
+                    // rec.dif_arr_time = static_cast<CUSTOMREAL>(std::stod(tokens[12]));
+                    rec.dif_arr_time     = 0.0;
+                    rec.dif_arr_time_ori = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
+
+                    // check if tokens[9] exists read weight
+                    if (tokens.size() > 13)
+                        rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
+                    else
+                        rec.weight = 1.0; // default weight
+                    rec.is_rec_pair = true;
+                    rec_points_tmp.push_back(rec);
+                    cc++;
+                    src_points.at(src_points.size()-1).n_rec_pair++;
+
+                }
+
+                if (cc > ndata_tmp) {
+                    // go to the next source
+                    cc = 0;
+                    rec_points.push_back(rec_points_tmp);
+                    rec_points_tmp.clear();
+                    i_src_now++;
+                    i_rec_now = 0;
+                } else {
+                    i_rec_now++;
+                }
+            }
+
+        } catch (std::invalid_argument& e) {
+                std::cout << "Error: invalid argument in src_rec_file. Abort." << std::endl;
+                std::cout << "problematic line: \n\n" << line << std::endl;
+
+                MPI_Abort(MPI_COMM_WORLD, 1);
+        }
 
     /*
         // print for DEBUG
@@ -676,7 +723,7 @@ try {
         std::cout << std::endl;
     */
 
-    }
+    } // end of while loop
 
     // abort if number of src_points are less than n_sims
     int n_src_points = src_points.size();
