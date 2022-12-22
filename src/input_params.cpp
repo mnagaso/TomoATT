@@ -524,6 +524,10 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 
 void InputParams::parse_src_rec_file(){
 
+    // start timer
+    std::string timer_name = "parse_src_rec_file";
+    Timer timer(timer_name);
+
     std::ifstream ifs; // dummy for all processes except world_rank 0
     std::stringstream ss_whole; // for parsing the whole file
     std::stringstream ss; // for parsing each line
@@ -707,6 +711,11 @@ void InputParams::parse_src_rec_file(){
                     rec_points_tmp.clear();
                     i_src_now++;
                     i_rec_now = 0;
+
+                    // timer
+                    if (i_src_now % 100 == 0 && world_rank == 0) {
+                        std::cout << "reading source " << i_src_now << " finished in " << timer.get_t() << " seconds. dt = " << timer.get_t_delta() << " seconds. \n";
+                    }
                 } else {
                     i_rec_now++;
                 }
@@ -734,6 +743,11 @@ void InputParams::parse_src_rec_file(){
     if (n_src_points < n_sims){
         std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort." << std::endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    // indicate elapsed time
+    if (world_rank == 0) {
+        std::cout << "Total elapsed time for reading src_rec_file: " << timer.get_t() << " seconds.\n";
     }
 }
 

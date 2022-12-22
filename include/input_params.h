@@ -14,7 +14,7 @@
 #include "yaml-cpp/yaml.h"
 #include "utils.h"
 #include "mpi_funcs.h"
-
+#include "timer.h"
 
 // strucutre for storing source or receiver information
 class SrcRec {
