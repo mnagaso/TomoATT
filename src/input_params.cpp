@@ -525,11 +525,15 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 void InputParams::parse_src_rec_file(){
 
     std::ifstream ifs; // dummy for all processes except world_rank 0
+    std::stringstream ss_whole; // for parsing the whole file
     std::stringstream ss; // for parsing each line
 
     // only world_rank 0 reads the file
-    if (world_rank == 0)
+    if (world_rank == 0){
         ifs.open(src_rec_file);
+        ss_whole << ifs.rdbuf();
+        ifs.close();
+    }
 
     std::string line;
     int cc =0; // count the number of lines
@@ -548,12 +552,10 @@ void InputParams::parse_src_rec_file(){
         line.clear(); // clear the line before use
         if (world_rank == 0) {
             // read a line
-            if (!std::getline(ifs, line)) {
+            if (!std::getline(ss_whole, line)) {
                 // send -1 to all processes
                 end_of_file = true;
                 broadcast_bool_single(end_of_file, 0);
-                // close
-                ifs.close();
             } else {
                 end_of_file = false;
                 broadcast_bool_single(end_of_file, 0);
