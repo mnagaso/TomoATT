@@ -33,10 +33,10 @@ public:
     CUSTOMREAL lat = 0.0; // stored in degree, but convarted to radian when passed through get_src_* function
     CUSTOMREAL lon = 0.0; // stored in degree, but convarted to radian when passed through get_src_* function
 
-    CUSTOMREAL arr_time     = 0.0;     // calculated arrival time will be stored and updated during the simulation
+    CUSTOMREAL arr_time     = 0.0; // calculated arrival time will be stored and updated during the simulation
     CUSTOMREAL arr_time_ori = 0.0; // recorded/original arrival time (written in the input file)
-    CUSTOMREAL t_adj        = 0.0;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
-    CUSTOMREAL weight       = 1.0;   // weight
+    CUSTOMREAL t_adj        = 0.0; // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
+    CUSTOMREAL weight       = 1.0; // weight
 
     //
     // another case of receiver pair (now only for teleseismicity)
@@ -50,10 +50,8 @@ public:
     std::vector<CUSTOMREAL> lon_pair{std::vector<CUSTOMREAL>(2)};
     std::vector<CUSTOMREAL> ddt_adj_pair{std::vector<CUSTOMREAL>(2)}; // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
     std::vector<std::string> name_rec_pair = std::vector<std::string>(2);
-    // name_rec_pair[0] = "rec1_name_dummy";
-    // name_rec_pair[1] = "rec2_name_dummy";
 
-    CUSTOMREAL dif_arr_time     = 0.0;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
+    CUSTOMREAL dif_arr_time     = 0.0; // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
     CUSTOMREAL dif_arr_time_ori = 0.0; // recorded/original differential arrival time (written in the input file)
 
 
@@ -76,21 +74,21 @@ public:
 
     bool is_teleseismic = false;
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
-    CUSTOMREAL* arr_times_bound_N; // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E; // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W; // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S; // arrival time of the receiver at the south boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
-    bool*       is_bound_src; // true if the source is on the boundary surface
+    CUSTOMREAL* arr_times_bound_N  = nullptr; // arrival time of the receiver at the north boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_E  = nullptr; // arrival time of the receiver at the east boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_W  = nullptr; // arrival time of the receiver at the west boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_S  = nullptr; // arrival time of the receiver at the south boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_Bot= nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
+    bool*       is_bound_src       = nullptr; // true if the source is on the boundary surface
 
     // params for source relocation
-    CUSTOMREAL DTk, DTj, DTi;  // gradient of traveltime
-    CUSTOMREAL tau_opt;        // optimal origin time
-    CUSTOMREAL sum_weight;     // sum of weights of all sources
+    CUSTOMREAL DTk, DTj, DTi;                      // gradient of traveltime
+    CUSTOMREAL tau_opt;                            // optimal origin time
+    CUSTOMREAL sum_weight;                         // sum of weights of all sources
     CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
-    int        id_unique_list; // id of the source in the unique list
-    CUSTOMREAL vobj_src_reloc; // value of objective function
-    CUSTOMREAL vobj_grad_norm_src_reloc; // norm of gradient of objective function
+    int        id_unique_list;                     // id of the source in the unique list
+    CUSTOMREAL vobj_src_reloc;                     // value of objective function
+    CUSTOMREAL vobj_grad_norm_src_reloc;           // norm of gradient of objective function
 };
 
 

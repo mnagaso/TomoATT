@@ -523,9 +523,10 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 //
 
 void InputParams::parse_src_rec_file(){
-    // #TODO: add error handling
 
     std::ifstream ifs; // dummy for all processes except world_rank 0
+    std::stringstream ss; // for parsing each line
+
     // only world_rank 0 reads the file
     if (world_rank == 0)
         ifs.open(src_rec_file);
@@ -544,6 +545,7 @@ void InputParams::parse_src_rec_file(){
 
     while (true) {
 
+        line.clear(); // clear the line before use
         if (world_rank == 0) {
             // read a line
             if (!std::getline(ifs, line)) {
@@ -575,7 +577,7 @@ void InputParams::parse_src_rec_file(){
         line.erase(line.find_last_not_of(" \n\r\t")+1);
 
         // parse the line with arbitrary number of spaces
-        std::stringstream ss;
+        ss.clear(); // clear the stringstream before use
         if (world_rank == 0)
             ss << line;
             //std::stringstream ss(line);
@@ -671,9 +673,9 @@ void InputParams::parse_src_rec_file(){
                     rec.id_src           = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
                     rec.id_rec_pair[0]   = std::stoi(tokens[1]);
                     rec.name_rec_pair[0] = tokens[2];
-                    rec.lat_pair[0]      = static_cast<CUSTOMREAL>(std::stod(tokens[3]));        // in degree
-                    rec.lon_pair[0]      = static_cast<CUSTOMREAL>(std::stod(tokens[4]));        // in degree
-                    rec.dep_pair[0]      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0);        // convert elevation in meter to depth in km
+                    rec.lat_pair[0]      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                    rec.lon_pair[0]      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                    rec.dep_pair[0]      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
                     rec.id_rec_pair[1]   = std::stoi(tokens[6]);
                     rec.name_rec_pair[1] = tokens[7];
                     rec.lat_pair[1]      = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
