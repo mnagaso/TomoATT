@@ -110,6 +110,18 @@ endif()
 # which is more frequent than the referred paper but necessary
 add_definitions(-DFREQ_SYNC_GHOST)
 
+# find BLAS
+find_package(BLAS)
+if(BLAS_FOUND)
+  message(STATUS "BLAS_FOUND: ${BLAS_FOUND} at ${BLAS_LIBRARIES}, ${BLAS_INCLUDE_DIRS}")
+  add_definitions(-DUSE_BLAS)
+  find_path(BLAS_INCLUDE_DIRS cblas.h
+    /usr/include
+    /usr/local/include
+    /usr/local/include/openblas)
+endif()
+
+
 # submodules
 # yaml parser
 add_subdirectory(external_libs)
@@ -158,6 +170,12 @@ if(HDF5_FOUND)
   target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
 endif()
 
+# link blas
+if(BLAS_FOUND)
+  target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${BLAS_LIBRARIES})
+  target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${BLAS_INCLUDE_DIRS})
+endif()
+
 # link cuda
 if (CUDA_FOUND)
 
@@ -171,3 +189,4 @@ if (CUDA_FOUND)
   target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_LIBRARIES})
 
 endif()
+
