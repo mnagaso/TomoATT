@@ -410,33 +410,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(is_inv_rad_ani, 0);
     broadcast_cr(kernel_taper,2,0);
 
-    // read src rec file by all processes #TODO: check if only subdomain's main requires this
-    if (src_rec_file_exist) {
-
-        parse_src_rec_file();
-
-        // define src/rec file name for output
-        // size_t ext = src_rec_file.find_last_of(".");
-        // src_rec_file_out = src_rec_file.substr(0, ext) + "_out.dat";
-
-        // backup original src/rec list
-        src_points_back = src_points;
-        rec_points_back = rec_points;
-
-        // check if src positions are within the domain or not (teleseismic source)
-        // detected teleseismic source is separated into tele_src_points and tele_rec_points
-        separate_region_and_tele_src();
-
-        if (swap_src_rec) {
-            // here only reginal events will be processed
-            stdout_by_main("###### Swapping src and rec. (only regional events will be processed) ######\n");
-            do_swap_src_rec();
-        }
-
-        // concatenate resional and teleseismic src/rec points
-        merge_region_and_tele_src();
-    }
-
     // check contradictory settings
     check_contradictions();
 
@@ -572,15 +545,20 @@ void InputParams::parse_src_rec_file(){
         if (end_of_file)
             break;
 
-        // broadcast the line
-        broadcast_str(line, 0);
-
         // skip comment and empty lines
-        if (line[0] == '#' || line.empty())
-            continue;
+        bool if_skip = false;
+        if (world_rank == 0){
+            if (line[0] == '#' || line.empty())
+                if_skip = true;
+            // broadcast if_skip
+            broadcast_bool_single(if_skip, 0);
+        } else {
+            broadcast_bool_single(if_skip, 0);
+        }
 
         // erase the trailing space
-        line.erase(line.find_last_not_of(" \n\r\t")+1);
+        if (world_rank == 0)
+            line.erase(line.find_last_not_of(" \n\r\t")+1);
 
         // parse the line with arbitrary number of spaces
         ss.clear(); // clear the stringstream before use
@@ -830,6 +808,36 @@ void InputParams::do_swap_src_rec(){
 
 
 void InputParams::prepare_src_list(){
+
+    // read src rec file by all processes #TODO: do this only by a main process of simultanious run group
+    if (src_rec_file_exist) {
+
+        parse_src_rec_file();
+
+        // define src/rec file name for output
+        // size_t ext = src_rec_file.find_last_of(".");
+        // src_rec_file_out = src_rec_file.substr(0, ext) + "_out.dat";
+
+        // backup original src/rec list
+        src_points_back = src_points;
+        rec_points_back = rec_points;
+
+        // check if src positions are within the domain or not (teleseismic source)
+        // detected teleseismic source is separated into tele_src_points and tele_rec_points
+        separate_region_and_tele_src();
+
+        if (swap_src_rec) {
+            // here only reginal events will be processed
+            stdout_by_main("###### Swapping src and rec. (only regional events will be processed) ######\n");
+            do_swap_src_rec();
+        }
+
+        // concatenate resional and teleseismic src/rec points
+        merge_region_and_tele_src();
+    }
+
+
+
     if (src_rec_file_exist) {
 
         int n_all_src = src_points.size();
