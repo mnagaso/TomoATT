@@ -148,7 +148,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
     synchronize_all_world();
 
     // allreduce sum_adj_src
-    allreduce_cr_sim_single(v_obj, v_obj);
+    allreduce_cr_sim_inplace(&v_obj, 1);
 
     // return current objective function value
     return v_obj;
