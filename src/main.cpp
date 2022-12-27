@@ -19,6 +19,10 @@
 #include "cuda_initialize.cuh"
 #endif
 
+//#ifdef USE_BLAS
+//#include "cblas.h"
+//#endif
+
 int main(int argc, char *argv[])
 {
     // parse options
