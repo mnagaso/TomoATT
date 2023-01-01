@@ -139,7 +139,7 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex_read = true;
             }
 
-            // nimber of max iteration for inversion
+            // number of max iteration for inversion
             if (config["inversion"]["max_iterations_inv"]) {
                 max_iter_inv = config["inversion"]["max_iterations_inv"].as<int>();
             }
@@ -457,7 +457,7 @@ InputParams::~InputParams(){
 // return radious
 CUSTOMREAL InputParams::get_src_radius() {
     if (src_rec_file_exist)
-        return depth2radius(src_points[id_sim_src].dep);
+        return depth2radius(get_src_point(id_sim_src).dep);
     else
         return depth2radius(src_dep);
 }
@@ -465,7 +465,7 @@ CUSTOMREAL InputParams::get_src_radius() {
 
 CUSTOMREAL InputParams::get_src_lat() {
     if (src_rec_file_exist)
-        return src_points[id_sim_src].lat*DEG2RAD;
+        return get_src_point(id_sim_src).lat*DEG2RAD;
     else
         return src_lat*DEG2RAD;
 }
@@ -473,22 +473,69 @@ CUSTOMREAL InputParams::get_src_lat() {
 
 CUSTOMREAL InputParams::get_src_lon() {
     if (src_rec_file_exist)
-        return src_points[id_sim_src].lon*DEG2RAD;
+        return get_src_point(id_sim_src).lon*DEG2RAD;
     else
         return src_lon*DEG2RAD;
 }
 
 
 SrcRec& InputParams::get_src_point(int i_src){
-    return src_points[i_src];
+
+    if (subdom_main){
+        for (auto& src: src_points){
+            if (src.id_src == i_src)
+                return src;
+        }
+
+        // if not found, return error
+        std::cout << "Error: src point " << i_src << " not found!" << std::endl;
+        // assigned src id
+        std::cout << "Assigned src ids: ";
+        for (auto& src: src_points){
+            std::cout << src.id_src << " ";
+        }
+        std::cout << std::endl;
+
+        exit(1);
+    } else {
+        // return error because non-subdom_main process should not call this function
+        std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
+        exit(1);
+    }
+
 }
 
 
 std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
-    return rec_points[id_src];
+
+    if (subdom_main){
+        for (auto& vrecs: rec_points) {
+            if (vrecs[0].id_src == id_src)
+                return vrecs;
+        }
+
+        // if not found, return error
+        std::cout << "Error: rec points for src " << id_src << " not found!" << std::endl;
+        exit(1);
+    } else {
+        // return error because non-subdom_main process should not call this function
+        std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
+        exit(1);
+    }
 }
 
 
+bool InputParams::get_if_src_teleseismic(int id_src) {
+    bool if_src_teleseismic;
+
+    if (subdom_main)
+        if_src_teleseismic = get_src_point(id_src).is_teleseismic;
+
+    // broadcast to all processes within simultaneous run group
+    broadcast_bool_single(if_src_teleseismic, 0);
+
+    return if_src_teleseismic;
+}
 
 //
 // functions for processing src_rec_file
@@ -506,7 +553,7 @@ void InputParams::parse_src_rec_file(){
     std::stringstream ss; // for parsing each line
 
     // only world_rank 0 reads the file
-    if (world_rank == 0){
+    if (sim_rank == 0){
         ifs.open(src_rec_file);
         ss_whole << ifs.rdbuf();
         ifs.close();
@@ -522,74 +569,67 @@ void InputParams::parse_src_rec_file(){
     rec_points_tmp.clear();
     rec_points.clear();
 
-    bool end_of_file = false;
-
     while (true) {
 
+        bool end_of_file = false;
+        bool skip_this_line = false;
+
         line.clear(); // clear the line before use
-        if (world_rank == 0) {
-            // read a line
-            if (!std::getline(ss_whole, line)) {
-                // send -1 to all processes
+
+        // read a line
+        if (sim_rank == 0){
+            if (!std::getline(ss_whole, line))
                 end_of_file = true;
-                broadcast_bool_single(end_of_file, 0);
-            } else {
-                end_of_file = false;
-                broadcast_bool_single(end_of_file, 0);
-            }
-        } else {
-            // receive a line
-            broadcast_bool_single(end_of_file, 0);
         }
+
+        // broadcast end_of_file
+        broadcast_bool_single(end_of_file, 0);
 
         if (end_of_file)
             break;
 
         // skip comment and empty lines
-        bool if_skip = false;
-        if (world_rank == 0){
+        if (sim_rank == 0){
             if (line[0] == '#' || line.empty())
-                if_skip = true;
-            // broadcast if_skip
-            broadcast_bool_single(if_skip, 0);
-        } else {
-            broadcast_bool_single(if_skip, 0);
+                skip_this_line = true;
         }
 
-        // erase the trailing space
-        if (world_rank == 0)
-            line.erase(line.find_last_not_of(" \n\r\t")+1);
+        broadcast_bool_single(skip_this_line, 0);
 
-        // parse the line with arbitrary number of spaces
-        ss.clear(); // clear the stringstream before use
-        if (world_rank == 0)
-            ss << line;
-            //std::stringstream ss(line);
+        if (skip_this_line)
+            continue;
+
+        // parse the line
+        int ntokens = 0;
         std::string token;
         std::vector<std::string> tokens;
-        int ntokens = 0;
 
-        if (world_rank == 0){
+        if (sim_rank==0){
+            // erase the trailing space
+            line.erase(line.find_last_not_of(" \n\r\t")+1);
+
+            // parse the line with arbitrary number of spaces
+            ss.clear(); // clear the stringstream before use
+            ss << line;
+
             while (std::getline(ss, token, ' ')) {
                 if (token.size() > 0) // skip the first spaces and multiple spaces
                     tokens.push_back(token);
             }
-            // broadcast the number of tokens
+
+            // length of tokens
             ntokens = tokens.size();
-            broadcast_i_single(ntokens, 0);
+        }
 
-            // broadcast the tokens
-            for (auto& tok: tokens)
-                broadcast_str(tok, 0);
-
-        } else {
-            // receive the number of tokens
-            broadcast_i_single(ntokens, 0);
-            // receive the tokens
-            for (int i=0; i<ntokens; i++){
-                broadcast_str(token, 0);
+        // broadcast ntokens
+        broadcast_i_single(ntokens, 0);
+        // broadcast tokens
+        for (int i=0; i<ntokens; i++){
+            if (sim_rank == 0)
+                token = tokens[i];
+            broadcast_str(token, 0);
+            if (sim_rank != 0)
                 tokens.push_back(token);
-            }
         }
 
         try { // check failure of parsing line by line
@@ -724,9 +764,7 @@ void InputParams::parse_src_rec_file(){
     }
 
     // indicate elapsed time
-    if (world_rank == 0) {
-        std::cout << "Total elapsed time for reading src_rec_file: " << timer.get_t() << " seconds.\n";
-    }
+    std::cout << "Total elapsed time for reading src_rec_file: " << timer.get_t() << " seconds.\n";
 }
 
 
@@ -770,6 +808,9 @@ void InputParams::do_swap_src_rec(){
     // generate new rec list
     for (long unsigned int i_src = 0; i_src < new_srcs.size(); i_src++) {
 
+        // set new id_src
+        new_srcs[i_src].id_src = i_src;
+
         std::vector<SrcRec> tmp_list_recs;
 
         for (auto& i_src_ori : new_srcs[i_src].id_srcs_ori){
@@ -782,6 +823,7 @@ void InputParams::do_swap_src_rec(){
                     tmp_new_rec.arr_time     = tmp_rec_ori.arr_time;
                     tmp_new_rec.arr_time_ori = tmp_rec_ori.arr_time_ori;
                     tmp_new_rec.id_rec_ori   = tmp_rec_ori.id_rec;
+                    tmp_new_rec.id_src       = i_src;
                     goto rec_found;
                 }
             }
@@ -792,11 +834,14 @@ void InputParams::do_swap_src_rec(){
 
         new_recs.push_back(tmp_list_recs);
 
+        // set n_rec
+        new_srcs[i_src].n_rec = new_recs[i_src].size();
+
     }
 
 
     // backup and set new src/rec points
-    // !! ONLY REGIONAL EVENTS AND RECESVERS ARE STORED IN *_back VECTORS !!
+    // !! ONLY REGIONAL EVENTS AND RECEIVERS ARE STORED IN *_back VECTORS !!
     src_points.clear();
     rec_points.clear();
     // teleseismic events are concatenate to the vectors below later
@@ -806,17 +851,18 @@ void InputParams::do_swap_src_rec(){
 }
 
 
-
 void InputParams::prepare_src_list(){
+    //
+    // only the subdom_main process of the first simultaneous run group (id_sim==0 && sim_rank==any && subdom_main) reads src/rec file
+    // and stores entile src/rec list in src_points and rec_points
+    // then, the subdom_main process of each simultaneous run group (id_sim==any && subdom_main==true) retains only its own src/rec objects,
+    // which are actually calculated in those simultaneous run groups
+    //
 
-    // read src rec file by all processes #TODO: do this only by a main process of simultanious run group
-    if (src_rec_file_exist) {
+    // read src rec file by all processes #TODO: do this only by a main process of the first simultaneous run group
+    if (src_rec_file_exist && id_sim==0 && subdom_main) {
 
         parse_src_rec_file();
-
-        // define src/rec file name for output
-        // size_t ext = src_rec_file.find_last_of(".");
-        // src_rec_file_out = src_rec_file.substr(0, ext) + "_out.dat";
 
         // backup original src/rec list
         src_points_back = src_points;
@@ -836,62 +882,127 @@ void InputParams::prepare_src_list(){
         merge_region_and_tele_src();
     }
 
+    // wait
+    synchronize_all_world();
 
-
+    // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
     if (src_rec_file_exist) {
+        int n_all_src;
 
-        int n_all_src = src_points.size();
+        if (id_sim == 0 && sim_rank == 0)
+            n_all_src = src_points.size();
+
+        // broadcast n_all_src to all processes
+        MPI_Bcast(&n_all_src, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
         src_ids_this_sim.clear();
 
         // assign elements of src_points
         for (int i_src = 0; i_src < n_all_src; i_src++){
-            if (i_src % n_sims == id_sim){
-                src_ids_this_sim.push_back(i_src);
+            // id of simultaneous run group to which the i_src-th element is assigned
+            int dst_id_sim = i_src % n_sims;
+
+            if (id_sim==0){
+                if (dst_id_sim == id_sim){
+                    src_ids_this_sim.push_back(i_src);
+                } else if (subdom_main) {
+                    // send src_points[i_src] to the main process of dst_id_sim
+                    send_src_inter_sim(src_points[i_src], dst_id_sim);
+                    // send rec_points[i_src] to the main process of dst_id_sim
+                    send_rec_inter_sim(rec_points[i_src], dst_id_sim);
+                }
+            } else {
+                if (dst_id_sim == id_sim){
+                    src_ids_this_sim.push_back(i_src);
+                    // receive src/rec_points from the main process of dst_id_sim
+                    if(subdom_main){
+                        // initialize src_points[i_src]
+                        src_points.push_back(SrcRec());
+                        // receive src_points from the main process of dst_id_sim
+                        recv_src_inter_sim(src_points.back(), 0);
+
+                        // initialize rec_points
+                        rec_points.push_back(std::vector<SrcRec>());
+                        for (int i_rec = 0; i_rec < src_points.back().n_rec; i_rec++){
+                            rec_points.back().push_back(SrcRec());
+                        }
+                        // receive rec_points[i_src] from the main process of dst_id_sim
+                        recv_rec_inter_sim(rec_points.back(), 0);
+                    }
+                } else {
+                    // do nothing
+                }
             }
         }
 
         // check IP.src_ids_this_sim for this rank
-        if (myrank==0) {
-            std::cout << id_sim << " assigned src id : ";
-            for (auto& src_id : src_ids_this_sim) {
-                std::cout << src_id << " ";
-            }
-            std::cout << std::endl;
-        }
-   }
+        //if (myrank==0) {
+        //    std::cout << id_sim << " assigned src id : ";
+        //    for (auto& src_id : src_ids_this_sim) {
+        //        std::cout << src_id << " ";
+        //    }
+        //    std::cout << std::endl;
+        //}
+    }
+
+    // wait
+    synchronize_all_world();
+
+
 }
 
 
-
 void InputParams::gather_all_arrival_times_to_main(){
-    for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
-        if (subdom_main && id_subdomain==0){
-            // check if the target source is calculated by this simulation group
-            if (std::find(src_ids_this_sim.begin(), src_ids_this_sim.end(), i_src) != src_ids_this_sim.end()) {
-                // if this sim is main
-                if (id_sim == 0) {
-                    // do nothing
-                } else {
-                    // send to main simulation group
-                    for (auto &rec : rec_points[i_src]) {
-                        send_cr_single_sim(&(rec.arr_time), 0);
-                        send_cr_single_sim(&(rec.dif_arr_time), 0);
-                    }
-                }
-            } else {
-                if (id_sim == 0) {
-                    // receive
-                    int id_sim_group = i_src % n_sims;
+    //
+    // calculated arrival times at receivers are stored in rec_points of its simultaneous run group
+    // this function gathers all arrival times to the subdom_main process of the first simultaneous run group (id_sim==0 && subdom_main==true)
+    // from the main processes of each simultaneous run group (id_sim==any && sim_rank==0)
+    //
 
-                    for (auto &rec : rec_points[i_src]) {
-                        recv_cr_single_sim(&(rec.arr_time), id_sim_group);
-                        recv_cr_single_sim(&(rec.dif_arr_time), id_sim_group);
+    int n_all_src;
+
+    if (src_rec_file_exist) {
+
+        // broadcast n_all_src to all processes
+        if (id_sim == 0 && sim_rank == 0)
+            n_all_src = src_points.size();
+
+        broadcast_i_single_inter_sim(n_all_src, 0);
+
+        for (int i_src = 0; i_src < n_all_src; i_src++){
+
+            //if (subdom_main && id_subdomain==0){
+            if (sim_rank==0) {
+                // check if the target source is calculated by this simulation group
+                if (std::find(src_ids_this_sim.begin(), src_ids_this_sim.end(), i_src) != src_ids_this_sim.end()) {
+                    // if this sim is main
+                    if (id_sim == 0) {
+                        // do nothing
+                    } else {
+                        // send to main simulation group
+                        auto& vrecs = get_rec_points(i_src);
+                        for (auto &rec : vrecs) {
+                            send_cr_single_sim(&(rec.arr_time), 0);
+                            send_cr_single_sim(&(rec.dif_arr_time), 0);
+                        }
                     }
                 } else {
-                    // do nothing
+                    if (id_sim == 0) {
+                        // receive
+                        int id_sim_group = i_src % n_sims;
+
+                        for (auto &rec : rec_points[i_src]) {
+                            recv_cr_single_sim(&(rec.arr_time), id_sim_group);
+                            recv_cr_single_sim(&(rec.dif_arr_time), id_sim_group);
+                        }
+                    } else {
+                        // do nothing
+                    }
                 }
             }
         }
+
+
     }
 }
 
@@ -918,7 +1029,7 @@ void InputParams::write_src_rec_file(int i_inv) {
     // }
 
 
-    if (src_rec_file_exist){
+    if (src_rec_file_exist && subdom_main){
 
         std::ofstream ofs;
 
@@ -927,7 +1038,8 @@ void InputParams::write_src_rec_file(int i_inv) {
             gather_all_arrival_times_to_main();
 
         // store the calculated travel time to be output
-        reverse_src_rec_points();
+        if (id_sim==0 && sim_rank==0)
+            reverse_src_rec_points();
 
         if (run_mode == ONLY_FORWARD)
             src_rec_file_out = output_dir + "src_rec_file_forward.dat";
@@ -946,7 +1058,7 @@ void InputParams::write_src_rec_file(int i_inv) {
         //std::cout << "world_rank: " << world_rank << ", myrank: " << myrank << ", subdom_main: " << subdom_main << ", id_subdomain: " << id_subdomain << std::endl;
 
         for (long unsigned int i_src = 0; i_src < src_points_out.size(); i_src++){
-            if (world_rank == 0 && subdom_main && id_subdomain==0){    // main processor of subdomain && the first id of subdoumains
+            if (world_rank == 0 && id_subdomain==0){    // main processor of subdomain && the first id of subdoumains
                 if (i_src == 0)
                     ofs.open(src_rec_file_out);
                 else
@@ -1004,8 +1116,6 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                 ofs.close();
             }
-            // synchro
-            synchronize_all_world();
         }
 
     }

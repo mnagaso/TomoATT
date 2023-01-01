@@ -89,6 +89,7 @@ public:
     int        id_unique_list;                     // id of the source in the unique list
     CUSTOMREAL vobj_src_reloc;                     // value of objective function
     CUSTOMREAL vobj_grad_norm_src_reloc;           // norm of gradient of objective function
+
 };
 
 
@@ -114,6 +115,7 @@ public:
     bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
     SrcRec&              get_src_point(int);  // return SrcRec object
     std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
+    bool get_if_src_teleseismic(int); // return true if the source is teleseismic
 
     CUSTOMREAL get_conv_tol(){return conv_tol;};
     void set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
@@ -281,6 +283,105 @@ private:
     bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+
+
+    // function to communicate src_rec info
+    void send_src_inter_sim(SrcRec& src, int dest){
+        // send source parameters of SrcRec class to dest
+        // comm is inter_sub_comm or inter_comm
+
+        // id_src id_rec n_rec n_data
+        // lon lat dep weight is_teleseismic
+
+        send_i_single_sim(&src.id_src, dest);
+        send_i_single_sim(&src.id_rec, dest);
+        send_i_single_sim(&src.n_rec, dest);
+        send_i_single_sim(&src.n_data, dest);
+        send_cr_single_sim(&src.lon, dest);
+        send_cr_single_sim(&src.lat, dest);
+        send_cr_single_sim(&src.dep, dest);
+        send_cr_single_sim(&src.weight, dest);
+        send_bool_single_sim(&src.is_teleseismic, dest);
+
+    }
+
+    void send_rec_inter_sim(std::vector<SrcRec>& vrec, int dest){
+
+        // send receiver parameters of SrcRec class to dest
+        for (auto& rec: vrec) {
+            // id_src id_rec n_rec n_data
+            // lon lat dep weight arr_time arr_time_ori t_adj
+            // is_rec_pair n_rec_pair
+            send_i_single_sim(&rec.id_src, dest);
+            send_i_single_sim(&rec.id_rec, dest);
+            send_i_single_sim(&rec.n_rec, dest);
+            send_i_single_sim(&rec.n_data, dest);
+            send_cr_single_sim(&rec.lon, dest);
+            send_cr_single_sim(&rec.lat, dest);
+            send_cr_single_sim(&rec.dep, dest);
+            send_cr_single_sim(&rec.weight, dest);
+            send_cr_single_sim(&rec.arr_time, dest);
+            send_cr_single_sim(&rec.arr_time_ori, dest);
+            send_cr_single_sim(&rec.t_adj, dest);
+            send_bool_single_sim(&rec.is_rec_pair, dest);
+
+            // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
+            if (rec.is_rec_pair){
+                // TODO : check how to send double difference pairs
+            }
+        }
+
+    }
+
+    void recv_src_inter_sim(SrcRec& src, int orig){
+        // recv source parameters of SrcRec class from orig
+        // comm is inter_sub_comm or inter_comm
+
+        // id_src id_rec n_rec n_data
+        // lon lat dep weight is_teleseismic
+
+        recv_i_single_sim(&src.id_src, orig);
+        recv_i_single_sim(&src.id_rec, orig);
+        recv_i_single_sim(&src.n_rec, orig);
+        recv_i_single_sim(&src.n_data, orig);
+        recv_cr_single_sim(&src.lon, orig);
+        recv_cr_single_sim(&src.lat, orig);
+        recv_cr_single_sim(&src.dep, orig);
+        recv_cr_single_sim(&src.weight, orig);
+        recv_bool_single_sim(&src.is_teleseismic, orig);
+    }
+
+    void recv_rec_inter_sim(std::vector<SrcRec>& vrec, int orig){
+
+        // recv receiver parameters of SrcRec class from orig
+        for (auto& rec: vrec) {
+            // id_src id_rec n_rec n_data
+            // lon lat dep weight arr_time arr_time_ori t_adj
+            // is_rec_pair n_rec_pair
+            recv_i_single_sim(&rec.id_src, orig);
+            recv_i_single_sim(&rec.id_rec, orig);
+            recv_i_single_sim(&rec.n_rec, orig);
+            recv_i_single_sim(&rec.n_data, orig);
+            recv_cr_single_sim(&rec.lon, orig);
+            recv_cr_single_sim(&rec.lat, orig);
+            recv_cr_single_sim(&rec.dep, orig);
+            recv_cr_single_sim(&rec.weight, orig);
+            recv_cr_single_sim(&rec.arr_time, orig);
+            recv_cr_single_sim(&rec.arr_time_ori, orig);
+            recv_cr_single_sim(&rec.t_adj, orig);
+            recv_bool_single_sim(&rec.is_rec_pair, orig);
+
+            // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
+            if (rec.is_rec_pair){
+                // TODO : check how to recv double difference pairs
+            }
+        }
+
+    }
+
+
+
+
 };
 
 

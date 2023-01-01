@@ -61,7 +61,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
         }
 
         // get is_teleseismic flag
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
+        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
 
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic);

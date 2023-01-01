@@ -28,6 +28,10 @@ inline void synchronize_all_sim();
 inline void synchronize_all_sub();
 inline void synchronize_all_inter();
 inline void synchronize_all_world();
+inline void send_bool_single_sim(bool*, int);
+inline void recv_bool_single_sim(bool*, int);
+inline void send_i_single_sim(int*, int);
+inline void recv_i_single_sim(int*, int);
 inline void send_cr(CUSTOMREAL*, int, int);
 inline void recv_cr(CUSTOMREAL*, int, int);
 inline void isend_cr(CUSTOMREAL*, int, int, MPI_Request&);
@@ -45,6 +49,7 @@ inline void allgather_cr_single(CUSTOMREAL*, CUSTOMREAL*);
 inline void allgather_node_name(std::string, std::vector<std::string>&);
 inline void broadcast_bool_single(bool&, int);
 inline void broadcast_i_single(int&, int);
+inline void broadcast_i_single_inter_sim(int&, int);
 inline void broadcast_f_single(float&, int);
 inline void broadcast_cr(CUSTOMREAL* , int, int);
 inline void broadcast_cr_single(CUSTOMREAL&, int);
@@ -446,6 +451,30 @@ inline void synchronize_all_world(){
 }
 
 
+inline void send_bool_single_sim(bool* b, int dest){
+    const int n = 1;
+    MPI_Send(b, n, MPI_C_BOOL, dest, MPI_DUMMY_TAG, inter_sim_comm);
+}
+
+
+inline void recv_bool_single_sim(bool* b, int src){
+    const int n = 1;
+    MPI_Recv(b, n, MPI_C_BOOL, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+}
+
+
+inline void send_i_single_sim(int* i, int dest){
+    const int n = 1;
+    MPI_Send(i, n, MPI_INT, dest, MPI_DUMMY_TAG, inter_sim_comm);
+}
+
+
+inline void recv_i_single_sim(int* i, int src){
+    const int n = 1;
+    MPI_Recv(i, n, MPI_INT, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+}
+
+
 inline void send_cr_single_sim(CUSTOMREAL *cr, int dest){
     const int n = 1;
     MPI_Send(cr, n, MPI_CR, dest, MPI_DUMMY_TAG, inter_sim_comm);
@@ -542,6 +571,12 @@ inline void broadcast_bool_single(bool& value, int root){
 inline void broadcast_i_single(int& value, int root){
     int count = 1;
     MPI_Bcast(&value, count, MPI_INT, root, inter_sub_comm);
+}
+
+
+inline void broadcast_i_single_inter_sim(int& value, int root){
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_INT, root, inter_sim_comm);
 }
 
 inline void broadcast_f_single(float& value, int root){ // !!!! FOR ONLY READ PARAMETER !!!!!
@@ -689,5 +724,8 @@ inline void wait_req(MPI_Request& req){
 inline void shm_fence(MPI_Win& win){
     MPI_Win_fence(0, win);
 }
+
+
+
 
 #endif // MPI_FUNCS_H

@@ -14,8 +14,8 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic) {
 
         // set source position
         src_lon = IP.get_src_lon();    // in radian
-        src_lat = IP.get_src_lat();    // in rad
-        src_r   = IP.get_src_radius(); // already radious
+        src_lat = IP.get_src_lat();    // in radian
+        src_r   = IP.get_src_radius(); // radious
 
         // descretize source position (LOCAL ID)
         i_src_loc = std::floor((src_lon - grid.get_lon_min_loc()) / grid.get_delta_lon());
@@ -107,7 +107,7 @@ CUSTOMREAL Source::get_fac_at_source(CUSTOMREAL *loc_array) {
     // std::cout << "interp: " << dis_src_err_r << ' ' << dis_src_err_lat << ' ' << dis_src_err_lon << ' ' << get_fac_at_point(loc_array,0,0,0) << std::endl;
     return fac;
 
-    
+
 }
 
 
