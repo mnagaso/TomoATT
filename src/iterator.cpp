@@ -2234,52 +2234,51 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
 void Iterator::calculate_boundary_nodes_tele(Grid& grid, int& iip, int& jjt, int& kkr){
     CUSTOMREAL v0, v1;
 
-    // Bottom
-    if (kkr == 0 && grid.k_first())
-        if (grid.is_changed[I2V(iip,jjt,0)]){
+    if (grid.is_changed[I2V(iip,jjt,kkr)]) {
+
+        // Bottom
+        if (kkr == 0 && grid.k_first()){
             v0 = _2_CR * grid.T_loc[I2V(iip,jjt,1)] - grid.T_loc[I2V(iip,jjt,2)];
             v1 = grid.T_loc[I2V(iip,jjt,2)];
             grid.T_loc[I2V(iip,jjt,0)] = std::max({v0,v1});
         }
 
-    // Top
-    if (kkr == nr-1 && grid.k_last())
-        if (grid.is_changed[I2V(iip,jjt,nr-1)]){
+        // Top
+        if (kkr == nr-1 && grid.k_last()){
             v0 = _2_CR * grid.T_loc[I2V(iip,jjt,nr-2)] - grid.T_loc[I2V(iip,jjt,nr-3)];
             v1 = grid.T_loc[I2V(iip,jjt,nr-3)];
             grid.T_loc[I2V(iip,jjt,nr-1)] = std::max({v0,v1});
         }
 
-    // South
-    if (jjt == 0 && grid.j_first())
-        if (grid.is_changed[I2V(iip,0,kkr)]){
+        // South
+        if (jjt == 0 && grid.j_first()) {
             v0 = _2_CR * grid.T_loc[I2V(iip,1,kkr)] - grid.T_loc[I2V(iip,2,kkr)];
             v1 = grid.T_loc[I2V(iip,2,kkr)];
             grid.T_loc[I2V(iip,0,kkr)] = std::max({v0,v1});
         }
 
-    // North
-    if (jjt == nt-1 && grid.j_last())
-        if (grid.is_changed[I2V(iip,nt-1,kkr)]){
+        // North
+        if (jjt == nt-1 && grid.j_last()) {
             v0 = _2_CR * grid.T_loc[I2V(iip,nt-2,kkr)] - grid.T_loc[I2V(iip,nt-3,kkr)];
             v1 = grid.T_loc[I2V(iip,nt-3,kkr)];
             grid.T_loc[I2V(iip,nt-1,kkr)] = std::max({v0,v1});
         }
 
-    // West
-    if (iip == 0 && grid.i_first())
-        if (grid.is_changed[I2V(0,jjt,kkr)]){
+        // West
+        if (iip == 0 && grid.i_first()) {
             v0 = _2_CR * grid.T_loc[I2V(1,jjt,kkr)] - grid.T_loc[I2V(2,jjt,kkr)];
             v1 = grid.T_loc[I2V(2,jjt,kkr)];
             grid.T_loc[I2V(0,jjt,kkr)] = std::max({v0,v1});
         }
-    // East
-    if (iip == np-1 && grid.i_last())
-        if (grid.is_changed[I2V(np-1,jjt,kkr)]){
+
+        // East
+        if (iip == np-1 && grid.i_last()){
             v0 = _2_CR * grid.T_loc[I2V(np-2,jjt,kkr)] - grid.T_loc[I2V(np-3,jjt,kkr)];
             v1 = grid.T_loc[I2V(np-3,jjt,kkr)];
             grid.T_loc[I2V(np-1,jjt,kkr)] = std::max({v0,v1});
         }
+
+    } // end if is_changed
 }
 
 
