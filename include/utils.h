@@ -25,6 +25,7 @@ inline bool is_file_exist(const char* fileName)
     return static_cast<bool>(std::ifstream(fileName));
 }
 
+
 inline void stdout_by_main(char const* str){
     if (sim_rank == 0 && inter_sub_rank == 0 && sub_rank == 0)
         std::cout << str << std::endl;
@@ -75,6 +76,7 @@ template <typename T>
 inline T my_square(T const& a){
     return a * a;
 }
+
 
 // defined function is more than 2 times slower than inline function
 //#define my_square(a) (a * a)

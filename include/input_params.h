@@ -216,9 +216,9 @@ private:
     int        max_iter_inv=1; // maximum number of iterations for inversion
 
     // calculation method
-    int stencil_order; // stencil order
+    int stencil_order = 3; // stencil order
     int stencil_type; // stencil order
-    int sweep_type; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
+    int sweep_type = 1; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
     // parse src_rec_file
     void parse_src_rec_file();

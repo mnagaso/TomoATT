@@ -532,7 +532,7 @@ bool InputParams::get_if_src_teleseismic(int id_src) {
         if_src_teleseismic = get_src_point(id_src).is_teleseismic;
 
     // broadcast to all processes within simultaneous run group
-    broadcast_bool_single(if_src_teleseismic, 0);
+    broadcast_bool_single_sub(if_src_teleseismic, 0);
 
     return if_src_teleseismic;
 }
@@ -1273,7 +1273,7 @@ void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, int sr
     k_first = k_first_in;
 
     // allocate memory for teleseismic boundary sources
-    SrcRec& src = src_points[src_id];
+    SrcRec& src = get_src_point(src_id);
 
     // check if this src is teleseismic source
     if (src.is_teleseismic){
