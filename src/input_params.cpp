@@ -639,6 +639,7 @@ void InputParams::parse_src_rec_file(){
                 SrcRec src;
                 //src.id_src     = std::stoi(tokens[0]);
                 src.id_src     = i_src_now; // MNMN: here use id_src of active source lines order of src rec file, which allow to comment out bad events.
+                src.id_src_ori = src.id_src; // use for swapping srcs
                 src.year       = std::stoi(tokens[1]);
                 src.month      = std::stoi(tokens[2]);
                 src.day        = std::stoi(tokens[3]);
@@ -781,14 +782,16 @@ void InputParams::do_swap_src_rec(){
         for(long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++) {
 
             if (new_srcs.size() == 0){
+                // add receiver to the new source list
                 new_srcs.push_back(rec_points[i_src][i_rec]);
+                // record the original source id of this receiver
                 new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
             } else if (new_srcs.size() != 0) {
-
+                // check if the new source list already has the same receiver
                 bool found = false;
-                // check if the existing element has same name
                 for (long unsigned int i_new_src = 0; i_new_src < new_srcs.size(); i_new_src++) {
                     if (new_srcs[i_new_src].name_rec.compare(rec_points[i_src][i_rec].name_rec) == 0) {
+                        // add the original source id of this receiver
                         new_srcs[i_new_src].id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
                         found=true;
                         break;
@@ -796,8 +799,11 @@ void InputParams::do_swap_src_rec(){
                     else {
                     }
                 }
+                // if not found, add the receiver to the new source list
                 if (!found) {
+                    // add receiver to the new source list
                     new_srcs.push_back(rec_points[i_src][i_rec]);
+                    // record the original source id of this receiver
                     new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
                 }
 
@@ -814,16 +820,18 @@ void InputParams::do_swap_src_rec(){
         std::vector<SrcRec> tmp_list_recs;
 
         for (auto& i_src_ori : new_srcs[i_src].id_srcs_ori){
-
+            // copy the original source object for temporal use
             SrcRec tmp_new_rec = src_points_back[i_src_ori];
 
+            // loop over all the receivers of the original source
             for (auto& tmp_rec_ori : rec_points_back[i_src_ori]){
+                // check if the receiver is the same as the new source
                 if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec)==0) {
                     // we can use the same arrival time for a src-rec pair by principle of reciprocity (Aki & Richards, 2002).
                     tmp_new_rec.arr_time     = tmp_rec_ori.arr_time;
                     tmp_new_rec.arr_time_ori = tmp_rec_ori.arr_time_ori;
                     tmp_new_rec.id_rec_ori   = tmp_rec_ori.id_rec;
-                    tmp_new_rec.id_src       = i_src;
+                    tmp_new_rec.id_src       = i_src; // over write the id_src of the original source for the new source
                     goto rec_found;
                 }
             }
@@ -1009,24 +1017,24 @@ void InputParams::gather_all_arrival_times_to_main(){
 
 void InputParams::write_src_rec_file(int i_inv) {
 
-    // check src and rec:
-    // for (int i_proc = 0; i_proc<=world_nprocs; i_proc++){
-    //     if (i_proc == world_rank){
-    //         std::cout << "check src info" << std::endl;
-    //         for(auto& src: src_points){
-    //             std::cout << "world_rank: "<< world_rank <<", src name: " << src.name_rec << ", lat: " << src.lat << ", lon:"
-    //                     << src.lon << ", dep:" << src.dep << std::endl;
-    //         }
-    //         std::cout << "check rec info" << std::endl;
-    //         for(auto& rec: rec_points){
-    //             for (auto &data: rec){
-    //                 std::cout << "world_rank: "<< world_rank <<", rec name: " << data.name_src << ", lat: " << data.lat << ", lon:"
-    //                     << data.lon << ", dep:" << data.dep << ", arrival time: " << data.arr_time << std::endl;
-    //             }
-    //         }
-    //     }
-    //     synchronize_all_world();
-    // }
+    // check src and rec
+    //for (int i_proc = 0; i_proc<=world_nprocs; i_proc++){
+    //    if (i_proc == world_rank){
+    //        std::cout << "check src info" << std::endl;
+    //        for(auto& src: src_points){
+    //            std::cout << "world_rank: "<< world_rank <<", src name: " << src.name_rec << ", lat: " << src.lat << ", lon:"
+    //                    << src.lon << ", dep:" << src.dep << std::endl;
+    //        }
+    //        std::cout << "check rec info" << std::endl;
+    //        for(auto& rec: rec_points){
+    //            for (auto &data: rec){
+    //                std::cout << "world_rank: "<< world_rank <<", rec name: " << data.name_src << ", lat: " << data.lat << ", lon:"
+    //                    << data.lon << ", dep:" << data.dep << ", arrival time: " << data.arr_time << std::endl;
+    //            }
+    //        }
+    //    }
+    //    synchronize_all_world();
+    //}
 
 
     if (src_rec_file_exist && subdom_main){
@@ -1132,11 +1140,11 @@ void InputParams::reverse_src_rec_points(){
             // int id_rec_orig = src_points[i_src].id_rec;
             // loop swapped receivers
             for (long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++){
-                int id_src_orig = rec_points[i_src][i_rec].id_src;
-                int id_rec_orig = rec_points[i_src][i_rec].id_rec_ori; // cannot fully ecover  the original receiver id
+                int id_src_orig = rec_points[i_src][i_rec].id_src_ori;
+                int id_rec_orig = rec_points[i_src][i_rec].id_rec_ori; // cannot fully recover the original receiver id
 
                 // store calculated arrival time in backuped receiver list
-                rec_points_back[id_src_orig][id_rec_orig].arr_time     = rec_points[i_src][i_rec].arr_time;
+                rec_points_back[id_src_orig][id_rec_orig].arr_time     = rec_points[i_src][i_rec].arr_time; ///////////
                 rec_points_back[id_src_orig][id_rec_orig].dif_arr_time = rec_points[i_src][i_rec].dif_arr_time;
                 // std::cout   << "world_rank: " << world_rank << ", id_rec_orig: " << id_rec_orig << ", id_src_orig:"
                 //             << id_src_orig << ", arr_time: " << rec_points_back[id_src_orig][id_rec_orig].arr_time

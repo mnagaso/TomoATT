@@ -70,7 +70,8 @@ public:
 
     // original ids of source/receiver before swapping
     std::vector<int> id_srcs_ori;
-    int id_rec_ori; // used for swapping case at writing process
+    // used for swapping case at writing process
+    int id_src_ori, id_rec_ori;
 
     bool is_teleseismic = false;
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
