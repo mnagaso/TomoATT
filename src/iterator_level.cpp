@@ -791,7 +791,7 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     if(!use_gpu) {
 
-#if !defined USE_SIMD
+//#if !defined USE_SIMD
 
         // set sweep direction
         set_sweep_direction(iswp);
@@ -831,6 +831,7 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
         } // end loop i_level
 
+/*
 #elif USE_AVX512 || USE_AVX
 
         // preload constants
@@ -947,6 +948,7 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 #elif USE_ARM_SVE
 
 #endif // ifndef USE_SIMD
+*/
 
     } // end of if !use_gpu
     else { // if use_gpu
@@ -984,7 +986,7 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     if(!use_gpu) {
 
-#if !defined USE_SIMD
+//#if !defined USE_SIMD
 
         // set sweep direction
         set_sweep_direction(iswp);
@@ -1024,11 +1026,11 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
         } // end loop i_level
 
-#elif USE_AVX512 || USE_AVX
-
-#elif USE_ARM_SVE
-
-#endif // ifndef USE_SIMD
+//#elif USE_AVX512 || USE_AVX
+//
+//#elif USE_ARM_SVE
+//
+//#endif // ifndef USE_SIMD
 
     } // end of if !use_gpu
     else { // if use_gpu
