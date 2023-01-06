@@ -55,8 +55,13 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
     }
 
     // set initial and end indices of level set
-    st_level = 6;
-    ed_level = nr+nt+np-3;
+    if (!is_teleseismic) {
+        st_level = 6;
+        ed_level = nr+nt+np-3;
+    } else {
+        st_level = 0;
+        ed_level = nr+nt+np;
+    }
 
     // initialize factors etc.
     initialize_arrays(IP, grid, src);
