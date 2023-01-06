@@ -247,7 +247,7 @@ void IO_utils::init_xdmf_file(){
         type_size = "8";
     }
 
-    doc = new tinyxml2::XMLDocument();
+    doc = new tinyxml2::XMLDocument(); // TODO: delete this object somewhere at the end
 
     // headers
     tinyxml2::XMLDeclaration* decl = doc->NewDeclaration();

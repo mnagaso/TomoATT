@@ -423,19 +423,20 @@ InputParams::~InputParams(){
     // free memory
     if (subdom_main) {
         for (auto& id_src: src_ids_this_sim){
-            if (src_points[id_src].is_teleseismic){
-                if (j_last)
-                    free(src_points[id_src].arr_times_bound_N);
-                if (j_first)
-                    free(src_points[id_src].arr_times_bound_S);
-                if (i_last)
-                    free(src_points[id_src].arr_times_bound_E);
-                if (i_first)
-                    free(src_points[id_src].arr_times_bound_W);
-                if (k_first)
-                    free(src_points[id_src].arr_times_bound_Bot);
+            SrcRec& src = get_src_point(id_src);
+            if(src.is_teleseismic){
+                if (j_last && src.arr_times_bound_N != nullptr)
+                    free(src.arr_times_bound_N);
+                if (j_first && src.arr_times_bound_S != nullptr)
+                    free(src.arr_times_bound_S);
+                if (i_last && src.arr_times_bound_E != nullptr)
+                    free(src.arr_times_bound_E);
+                if (i_first && src.arr_times_bound_W != nullptr)
+                    free(src.arr_times_bound_W);
+                if (k_first && src.arr_times_bound_Bot != nullptr)
+                    free(src.arr_times_bound_Bot);
 
-                free(src_points[id_src].is_bound_src);
+                free(src.is_bound_src);
             }
         }
     }

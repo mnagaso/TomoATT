@@ -82,8 +82,8 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
     activated_boundaries[4] = true; // Bot
 
     // grid setup
-    nr_2d   = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
-    nt_2d   = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
+    nr_2d = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
+    nt_2d = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
 
     // initialize arrays
     r_2d = new CUSTOMREAL[nr_2d];
