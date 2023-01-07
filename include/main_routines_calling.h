@@ -134,9 +134,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // wait for all processes to finish
         synchronize_all_world();
 
-        // wait for all processes to finish
-        synchronize_all_world();
-
     } // end loop inverse
 
     // close xdmf file
