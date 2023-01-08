@@ -28,9 +28,9 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     // change stepsize
     if (i_inv > 0 && v_obj_inout < old_v_obj)
-        step_size_init = std::min(0.01, step_size_init*1.03);
+        step_size_init = std::min(0.1, step_size_init*1.03);
     else if (i_inv > 0 && v_obj_inout >= old_v_obj)
-        step_size_init = std::max(0.00001, step_size_init*0.97);
+        step_size_init = std::max(0.0001, step_size_init*step_size_decay);
 
     // output objective function
     if (myrank==0 && id_sim==0) out_main << std::setw(5) << i_inv \

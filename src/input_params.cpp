@@ -86,6 +86,11 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p = config["inversion"]["n_inv_dep_lat_lon"][2].as<int>();
             }
 
+            // output path
+            if (config["inversion"]["output_dir"]) {
+                output_dir = config["inversion"]["output_dir"].as<std::string>();
+            }
+
             // type of input inversion grid
             if (config["inversion"]["type_dep_inv"]) {
                 type_dep_inv = config["inversion"]["type_dep_inv"].as<int>();
@@ -143,10 +148,17 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion"]["max_iterations_inv"]) {
                 max_iter_inv = config["inversion"]["max_iterations_inv"].as<int>();
             }
+
             // step_size
             if (config["inversion"]["step_size"]) {
                 step_size_init = config["inversion"]["step_size"].as<CUSTOMREAL>();
             }
+
+            // step_size_decay
+            if (config["inversion"]["step_size_decay"]) {
+                step_size_decay = config["inversion"]["step_size_decay"].as<CUSTOMREAL>();
+            }
+
             // smoothing method
             if (config["inversion"]["smooth_method"]) {
                 smooth_method = config["inversion"]["smooth_method"].as<int>();
@@ -156,12 +168,14 @@ InputParams::InputParams(std::string& input_file){
                     exit(1);
                 }
             }
+
             // l_smooth_rtp
             if (config["inversion"]["l_smooth_rtp"]) {
                 smooth_lr = config["inversion"]["l_smooth_rtp"][0].as<CUSTOMREAL>();
                 smooth_lt = config["inversion"]["l_smooth_rtp"][1].as<CUSTOMREAL>();
                 smooth_lp = config["inversion"]["l_smooth_rtp"][2].as<CUSTOMREAL>();
             }
+
             // optim_method
             if (config["inversion"]["optim_method"]) {
                 optim_method = config["inversion"]["optim_method"].as<int>();
@@ -171,10 +185,12 @@ InputParams::InputParams(std::string& input_file){
                     exit(1);
                 }
             }
+
             // regularization weight
             if (config["inversion"]["regularization_weight"]) {
                 regularization_weight = config["inversion"]["regularization_weight"].as<CUSTOMREAL>();
             }
+
             // max sub iteration
             if (config["inversion"]["max_sub_iterations"]) {
                 max_sub_iterations = config["inversion"]["max_sub_iterations"].as<int>();
@@ -347,6 +363,7 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_str(src_rec_file, 0);
     broadcast_bool_single(src_rec_file_exist, 0);
+    broadcast_str(output_dir, 0);
     broadcast_str(init_model_type, 0);
     broadcast_str(init_model_path, 0);
     broadcast_i_single(run_mode, 0);
@@ -384,6 +401,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(optim_method, 0);
     broadcast_i_single(max_iter_inv, 0);
     broadcast_cr_single(step_size_init, 0);
+    broadcast_cr_single(step_size_decay, 0);
     broadcast_cr_single(regularization_weight, 0);
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_i_single(ndiv_i, 0);
@@ -1051,14 +1069,14 @@ void InputParams::write_src_rec_file(int i_inv) {
             reverse_src_rec_points();
 
         if (run_mode == ONLY_FORWARD)
-            src_rec_file_out = output_dir + "src_rec_file_forward.dat";
+            src_rec_file_out = output_dir + "/src_rec_file_forward.dat";
         else if (run_mode == DO_INVERSION){
             // write out source and receiver points with current inversion iteration number
-            src_rec_file_out = output_dir + "src_rec_file_step_" + int2string_zero_fill(i_inv) +".dat";
+            src_rec_file_out = output_dir + "/src_rec_file_step_" + int2string_zero_fill(i_inv) +".dat";
         } else if (run_mode == TELESEIS_PREPROCESS) {
-            src_rec_file_out = output_dir + "src_rec_file_teleseis_pre.dat";
+            src_rec_file_out = output_dir + "/src_rec_file_teleseis_pre.dat";
         } else if (run_mode == SRC_RELOCATION) {
-            src_rec_file_out = output_dir + "src_rec_file_src_reloc.dat";
+            src_rec_file_out = output_dir + "/src_rec_file_src_reloc.dat";
         } else {
             std::cerr << "Error: run_mode is not defined" << std::endl;
             exit(1);

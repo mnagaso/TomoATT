@@ -2277,7 +2277,7 @@ void Grid::write_inversion_grid_file(){
 
     std::ofstream ofs;
 
-    inversion_grid_file_out = output_dir + "inversion_grid.txt";
+    inversion_grid_file_out = output_dir + "/inversion_grid.txt";
     ofs.open(inversion_grid_file_out);
 
     if(subdom_main && id_subdomain == 0){       // main processor of subdomain && the first id of subdoumains

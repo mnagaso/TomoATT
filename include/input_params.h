@@ -217,8 +217,8 @@ private:
 
     // calculation method
     int stencil_order = 3; // stencil order
-    int stencil_type; // stencil order
     int sweep_type = 1; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
+    int stencil_type = 0;  // stencil type (0: non upwind; 1: upwind)
 
     // parse src_rec_file
     void parse_src_rec_file();

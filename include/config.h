@@ -82,10 +82,11 @@ inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
 
 // radious of the earth in km
 //inline CUSTOMREAL R_earth = 6378.1370;
-inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
-inline const CUSTOMREAL GAMMA          = 0.0;
-inline const CUSTOMREAL r_kermel_mask  = 40.0;
-inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
+inline CUSTOMREAL       R_earth         = 6371.0; // for compatibility with fortran code
+inline const CUSTOMREAL GAMMA           = 0.0;
+inline const CUSTOMREAL r_kermel_mask   = 40.0;
+inline CUSTOMREAL       step_size_init  = 0.01; // update step size limit
+inline CUSTOMREAL       step_size_decay = 0.9; // step size decay
 inline CUSTOMREAL       step_size_lbfgs;
 
 // RUN MODE TYPE FLAG

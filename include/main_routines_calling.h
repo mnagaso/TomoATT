@@ -35,7 +35,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     // prepare output for iteration status
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
-        out_main.open(output_dir + "objective_function.txt");
+        out_main.open(output_dir + "/objective_function.txt");
         if (optim_method == GRADIENT_DESCENT)
             out_main << std::setw(6) << "iter," << std::setw(16) << "v_obj," << std::setw(16) << "step_size," << std::endl;
         else if (optim_method == LBFGS_MODE)
