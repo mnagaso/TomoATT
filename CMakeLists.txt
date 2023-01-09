@@ -15,8 +15,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
-  #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
   set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
@@ -138,55 +138,66 @@ else()
 endif()
 file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 
-# add the executable
-add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS} ${SOURCES_EXT_XML})
+#
+# compile the executables
+# all the files with the name *.cxx is compiled as an executable
+#
+file( GLOB APP_SOURCES src/*.cxx )
+foreach( execsourcefile ${APP_SOURCES} )
+  # get app name from file name
+  get_filename_component(EXEC_NAME ${execsourcefile} NAME_WE)
 
-# set include path
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-          ${PROJECT_SOURCE_DIR}/include
-          ${PROJECT_SOURCE_DIR}/cuda
-          ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
+  # add the executable
+  add_executable(${EXEC_NAME} ${execsourcefile} ${SOURCES} ${HEADERS} ${SOURCES_EXT_XML})
 
-# compile cuda code
-if (CUDA_FOUND)
-  include_directories(${CUDA_INCLUDE_DIRS})
-  add_library(${CUDA_LIBRARY_NAME} STATIC ${SOURCES_CUDA} ${HEADERS_CUDA} )
-  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
-  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
-  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
-endif()
+  # set include path
+  target_include_directories(${EXEC_NAME} PRIVATE
+            ${PROJECT_SOURCE_DIR}/include
+            ${PROJECT_SOURCE_DIR}/cuda
+            ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
+
+  # compile cuda code
+  if (CUDA_FOUND)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    add_library(${CUDA_LIBRARY_NAME} STATIC ${SOURCES_CUDA} ${HEADERS_CUDA} )
+    target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+    target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
+    target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
+  endif()
 
 
-# link mpi
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC MPI::MPI_CXX)
+  # link mpi
+  target_link_libraries(${EXEC_NAME} PUBLIC MPI::MPI_CXX)
 
-# link yaml-app:
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC yaml-cpp)
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  # link yaml-app:
+  target_link_libraries(${EXEC_NAME} PUBLIC yaml-cpp)
+  target_include_directories(${EXEC_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
 
-# link HDF5
-if(HDF5_FOUND)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${HDF5_LIBRARIES})
-  target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
-endif()
+  # link HDF5
+  if(HDF5_FOUND)
+    target_link_libraries(${EXEC_NAME} PUBLIC ${HDF5_LIBRARIES})
+    target_include_directories(${EXEC_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
+  endif()
 
-# link blas
-if(BLAS_FOUND)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${BLAS_LIBRARIES})
-  target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${BLAS_INCLUDE_DIRS})
-endif()
+  # link blas
+  if(BLAS_FOUND)
+    target_link_libraries(${EXEC_NAME} PUBLIC ${BLAS_LIBRARIES})
+    target_include_directories(${EXEC_NAME} PUBLIC ${BLAS_INCLUDE_DIRS})
+  endif()
 
-# link cuda
-if (CUDA_FOUND)
+  # link cuda
+  if (CUDA_FOUND)
 
-  #set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "35;50;72")
-  set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "61")
-  set_property(TARGET ${CUDA_LIBRARY_NAME} PROPERTY CUDA_ARCHITECTURES 61)
+    #set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "35;50;72")
+    set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "61")
+    set_property(TARGET ${CUDA_LIBRARY_NAME} PROPERTY CUDA_ARCHITECTURES 61)
 
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CUDA_LIBRARY_NAME})
-  target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC MPI::MPI_CXX)
-  target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC yaml-cpp)
-  target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_LIBRARIES})
+    target_link_libraries(${EXEC_NAME} PRIVATE ${CUDA_LIBRARY_NAME})
+    target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC MPI::MPI_CXX)
+    target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC yaml-cpp)
+    target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_LIBRARIES})
 
-endif()
+  endif()
 
+
+endforeach( execsourcefile ${APP_SOURCES} )
