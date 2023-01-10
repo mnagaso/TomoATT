@@ -914,13 +914,28 @@ void InputParams::prepare_src_list(){
 
     // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
     if (src_rec_file_exist) {
-        int n_all_src;
+        int n_all_src=0;
 
-        if (id_sim == 0 && sim_rank == 0)
-            n_all_src = src_points.size();
+        //if (id_sim == 0 && subdom_main)
+        n_all_src = src_points.size();
 
         // broadcast n_all_src to all processes
-        MPI_Bcast(&n_all_src, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        //broadcast_i_single_inter_sim(n_all_src, 0); // id_sim=0&&subdom_main to id_sim=all&&subdom_main
+        //broadcast_i_single_sub(n_all_src, 0); // id_sim=all&&subdom_main to id_sim=all&&all subprocesses
+
+        // share max_n_all_src among all processes
+        int max_n_all_src = 0;
+        MPI_Allreduce(&n_all_src, &max_n_all_src, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
+
+        n_all_src = max_n_all_src;
+
+
+        // abort program  if n_all_src is zero
+        if (n_all_src == 0) {
+            if (subdom_main)
+                stdout_by_main("ERROR: No source is found in the source file. Aborting...\n");
+            exit(1);
+        }
 
         src_ids_this_sim.clear();
 
