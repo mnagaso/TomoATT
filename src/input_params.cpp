@@ -916,19 +916,12 @@ void InputParams::prepare_src_list(){
     if (src_rec_file_exist) {
         int n_all_src=0;
 
-        //if (id_sim == 0 && subdom_main)
-        n_all_src = src_points.size();
+        if (id_sim == 0 && subdom_main)
+            n_all_src = src_points.size();
 
         // broadcast n_all_src to all processes
-        //broadcast_i_single_inter_sim(n_all_src, 0); // id_sim=0&&subdom_main to id_sim=all&&subdom_main
-        //broadcast_i_single_sub(n_all_src, 0); // id_sim=all&&subdom_main to id_sim=all&&all subprocesses
-
-        // share max_n_all_src among all processes
-        int max_n_all_src = 0;
-        MPI_Allreduce(&n_all_src, &max_n_all_src, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
-
-        n_all_src = max_n_all_src;
-
+        broadcast_i_single_inter_sim(n_all_src, 0); // id_sim=0&&subdom_main to id_sim=all&&subdom_main
+        broadcast_i_single_sub(n_all_src, 0); // id_sim=all&&subdom_main to id_sim=all&&all subprocesses
 
         // abort program  if n_all_src is zero
         if (n_all_src == 0) {

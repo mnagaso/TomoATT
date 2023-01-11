@@ -208,16 +208,21 @@ inline void split_mpi_comm(){
 //
 // DEBUG ONLY rename mpi node names into 4 different names
 //
-//    if (world_nprocs != 32){
-//        std::cout << "ERROR: world_nprocs is not 64. (for processor assignment test)" << std::endl;
+//    //if (world_nprocs != 32){
+//    //    std::cout << "ERROR: world_nprocs is not 64. (for processor assignment test)" << std::endl;
+//    //    exit(1);
+//    //}
+//    if (world_nprocs%2 != 0){
+//        std::cout << "ERROR: world_nprocs is not even. (for processor assignment test)" << std::endl;
 //        exit(1);
 //    }
-//    if (world_rank %4 == 0) {
+//
+//    if (world_rank %2 == 0) {
 //        mpi_node_names_pre[world_rank] = "node_inu";
-//    } else if (world_rank % 4 == 1) {
-//        mpi_node_names_pre[world_rank] = "node_neko";
-//    } else if (world_rank % 4 == 2) {
-//        mpi_node_names_pre[world_rank] = "node_kani";
+//    //} else if (world_rank % 4 == 1) {
+//    //    mpi_node_names_pre[world_rank] = "node_neko";
+//    //} else if (world_rank % 4 == 2) {
+//    //    mpi_node_names_pre[world_rank] = "node_kani";
 //    } else {
 //        mpi_node_names_pre[world_rank] = "node_usagi";
 //    }
@@ -333,7 +338,7 @@ inline void split_mpi_comm(){
     }
 
     // inter-communicator (between simulation groups)
-    MPI_Comm_split(MPI_COMM_WORLD, sim_rank, sim_rank, &inter_sim_comm);
+    MPI_Comm_split(MPI_COMM_WORLD, sim_rank, id_sim, &inter_sim_comm);
     MPI_Comm_rank(inter_sim_comm, &inter_sim_rank);
 
     // number of subdomains
