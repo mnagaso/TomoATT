@@ -70,7 +70,7 @@ inline void initialize_mpi(){
     MPI_Init(NULL, NULL);
 #else
     int provided;
-    MPI_Init_thread(NULL,NULL,MPI_THREAD_FUNNELED,&provided); // #TODO: checkif SERIALIZED is needed
+    MPI_Init_thread(NULL,NULL,MPI_THREAD_FUNNELED,&provided);
     if(provided != MPI_THREAD_FUNNELED){
         std::cerr << "MPI_THREAD_FUNNELED is not supported" << std::endl;
         exit(1);

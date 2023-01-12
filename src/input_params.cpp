@@ -886,7 +886,7 @@ void InputParams::prepare_src_list(){
     // which are actually calculated in those simultaneous run groups
     //
 
-    // read src rec file by all processes #TODO: do this only by a main process of the first simultaneous run group
+    // read src rec file by all processes
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
 
         parse_src_rec_file();
@@ -901,7 +901,7 @@ void InputParams::prepare_src_list(){
 
         if (swap_src_rec) {
             // here only reginal events will be processed
-            stdout_by_main("###### Swapping src and rec. (only regional events will be processed) ######\n");
+            stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
             do_swap_src_rec();
         }
 
