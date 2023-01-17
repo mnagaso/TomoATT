@@ -23,6 +23,7 @@
 //#include "cblas.h"
 //#endif
 
+// TOMOATT main function
 int main(int argc, char *argv[])
 {
     // parse options
@@ -32,7 +33,7 @@ int main(int argc, char *argv[])
     initialize_mpi();
 
     stdout_by_main("------------------------------------------------------");
-    stdout_by_main("start TOMOATT solver.");
+    stdout_by_main("start TOMOATT forward or inversion calculation.");
     stdout_by_main("------------------------------------------------------");
 
     // read input file
