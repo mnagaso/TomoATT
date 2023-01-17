@@ -17,7 +17,7 @@ void reverse_rec_weight(std::vector<SrcRec>& src_points,      std::vector<std::v
 
         // copy calculated weight to the original rec_points_back
         for (auto& i_src_orig: src_points[i_src].id_srcs_ori){
-            for (long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++){
+            for (long unsigned int i_rec = 0; i_rec < rec_points_back[i_src_orig].size(); i_rec++){
                 rec_points_back[i_src_orig][i_rec].weight = weight;
             }
         }

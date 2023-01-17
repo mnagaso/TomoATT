@@ -15,8 +15,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
-  #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
   set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
