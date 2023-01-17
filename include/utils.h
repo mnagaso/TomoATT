@@ -44,9 +44,30 @@ inline void parse_options(int argc, char* argv[]){
         }
     }
 
-    // error if input_file is  not found
+    // error if input_file is not found
     if(!input_file_found){
         stdout_by_main("usage: mpirun -np 4 ./TOMOATT -i input_params.yaml");
+        std::cout << argc << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+inline void parse_options_srcrec_weight(int argc, char* argv[]){
+    bool input_file_found = false;
+
+    for (int i = 1; i < argc; i++){
+        if(strcmp(argv[i], "-v") == 0)
+            if_verbose = true;
+        else if (strcmp(argv[i],"-i") == 0){
+            input_file = argv[i+1];
+            input_file_found = true;
+        }
+    }
+
+    // error if input_file is not found
+    if(!input_file_found){
+        stdout_by_main("usage: ./SrcRecWeight -i srcrec_file.txt");
         std::cout << argc << std::endl;
         exit(EXIT_FAILURE);
     }
