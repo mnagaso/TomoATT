@@ -5,6 +5,26 @@
 #include "src_rec.h"
 #include "mpi_funcs.h"
 
+
+// copy calculated weights from swapped sources and receivers to the original sources and receivers
+void reverse_rec_weight(std::vector<SrcRec>& src_points,      std::vector<std::vector<SrcRec>>& rec_points, \
+                        std::vector<SrcRec>& src_points_back, std::vector<std::vector<SrcRec>>& rec_points_back) {
+
+    // loop swapped sources
+    for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
+        // swapped only the regional events && really need swap
+        CUSTOMREAL weight     = src_points[i_src].weight;
+
+        // copy calculated weight to the original rec_points_back
+        for (auto& i_src_orig: src_points[i_src].id_srcs_ori){
+            for (long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++){
+                rec_points_back[i_src_orig][i_rec].weight = weight;
+            }
+        }
+    }
+}
+
+
 /*
     caluclate geographical weight for sources and receivers.
     At first, we calculate inversed weight for each source from summation of epicentral distances to all sources.
@@ -42,25 +62,50 @@ void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::
         }
     }
 
-    // calculate receiver weight
-    for (int isrc = 0; isrc < n_src; isrc++){
-        int n_rec = rec_points[isrc].size();
-        for (int irec = 0; irec < n_rec-1; irec++){
-            for (int jrec = irec+1; jrec < n_rec; jrec++){
-                CUSTOMREAL d_ij = 0.0;
-                Epicentral_distance_sphere(rec_points[isrc][irec].lat*DEG2RAD, \
-                                           rec_points[isrc][irec].lon*DEG2RAD, \
-                                           rec_points[isrc][jrec].lat*DEG2RAD, \
-                                           rec_points[isrc][jrec].lon*DEG2RAD, \
-                                           d_ij);
+    // here the weight is inversed weight, so we need to invert it
+    for (int i = 0; i < n_src; i++) {
+        src_points[i].weight = 1.0/src_points[i].weight;
+    }
 
-                CUSTOMREAL w_inv_tmp = std::exp(-(d_ij/d_zero)*(d_ij/d_zero));
+    // before calculating receiver weights, we need to make a unique list of receivers
+    // so do src-rec swap and do weight calculation for swapped sources
 
-                rec_points[isrc][irec].weight += w_inv_tmp;
-                rec_points[isrc][jrec].weight += w_inv_tmp;
-            }
+    // swap src-rec
+    std::vector<SrcRec> src_points_back = src_points;
+    std::vector<std::vector<SrcRec>> rec_points_back = rec_points;
+
+    do_swap_src_rec(src_points, rec_points, src_points_back, rec_points_back);
+
+    // calculate swapped source weights
+    for (int i = 0; i < n_src-1; i++) {
+        for (int j = i+1; j < n_src; j++) {
+            CUSTOMREAL d_ij = 0.0;
+            Epicentral_distance_sphere(src_points[i].lat*DEG2RAD, \
+                                       src_points[i].lon*DEG2RAD, \
+                                       src_points[j].lat*DEG2RAD, \
+                                       src_points[j].lon*DEG2RAD, \
+                                       d_ij);
+
+            CUSTOMREAL w_inv_tmp = std::exp(-(d_ij/d_zero)*(d_ij/d_zero));
+
+            src_points[i].weight += w_inv_tmp;
+            src_points[j].weight += w_inv_tmp;
         }
     }
+
+    // here the weight is inversed weight, so we need to invert it
+    for (int i = 0; i < n_src; i++) {
+        src_points[i].weight = 1.0/src_points[i].weight;
+    }
+
+
+    // reverse swapped src-rec
+    reverse_rec_weight(src_points, rec_points, \
+                       src_points_back, rec_points_back);
+
+    //
+    src_points = src_points_back;
+    rec_points = rec_points_back;
 
 }
 
