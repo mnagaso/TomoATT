@@ -62,12 +62,15 @@ inline void parse_options_srcrec_weight(int argc, char* argv[]){
         else if (strcmp(argv[i],"-i") == 0){
             input_file = argv[i+1];
             input_file_found = true;
+        } else if (strcmp(argv[i],"-r") == 0){
+            // reference value
+            ref_value = atof(argv[i+1]);
         }
     }
 
     // error if input_file is not found
     if(!input_file_found){
-        stdout_by_main("usage: ./SrcRecWeight -i srcrec_file.txt");
+        stdout_by_main("usage: ./SrcRecWeight -i srcrec_file.txt -r 10.0");
         std::cout << argc << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -131,6 +134,7 @@ inline void Epicentral_distance_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
      &&      + my_square((lon1-lon2)))){
         dist = _0_CR;
     } else {
+        // calculate epicentral distance in radian
         dist = std::abs(acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1)));
     }
 }

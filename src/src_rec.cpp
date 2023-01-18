@@ -392,7 +392,7 @@ void writeout_src_rec_file(std::string&                      src_rec_file_out, \
             // ofs << std::fixed << std::setprecision(ASCII_OUTPUT_PRECISION);
 
             // format should be the same as input src_rec_file
-            // source line :  id_src yearm month day hour min sec lat lon dep_km mag num_recs id_event
+            // source line :  id_src yearm month day hour min sec lat lon dep_km mag num_recs id_event weight
             ofs << std::setw(7) << std::right << std::setfill(' ') <<  i_src << " "
                 << src_points_out[i_src].year << " " << src_points_out[i_src].month << " " << src_points_out[i_src].day << " "
                 << src_points_out[i_src].hour << " " << src_points_out[i_src].min   << " "
@@ -407,7 +407,7 @@ void writeout_src_rec_file(std::string&                      src_rec_file_out, \
                 << std::endl;
             for (long unsigned int i_rec = 0; i_rec < rec_points_out[i_src].size(); i_rec++){
                 if(!rec_points_out[i_src][i_rec].is_rec_pair){
-                    // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
+                    // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time weight
                     ofs << std::setw(7) << std::right << std::setfill(' ') << i_src << " "
                         << std::setw(4) << std::right << std::setfill(' ') << rec_points_out[i_src][i_rec].id_rec << " "
                         << rec_points_out[i_src][i_rec].name_rec << " "
