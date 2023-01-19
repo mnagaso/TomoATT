@@ -152,26 +152,6 @@ void normalize_weight(std::vector<SrcRec>& src_or_rec){
         src_or_rec[i].weight = (src_or_rec[i].weight / w_sum) * n_elm;
     }
 
-//    // scale the weight values to be within a range of 0.1 ~ 10.0
-//    CUSTOMREAL vmax = 10.0;
-//    CUSTOMREAL vmin = 0.1;
-//
-//    int n_elm = src_or_rec.size();
-//
-//    CUSTOMREAL w_min = 1.0e+10;
-//    CUSTOMREAL w_max = 0.0;
-//
-//    for (int i = 0; i < n_elm; i++) {
-//        if (src_or_rec[i].weight < w_min) w_min = src_or_rec[i].weight;
-//        if (src_or_rec[i].weight > w_max) w_max = src_or_rec[i].weight;
-//    }
-//
-//    CUSTOMREAL w_scale = vmax / (w_max - w_min);
-//
-//    for (int i = 0; i < n_elm; i++) {
-//        src_or_rec[i].weight = (src_or_rec[i].weight - w_min) * w_scale + vmin;
-//    }
-
 }
 
 
@@ -230,9 +210,6 @@ void calc_weight(std::vector<SrcRec>& src_or_rec){
     init_weight(src_or_rec);
     _calc_weight(src_or_rec, d_zero_fin);
 
-    // normalize the weights
-    normalize_weight(src_or_rec);
-
 }
 
 void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::vector<SrcRec>> &rec_points)
@@ -262,10 +239,13 @@ void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::
     // calculate source weights
     std::cout << "calculating source weights..." << std::endl;
     calc_weight(src_points);
+    // normalize the source weight
+    normalize_weight(src_points);
 
     // calculate receiver weights
     std::cout << "calculating receiver weights..." << std::endl;
     calc_weight(rec_points_unique);
+    // normalize the receiver weight will be done later
 
     // assign the receiver weights to the corresponding receivers
     for (int i = 0; i < n_src; i++) {
@@ -281,6 +261,12 @@ void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::
                 }
             }
         }
+    }
+
+    // normalize the receiver weight
+    // (the receiver weight is normalized for each source)
+    for (auto& recs_one_src: rec_points) {
+        normalize_weight(recs_one_src);
     }
 
     // end
