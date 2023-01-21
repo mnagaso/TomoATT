@@ -142,7 +142,14 @@ file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 # compile the executables
 # all the files with the name *.cxx is compiled as an executable
 #
-file( GLOB APP_SOURCES src/*.cxx )
+#file( GLOB APP_SOURCES src/*.cxx )
+
+# add one by one
+set(APP_SOURCES
+  src/TOMOATT.cxx
+  #src/SrcRecWeight.cxx
+  )
+
 foreach( execsourcefile ${APP_SOURCES} )
   # get app name from file name
   get_filename_component(EXEC_NAME ${execsourcefile} NAME_WE)
