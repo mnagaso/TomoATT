@@ -87,6 +87,7 @@ public:
     bool get_is_output_model_dat()    {return is_output_model_dat;};
     bool get_is_verbose_output()      {return is_verbose_output;};
     bool get_is_output_final_model()  {return is_output_final_model;};
+    bool get_is_output_in_process()   {return is_output_in_process;};
 
     bool get_is_inv_slowness()        {return is_inv_slowness;};
     bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
@@ -191,6 +192,7 @@ private:
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
     bool is_verbose_output      = false; // output verbose information or not.
     bool is_output_final_model  = true;  // output merged final model or not.
+    bool is_output_in_process   = true;  // output merged model at each inv iteration or not.
 
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.

@@ -291,6 +291,8 @@ InputParams::InputParams(std::string& input_file){
                 is_verbose_output = config["output_setting"]["is_verbose_output"].as<int>();
             if (config["output_setting"]["is_output_final_model"])
                 is_output_final_model = config["output_setting"]["is_output_final_model"].as<int>();
+            if (config["output_setting"]["is_output_in_process"])
+                is_output_in_process = config["output_setting"]["is_output_in_process"].as<int>();
         }
 
         if (config["debug"]) {
@@ -423,6 +425,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(is_output_model_dat, 0);
     broadcast_bool_single(is_verbose_output, 0);
     broadcast_bool_single(is_output_final_model, 0);
+    broadcast_bool_single(is_output_in_process, 0);
     broadcast_bool_single(is_inv_slowness, 0);
     broadcast_bool_single(is_inv_azi_ani, 0);
     broadcast_bool_single(is_inv_rad_ani, 0);
