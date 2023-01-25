@@ -145,7 +145,6 @@ n_srcs = [10,20,20]
 n_src = n_srcs[0]*n_srcs[1]*n_srcs[2]
 n_rec = [30 for x in range(n_src)]
 
-
 lines = []
 
 nij_rec = math.sqrt(n_rec[0])
