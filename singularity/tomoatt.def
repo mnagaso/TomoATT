@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ubuntu:latest
+From: ubuntu:16.04
 
 %help
 This is a test container.
@@ -17,8 +17,28 @@ This is a test container.
 
 %post
     echo "Installing required packages..."
-    apt-get update && apt-get install -y wget git bash gcc gfortran g++ make file cmake
+    apt-get update && apt-get install -y wget git bash gcc gfortran g++ make file apt-transport-https ca-certificates
 
+    # install gcc-9 and g++-9
+    apt-get install -y software-properties-common && \
+    add-apt-repository ppa:ubuntu-toolchain-r/test -y && \
+    apt-get update -y && \
+    apt-get install -y gcc-9 g++-9 && \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 60 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+
+    # install latest cmake
+    apt update && \
+    apt install -y software-properties-common lsb-release && \
+    apt clean all && \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" && \
+    apt update && \
+    apt install kitware-archive-keyring && \
+    rm /etc/apt/trusted.gpg.d/kitware.gpg && \
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6AF7F09730B3F0A4 && \
+    apt update && \
+    apt install -y cmake && \
+    apt clean all
 
     export PKG_DIR=/opt/packages
     export NPROC=4
