@@ -8,12 +8,13 @@ This is a test container.
     ../../TomoATT /opt/TomoATT
 
 %environment
-    export PKG_DIR=/opt/ompi
+    export PKG_DIR=/opt/packages
     export SINGULARITY_PKG_DIR=$PKG_DIR
     export SINGULARITYENV_APPEND_PATH=$PKG_DIR/bin
     export SINGULAIRTYENV_APPEND_LD_LIBRARY_PATH=$PKG_DIR/lib
     export PATH=$PKG_DIR/bin:$PATH
     export PATH=/opt/TomoATT/build/bin:$PATH
+    export LD_LIBRARY_PATH=$PKG_DIR/lib:$LD_LIBRARY_PATH
 
 %post
     echo "Installing required packages..."
