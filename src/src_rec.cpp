@@ -20,6 +20,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
     // only world_rank 0 reads the file
     if (sim_rank == 0){
         ifs.open(src_rec_file);
+        // abort if file does not exist
+        if (!ifs.is_open()){
+            std::cerr << "Error: src_rec_file " << src_rec_file << " does not exist!" << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
         ss_whole << ifs.rdbuf();
         ifs.close();
     }
