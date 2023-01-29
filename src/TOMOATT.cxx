@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
     // initialize mpi
     initialize_mpi();
 
-    stdout_by_main("------------------------------------------------------");
-    stdout_by_main("start TOMOATT forward or inversion calculation.");
-    stdout_by_main("------------------------------------------------------");
+    stdout_by_rank_zero("------------------------------------------------------");
+    stdout_by_rank_zero("start TOMOATT forward or inversion calculation.");
+    stdout_by_rank_zero("------------------------------------------------------");
 
     // read input file
     InputParams IP(input_file);
@@ -113,9 +113,9 @@ int main(int argc, char *argv[])
     // finalize mpi
     finalize_mpi();
 
-    stdout_by_main("------------------------------------------------------");
-    stdout_by_main("end TOMOATT solver.");
-    stdout_by_main("------------------------------------------------------");
+    stdout_by_rank_zero("------------------------------------------------------");
+    stdout_by_rank_zero("end TOMOATT solver.");
+    stdout_by_rank_zero("------------------------------------------------------");
 
     return 0;
 }

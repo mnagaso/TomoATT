@@ -331,7 +331,7 @@ InputParams::InputParams(std::string& input_file){
             lon_inv = new CUSTOMREAL[n_inv_p_flex];
     }
 
-    std::cout << "parameter file read done." << std::endl;
+    stdout_by_rank_zero("parameter file read done.");
 
     synchronize_all_world();
 
@@ -435,7 +435,7 @@ InputParams::InputParams(std::string& input_file){
     check_contradictions();
 
     // broadcast the values to all processes
-    stdout_by_main("read input file successfully.");
+    stdout_by_rank_zero("read input file successfully.");
 
 }
 
