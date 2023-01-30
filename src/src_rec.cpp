@@ -245,6 +245,10 @@ void do_swap_src_rec(std::vector<SrcRec>& src_points, std::vector<std::vector<Sr
     // swap src/rec points
     // at this moment, all the sources are divided into src_points (regional) and tele_src_points (teleseismic)
 
+    // Start timer
+    std::string timer_name = "swap_src_rec";
+    Timer timer(timer_name);
+
     std::vector<SrcRec> new_srcs; // new src points
     std::vector<std::vector<SrcRec>> new_recs;
 
@@ -327,6 +331,8 @@ void do_swap_src_rec(std::vector<SrcRec>& src_points, std::vector<std::vector<Sr
     src_points = new_srcs;
     rec_points = new_recs;
 
+    // indicate elapsed time
+    std::cout << "Total elapsed time for swapping src rec: " << timer.get_t() << " seconds.\n";
 }
 
 

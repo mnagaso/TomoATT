@@ -568,7 +568,7 @@ void InputParams::prepare_src_list(){
     // which are actually calculated in those simultaneous run groups
     //
 
-    // read src rec file by all processes
+    // read src rec file
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
 
         parse_src_rec_file(src_rec_file, src_points, rec_points);
