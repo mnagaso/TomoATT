@@ -141,9 +141,8 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-n_srcs = [2,2,2]
-n_src = n_srcs[0]*n_srcs[1]*n_srcs[2]
-n_rec = [0 for x in range(n_src)]
+n_srcs = 8 # source will be placed around the domain
+r_src = 30 # radius of the source in degree
 
 lines = []
 
@@ -152,60 +151,25 @@ lines = []
 pos_src=[]
 #pos_rec=[]
 
+# center of the domain
+lon_c = (pp1deg+pp2deg)/2.0
+lat_c = (tt1deg+tt2deg)/2.0
 
-# create receiver coordinates
-#elev_recs=[]
-#lon_recs=[]
-#lat_recs=[]
-#rec_names=[]
-#for i in range(n_rec[0]):
-#    #elev_recs.append(random.uniform(-100.0,-100.0)) # elevation in m
-#    #elev_recs.append(0) # elevation in m
-#    #lon_recs .append(random.uniform(pp1deg*1.1,pp2deg*0.9))
-#    #lat_recs .append(random.uniform(tt1deg*1.1,tt2deg*0.9))
-#    rec_names.append(i)
-#    # regularly
-#    elev_recs.append(0.0)
-#    tmp_ilon = i%nij_rec
-#    tmp_ilat = int(i/nij_rec)
-#    lon_recs.append(pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_rec)
-#    lat_recs.append(tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_rec)
+# step of angle in degree = 360.0/n_srcs
+d_deg = 360.0/n_srcs
 
+for i_src in range(n_srcs):
 
+    i_deg = i_src*d_deg
+    lon = lon_c + r_src*math.cos(i_deg/180.0*math.pi)
+    lat = lat_c + r_src*math.sin(i_deg/180.0*math.pi)
+    # depth of the source
+    dep = 10.0
 
-# create source coordinates
-for ir in range(n_srcs[0]):
-    for it in range(n_srcs[1]):
-        for ip in range(n_srcs[2]):
-            i_src = ir*n_srcs[1]*n_srcs[2] + it*n_srcs[2] + ip
-            # define one point in the domain (rr1 bottom, rr2 top)
-            # random
-            #dep = random.uniform((R_earth-rr1)*0.5,(R_earth-rr1)*0.98)
-            #lon = random.uniform(pp1deg,pp2deg)
-            #lat = random.uniform(tt1deg,tt2deg)
+    src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, 0, id_dummy]
+    lines.append(src)
 
-            # regular
-            dep = (R_earth-rr1)/n_srcs[0]*ir
-            lon = pp1deg + ip*(pp2deg-pp1deg)/n_srcs[2]
-            lat = tt1deg + it*(tt2deg-tt1deg)/n_srcs[1]
-
-            src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
-            lines.append(src)
-
-            pos_src.append([lon,lat,dep])
-
-
-            # create dummy station
-            #for i_rec in range(n_rec[i_src]):
-            #    elev_rec = elev_recs[i_rec]
-            #    lon_rec  = lon_recs[i_rec]
-            #    lat_rec  = lat_recs[i_rec]
-            #    st_name_dummy = rec_names[i_rec]
-
-            #    rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
-            #    lines.append(rec)
-
-            #    pos_rec.append([lon_rec,lat_rec,elev_rec])
+    pos_src.append([lon,lat,dep])
 
 
 # write out ev_arrivals file
@@ -222,7 +186,7 @@ with open(fname, 'w') as f:
 # draw src and rec positions
 import matplotlib.pyplot as plt
 
-for i_src in range(n_src):
+for i_src in range(n_srcs):
     plt.scatter(pos_src[i_src][1],pos_src[i_src][0],c='r',marker='o')
 
 # %%

@@ -16,7 +16,7 @@
 //#include "kernel.h"
 //#include "model_update.h"
 //#include "main_routines_calling.h"
-//#include "eikonal_solver_2d.h"
+#include "eikonal_solver_2d.h"
 
 #ifdef USE_CUDA
 #include "cuda_initialize.cuh"
@@ -34,8 +34,6 @@ int main(int argc, char *argv[])
 
     // here we set i_inv = 0; but later we can modify the code to set from command line
     int i_inv = 0;
-    // all the source type shold be regional source
-    bool is_teleseismic = false;
 
     // initialize mpi
     initialize_mpi();
@@ -81,6 +79,9 @@ int main(int argc, char *argv[])
         io.write_grid(grid);
     }
 
+    // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
+    prepare_teleseismic_boundary_conditions(IP, grid, io);
+
     synchronize_all_world();
 
     // initialize factors
@@ -103,6 +104,9 @@ int main(int argc, char *argv[])
 
         // set group name to be used for output in h5
         io.change_group_name_for_source();
+
+        // get is_teleseismic flag
+        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
 
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic);
