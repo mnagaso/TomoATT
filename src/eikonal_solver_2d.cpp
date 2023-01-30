@@ -4,8 +4,9 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
+    // TODO: currently this routine is run in only serial.
+    // it can be work in parallel with simultaneous run,
     if (subdom_main) {
-
         for (long unsigned int i = 0; i < IP.src_ids_this_sim.size(); i++) {
             int src_id = IP.src_ids_this_sim[i];
             // get source info

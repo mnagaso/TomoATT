@@ -142,7 +142,7 @@ pp2deg = pp2 * 180.0/math.pi
 
 
 n_srcs = 8 # source will be placed around the domain
-r_src = 30 # radius of the source in degree
+r_src = 15 # radius of the source in degree
 
 lines = []
 
@@ -164,7 +164,7 @@ for i_src in range(n_srcs):
     lon = lon_c + r_src*math.cos(i_deg/180.0*math.pi)
     lat = lat_c + r_src*math.sin(i_deg/180.0*math.pi)
     # depth of the source
-    dep = 10.0
+    dep = 10.0 + 0.5*i_src
 
     src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, 0, id_dummy]
     lines.append(src)

@@ -11,20 +11,11 @@
 #include "source.h"
 #include "iterator.h"
 #include "iterator_selector.h"
-
-//#include "receiver.h"
-//#include "kernel.h"
-//#include "model_update.h"
-//#include "main_routines_calling.h"
 #include "eikonal_solver_2d.h"
 
 #ifdef USE_CUDA
 #include "cuda_initialize.cuh"
 #endif
-
-//#ifdef USE_BLAS
-//#include "cblas.h"
-//#endif
 
 // TOMOATT main function
 int main(int argc, char *argv[])
