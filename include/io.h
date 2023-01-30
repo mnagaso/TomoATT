@@ -115,6 +115,7 @@ public:
     void read_2d_travel_time_field(std::string&, CUSTOMREAL*, int, int);
 
     // merged model
+    void write_T_merged(Grid&, InputParams&, int);
     void write_final_model(Grid&, InputParams&);
     bool node_of_this_subdomain(int*, const int&, const int&, const int&);
 

@@ -210,9 +210,6 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         i_iter++;
     }
 
-    // modify the receiver's location
-
-
     // write out new src_rec_file
     IP.write_src_rec_file(0);
 

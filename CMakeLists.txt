@@ -146,6 +146,7 @@ file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 # add one by one
 set(APP_SOURCES
   src/TOMOATT.cxx
+  #src/TOMOATT_solver_only.cxx
   #src/SrcRecWeight.cxx
   )
 

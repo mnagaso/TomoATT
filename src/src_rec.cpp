@@ -133,6 +133,18 @@ void parse_src_rec_file(std::string& src_rec_file, \
                 src_points.push_back(src);
                 cc++;
 
+                // source with no receiver is allowed for solver_only model
+                if (ndata_tmp==0) {
+                    // go to the next source
+                    cc = 0;
+                    i_src_now++;
+
+                    // timer
+                    if (i_src_now % 100 == 0 && world_rank == 0) {
+                        std::cout << "reading source " << i_src_now << " finished in " << timer.get_t() << " seconds. dt = " << timer.get_t_delta() << " seconds. \n";
+                    }
+                }
+
             } else {
 
                 // read single receiver or differential traveltime data
