@@ -77,7 +77,8 @@ inline void initialize_mpi(){
     }
     // show the number of threads
     int nthreads = omp_get_max_threads();
-    std::cout << "Number of threads = " << nthreads << std::endl;
+    if (world_rank == 0)
+        std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
@@ -89,12 +90,11 @@ inline void initialize_mpi(){
     myrank = world_rank;
     inter_sub_comm = MPI_COMM_WORLD;
 
-    stdout_by_main("mpi initialized.");
+    stdout_by_rank_zero("mpi initialized.");
 }
 
 
 inline void finalize_mpi(){
-    stdout_by_main("mpi finalized.");
 
     synchronize_all_world();
 
@@ -108,6 +108,8 @@ inline void finalize_mpi(){
 
     // Finalize the MPI environment.
     MPI_Finalize();
+
+    stdout_by_rank_zero("mpi finalized.");
 }
 
 
@@ -359,7 +361,7 @@ inline void split_mpi_comm(){
     // assign first ranks to the main node of subdomain
     // and create a commmunicator for main processes of subdomain
     if (id_proc_in_subdomain == 0) {
-        std::cout << "my sim_rank: " << sim_rank << std::endl;
+        //std::cout << "my sim_rank: " << sim_rank << std::endl;
         subdom_main = true;
         MPI_Comm_split(sim_comm, 0, sim_rank, &inter_sub_comm);
         MPI_Comm_rank(inter_sub_comm, &inter_sub_rank);
@@ -373,7 +375,7 @@ inline void split_mpi_comm(){
         nprocs = inter_sub_nprocs;
 
     } else {
-        std::cout << "my sim_rank to sub : " << sim_rank << std::endl;
+        //std::cout << "my sim_rank to sub : " << sim_rank << std::endl;
         MPI_Comm_split(sim_comm, 1, sim_rank, &inter_sub_comm);
 
         // assign those ranks as subprocesses of each sub domain.

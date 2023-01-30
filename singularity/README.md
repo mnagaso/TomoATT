@@ -31,3 +31,21 @@ The two variables in tomoatt.def file need to be modified for this purpose.
     export OMPI_VERSOIN_MAJOR=3.0
     export OMPI_VERSION_FULL=3.0.1
 ```
+
+
+# For running the container image on the HPC with old kernel environment
+
+Some HPC systems have old kernel environment, e.g. CentOS 6, RHEL 6, and Ubuntu 16.04.
+In this case, the container image cannot be run on the HPC system. (The error message is "FATAL: kernel too old")
+To create a container image that can be run on the HPC system, this image needs to be built on the old kernel environment as well.
+For this purpose, we use [docker](https://www.docker.com/) for virtualy creating an old kernel environment, and then build the container image on it.
+
+To build the container image on the old kernel environment,
+``` bash
+docker build -t singularity_on_centos6 -f Dockerfile_singularity_on_centos6 .
+```
+
+To build the container image on the old kernel environment,
+``` bash
+docker run --privileged -v "(full path to)/TomoATT:/TomoATT" singularity_on_centos6 singularity build /TomoATT/singularity/tomoatt.sif /TomoATT/singularity/tomoatt.def
+```

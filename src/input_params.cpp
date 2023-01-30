@@ -331,7 +331,7 @@ InputParams::InputParams(std::string& input_file){
             lon_inv = new CUSTOMREAL[n_inv_p_flex];
     }
 
-    std::cout << "parameter file read done." << std::endl;
+    stdout_by_rank_zero("parameter file read done.");
 
     synchronize_all_world();
 
@@ -435,7 +435,7 @@ InputParams::InputParams(std::string& input_file){
     check_contradictions();
 
     // broadcast the values to all processes
-    stdout_by_main("read input file successfully.");
+    stdout_by_rank_zero("read input file successfully.");
 
 }
 
@@ -568,7 +568,7 @@ void InputParams::prepare_src_list(){
     // which are actually calculated in those simultaneous run groups
     //
 
-    // read src rec file by all processes
+    // read src rec file
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
 
         parse_src_rec_file(src_rec_file, src_points, rec_points);
@@ -626,7 +626,8 @@ void InputParams::prepare_src_list(){
                     // send src_points[i_src] to the main process of dst_id_sim
                     send_src_inter_sim(src_points[i_src], dst_id_sim);
                     // send rec_points[i_src] to the main process of dst_id_sim
-                    send_rec_inter_sim(rec_points[i_src], dst_id_sim);
+                    if (src_points[i_src].n_rec > 0) // #TODO: this is probably not supporting n_rec_pair
+                        send_rec_inter_sim(rec_points[i_src], dst_id_sim);
                 }
             } else {
                 if (dst_id_sim == id_sim){
@@ -638,14 +639,16 @@ void InputParams::prepare_src_list(){
                         // receive src_points from the main process of dst_id_sim
                         recv_src_inter_sim(src_points.back(), 0);
 
-                        // initialize rec_points
-                        rec_points.push_back(std::vector<SrcRec>());
-                        for (int i_rec = 0; i_rec < src_points.back().n_rec; i_rec++){
-                            rec_points.back().push_back(SrcRec());
+                        if (src_points.back().n_rec > 0) {
+                            // initialize rec_points
+                            rec_points.push_back(std::vector<SrcRec>());
+                            for (int i_rec = 0; i_rec < src_points.back().n_rec; i_rec++){
+                                rec_points.back().push_back(SrcRec());
+                            }
+                            // receive rec_points[i_src] from the main process of dst_id_sim
+                            recv_rec_inter_sim(rec_points.back(), 0);
                         }
-                        // receive rec_points[i_src] from the main process of dst_id_sim
-                        recv_rec_inter_sim(rec_points.back(), 0);
-                    }
+                   }
                 } else {
                     // do nothing
                 }
@@ -809,7 +812,8 @@ void InputParams::separate_region_and_tele_src(){
             // add this source to the list of tele sources
             tele_src_points.push_back(src_point);
             // add receivers to the list of tele receivers
-            tele_rec_points.push_back(rec_points_tmp[cc]);
+            if (src_point.n_rec > 0 || src_point.n_rec_pair > 0)
+                tele_rec_points.push_back(rec_points_tmp[cc]);
 
         } else {
 
@@ -818,8 +822,8 @@ void InputParams::separate_region_and_tele_src(){
             // add this source to the list of local sources
             src_points.push_back(src_point);
             // add receivers to the list of local receivers
-            rec_points.push_back(rec_points_tmp[cc]);
-
+            if (src_point.n_rec > 0 || src_point.n_rec_pair > 0)
+                rec_points.push_back(rec_points_tmp[cc]);
         }
         cc++;
     }

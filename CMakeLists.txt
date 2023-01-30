@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.8)
 
 # set the project name
 set(CMAKE_PROJECT_NAME "TOMOATT")
@@ -46,15 +46,15 @@ find_package(MPI)
 message(STATUS "MPI_FOUND: ${MPI_FOUND}")
 message(STATUS "MPI_VERSION: ${MPI_VERSION}")
 
-# find openmp
-find_package(OpenMP)
-if(OPENMP_FOUND)
-  message(STATUS "OpenMP found")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  add_definitions(-DUSE_OMP)
-endif()
+# find openmp ## WE DO NOT USE OPENMP BUT KEEP THIS FOR FUTURE USE
+#find_package(OpenMP)
+#if(OPENMP_FOUND)
+#  message(STATUS "OpenMP found")
+#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+#  add_definitions(-DUSE_OMP)
+#endif()
 
 # find HDF5 parallel TODO: check parallel io is enable or not
 message(STATUS "Running CMAKE FindHDF5.cmake...")
@@ -110,17 +110,16 @@ endif()
 # which is more frequent than the referred paper but necessary
 add_definitions(-DFREQ_SYNC_GHOST)
 
-# find BLAS
-find_package(BLAS)
-if(BLAS_FOUND)
-  message(STATUS "BLAS_FOUND: ${BLAS_FOUND} at ${BLAS_LIBRARIES}, ${BLAS_INCLUDE_DIRS}")
-  add_definitions(-DUSE_BLAS)
-  find_path(BLAS_INCLUDE_DIRS cblas.h
-    /usr/include
-    /usr/local/include
-    /usr/local/include/openblas)
-endif()
-
+# find BLAS # WE DO NOT USE BLAS BUT KEEP THIS FOR FUTURE USE
+#find_package(BLAS)
+#if(BLAS_FOUND)
+#  message(STATUS "BLAS_FOUND: ${BLAS_FOUND} at ${BLAS_LIBRARIES}, ${BLAS_INCLUDE_DIRS}")
+#  add_definitions(-DUSE_BLAS)
+#  find_path(BLAS_INCLUDE_DIRS cblas.h
+#    /usr/include
+#    /usr/local/include
+#    /usr/local/include/openblas)
+#endif()
 
 # submodules
 # yaml parser
@@ -147,6 +146,7 @@ file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 # add one by one
 set(APP_SOURCES
   src/TOMOATT.cxx
+  #src/TOMOATT_solver_only.cxx
   #src/SrcRecWeight.cxx
   )
 

@@ -15,7 +15,8 @@
 inline void create_output_dir(std::string dir_path){
     // create output directory
     if (mkdir(dir_path.c_str(), 0777) == -1){
-        std::cout << "Warning : directory " << dir_path << " can not be created. Maybe already exists (no problem in this case)." << std::endl;
+        if (world_rank==0)
+            std::cout << "Warning : directory " << dir_path << " can not be created. Maybe already exists (no problem in this case)." << std::endl;
     }
 }
 
@@ -27,7 +28,13 @@ inline bool is_file_exist(const char* fileName)
 
 
 inline void stdout_by_main(char const* str){
-    if (sim_rank == 0 && inter_sub_rank == 0 && sub_rank == 0)
+    if (sim_rank == 0 && inter_sub_rank == 0 && sub_rank == 0 && id_sim == 0)
+        std::cout << str << std::endl;
+}
+
+
+inline void stdout_by_rank_zero(char const* str){
+    if(world_rank == 0)
         std::cout << str << std::endl;
 }
 

@@ -1,0 +1,47 @@
+FROM centos:6
+
+# install wget without yum
+RUN mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.bak && \
+    curl https://www.host-stage.net/hsmirrors/centos6repofix >/etc/yum.repos.d/CentOS-Base.repo && \
+    yum clean all
+
+RUN yum update ca-certificates -y
+
+# install dependencies
+RUN yum update -y && \
+     yum groupinstall -y 'Development Tools' && \
+     yum install -y \
+     openssl-devel \
+     libuuid-devel \
+     libseccomp-devel \
+     wget \
+     squashfs-tools \
+     cryptsetup
+
+
+
+# install go
+ENV VERSION=1.16.2 OS=linux ARCH=amd64
+RUN wget https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz && \
+    tar -C /usr/local -xzvf go$VERSION.$OS-$ARCH.tar.gz && \
+    rm go$VERSION.$OS-$ARCH.tar.gz
+ENV PATH="${PATH}:/usr/local/go/bin"
+
+# install singularity of 3.6.4
+RUN wget https://github.com/apptainer/singularity/releases/download/v3.6.4/singularity-3.6.4.tar.gz && \
+    tar -xvf singularity-3.6.4.tar.gz && \
+    rm singularity-3.6.4.tar.gz && \
+    cd singularity && \
+    ./mconfig && \
+    make -C builddir && \
+    make -C builddir install
+
+# install singularity of 3.9
+#ENV VERSION=3.9.5
+#RUN wget https://github.com/sylabs/singularity/releases/download/v${VERSION}/singularity-ce-${VERSION}.tar.gz && \
+#    tar -xzf singularity-ce-${VERSION}.tar.gz && \
+#    cd singularity-ce-${VERSION} && \
+#    ./mconfig && \
+#    make -C builddir && \
+#    make -C builddir install
+

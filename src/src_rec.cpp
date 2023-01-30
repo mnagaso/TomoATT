@@ -20,6 +20,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
     // only world_rank 0 reads the file
     if (sim_rank == 0){
         ifs.open(src_rec_file);
+        // abort if file does not exist
+        if (!ifs.is_open()){
+            std::cerr << "Error: src_rec_file " << src_rec_file << " does not exist!" << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
         ss_whole << ifs.rdbuf();
         ifs.close();
     }
@@ -127,6 +132,18 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     src.weight = 1.0; // default weight
                 src_points.push_back(src);
                 cc++;
+
+                // source with no receiver is allowed for solver_only model
+                if (ndata_tmp==0) {
+                    // go to the next source
+                    cc = 0;
+                    i_src_now++;
+
+                    // timer
+                    if (i_src_now % 100 == 0 && world_rank == 0) {
+                        std::cout << "reading source " << i_src_now << " finished in " << timer.get_t() << " seconds. dt = " << timer.get_t_delta() << " seconds. \n";
+                    }
+                }
 
             } else {
 
@@ -240,6 +257,10 @@ void do_swap_src_rec(std::vector<SrcRec>& src_points, std::vector<std::vector<Sr
     // swap src/rec points
     // at this moment, all the sources are divided into src_points (regional) and tele_src_points (teleseismic)
 
+    // Start timer
+    std::string timer_name = "swap_src_rec";
+    Timer timer(timer_name);
+
     std::vector<SrcRec> new_srcs; // new src points
     std::vector<std::vector<SrcRec>> new_recs;
 
@@ -322,6 +343,8 @@ void do_swap_src_rec(std::vector<SrcRec>& src_points, std::vector<std::vector<Sr
     src_points = new_srcs;
     rec_points = new_recs;
 
+    // indicate elapsed time
+    std::cout << "Total elapsed time for swapping src rec: " << timer.get_t() << " seconds.\n";
 }
 
 
