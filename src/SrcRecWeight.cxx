@@ -79,7 +79,8 @@ CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
 
             d_ij *= RAD2DEG;
 
-            CUSTOMREAL w_inv_tmp = std::exp(-(d_ij/d_zero)*(d_ij/d_zero));
+            CUSTOMREAL w_inv_tmp = std::exp(-std::pow(d_ij/d_zero, 2.0));
+            //CUSTOMREAL w_inv_tmp = std::pow(-(d_ij/d_zero)*(d_ij/d_zero),4.0);
 
             src_or_rec[i].weight += w_inv_tmp;
             src_or_rec[j].weight += w_inv_tmp;
@@ -171,55 +172,62 @@ void normalize_weight(std::vector<SrcRec>& src_or_rec){
 
 
 void calc_weight(std::vector<SrcRec>& src_or_rec){
-    // calculate the weights of sources or receivers
-    int n_try = 30; // number of tries
 
-    // get the min and max epicentral distance of all src_or_rec
-    CUSTOMREAL d_min, d_max;
-//    calc_dist_min_max(src_or_rec, d_min, d_max);
+    CUSTOMREAL d_zero_fin;
 
-    // convert rad to deg
-    //d_min *= RAD2DEG;
-    //d_max *= RAD2DEG;
+    if (ref_value < 0) {
 
-    d_max = 5.0; // in deg
-    d_min = 0.01; // shouldn't be 0.0
-//
-    std::cout << "ref distance min = " << d_min << std::endl;
-    std::cout << "ref distance max = " << d_max << std::endl;
+        // calculate the weights of sources or receivers
+        int n_try = 30; // number of tries
 
-    std::vector<CUSTOMREAL> condition_numbers; // store the condition numbers
-    std::vector<CUSTOMREAL> test_d_zero; // store the test d_zero
+        // get the min and max epicentral distance of all src_or_rec
+        CUSTOMREAL d_min, d_max;
+    //    calc_dist_min_max(src_or_rec, d_min, d_max);
 
-    // prepare the test d_zero (d_min ~ d_max by n_try times)
-    CUSTOMREAL d_zero_step = (d_max - d_min) / (n_try - 1);
-    CUSTOMREAL d_zero_tmp = d_min; // void d_zero = 0.0
-    for (int i = 0; i < n_try; i++) {
-        test_d_zero.push_back(d_zero_tmp);
-        d_zero_tmp += d_zero_step;
+        // convert rad to deg
+        //d_min *= RAD2DEG;
+        //d_max *= RAD2DEG;
+
+        d_max = 5.0; // in deg
+        d_min = 0.01; // shouldn't be 0.0
+    //
+        std::cout << "ref distance min = " << d_min << std::endl;
+        std::cout << "ref distance max = " << d_max << std::endl;
+
+        std::vector<CUSTOMREAL> condition_numbers; // store the condition numbers
+        std::vector<CUSTOMREAL> test_d_zero; // store the test d_zero
+
+        // prepare the test d_zero (d_min ~ d_max by n_try times)
+        CUSTOMREAL d_zero_step = (d_max - d_min) / (n_try - 1);
+        CUSTOMREAL d_zero_tmp = d_min; // void d_zero = 0.0
+        for (int i = 0; i < n_try; i++) {
+            test_d_zero.push_back(d_zero_tmp);
+            d_zero_tmp += d_zero_step;
+        }
+
+        // calculate the weights iteratively
+        int c = 0;
+        for (auto& d_zero_try : test_d_zero) {
+            // initialize all the source or receiver weights to be zero
+            init_weight(src_or_rec);
+            CUSTOMREAL ncond = _calc_weight(src_or_rec, d_zero_try);
+
+            // store the condition number
+            condition_numbers.push_back(ncond);
+
+            // output d_zero and condition number
+            std::cout << "i-iter/total: " << c << "/" << n_try << ", d_zero: " << d_zero_try << ", condition number: " << ncond << std::endl;
+
+            c++;
+        }
+
+        // find the one-third point between min and max condition number
+        d_zero_fin = test_d_zero[find_good_ncond(condition_numbers)];
+
+    } else {
+        // use largest distance as d_zero_fin
+        d_zero_fin = ref_value;
     }
-
-    // calculate the weights iteratively
-    int c = 0;
-    for (auto& d_zero_try : test_d_zero) {
-        // initialize all the source or receiver weights to be zero
-        init_weight(src_or_rec);
-        CUSTOMREAL ncond = _calc_weight(src_or_rec, d_zero_try);
-
-        // store the condition number
-        condition_numbers.push_back(ncond);
-
-        // output d_zero and condition number
-        std::cout << "i-iter/total: " << c << "/" << n_try << ", d_zero: " << d_zero_try << ", condition number: " << ncond << std::endl;
-
-        c++;
-    }
-
-    // find the one-third point between min and max condition number
-    CUSTOMREAL d_zero_fin = test_d_zero[find_good_ncond(condition_numbers)];
-
-    // use largest distance as d_zero_fin
-//    CUSTOMREAL d_zero_fin = ref_value;
 
     // calculate the weights with the final d_zero
     init_weight(src_or_rec);

@@ -214,7 +214,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     i_rec_now = 0;
 
                     // timer
-                    if (i_src_now % 100 == 0 && world_rank == 0) {
+                    if (i_src_now % 1000 == 0 && world_rank == 0) {
                         std::cout << "reading source " << i_src_now << " finished in " << timer.get_t() << " seconds. dt = " << timer.get_t_delta() << " seconds. \n";
                     }
                 } else {
