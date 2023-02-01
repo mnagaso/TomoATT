@@ -5,7 +5,9 @@
 #include "src_rec.h"
 #include "mpi_funcs.h"
 
-
+#ifdef USE_OMP
+#include <omp.h>
+#endif
 
 /*
     caluclate geographical weight for sources and receivers.
@@ -24,6 +26,7 @@ void calc_dist_min_max(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_min, CUSTO
 
     int n_elm = src_or_rec.size();
 
+    #pragma omp parallel for default(none) shared(src_or_rec, n_elm) reduction(min:tmp_min) reduction(max:tmp_max)
     for (int i = 0; i < n_elm-1; i++) {
         for (int j = i+1; j < n_elm; j++) {
             CUSTOMREAL d_ij = 0.0;
@@ -51,6 +54,8 @@ void calc_dist_min_max(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_min, CUSTO
 void init_weight(std::vector<SrcRec>& src_or_rec){
     // initialize all the source and receiver weights to be zero
     int n_elm = src_or_rec.size();
+
+    #pragma omp parallel for default(none) shared(src_or_rec, n_elm)
     for (int i = 0; i < n_elm; i++) {
         src_or_rec[i].weight = 0.0;
     }
@@ -59,6 +64,10 @@ void init_weight(std::vector<SrcRec>& src_or_rec){
 
 CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
     int n_elm = src_or_rec.size();
+
+    // parallelize loop over sources and receivers
+    // sharing src_or_rec.weight
+    #pragma omp parallel for default(none) shared(src_or_rec, n_elm, d_zero)
     for (int i = 0; i < n_elm-1; i++) {
         for (int j = i+1; j < n_elm; j++) {
             CUSTOMREAL d_ij = 0.0;
@@ -78,6 +87,7 @@ CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
     }
 
     // here the weight is inversed weight, so we need to invert it
+    #pragma omp parallel for default(none) shared(src_or_rec, n_elm, d_zero)
     for (int i = 0; i < n_elm; i++) {
         src_or_rec[i].weight = 1.0/src_or_rec[i].weight;
     }
@@ -85,6 +95,9 @@ CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
     // calculate condition number (min/max of weight)
     CUSTOMREAL w_min = 1.0e+10;
     CUSTOMREAL w_max = 0.0;
+
+    // parallelize loop for finding min and max with reduction
+    #pragma omp parallel for default(none) shared(src_or_rec, n_elm) reduction(min:w_min) reduction(max:w_max)
     for (int i = 0; i < n_elm; i++) {
         if (src_or_rec[i].weight < w_min) w_min = src_or_rec[i].weight;
         if (src_or_rec[i].weight > w_max) w_max = src_or_rec[i].weight;
@@ -144,10 +157,12 @@ void normalize_weight(std::vector<SrcRec>& src_or_rec){
     // scale weight values to be the total sum becomes 1.0*number of elements
     int n_elm = src_or_rec.size();
     CUSTOMREAL w_sum = 0.0;
+    #pragma omp parallel for default(none) reduction(+:w_sum) shared(src_or_rec, n_elm)
     for (int i = 0; i < n_elm; i++) {
         w_sum += src_or_rec[i].weight;
     }
 
+#pragma omp parallel for default(none) shared(src_or_rec, n_elm, w_sum)
     for (int i = 0; i < n_elm; i++) {
         src_or_rec[i].weight = (src_or_rec[i].weight / w_sum) * n_elm;
     }
@@ -157,54 +172,54 @@ void normalize_weight(std::vector<SrcRec>& src_or_rec){
 
 void calc_weight(std::vector<SrcRec>& src_or_rec){
     // calculate the weights of sources or receivers
-//    int n_try = 30; // number of tries
+    int n_try = 30; // number of tries
 
     // get the min and max epicentral distance of all src_or_rec
-//    CUSTOMREAL d_min, d_max;
+    CUSTOMREAL d_min, d_max;
 //    calc_dist_min_max(src_or_rec, d_min, d_max);
 
     // convert rad to deg
     //d_min *= RAD2DEG;
     //d_max *= RAD2DEG;
 
-//    d_max = 5.0; // in deg
-//    d_min = 0.01; // shouldn't be 0.0
+    d_max = 5.0; // in deg
+    d_min = 0.01; // shouldn't be 0.0
 //
-//    std::cout << "ref distance min = " << d_min << std::endl;
-//    std::cout << "ref distance max = " << d_max << std::endl;
-//
-//    std::vector<CUSTOMREAL> condition_numbers; // store the condition numbers
-//    std::vector<CUSTOMREAL> test_d_zero; // store the test d_zero
-//
-//    // prepare the test d_zero (d_min ~ d_max by n_try times)
-//    CUSTOMREAL d_zero_step = (d_max - d_min) / (n_try - 1);
-//    CUSTOMREAL d_zero_tmp = d_min; // void d_zero = 0.0
-//    for (int i = 0; i < n_try; i++) {
-//        test_d_zero.push_back(d_zero_tmp);
-//        d_zero_tmp += d_zero_step;
-//    }
-//
+    std::cout << "ref distance min = " << d_min << std::endl;
+    std::cout << "ref distance max = " << d_max << std::endl;
+
+    std::vector<CUSTOMREAL> condition_numbers; // store the condition numbers
+    std::vector<CUSTOMREAL> test_d_zero; // store the test d_zero
+
+    // prepare the test d_zero (d_min ~ d_max by n_try times)
+    CUSTOMREAL d_zero_step = (d_max - d_min) / (n_try - 1);
+    CUSTOMREAL d_zero_tmp = d_min; // void d_zero = 0.0
+    for (int i = 0; i < n_try; i++) {
+        test_d_zero.push_back(d_zero_tmp);
+        d_zero_tmp += d_zero_step;
+    }
+
     // calculate the weights iteratively
-//    int c = 0;
-//    for (auto& d_zero_try : test_d_zero) {
-//        // initialize all the source or receiver weights to be zero
-//        init_weight(src_or_rec);
-//        CUSTOMREAL ncond = _calc_weight(src_or_rec, d_zero_try);
-//
-//        // store the condition number
-//        condition_numbers.push_back(ncond);
-//
-//        // output d_zero and condition number
-//        std::cout << "i-iter/total: " << c << "/" << n_try << ", d_zero: " << d_zero_try << ", condition number: " << ncond << std::endl;
-//
-//        c++;
-//    }
-//
-//    // find the one-third point between min and max condition number
-//    CUSTOMREAL d_zero_fin = test_d_zero[find_good_ncond(condition_numbers)];
+    int c = 0;
+    for (auto& d_zero_try : test_d_zero) {
+        // initialize all the source or receiver weights to be zero
+        init_weight(src_or_rec);
+        CUSTOMREAL ncond = _calc_weight(src_or_rec, d_zero_try);
+
+        // store the condition number
+        condition_numbers.push_back(ncond);
+
+        // output d_zero and condition number
+        std::cout << "i-iter/total: " << c << "/" << n_try << ", d_zero: " << d_zero_try << ", condition number: " << ncond << std::endl;
+
+        c++;
+    }
+
+    // find the one-third point between min and max condition number
+    CUSTOMREAL d_zero_fin = test_d_zero[find_good_ncond(condition_numbers)];
 
     // use largest distance as d_zero_fin
-    CUSTOMREAL d_zero_fin = ref_value;
+//    CUSTOMREAL d_zero_fin = ref_value;
 
     // calculate the weights with the final d_zero
     init_weight(src_or_rec);
@@ -294,8 +309,12 @@ int main(int argc, char *argv[])
     // init mpi
     initialize_mpi();
 
+    // n threads
+    int n_threads = omp_get_max_threads();
+
     stdout_by_main("------------------------------------------------------");
     stdout_by_main("start Src Rec weight calculation.");
+    std::cout << "number of openmp threads: " << n_threads << std::endl;
     stdout_by_main("------------------------------------------------------");
 
     std::vector<SrcRec> src_points;
