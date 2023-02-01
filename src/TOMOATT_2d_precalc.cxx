@@ -24,9 +24,6 @@ int main(int argc, char *argv[])
     // parse options
     parse_options(argc, argv);
 
-    // here we set i_inv = 0; but later we can modify the code to set from command line
-    int i_inv = 0;
-
     // initialize mpi
     initialize_mpi();
 
