@@ -137,6 +137,16 @@ else()
 endif()
 file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 
+# compile cuda code
+if (CUDA_FOUND)
+  include_directories(${CUDA_INCLUDE_DIRS})
+  add_library(${CUDA_LIBRARY_NAME} STATIC ${SOURCES_CUDA} ${HEADERS_CUDA} )
+  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
+  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
+endif()
+
+
 #
 # compile the executables
 # all the files with the name *.cxx is compiled as an executable
@@ -163,16 +173,6 @@ foreach( execsourcefile ${APP_SOURCES} )
             ${PROJECT_SOURCE_DIR}/include
             ${PROJECT_SOURCE_DIR}/cuda
             ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
-
-  # compile cuda code
-  if (CUDA_FOUND)
-    include_directories(${CUDA_INCLUDE_DIRS})
-    add_library(${CUDA_LIBRARY_NAME} STATIC ${SOURCES_CUDA} ${HEADERS_CUDA} )
-    target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
-    target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
-    target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
-  endif()
-
 
   # link mpi
   target_link_libraries(${EXEC_NAME} PUBLIC MPI::MPI_CXX)
