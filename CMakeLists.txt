@@ -23,9 +23,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   # check fujitsu compiler
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu") # this may not work... in that case, please comment out this elif
   # not supported
-  MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
+  #MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
   # fujitsu clang
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
+  #elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
   MESSAGE("Compiler type: FujitsuClang")
   set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
 else()
