@@ -46,7 +46,7 @@ inline void allreduce_cr_sim(CUSTOMREAL*, int, CUSTOMREAL*);
 inline void allreduce_cr_sim_inplace(CUSTOMREAL*, int);
 inline void allgather_i_single(int*, int*);
 inline void allgather_cr_single(CUSTOMREAL*, CUSTOMREAL*);
-inline void allgather_node_name(std::string, std::vector<std::string>&);
+inline void allgather_str(const std::string&, std::vector<std::string>&);
 inline void broadcast_bool_single(bool&, int);
 inline void broadcast_i_single(int&, int);
 inline void broadcast_i_single_inter_sim(int&, int);
@@ -127,32 +127,6 @@ inline std::vector<size_t> node_reordering(const std::vector<T>& vec){
     std::iota(idx.begin(), idx.end(), 0);
     std::sort(idx.begin(), idx.end(), [&vec](size_t i1, size_t i2) {return vec[i1] > vec[i2];});
     return idx;
-}
-
-
-
-inline void allgather_node_name(std::string this_name, std::vector<std::string>& list_name){
-    for (int i=0; i<world_nprocs; i++){
-        // send to i rank
-        if (i == world_rank){
-            for (int j=0; j<world_nprocs; j++){
-                if (j == world_rank){
-                    list_name[j] = this_name;
-                } else {
-                    MPI_Send(this_name.c_str(), this_name.size()+1, MPI_CHAR, j, 0, MPI_COMM_WORLD);
-                }
-            }
-        } else {
-            MPI_Status status;
-            MPI_Probe(i, 0, MPI_COMM_WORLD, &status);
-            int count;
-            MPI_Get_count(&status, MPI_CHAR, &count);
-            char* buf = new char[count];
-            MPI_Recv(buf, count, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            list_name[i] = std::string(buf);
-            delete[] buf;
-        }
-    }
 }
 
 
@@ -242,7 +216,7 @@ inline void split_mpi_comm(){
 //
 
     // gather all the node names in std::vector
-    allgather_node_name(mpi_node_names_pre[world_rank], mpi_node_names_pre);
+    allgather_str(mpi_node_names_pre[world_rank], mpi_node_names_pre);
 
     // define node id for each node
     mpi_node_ids = define_node_ids(mpi_node_names_pre);
@@ -389,7 +363,6 @@ inline void split_mpi_comm(){
     MPI_Comm_split(sim_comm, id_subdomain, sim_rank, &sub_comm);
     MPI_Comm_rank(sub_comm, &sub_rank);
     MPI_Comm_size(sub_comm, &sub_nprocs);
-
 
     // convert the sub_comm to shared memory available communicator
     MPI_Comm tmp_comm;
@@ -633,6 +606,35 @@ inline void broadcast_str(std::string& str, int root) {
     str = buf;
     delete[] buf;
 }
+
+
+inline void allgather_str(const std::string &str, std::vector<std::string> &result) {
+    MPI_Comm comm = MPI_COMM_WORLD;
+    int size = world_nprocs;
+
+    int str_size = str.size();
+    std::vector<int> str_sizes(size);
+    MPI_Allgather(&str_size, 1, MPI_INT, str_sizes.data(), 1, MPI_INT, comm);
+
+    int total_size = 0;
+    std::vector<int> displs(size);
+    for (int i = 0; i < size; i++) {
+      total_size += str_sizes[i];
+      displs[i] = (i == 0) ? 0 : (displs[i - 1] + str_sizes[i - 1]);
+    }
+
+    std::vector<char> data(total_size);
+    MPI_Allgatherv(str.data(), str_size, MPI_CHAR, data.data(), str_sizes.data(), displs.data(), MPI_CHAR, comm);
+
+    result.reserve(size);
+    int start = 0;
+    for (int i = 0; i < size; i++) {
+      result[i] = std::string(&data[start], str_sizes[i]);
+      start += str_sizes[i];
+    }
+
+}
+
 
 inline void prepare_shm_array_cr(int n_elms, CUSTOMREAL* &buf, MPI_Win& win){
     int* model;
