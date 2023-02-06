@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ "devel" ]
+    branches: [ "devel", "osx_compile"]
 #   pull_request:
 #     branches: [ "main" ]
 
@@ -43,5 +43,4 @@ jobs:
 #       working-directory: ${{github.workspace}}/build
 #       # Execute tests defined by the CMake configuration.
 #       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-#       run: xxx
-
+#       run: x
