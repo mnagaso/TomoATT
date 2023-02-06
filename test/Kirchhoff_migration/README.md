@@ -33,7 +33,7 @@ This creates a src_rec_file.dat which includes 8 sources without any receiver.
 Then run the solver_only executable as below.
 
 ```bash
-mpirun -n 8 ../../build/bin/TOMOATT_km -i input_params_pre
+mpirun -n 8 ../../build/bin/TOMOATT_km -i input_params_pre.yml
 ```
 
 Below is the output files from this example:
