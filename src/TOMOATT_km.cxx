@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     initialize_mpi();
 
     stdout_by_rank_zero("------------------------------------------------------");
-    stdout_by_rank_zero("start TOMOATT only traveltime field calculation mode.");
+    stdout_by_rank_zero("start TOMOATT Kirchhoff migration mode.");
     stdout_by_rank_zero("------------------------------------------------------");
 
     // read input file
@@ -112,26 +112,8 @@ int main(int argc, char *argv[])
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
-        if (!hybrid_stencil_order){
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
-            It->run_iteration_forward(IP, grid, io, first_init);
-        } else {
-            // hybrid stencil mode
-            std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
-
-            // run 1st order forward simulation
-            std::unique_ptr<Iterator> It_pre;
-            IP.set_stencil_order(1);
-            IP.set_conv_tol(IP.get_conv_tol()*100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It_pre, false);
-            It_pre->run_iteration_forward(IP, grid, io, first_init);
-
-            // run 3rd order forward simulation
-            IP.set_stencil_order(3);
-            IP.set_conv_tol(IP.get_conv_tol()/100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
-            It->run_iteration_forward(IP, grid, io, first_init);
-        }
+        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+        It->run_iteration_forward(IP, grid, io, first_init);
 
         // output the result of forward simulation
         // ignored for inversion mode.
@@ -145,6 +127,15 @@ int main(int argc, char *argv[])
     // wait for all processes to finish
     synchronize_all_world();
 
+    //
+    // # TODO : here for backward simulation
+    //
+
+    // swap the src-receiver pair for kirchhoff migration
+
+    //
+
+
     // close xdmf file
     io.finalize_data_output_file();
 
@@ -157,7 +148,7 @@ int main(int argc, char *argv[])
     finalize_mpi();
 
     stdout_by_rank_zero("------------------------------------------------------");
-    stdout_by_rank_zero("end TOMOATT only traveltime calculation mode.");
+    stdout_by_rank_zero("end TOMOATT Kirchhoff migration mode.");
     stdout_by_rank_zero("------------------------------------------------------");
 
     return 0;
