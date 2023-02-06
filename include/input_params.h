@@ -179,14 +179,21 @@ private:
     void check_contradictions();
 
 public:
-    // prepare source list for this simulation group
+    // prepare source list for a forward/inverse simulation group
     void prepare_src_list();
+    // prepare source list for backward simulation (swap src/rec including teleseismic src)
+    void prepare_src_list_for_backward_run();
     // src points for this sim group
     std::vector<int> src_ids_this_sim;
     // write out src_rec_file
     void write_src_rec_file(int);
 
 private:
+    // broadcast source list to all processes
+    void broadcast_src_list();
+    // free memory for teleseismic source data
+    void free_memory_tele_src();
+
     // output setting
     bool is_output_source_field = false; // output out_data_sim_X.h or not.
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.

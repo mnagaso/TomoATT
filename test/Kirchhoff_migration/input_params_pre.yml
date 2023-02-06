@@ -7,7 +7,7 @@ domain :
   n_rtp : [10,50,50]          # number of nodes
 
 source :
-  src_rec_file : 'src_only_test.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file : 'src_rec_file.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec : 0 # swap source and receiver # SHOLD BE 0 FOR SOURCE ONLY RUN
 
 model :
@@ -17,9 +17,9 @@ inversion :
   run_mode : 0 # 0 for forward simulation only, 1 for inversion
 
 parallel : # no mean for 2d pre calculation
-  n_sims : 8         # number of simultaneous run. use as much as possible for 2d source preparation
-  ndiv_rtp : [1,1,1] # number of subdomains
-  nproc_sub : 1      # number of subprocess used for each subdomain
+  n_sims : 1         # number of simultaneous run. use as much as possible for 2d source preparation
+  ndiv_rtp : [2,2,1] # number of subdomains
+  nproc_sub : 2      # number of subprocess used for each subdomain
 
 calculation :
   convergence_tolerance : 1e-4

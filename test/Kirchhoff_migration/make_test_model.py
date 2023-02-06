@@ -141,15 +141,37 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-n_srcs = 8 # source will be placed around the domain
+n_srcs = 1 # source will be placed around the domain
 r_src = 15 # radius of the source in degree
+n_rec = [4 for x in range(n_srcs)]
+
 
 lines = []
 
-#nij_rec = math.sqrt(n_rec[0])
+nij_rec = math.sqrt(n_rec[0])
+
 
 pos_src=[]
-#pos_rec=[]
+pos_rec=[]
+
+# create receiver coordinates
+elev_recs=[]
+lon_recs=[]
+lat_recs=[]
+rec_names=[]
+for i in range(n_rec[0]):
+    #elev_recs.append(random.uniform(-100.0,-100.0)) # elevation in m
+    #elev_recs.append(0) # elevation in m
+    #lon_recs .append(random.uniform(pp1deg*1.1,pp2deg*0.9))
+    #lat_recs .append(random.uniform(tt1deg*1.1,tt2deg*0.9))
+    rec_names.append(i)
+    # regularly
+    elev_recs.append(0.0)
+    tmp_ilon = i%nij_rec
+    tmp_ilat = int(i/nij_rec)
+    lon_recs.append(pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_rec)
+    lat_recs.append(tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_rec)
+
 
 # center of the domain
 lon_c = (pp1deg+pp2deg)/2.0
@@ -166,14 +188,28 @@ for i_src in range(n_srcs):
     # depth of the source
     dep = 10.0 + 0.5*i_src
 
-    src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, 0, id_dummy]
+    src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
     lines.append(src)
 
     pos_src.append([lon,lat,dep])
 
+    # create dummy station
+    for i_rec in range(n_rec[i_src]):
+        elev_rec = elev_recs[i_rec]
+        lon_rec  = lon_recs[i_rec]
+        lat_rec  = lat_recs[i_rec]
+        st_name_dummy = rec_names[i_rec]
+
+        rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
+        lines.append(rec)
+
+        pos_rec.append([lon_rec,lat_rec,elev_rec])
+
+
+
 
 # write out ev_arrivals file
-fname = 'src_only_test.dat'
+fname = 'src_rec_file.dat'
 
 with open(fname, 'w') as f:
     for line in lines:
@@ -191,8 +227,8 @@ for i_src in range(n_srcs):
 
 # %%
 # plot receivers
-#for i_rec in range(n_rec[0]):
-#    plt.scatter(pos_rec[i_rec][1],pos_rec[i_rec][0],c='b',marker='o')
+for i_rec in range(n_rec[0]):
+    plt.scatter(pos_rec[i_rec][1],pos_rec[i_rec][0],c='b',marker='o')
 
 # %%
 

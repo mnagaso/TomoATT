@@ -440,8 +440,7 @@ InputParams::InputParams(std::string& input_file){
 }
 
 
-InputParams::~InputParams(){
-    // free memory
+void InputParams::free_memory_tele_src(){
     if (subdom_main) {
         for (auto& id_src: src_ids_this_sim){
             SrcRec& src = get_src_point(id_src);
@@ -461,6 +460,11 @@ InputParams::~InputParams(){
             }
         }
     }
+}
+
+InputParams::~InputParams(){
+    // free memory
+    free_memory_tele_src();
 
     delete [] dep_inv;
     delete [] lat_inv;
@@ -560,41 +564,7 @@ bool InputParams::get_if_src_teleseismic(int id_src) {
 }
 
 
-void InputParams::prepare_src_list(){
-    //
-    // only the subdom_main process of the first simultaneous run group (id_sim==0 && sim_rank==any && subdom_main) reads src/rec file
-    // and stores entile src/rec list in src_points and rec_points
-    // then, the subdom_main process of each simultaneous run group (id_sim==any && subdom_main==true) retains only its own src/rec objects,
-    // which are actually calculated in those simultaneous run groups
-    //
-
-    // read src rec file
-    if (src_rec_file_exist && id_sim==0 && subdom_main) {
-
-        parse_src_rec_file(src_rec_file, src_points, rec_points);
-
-        // backup original src/rec list
-        src_points_back = src_points;
-        rec_points_back = rec_points;
-
-        // check if src positions are within the domain or not (teleseismic source)
-        // detected teleseismic source is separated into tele_src_points and tele_rec_points
-        separate_region_and_tele_src();
-
-        if (swap_src_rec) {
-            // here only reginal events will be processed
-            stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
-            do_swap_src_rec(src_points, rec_points, src_points_back, rec_points_back);
-        }
-
-        // concatenate resional and teleseismic src/rec points
-        merge_region_and_tele_src();
-    }
-
-    // wait
-    synchronize_all_world();
-
-    // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
+void InputParams::broadcast_src_list(){
     if (src_rec_file_exist) {
         int n_all_src=0;
 
@@ -612,7 +582,15 @@ void InputParams::prepare_src_list(){
             exit(1);
         }
 
+        // reset the src id list for this simultaneous run group
         src_ids_this_sim.clear();
+
+        // initialize src_points and rec_points if id_sim != 0
+        // TODO: this can be a memory leak
+        if (id_sim != 0) {
+            src_points.clear();
+            rec_points.clear();
+        }
 
         // assign elements of src_points
         for (int i_src = 0; i_src < n_all_src; i_src++){
@@ -664,13 +642,77 @@ void InputParams::prepare_src_list(){
         //    std::cout << std::endl;
         //}
     }
+}
+
+void InputParams::prepare_src_list(){
+    //
+    // only the subdom_main process of the first simultaneous run group (id_sim==0 && sim_rank==any && subdom_main) reads src/rec file
+    // and stores entile src/rec list in src_points and rec_points
+    // then, the subdom_main process of each simultaneous run group (id_sim==any && subdom_main==true) retains only its own src/rec objects,
+    // which are actually calculated in those simultaneous run groups
+    //
+
+    // read src rec file
+    if (src_rec_file_exist && id_sim==0 && subdom_main) {
+
+        parse_src_rec_file(src_rec_file, src_points, rec_points);
+
+        // backup original src/rec list
+        src_points_back = src_points;
+        rec_points_back = rec_points;
+
+        // check if src positions are within the domain or not (teleseismic source)
+        // detected teleseismic source is separated into tele_src_points and tele_rec_points
+        separate_region_and_tele_src();
+
+        if (swap_src_rec) {
+            // here only reginal events will be processed
+            stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
+            do_swap_src_rec(src_points, rec_points, src_points_back, rec_points_back);
+        }
+
+        // concatenate resional and teleseismic src/rec points
+        merge_region_and_tele_src();
+    }
 
     // wait
     synchronize_all_world();
 
+    // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
+    broadcast_src_list();
 
+    // wait
+    synchronize_all_world();
 }
 
+
+void InputParams::prepare_src_list_for_backward_run(){
+    // this function prepares src_points and rec_points for backward run
+    // prepare_src_list should be called before this function
+
+
+    // read src rec file
+    if (src_rec_file_exist && id_sim==0 && subdom_main) {
+
+        // force swap_src_rec to be true for backward run
+        swap_src_rec = true;
+
+        if (swap_src_rec) {
+            // here only reginal events will be processed
+            stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
+            do_swap_src_rec(src_points, rec_points, src_points_back, rec_points_back);
+        }
+    }
+
+    // wait
+    synchronize_all_world();
+
+    // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
+    broadcast_src_list();
+
+    // wait
+    synchronize_all_world();
+}
 
 void InputParams::gather_all_arrival_times_to_main(){
     //
