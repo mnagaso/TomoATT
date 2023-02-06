@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ "devel", "osx_compile"]
+    branches: [ "devel" ]
 #   pull_request:
 #     branches: [ "main" ]
 
