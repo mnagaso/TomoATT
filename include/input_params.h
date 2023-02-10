@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <unordered_set>
+#include <map>
 
 #include "config.h"
 #include "yaml-cpp/yaml.h"
@@ -50,6 +51,8 @@ public:
     std::vector<CUSTOMREAL> lon_pair     = std::vector<CUSTOMREAL>(2);
     std::vector<CUSTOMREAL> ddt_adj_pair = std::vector<CUSTOMREAL>(2);    // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
     std::vector<std::string> name_rec_pair    = std::vector<std::string>(2);
+    std::vector<CUSTOMREAL> station_correction_pair = {0.0, 0.0}; // station correction value (only use for teleseismic data)
+
     // name_rec_pair[0] = "rec1_name_dummy";
     // name_rec_pair[1] = "rec2_name_dummy";
 
@@ -184,7 +187,10 @@ private:
     std::string src_list_file;       // source list file
     std::string rec_list_file;       // source list file
     std::string src_rec_file_out;    // source receiver file to be output
+    std::string sta_correction_file;         // station correction file to be input
+    std::string station_correction_file_out; // station correction file to be output
     bool src_rec_file_exist = false; // source receiver file exist
+    bool sta_correction_file_exist = false;   // station correction file exist
 
     // model input files
     std::string init_model_type; // model type
@@ -227,10 +233,20 @@ private:
     void parse_rec_list();
     // parse src_rec_file new
     void parse_src_rec_file_new();
+    // parse sta_correction_file
+    void parse_sta_correction_file();
 
     // list for all src and rec info
-    std::vector<SrcRec> src_list;
-    std::vector<SrcRec> rec_list;
+    // std::vector<SrcRec> src_list;
+    // std::vector<SrcRec> rec_list;
+
+    // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
+    std::map<std::string, SrcRec> rec_list;
+    std::map<std::string, CUSTOMREAL> station_correction;
+    std::map<std::string, CUSTOMREAL> station_correction_kernel;
+    // CUSTOMREAL* station_correction_kernel;
+    CUSTOMREAL* station_correction_value;
+    int N_receiver = 0;
 
     // list for all of src point data
     std::vector<SrcRec> src_points;
@@ -243,6 +259,7 @@ private:
     std::vector< std::vector<SrcRec> > rec_points_out;  // temporal storage for output
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
+
     // swap the sources and receivers
     void do_swap_src_rec();
     bool swap_src_rec = false;     // whether the src/rec are swapped or not
@@ -270,6 +287,13 @@ public:
     // write out src_rec_file
     void write_src_rec_file(int);
 
+    // write out station_correction_file
+    void write_station_correction_file(int);
+
+    // station correction
+    // void station_correction_kernel();
+    void station_correction_update( CUSTOMREAL );
+
 private:
     // output setting
     bool is_output_source_field = false; // output out_data_sim_X.h or not.
@@ -279,10 +303,11 @@ private:
 
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.
-    bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
-    bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
+    bool is_inv_azi_ani  = false; // update azimuthal anisotropy (xi, eta) or not.
+    bool is_inv_rad_ani  = false; // update radial anisotropy (in future) or not.
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+    bool is_sta_correction = false; // apply station correction or not.
 };
 
 

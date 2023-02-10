@@ -46,6 +46,7 @@ protected:
 //    // teleseismic source
     void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order
     void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&); // calculate stencil for 3rd order
+    void calculate_stencil_1st_order_upwind_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order  in upwind form
     void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);    // calculate boundary values for teleseismic source
     void calculate_boundary_nodes_tele_adj(Grid&, int&, int&, int&);// calculate boundary values for teleseismic adjoint source
 
@@ -135,7 +136,7 @@ protected:
     CUSTOMREAL ar1, br1, ar2, br2, ar, br;
 
     CUSTOMREAL bc_f2, eqn_a, eqn_b, eqn_c, eqn_Delta;
-    CUSTOMREAL tmp_tau;
+    CUSTOMREAL tmp_tau, tmp_T;
     CUSTOMREAL T_r, T_t, T_p, charact_r, charact_t, charact_p;
     bool is_causality;
     int count_cand;

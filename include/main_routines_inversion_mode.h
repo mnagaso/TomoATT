@@ -21,9 +21,12 @@
 
 
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
-inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode){
+inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode){
 
     CUSTOMREAL v_obj = _0_CR;
+    CUSTOMREAL v_misfit = _0_CR;
+
+    std::vector<CUSTOMREAL> v_obj_misfit;
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION)
@@ -96,7 +99,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
             select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
             It->run_iteration_forward(IP, grid, io, first_init);
         }
-
+        
         // output the result of forward simulation
         // ignored for inversion mode.
         if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
@@ -126,8 +129,11 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
 
         if (IP.get_run_mode()==DO_INVERSION){
             // calculate adjoint source
-            v_obj += recs.calculate_adjoint_source(IP);
-
+            // v_obj += recs.calculate_adjoint_source(IP);
+            v_obj_misfit = recs.calculate_adjoint_source(IP);
+            v_obj += v_obj_misfit[0];
+            v_misfit += v_obj_misfit[1];
+            
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
 
@@ -139,6 +145,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
                 // output the result of adjoint simulation
                 io.write_adjoint_field(grid,i_inv);
             }
+
        }
 
 
@@ -149,10 +156,13 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
 
     // allreduce sum_adj_src
     allreduce_cr_sim_single(v_obj, v_obj);
+    allreduce_cr_sim_single(v_misfit, v_misfit);
 
+    v_obj_misfit[0] = v_obj;
+    v_obj_misfit[1] = v_misfit;
     // return current objective function value
-    return v_obj;
-
+    // return v_obj;
+    return v_obj_misfit;
 }
 
 

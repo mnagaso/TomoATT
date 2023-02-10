@@ -24,17 +24,22 @@
 
 // do model update by gradient descent
 inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
-                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
+                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, CUSTOMREAL& v_misfit_inout, bool& first_src, std::ofstream& out_main) {
 
     // change stepsize
-    if (i_inv > 0 && v_obj_inout < old_v_obj)
-        step_size_init = std::min(0.01, step_size_init*1.03);
-    else if (i_inv > 0 && v_obj_inout >= old_v_obj)
-        step_size_init = std::max(0.00001, step_size_init*0.97);
-
+    if (i_inv > 0 && v_obj_inout < old_v_obj) {
+        // step_size_init = std::min(0.01, step_size_init*1.03);
+        step_size_init = std::min(1.0, step_size_init);
+        step_size_init_sc = std::min(1.0, step_size_init_sc);
+    } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
+        // step_size_init = std::max(0.00001, step_size_init*0.97);
+        step_size_init = std::max(0.00001, step_size_init*step_size_decay);
+        step_size_init_sc = std::max(0.00001, step_size_init_sc*step_size_decay);
+    }
     // output objective function
     if (myrank==0 && id_sim==0) out_main << std::setw(5) << i_inv \
                                   << "," << std::setw(15) << v_obj_inout \
+                                  << "," << std::setw(15) << v_misfit_inout \
                                   << "," << std::setw(15) << step_size_init << std::endl;
 
     // sum kernels among all simultaneous runs
@@ -45,6 +50,9 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     // update the model with the initial step size
     set_new_model(grid, step_size_init);
+
+    // make station correction
+    IP.station_correction_update(step_size_init_sc);
 
     if (subdom_main && IP.get_is_verbose_output()) {
         // store kernel only in the first src datafile
@@ -78,6 +86,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     CUSTOMREAL diff_obj  = - 9999999999;
     CUSTOMREAL v_obj_old = v_obj_inout;
     CUSTOMREAL v_obj_new = 0.0;
+    std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(2);
     int sub_iter_count   = 0;
 
     // sum kernels among all simultaneous runs
@@ -117,8 +126,9 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     // loop till
     while (sub_iter_count < max_sub_iterations) {
         // check the new objective function value
-        v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
-
+        // v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
+        v_obj_new = v_obj_misfit_new[0];
         // if the new objective function value is larger than the old one, make the step width to be half of the previous one
         diff_obj = v_obj_new - v_obj_old;
 
@@ -179,6 +189,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     CUSTOMREAL step_size     = step_size_init; // step size init is global variable
     CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
+    std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(2);
 
     // smooth kernels and calculate descent direction
     calc_descent_direction(grid, i_inv, IP);
@@ -247,8 +258,10 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         set_new_model(grid, step_size, init_bfgs);
 
         // check current objective function value #BUG: strange v_obj at the first sub iteration
-        v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
-
+        // v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
+        v_obj_new = v_obj_misfit_new[0];
+        
         // update gradient
         sumup_kernels(grid);
 
@@ -314,6 +327,7 @@ end_of_subiteration:
         std::cout << "Wolfe conditions satisfied at iteration " << subiter_count << std::endl;
 
 }
+
 
 
 #endif // MODEL_OPTIMIZATION_ROUTINES_H

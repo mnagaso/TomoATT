@@ -27,8 +27,7 @@ int main(int argc, char *argv[])
     // initialize mpi
     initialize_mpi();
 
-    // create output directory
-    create_output_dir(output_dir);
+    
 
     stdout_by_main("------------------------------------------------------");
     stdout_by_main("start TOMOATT solver.");
@@ -36,6 +35,9 @@ int main(int argc, char *argv[])
 
     // read input file
     InputParams IP(input_file);
+
+    // create output directory
+    create_output_dir(output_dir);
 
 #ifdef USE_CUDA
     // initialize cuda

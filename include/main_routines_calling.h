@@ -35,9 +35,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     // prepare output for iteration status
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
-        out_main.open(output_dir + "objective_function.txt");
+        out_main.open(output_dir + "/objective_function.txt");
         if (optim_method == GRADIENT_DESCENT)
-            out_main << std::setw(6) << "iter," << std::setw(16) << "v_obj," << std::setw(16) << "step_size," << std::endl;
+            out_main << std::setw(6) << "iter," << std::setw(16) << "v_obj," << std::setw(16) << "v_misfit," << std::setw(16) << "step_size," << std::endl;
         else if (optim_method == LBFGS_MODE)
             out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_size," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
                      << std::setw(16) << "v_obj_reg," << std::setw(16) << "q_new,"  << std::setw(16) << "q_k,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
@@ -52,6 +52,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         io.write_concerning_parameters(grid, 0);
     }
 
+    // output station correction file (only for teleseismic differential data)
+    IP.write_station_correction_file(0);
+
     synchronize_all_world();
 
     /////////////////////
@@ -61,7 +64,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     bool line_search_mode = false; // if true, run_simulation_one_step skips adjoint simulation and only calculates objective function value
 
     // objective function for all src
-    CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
+    CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0, v_misfit = 0.0;
+    std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(2);
 
     for (int i_inv = 0; i_inv < IP.get_max_iter_inv(); i_inv++) {
 
@@ -83,7 +87,10 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // skip for the  mode with sub-iteration
         if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
         } else {
-            v_obj = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
+            // v_obj = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
+            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
+            v_obj = v_obj_misfit[0];
+            v_misfit = v_obj_misfit[1];
         }
 
         // wait for all processes to finish
@@ -95,15 +102,19 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         ///////////////
         // model update
         ///////////////
-
         if (IP.get_run_mode() == DO_INVERSION) {
             if (optim_method == GRADIENT_DESCENT)
-                model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
+                model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, v_misfit, first_src, out_main);
             else if (optim_method == LBFGS_MODE)
                 model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
                 model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+            
+            
         }
+
+        // output station correction file (only for teleseismic differential data)
+        IP.write_station_correction_file(i_inv + 1);
 
         // output updated model
         if (subdom_main && id_sim==0) {
