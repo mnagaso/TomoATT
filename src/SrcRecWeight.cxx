@@ -286,11 +286,11 @@ void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::
         }
     }
 
-    // normalize the receiver weight
-    // (the receiver weight is normalized for each source)
-    for (auto& recs_one_src: rec_points) {
-        normalize_weight(recs_one_src);
-    }
+//    // normalize the receiver weight
+//    // (the receiver weight is normalized for each source)
+//    for (auto& recs_one_src: rec_points) {
+//        normalize_weight(recs_one_src);
+//    }
 
     // end
 }
@@ -317,8 +317,14 @@ int main(int argc, char *argv[])
     // init mpi
     initialize_mpi();
 
+#ifdef USE_OMP
+    // srcrec weight calculation uses opnemp parallelization
+    // set 12 threads for openmp
+    omp_set_num_threads(12);
+
     // n threads
     int n_threads = omp_get_max_threads();
+#endif
 
     stdout_by_main("------------------------------------------------------");
     stdout_by_main("start Src Rec weight calculation.");

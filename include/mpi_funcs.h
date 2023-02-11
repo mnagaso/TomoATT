@@ -75,8 +75,20 @@ inline void initialize_mpi(){
         std::cerr << "MPI_THREAD_FUNNELED is not supported" << std::endl;
         exit(1);
     }
+
+    // currently no routine except src/rec weight calculation is parallelized by openmp
+    // thus put 1 thread per process
+    omp_set_num_threads(1);
+
     // show the number of threads
     int nthreads = omp_get_max_threads();
+
+    // error check
+    if (nthreads != 1){
+        std::cerr << "number of threads is not 1" << std::endl;
+        exit(1);
+    }
+
     if (world_rank == 0)
         std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
