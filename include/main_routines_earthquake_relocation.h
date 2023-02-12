@@ -51,7 +51,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 
         // check if the source is teleseismic or not
         // because teleseismic source is not supported in this mode
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
+        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
 
         if (is_teleseismic){
             std::cout << "Error: Teleseismic source is not supported in source relocation mode." << std::endl;

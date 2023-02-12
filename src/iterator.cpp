@@ -55,8 +55,13 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
     }
 
     // set initial and end indices of level set
-    st_level = 6;
-    ed_level = nr+nt+np-3;
+    if (!is_teleseismic) {
+        st_level = 6;
+        ed_level = nr+nt+np-3;
+    } else {
+        st_level = 0;
+        ed_level = nr+nt+np;
+    }
 
     // initialize factors etc.
     initialize_arrays(IP, grid, src);
@@ -161,7 +166,7 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
                 vv_fac_a, vv_fac_b, vv_fac_c, vv_fac_f, vv_T0v, vv_T0r, vv_T0t, vv_T0p, vv_fun, vv_change_bl);
         }
 
-        std::cout << "gpu grid initialization done." << std::endl;
+        //std::cout << "gpu grid initialization done." << std::endl;
     }
 #endif
 
@@ -509,7 +514,7 @@ void Iterator::preload_indices_1d(std::vector<std::vector<T*>> &vvv, \
 #endif // USE_SIMD || USE_CUDA
 
 void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, bool& first_init) {
-    
+
     if(if_verbose) stdout_by_main("--- start iteration forward. ---");
 
     // start timer
@@ -664,13 +669,13 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
     std::string iter_str = "iteration_adjoint";
     Timer timer_iter(iter_str);
     if(if_verbose) stdout_by_main("--- adjoint fast sweeping ... ---");
-    
+
     // start iteration
     while (true) {
         // do sweeping for all direction
         for (int iswp = 0; iswp < nswp; iswp++) {
             do_sweep_adj(iswp, grid, IP);
-        
+
 #ifdef FREQ_SYNC_GHOST
             // copy the values of communication nodes and ghost nodes
             if (subdom_main)
@@ -683,7 +688,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
         if (subdom_main)
             grid.send_recev_boundary_data(grid.tau_loc);
 #endif
-        
+
         // calculate the objective function
         // if converged, break the loop
         if (subdom_main) {
@@ -696,7 +701,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
 
         // debug store temporal T fields
         //io.write_tmp_tau_h5(grid, iter_count);
-        
+
         // store tau -> Tadj
         if (subdom_main)
             grid.update_Tadj();
@@ -883,9 +888,7 @@ void Iterator::fix_boundary_Tadj(Grid& grid) {
         for (int ir = 0; ir < nr; ir++)
             for (int it = 0; it < nt; it++)
                 for (int ip = 0; ip < np; ip++)
-                    // calculate_boundary_nodes_tele_adj(grid,ir,it,ip);
                     calculate_boundary_nodes_tele_adj(grid,ip,it,ir);
-                    
     }
 
 }
@@ -2591,9 +2594,9 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
     }
 
     // if (iip == 1 && jjt ==1 && kkr ==1){
-    //     std::cout << "id_sim: " << id_sim << ", ckp 2, " 
-    //               << "T values: " << grid.T_loc[I2V(iip, jjt, kkr)] << ", "   
-    //               << grid.T_loc[I2V(iip-1, jjt, kkr)] << ", "   
+    //     std::cout << "id_sim: " << id_sim << ", ckp 2, "
+    //               << "T values: " << grid.T_loc[I2V(iip, jjt, kkr)] << ", "
+    //               << grid.T_loc[I2V(iip-1, jjt, kkr)] << ", "
     //               << grid.T_loc[I2V(iip+1, jjt, kkr)] << ", "
     //               << grid.T_loc[I2V(iip, jjt-1, kkr)] << ", "
     //               << grid.T_loc[I2V(iip, jjt+1, kkr)] << ", "
@@ -2890,7 +2893,6 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
 
     //plane
     for (int jjt = 0; jjt < nt; jjt++){
-        #pragma omp simd
         for (int iip = 0; iip < np; iip++){
             v0 = _2_CR * grid.tau_loc[I2V(iip,jjt,1)] - grid.tau_loc[I2V(iip,jjt,2)];
             v1 = grid.tau_loc[I2V(iip,jjt,2)];
@@ -2902,7 +2904,6 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
     }
 
     for (int kkr = 0; kkr < nr; kkr++){
-        #pragma omp simd
         for (int iip = 0; iip < np; iip++){
             v0 = _2_CR * grid.tau_loc[I2V(iip,1,kkr)] - grid.tau_loc[I2V(iip,2,kkr)];
             v1 = grid.tau_loc[I2V(iip,2,kkr)];
@@ -2914,7 +2915,6 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
     }
 
     for (int kkr = 0; kkr < nr; kkr++){
-        #pragma omp simd
         for (int jjt = 0; jjt < nt; jjt++){
             v0 = _2_CR * grid.tau_loc[I2V(1,jjt,kkr)] - grid.tau_loc[I2V(2,jjt,kkr)];
             v1 = grid.tau_loc[I2V(2,jjt,kkr)];
@@ -2931,52 +2931,51 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
 void Iterator::calculate_boundary_nodes_tele(Grid& grid, int& iip, int& jjt, int& kkr){
     CUSTOMREAL v0, v1;
 
-    // Bottom
-    if (kkr == 0 && grid.k_first())
-        if (grid.is_changed[I2V(iip,jjt,0)]){
+    if (grid.is_changed[I2V(iip,jjt,kkr)]) {
+
+        // Bottom
+        if (kkr == 0 && grid.k_first()){
             v0 = _2_CR * grid.T_loc[I2V(iip,jjt,1)] - grid.T_loc[I2V(iip,jjt,2)];
             v1 = grid.T_loc[I2V(iip,jjt,2)];
             grid.T_loc[I2V(iip,jjt,0)] = std::max({v0,v1});
         }
 
-    // Top
-    if (kkr == nr-1 && grid.k_last())
-        if (grid.is_changed[I2V(iip,jjt,nr-1)]){
+        // Top
+        if (kkr == nr-1 && grid.k_last()){
             v0 = _2_CR * grid.T_loc[I2V(iip,jjt,nr-2)] - grid.T_loc[I2V(iip,jjt,nr-3)];
             v1 = grid.T_loc[I2V(iip,jjt,nr-3)];
             grid.T_loc[I2V(iip,jjt,nr-1)] = std::max({v0,v1});
         }
 
-    // South
-    if (jjt == 0 && grid.j_first())
-        if (grid.is_changed[I2V(iip,0,kkr)]){
+        // South
+        if (jjt == 0 && grid.j_first()) {
             v0 = _2_CR * grid.T_loc[I2V(iip,1,kkr)] - grid.T_loc[I2V(iip,2,kkr)];
             v1 = grid.T_loc[I2V(iip,2,kkr)];
             grid.T_loc[I2V(iip,0,kkr)] = std::max({v0,v1});
         }
 
-    // North
-    if (jjt == nt-1 && grid.j_last())
-        if (grid.is_changed[I2V(iip,nt-1,kkr)]){
+        // North
+        if (jjt == nt-1 && grid.j_last()) {
             v0 = _2_CR * grid.T_loc[I2V(iip,nt-2,kkr)] - grid.T_loc[I2V(iip,nt-3,kkr)];
             v1 = grid.T_loc[I2V(iip,nt-3,kkr)];
             grid.T_loc[I2V(iip,nt-1,kkr)] = std::max({v0,v1});
         }
 
-    // West
-    if (iip == 0 && grid.i_first())
-        if (grid.is_changed[I2V(0,jjt,kkr)]){
+        // West
+        if (iip == 0 && grid.i_first()) {
             v0 = _2_CR * grid.T_loc[I2V(1,jjt,kkr)] - grid.T_loc[I2V(2,jjt,kkr)];
             v1 = grid.T_loc[I2V(2,jjt,kkr)];
             grid.T_loc[I2V(0,jjt,kkr)] = std::max({v0,v1});
         }
-    // East
-    if (iip == np-1 && grid.i_last())
-        if (grid.is_changed[I2V(np-1,jjt,kkr)]){
+
+        // East
+        if (iip == np-1 && grid.i_last()){
             v0 = _2_CR * grid.T_loc[I2V(np-2,jjt,kkr)] - grid.T_loc[I2V(np-3,jjt,kkr)];
             v1 = grid.T_loc[I2V(np-3,jjt,kkr)];
             grid.T_loc[I2V(np-1,jjt,kkr)] = std::max({v0,v1});
         }
+
+    } // end if is_changed
 }
 
 
@@ -2992,7 +2991,7 @@ void Iterator::calculate_boundary_nodes_tele_adj(Grid& grid, int& iip, int& jjt,
             grid.tau_loc[I2V(0,jjt,kkr)] = _0_CR;
         }
     }
-    
+
     // East
     if (iip == np-1 && grid.i_last()) {
         if (!grid.is_changed[I2V(np-1,jjt,kkr)]) {

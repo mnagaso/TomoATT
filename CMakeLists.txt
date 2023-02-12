@@ -1,8 +1,11 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.8)
 
 # set the project name
 set(CMAKE_PROJECT_NAME "TOMOATT")
 project(${CMAKE_PROJECT_NAME} C CXX)
+
+# set install directory
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # check compiler type
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
@@ -18,13 +21,13 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
   set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
   # check fujitsu compiler
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu") # this may not work... in that case, please comment out this elif
   # not supported
-  MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
+  #MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
   # fujitsu clang
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
+  #elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
   MESSAGE("Compiler type: FujitsuClang")
-  set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17")
+  set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
 else()
   MESSAGE(FATAL_ERROR "Compiler type: Unknown")
 endif()
@@ -43,7 +46,7 @@ find_package(MPI)
 message(STATUS "MPI_FOUND: ${MPI_FOUND}")
 message(STATUS "MPI_VERSION: ${MPI_VERSION}")
 
-# find openmp
+# find openmp ## WE DO NOT USE OPENMP BUT KEEP THIS FOR FUTURE USE
 find_package(OpenMP)
 if(OPENMP_FOUND)
   message(STATUS "OpenMP found")
@@ -107,6 +110,17 @@ endif()
 # which is more frequent than the referred paper but necessary
 add_definitions(-DFREQ_SYNC_GHOST)
 
+# find BLAS # WE DO NOT USE BLAS BUT KEEP THIS FOR FUTURE USE
+#find_package(BLAS)
+#if(BLAS_FOUND)
+#  message(STATUS "BLAS_FOUND: ${BLAS_FOUND} at ${BLAS_LIBRARIES}, ${BLAS_INCLUDE_DIRS}")
+#  add_definitions(-DUSE_BLAS)
+#  find_path(BLAS_INCLUDE_DIRS cblas.h
+#    /usr/include
+#    /usr/local/include
+#    /usr/local/include/openblas)
+#endif()
+
 # submodules
 # yaml parser
 add_subdirectory(external_libs)
@@ -123,15 +137,6 @@ else()
 endif()
 file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 
-# add the executable
-add_executable(${CMAKE_PROJECT_NAME} ${SOURCES} ${HEADERS} ${SOURCES_EXT_XML})
-
-# set include path
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-          ${PROJECT_SOURCE_DIR}/include
-          ${PROJECT_SOURCE_DIR}/cuda
-          ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
-
 # compile cuda code
 if (CUDA_FOUND)
   include_directories(${CUDA_INCLUDE_DIRS})
@@ -142,29 +147,65 @@ if (CUDA_FOUND)
 endif()
 
 
-# link mpi
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC MPI::MPI_CXX)
+#
+# compile the executables
+# all the files with the name *.cxx is compiled as an executable
+#
+#file( GLOB APP_SOURCES src/*.cxx )
 
-# link yaml-app:
-target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC yaml-cpp)
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+# add one by one
+set(APP_SOURCES
+  src/TOMOATT.cxx
+  src/TOMOATT_solver_only.cxx
+  src/TOMOATT_2d_precalc.cxx
+  src/SrcRecWeight.cxx
+  )
 
-# link HDF5
-if(HDF5_FOUND)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${HDF5_LIBRARIES})
-  target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
-endif()
+foreach( execsourcefile ${APP_SOURCES} )
+  # get app name from file name
+  get_filename_component(EXEC_NAME ${execsourcefile} NAME_WE)
 
-# link cuda
-if (CUDA_FOUND)
+  # add the executable
+  add_executable(${EXEC_NAME} ${execsourcefile} ${SOURCES} ${HEADERS} ${SOURCES_EXT_XML})
 
-  #set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "35;50;72")
-  set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "61")
-  set_property(TARGET ${CUDA_LIBRARY_NAME} PROPERTY CUDA_ARCHITECTURES 61)
+  # set include path
+  target_include_directories(${EXEC_NAME} PRIVATE
+            ${PROJECT_SOURCE_DIR}/include
+            ${PROJECT_SOURCE_DIR}/cuda
+            ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
 
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CUDA_LIBRARY_NAME})
-  target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC MPI::MPI_CXX)
-  target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC yaml-cpp)
-  target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_LIBRARIES})
+  # link mpi
+  target_link_libraries(${EXEC_NAME} PUBLIC MPI::MPI_CXX)
 
-endif()
+  # link yaml-app:
+  target_link_libraries(${EXEC_NAME} PUBLIC yaml-cpp)
+  target_include_directories(${EXEC_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+
+  # link HDF5
+  if(HDF5_FOUND)
+    target_link_libraries(${EXEC_NAME} PUBLIC ${HDF5_LIBRARIES})
+    target_include_directories(${EXEC_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
+  endif()
+
+  # link blas
+  if(BLAS_FOUND)
+    target_link_libraries(${EXEC_NAME} PUBLIC ${BLAS_LIBRARIES})
+    target_include_directories(${EXEC_NAME} PUBLIC ${BLAS_INCLUDE_DIRS})
+  endif()
+
+  # link cuda
+  if (CUDA_FOUND)
+
+    #set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "35;50;72")
+    set_target_properties(${CUDA_LIBRARY_NAME} PROPERTIES CUDA_ARCHITECTURES "61")
+    set_property(TARGET ${CUDA_LIBRARY_NAME} PROPERTY CUDA_ARCHITECTURES 61)
+
+    target_link_libraries(${EXEC_NAME} PRIVATE ${CUDA_LIBRARY_NAME})
+    target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC MPI::MPI_CXX)
+    target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC yaml-cpp)
+    target_link_libraries(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_LIBRARIES})
+
+  endif()
+
+
+endforeach( execsourcefile ${APP_SOURCES} )

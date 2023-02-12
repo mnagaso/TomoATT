@@ -247,7 +247,7 @@ void IO_utils::init_xdmf_file(){
         type_size = "8";
     }
 
-    doc = new tinyxml2::XMLDocument();
+    doc = new tinyxml2::XMLDocument(); // TODO: delete this object somewhere at the end
 
     // headers
     tinyxml2::XMLDeclaration* decl = doc->NewDeclaration();
@@ -529,9 +529,9 @@ void IO_utils::write_data_ascii(Grid& grid, std::string& fname, CUSTOMREAL* data
 
 bool IO_utils::node_of_this_subdomain(int* offsets, const int& i, const int& j, const int& k){
     // check if node is in this subdomain
-    if (i >= offsets[0] && i < offsets[0] + loc_I_excl_ghost &&
+    if (i >= offsets[2] && i < offsets[2] + loc_I_excl_ghost &&
         j >= offsets[1] && j < offsets[1] + loc_J_excl_ghost &&
-        k >= offsets[2] && k < offsets[2] + loc_K_excl_ghost)
+        k >= offsets[0] && k < offsets[0] + loc_K_excl_ghost)
         return true;
     else
         return false;
@@ -573,7 +573,7 @@ void IO_utils::write_data_merged_ascii(Grid& grid, std::string& fname){
                 if (node_of_this_subdomain(offsets, i,j,k)){
                     // open file
                     fout.open(fname.c_str(), std::ios_base::app); // append
-                    int idx = I2V_3D(i-offsets[0],j-offsets[1],k-offsets[2]);
+                    int idx = I2V_3D(i-offsets[2],j-offsets[1],k-offsets[0]);
                     // write eta xi zeta vel
                     fout << array_eta[idx] << "   " << array_xi[idx] << "   " << 0.0 << "   " << array_vel[idx] << "\n";
                     fout.close();
@@ -1147,6 +1147,26 @@ void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
         std::string dset_name = "Keta_update_inv_" + int2string_zero_fill(i_inv);
         std::string fname = create_fname_ascii_model(dset_name);
         write_data_ascii(grid, fname, grid.get_Keta_update());
+    }
+}
+
+
+void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "T_res";
+        std::string h5_dset_name_merged = "T_res_merged_inv_" + int2string_zero_fill(i_inv);
+        bool inverse_field = false;
+        write_data_merged_h5(grid, h5_output_fname, h5_group_name_data, h5_dset_name_merged, grid.get_T(), i_inv, inverse_field);
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T(), i_inv, src_data);
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if(output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "T_res_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii(dset_name);
+        write_data_ascii(grid, fname, grid.get_T());
     }
 }
 

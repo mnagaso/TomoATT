@@ -12,6 +12,7 @@ build
 *.pyc
 *.sif
 
+
 external_libs/hdf5*
 external_libs/openmpi*
 external_libs/local_mpi_hdf5
@@ -36,5 +37,8 @@ test/solver_performance/vtune*
 test/solver_performance/e0*
 test/solver_performance/advisor*
 test/solver_performance/r0*
+test/solver_performance/bench_fugaku
 
 
+# examples
+examples/*/OUTPUT_FILES

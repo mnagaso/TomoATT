@@ -402,12 +402,15 @@ inline void add_regularization_grad(Grid& grid) {
 void initial_guess_step(Grid& grid, CUSTOMREAL& step_size, CUSTOMREAL SC_VAL) {
     // find the max value in descent_direction
     CUSTOMREAL max_val = _0_CR;
-    for (int k = 0; k < loc_K; k++) {
-        for (int j = 0; j < loc_J; j++) {
-            for (int i = 0; i < loc_I; i++) {
-                if (std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]  ) > max_val) max_val = std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]);
-                if (std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]) > max_val) max_val = std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]);
-                if (std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)] ) > max_val) max_val = std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)]);
+
+    if(subdom_main) {
+        for (int k = 0; k < loc_K; k++) {
+            for (int j = 0; j < loc_J; j++) {
+                for (int i = 0; i < loc_I; i++) {
+                    if (std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]  ) > max_val) max_val = std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]);
+                    if (std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]) > max_val) max_val = std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]);
+                    if (std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)] ) > max_val) max_val = std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)]);
+                }
             }
         }
     }

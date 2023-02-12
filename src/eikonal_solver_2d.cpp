@@ -4,8 +4,9 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
+    // TODO: currently this routine is run in only serial.
+    // it can be work in parallel with simultaneous run,
     if (subdom_main) {
-
         for (long unsigned int i = 0; i < IP.src_ids_this_sim.size(); i++) {
             int src_id = IP.src_ids_this_sim[i];
             // get source info
@@ -82,8 +83,8 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
     activated_boundaries[4] = true; // Bot
 
     // grid setup
-    nr_2d   = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
-    nt_2d   = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
+    nr_2d = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
+    nt_2d = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
 
     // initialize arrays
     r_2d = new CUSTOMREAL[nr_2d];

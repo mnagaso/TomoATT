@@ -22,7 +22,6 @@ void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     for (int i_level = 0; i_level < n_levels; i_level++) {
         size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-        #pragma omp simd
         for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
             V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
@@ -64,7 +63,6 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
     for (int i_level = 0; i_level < n_levels; i_level++) {
         size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-        #pragma omp simd
         for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
             V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
@@ -117,7 +115,6 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         for (int i_level = 0; i_level < n_levels; i_level++) {
             size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            #pragma omp simd
             for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
                 V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
@@ -421,7 +418,6 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
         for (int i_level = 0; i_level < n_levels; i_level++) {
             size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            #pragma omp simd
             for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
                 V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
@@ -791,7 +787,7 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     if(!use_gpu) {
 
-#if !defined USE_SIMD
+//#if !defined USE_SIMD
 
         // set sweep direction
         set_sweep_direction(iswp);
@@ -802,17 +798,16 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
         for (int i_level = 0; i_level < n_levels; i_level++) {
             size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            #pragma omp simd
             for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
                 V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-                if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-                else            kkr = kkr-1;  //nr-kk;
-                if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-                else            jjt = jjt-1;  //nt-jj;
-                if (p_dirc < 0) iip = np-iip; //ii-1;
-                else            iip = iip-1;  //np-ii;
+                if (r_dirc < 0) kkr = nr-kkr-1;
+                else            kkr = kkr;
+                if (t_dirc < 0) jjt = nt-jjt-1;
+                else            jjt = jjt;
+                if (p_dirc < 0) iip = np-iip-1;
+                else            iip = iip;
 
                 //
                 // calculate stencils
@@ -831,6 +826,7 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
         } // end loop i_level
 
+/*
 #elif USE_AVX512 || USE_AVX
 
         // preload constants
@@ -947,6 +943,7 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 #elif USE_ARM_SVE
 
 #endif // ifndef USE_SIMD
+*/
 
     } // end of if !use_gpu
     else { // if use_gpu
@@ -984,7 +981,7 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     if(!use_gpu) {
 
-#if !defined USE_SIMD
+//#if !defined USE_SIMD
 
         // set sweep direction
         set_sweep_direction(iswp);
@@ -995,17 +992,16 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
         for (int i_level = 0; i_level < n_levels; i_level++) {
             size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-            #pragma omp simd
             for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
                 V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-                if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-                else            kkr = kkr-1;  //nr-kk;
-                if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-                else            jjt = jjt-1;  //nt-jj;
-                if (p_dirc < 0) iip = np-iip; //ii-1;
-                else            iip = iip-1;  //np-ii;
+                if (r_dirc < 0) kkr = nr-kkr-1;
+                else            kkr = kkr;
+                if (t_dirc < 0) jjt = nt-jjt-1;
+                else            jjt = jjt;
+                if (p_dirc < 0) iip = np-iip-1;
+                else            iip = iip;
 
                 //
                 // calculate stencils
@@ -1024,11 +1020,11 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
         } // end loop i_level
 
-#elif USE_AVX512 || USE_AVX
-
-#elif USE_ARM_SVE
-
-#endif // ifndef USE_SIMD
+//#elif USE_AVX512 || USE_AVX
+//
+//#elif USE_ARM_SVE
+//
+//#endif // ifndef USE_SIMD
 
     } // end of if !use_gpu
     else { // if use_gpu

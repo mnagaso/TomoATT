@@ -287,31 +287,35 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // debug output
     stdout_by_main("domain decomposition initialization end.");
+
+
     for (int i = 0; i < nprocs; i++) {
         synchronize_all_inter();
 
-        if (i == myrank) {
-            std::cout << "--- myrank: ---" << myrank << std::endl;
+        if (id_sim == 0){
+            if (i == myrank) {
+                std::cout << "--- myrank: ---" << myrank << std::endl;
 
-            if (i == 0) {
-                std::cout << "ndiv_i j k : "  << ndiv_i  << " " << ndiv_j  << " " << ndiv_k  << std::endl;
-                std::cout << "ngrid_i j k : " << ngrid_i << " " << ngrid_j << " " << ngrid_k << std::endl;
-            }
+                if (i == 0) {
+                    std::cout << "ndiv_i j k : "  << ndiv_i  << " " << ndiv_j  << " " << ndiv_k  << std::endl;
+                    std::cout << "ngrid_i j k : " << ngrid_i << " " << ngrid_j << " " << ngrid_k << std::endl;
+                }
 
-            std::cout << "domain_i j k: "          << domain_i << " " << domain_j << " " << domain_k << std::endl;
-            std::cout << "loc_I J K: "             << loc_I << " " << loc_J << " " << loc_K << std::endl;
-            std::cout << "loc_I_excl_ghost J_excl_ghost K_excl_ghost: " << loc_I_excl_ghost << " " << loc_J_excl_ghost << " " << loc_K_excl_ghost << std::endl;
-            std::cout << "i_start_loc i_end_loc: " << i_start_loc << " " << i_end_loc << std::endl;
-            std::cout << "j_start_loc j_end_loc: " << j_start_loc << " " << j_end_loc << std::endl;
-            std::cout << "k_start_loc k_end_loc: " << k_start_loc << " " << k_end_loc << std::endl;
-            std::cout << "offset_nnodes offset_nelms: " << offset_nnodes << " " << offset_nelms << std::endl;
-            std::cout << "n total local grids: "   << loc_I*loc_J*loc_K << "   max vector elm id:  " << I2V(loc_I-1,loc_J-1,loc_K-1) << std::endl;
-            // print neighbors_id
-            std::cout << "neighbors_id: ";
-            for (int i = 0; i < 6; i++) {
-                std::cout << neighbors_id[i] << " ";
+                std::cout << "domain_i j k: "          << domain_i << " " << domain_j << " " << domain_k << std::endl;
+                std::cout << "loc_I J K: "             << loc_I << " " << loc_J << " " << loc_K << std::endl;
+                std::cout << "loc_I_excl_ghost J_excl_ghost K_excl_ghost: " << loc_I_excl_ghost << " " << loc_J_excl_ghost << " " << loc_K_excl_ghost << std::endl;
+                std::cout << "i_start_loc i_end_loc: " << i_start_loc << " " << i_end_loc << std::endl;
+                std::cout << "j_start_loc j_end_loc: " << j_start_loc << " " << j_end_loc << std::endl;
+                std::cout << "k_start_loc k_end_loc: " << k_start_loc << " " << k_end_loc << std::endl;
+                std::cout << "offset_nnodes offset_nelms: " << offset_nnodes << " " << offset_nelms << std::endl;
+                std::cout << "n total local grids: "   << loc_I*loc_J*loc_K << "   max vector elm id:  " << I2V(loc_I-1,loc_J-1,loc_K-1) << std::endl;
+                // print neighbors_id
+                std::cout << "neighbors_id: ";
+                for (int i = 0; i < 6; i++) {
+                    std::cout << neighbors_id[i] << " ";
+                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
         }
     }
 
@@ -887,7 +891,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     int tmp_offset_i = get_offset_i(); // offset_i - i_start_loc
 
     // output global grid parameters
-    if (inter_sub_rank == 0 && myrank == 0) {
+    if (inter_sub_rank == 0 && myrank == 0 && id_sim == 0) {
         std::cout << "\n\n Global grid information: \n\n" << std::endl;
         std::cout << "  r_min r_max dr : "                << r_min   << " " << r_max << " " << dr << std::endl;
         std::cout << "  depth_min depth_max dz : "        << IP.get_min_dep() << " " << IP.get_max_dep() << std::endl;
@@ -913,7 +917,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 
     for (int i = 0; i < nprocs; i++) {
         synchronize_all_inter();
-        if (i == myrank) {
+        if (i == myrank && id_sim == 0) {
             std::cout << "\n--- subdomain info ---- rank : " << i << "\n\n" << std::endl;
             std::cout << "  p_loc_1d min max in deg.: "  << p_loc_1d[0]*RAD2DEG << " " << p_loc_1d[loc_I-1]*RAD2DEG << std::endl;
             std::cout << "  t_loc_1d min max in deg.: "  << t_loc_1d[0]*RAD2DEG << " " << t_loc_1d[loc_J-1]*RAD2DEG << std::endl;
@@ -1442,7 +1446,6 @@ void Grid::calc_L1_and_Linf_diff(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
         // calculate L1 error
         for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
             for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
-                #pragma omp simd reduction(+:L1_diff)
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)];
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)]);
@@ -1471,7 +1474,6 @@ void Grid::calc_L1_and_Linf_diff_tele(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff
         // calculate L1 error
         for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
             for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
-                #pragma omp simd reduction(+:L1_diff)
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]); // tau_old is used as T_old_loc here
                     Linf_diff  = std::max(Linf_diff,std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]));
@@ -1501,7 +1503,6 @@ void Grid::calc_L1_and_Linf_diff_adj(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff)
         // calculate L1 error
         for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
             for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
-                #pragma omp simd
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     // Adjoint simulation use only Linf
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - Tadj_loc[I2V(i_lon,j_lat,k_r)]));
@@ -1525,7 +1526,6 @@ void Grid::calc_L1_and_Linf_error(CUSTOMREAL& L1_error, CUSTOMREAL& Linf_error) 
     // calculate L1 error
     for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
         for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
-            #pragma omp simd reduction(+:L1_error)
             for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                 L1_error   +=                     std::abs(u_loc[I2V(i_lon,j_lat,k_r)] - T0v_loc[I2V(i_lon,j_lat,k_r)] * tau_loc[I2V(i_lon,j_lat,k_r)]);
                 Linf_error  = std::max(Linf_error,std::abs(u_loc[I2V(i_lon,j_lat,k_r)] - T0v_loc[I2V(i_lon,j_lat,k_r)] * tau_loc[I2V(i_lon,j_lat,k_r)]));
@@ -1551,7 +1551,6 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[0] != -1) {
         for (int i = 0; i < n_ghost_layers; i++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int j = j_start_loc; j <= j_end_loc; j++) {
                     bin_s[i*loc_J_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_J_excl_ghost + (j-j_start_loc)] = arr[I2V(i+n_ghost_layers,j,k)];
                 }
@@ -1562,7 +1561,6 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[1] != -1) {
         for (int i = 0; i < n_ghost_layers; i++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int j = j_start_loc; j <= j_end_loc; j++) {
                     bip_s[i*loc_J_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_J_excl_ghost + (j-j_start_loc)] = arr[I2V(loc_I-n_ghost_layers*2+i,j,k)];
                 }
@@ -1573,7 +1571,6 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[2] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bjn_s[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,j+n_ghost_layers,k)];
                 }
@@ -1584,7 +1581,6 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[3] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bjp_s[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,loc_J-n_ghost_layers*2+j,k)];
                 }
@@ -1596,7 +1592,6 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[4] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bkn_s[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,j,k+n_ghost_layers)];
                 }
@@ -1607,7 +1602,6 @@ void Grid::prepare_boundary_data_to_send(CUSTOMREAL* arr) {
     if (neighbors_id[5] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     bkp_s[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)] = arr[I2V(i,j,loc_K-n_ghost_layers*2+k)];
                 }
@@ -1636,7 +1630,6 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[1] != -1) {
         for (int i = 0; i < n_ghost_layers; i++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int j = j_start_loc; j <= j_end_loc; j++) {
                      arr[I2V(loc_I-n_ghost_layers+i,j,k)] = bip_r[i*loc_J_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_J_excl_ghost + (j-j_start_loc)];
                 }
@@ -1647,7 +1640,6 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[2] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,j,k)] = bjn_r[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -1658,7 +1650,6 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[3] != -1) {
         for (int j = 0; j < n_ghost_layers; j++) {
             for (int k = k_start_loc; k <= k_end_loc; k++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,loc_J-n_ghost_layers+j,k)] = bjp_r[j*loc_I_excl_ghost*loc_K_excl_ghost + (k-k_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -1670,7 +1661,6 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[4] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,j,k)] = bkn_r[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -1681,7 +1671,6 @@ void Grid::assign_received_data_to_ghost(CUSTOMREAL* arr) {
     if (neighbors_id[5] != -1) {
         for (int k = 0; k < n_ghost_layers; k++) {
             for (int j = j_start_loc; j <= j_end_loc; j++) {
-                #pragma omp simd
                 for (int i = i_start_loc; i <= i_end_loc; i++) {
                     arr[I2V(i,j,loc_K-n_ghost_layers+k)] = bkp_r[k*loc_I_excl_ghost*loc_J_excl_ghost + (j-j_start_loc)*loc_I_excl_ghost + (i-i_start_loc)];
                 }
@@ -2251,7 +2240,6 @@ void Grid::calc_T_plus_tau() {
     // calculate T_plus_tau
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-            #pragma omp simd
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
                 // T0*tau
                 T_loc[I2V(i_lon,j_lat,k_r)] = T0v_loc[I2V(i_lon,j_lat,k_r)] * tau_loc[I2V(i_lon,j_lat,k_r)];
@@ -2265,7 +2253,6 @@ void Grid::calc_T_plus_tau() {
 void Grid::calc_residual() {
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-            #pragma omp simd
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
                 u_loc[I2V(i_lon,j_lat,k_r)] = u_loc[I2V(i_lon,j_lat,k_r)] - T_loc[I2V(i_lon,j_lat,k_r)];
             }

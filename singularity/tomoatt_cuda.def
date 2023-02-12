@@ -75,7 +75,7 @@ This is a test container.
 
     cd /opt/TomoATT
     mkdir -p build && cd build && rm -rf ./*
-    cmake .. -DCMAKE_PREFIX_PATH=$PKG_DIR
+    cmake .. -DUSE_CUDA=True -DCMAKE_PREFIX_PATH=$PKG_DIR
     make -j$NPROC
 
     echo "TomoATT installed."

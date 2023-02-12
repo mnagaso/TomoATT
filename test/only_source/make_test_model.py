@@ -6,7 +6,6 @@ import numpy as np
 import math
 
 # grid
-#R_earth = 6378.1370
 R_earth = 6371.0
 
 rr1=6361
@@ -47,7 +46,7 @@ c=0
 for ir in range(n_rtp[0]):
     for it in range(n_rtp[1]):
         for ip in range(n_rtp[2]):
-            # these arrays are initialize above
+            # already initialized above
             #eta_init[ir,it,ip] = 0.0
             #xi_init[ir,it,ip]  = 0.0
             zeta_init[ir,it,ip] = gamma*math.sqrt(eta_init[ir,it,ip]**2 + xi_init[ir,it,ip]**2)
@@ -82,43 +81,40 @@ print(c)
 
 
 # %%
-# write out in ASCIII
+# write out in hdf5 format
+import h5py
 
-#
+fout_init = h5py.File('test_model_init.h5', 'w')
+fout_true = h5py.File('test_model_true.h5', 'w')
 
-fname_init = 'test_model_init.dat'
-fname_true = 'test_model_true.dat'
+# write out the arrays eta_init, xi_init, zeta_init, fun_init, a_init, b_init, c_init, f_init
+fout_init.create_dataset('eta', data=eta_init)
+fout_init.create_dataset('xi', data=xi_init)
+fout_init.create_dataset('zeta', data=zeta_init)
+fout_init.create_dataset('vel', data=vel_init)
 
+# writeout the arrays eta_true, xi_true, zeta_true, fun_true, a_true, b_true, c_true, f_true
+fout_true.create_dataset('eta', data=eta_true)
+fout_true.create_dataset('xi', data=xi_true)
+fout_true.create_dataset('zeta', data=zeta_true)
+fout_true.create_dataset('vel', data=vel_true)
 
-# write init model
-with open(fname_init, 'w') as f:
-    # write nodes in rtp
-    for ir in range(n_rtp[0]):
-        for it in range(n_rtp[1]):
-            for ip in range(n_rtp[2]):
-                # write out eta xi zeta fun fac_a fac_b fac_c fac_f
-                f.write("{}   {}   {}   {}\n".format(eta_init[ir,it,ip],xi_init[ir,it,ip],zeta_init[ir,it,ip],vel_init[ir,it,ip]))
-
-
-# write true model
-with open(fname_true, 'w') as f:
-    # write nodes in rtp
-    for ir in range(n_rtp[0]):
-        for it in range(n_rtp[1]):
-            for ip in range(n_rtp[2]):
-                # write out eta xi zeta fun fac_a fac_b fac_c fac_f
-                f.write("{}   {}   {}   {}\n".format(eta_true[ir,it,ip],xi_true[ir,it,ip],zeta_true[ir,it,ip],vel_true[ir,it,ip]))
-
+fout_init.close()
+fout_true.close()
 
 
 # %% [markdown]
 # # prepare src station file
+#
+# The following code creates a src_rec_file for the inversion, which describes the source and receiver positions and arrival times.
+# Format is as follows:
 #
 # ```
 #         26 1992  1  1  2 43  56.900    1.8000     98.9000 137.00  2.80    8    305644 <- src   　: id_src year month day hour min sec lat lon dep_km mag num_recs id_event
 #      26      1      PCBI       1.8900     98.9253   1000.0000  P   10.40  18.000      <- arrival : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arrival_time_sec
 #      26      2      MRPI       1.6125     99.3172   1100.0000  P   50.84  19.400
 #      26      3      HUTI       2.3153     98.9711   1600.0000  P   57.84  19.200
+#      ....
 #
 # ```
 
@@ -145,75 +141,39 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-n_srcs = [10,20,20]
-n_src = n_srcs[0]*n_srcs[1]*n_srcs[2]
-n_rec = [30 for x in range(n_src)]
+n_srcs = 8 # source will be placed around the domain
+r_src = 15 # radius of the source in degree
 
 lines = []
 
-nij_rec = math.sqrt(n_rec[0])
+#nij_rec = math.sqrt(n_rec[0])
 
 pos_src=[]
-pos_rec=[]
+#pos_rec=[]
 
+# center of the domain
+lon_c = (pp1deg+pp2deg)/2.0
+lat_c = (tt1deg+tt2deg)/2.0
 
-# create receiver coordinates
-elev_recs=[]
-lon_recs=[]
-lat_recs=[]
-rec_names=[]
-for i in range(n_rec[0]):
-    #elev_recs.append(random.uniform(-100.0,-100.0)) # elevation in m
-    #elev_recs.append(0) # elevation in m
-    #lon_recs .append(random.uniform(pp1deg*1.1,pp2deg*0.9))
-    #lat_recs .append(random.uniform(tt1deg*1.1,tt2deg*0.9))
-    rec_names.append(i)
-    # regularly
-    elev_recs.append(0.0)
-    tmp_ilon = i%nij_rec
-    tmp_ilat = int(i/nij_rec)
-    lon_recs.append(pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_rec)
-    lat_recs.append(tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_rec)
+# step of angle in degree = 360.0/n_srcs
+d_deg = 360.0/n_srcs
 
+for i_src in range(n_srcs):
 
+    i_deg = i_src*d_deg
+    lon = lon_c + r_src*math.cos(i_deg/180.0*math.pi)
+    lat = lat_c + r_src*math.sin(i_deg/180.0*math.pi)
+    # depth of the source
+    dep = 10.0 + 0.5*i_src
 
-# create dummy src
-for ir in range(n_srcs[0]):
-    for it in range(n_srcs[1]):
-        for ip in range(n_srcs[2]):
-            i_src = ir*n_srcs[1]*n_srcs[2] + it*n_srcs[2] + ip
-            # define one point in the domain (rr1 bottom, rr2 top)
-            # random
-            #dep = random.uniform((R_earth-rr1)*0.5,(R_earth-rr1)*0.98)
-            #lon = random.uniform(pp1deg,pp2deg)
-            #lat = random.uniform(tt1deg,tt2deg)
+    src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, 0, id_dummy]
+    lines.append(src)
 
-            # regular
-            dep = (R_earth-rr1)/n_srcs[0]*ir
-            lon = pp1deg + ip*(pp2deg-pp1deg)/n_srcs[2]
-            lat = tt1deg + it*(tt2deg-tt1deg)/n_srcs[1]
-
-            src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
-            lines.append(src)
-
-            pos_src.append([lon,lat,dep])
-
-
-            # create dummy station
-            for i_rec in range(n_rec[i_src]):
-                elev_rec = elev_recs[i_rec]
-                lon_rec  = lon_recs[i_rec]
-                lat_rec  = lat_recs[i_rec]
-                st_name_dummy = rec_names[i_rec]
-
-                rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
-                lines.append(rec)
-
-                pos_rec.append([lon_rec,lat_rec,elev_rec])
+    pos_src.append([lon,lat,dep])
 
 
 # write out ev_arrivals file
-fname = 'src_rec_test.dat'
+fname = 'src_only_test.dat'
 
 with open(fname, 'w') as f:
     for line in lines:
@@ -226,13 +186,13 @@ with open(fname, 'w') as f:
 # draw src and rec positions
 import matplotlib.pyplot as plt
 
-for i_src in range(n_src):
+for i_src in range(n_srcs):
     plt.scatter(pos_src[i_src][1],pos_src[i_src][0],c='r',marker='o')
 
 # %%
 # plot receivers
-for i_rec in range(n_rec[0]):
-    plt.scatter(pos_rec[i_rec][1],pos_rec[i_rec][0],c='b',marker='o')
+#for i_rec in range(n_rec[0]):
+#    plt.scatter(pos_rec[i_rec][1],pos_rec[i_rec][0],c='b',marker='o')
 
 # %%
 

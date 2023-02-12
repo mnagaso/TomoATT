@@ -64,7 +64,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         }
 
         // get is_teleseismic flag
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
+        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
 
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic);
@@ -99,7 +99,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
             It->run_iteration_forward(IP, grid, io, first_init);
         }
-        
+
         // output the result of forward simulation
         // ignored for inversion mode.
         if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
@@ -133,7 +133,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             v_obj_misfit = recs.calculate_adjoint_source(IP);
             v_obj += v_obj_misfit[0];
             v_misfit += v_obj_misfit[1];
-            
+
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
 
@@ -155,8 +155,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     synchronize_all_world();
 
     // allreduce sum_adj_src
-    allreduce_cr_sim_single(v_obj, v_obj);
-    allreduce_cr_sim_single(v_misfit, v_misfit);
+    allreduce_cr_sim_inplace(&v_obj, 1);
+    allreduce_cr_sim_inplace(&v_misfit, 1);
 
     v_obj_misfit[0] = v_obj;
     v_obj_misfit[1] = v_misfit;

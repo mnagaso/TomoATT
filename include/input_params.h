@@ -15,86 +15,8 @@
 #include "yaml-cpp/yaml.h"
 #include "utils.h"
 #include "mpi_funcs.h"
-
-
-// strucutre for storing source or receiver information
-class SrcRec {
-public:
-
-
-    //
-    // default values, for the case of single source - receiver
-    //
-    int id_src = 0;
-    int id_rec = -9999;
-    int n_rec  = 0;
-    int n_data = 0;  // = n_rec + n_rec_pair
-
-    CUSTOMREAL dep; // stored as depth (km), so need to depth2radious function when using it in other part of the code
-    CUSTOMREAL lat; // stored in degree, but convarted to radian when passed through get_src_* function
-    CUSTOMREAL lon; // stored in degree, but convarted to radian when passed through get_src_* function
-
-    CUSTOMREAL arr_time = 0.0;     // calculated arrival time will be stored and updated during the simulation
-    CUSTOMREAL arr_time_ori = 0.0; // recorded/original arrival time (written in the input file)
-    CUSTOMREAL t_adj;        // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
-    CUSTOMREAL weight=1.0;   // weight
-
-    //
-    // another case of receiver pair (now only for teleseismicity)
-    //
-    bool is_rec_pair = false;
-    int n_rec_pair = 0;
-
-    std::vector<int> id_rec_pair         = std::vector<int>(2);
-    std::vector<CUSTOMREAL> dep_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> lat_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> lon_pair     = std::vector<CUSTOMREAL>(2);
-    std::vector<CUSTOMREAL> ddt_adj_pair = std::vector<CUSTOMREAL>(2);    // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
-    std::vector<std::string> name_rec_pair    = std::vector<std::string>(2);
-    std::vector<CUSTOMREAL> station_correction_pair = {0.0, 0.0}; // station correction value (only use for teleseismic data)
-
-    // name_rec_pair[0] = "rec1_name_dummy";
-    // name_rec_pair[1] = "rec2_name_dummy";
-
-    CUSTOMREAL dif_arr_time;     // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
-    CUSTOMREAL dif_arr_time_ori; // recorded/original differential arrival time (written in the input file)
-
-
-    // common parameters for both cases
-
-    int year             = 9999;
-    int month            = 99;
-    int day              = 99;
-    int hour             = 99;
-    int min              = 99;
-    CUSTOMREAL sec       = 99;
-    CUSTOMREAL mag       = 99;
-    std::string name_src = "src_name_dummy";
-    std::string name_rec = "rec_name_dummy";
-    std::string phase    = "P";
-
-    // original ids of source/receiver before swapping
-    std::vector<int> id_srcs_ori;
-    int id_rec_ori; // used for swapping case at writing process
-
-    bool is_teleseismic = false;
-    // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
-    CUSTOMREAL* arr_times_bound_N; // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E; // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W; // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S; // arrival time of the receiver at the south boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
-    bool*       is_bound_src; // true if the source is on the boundary surface
-
-    // params for source relocation
-    CUSTOMREAL DTk, DTj, DTi;  // gradient of traveltime
-    CUSTOMREAL tau_opt;        // optimal origin time
-    CUSTOMREAL sum_weight;     // sum of weights of all sources
-    CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
-    int        id_unique_list; // id of the source in the unique list
-    CUSTOMREAL vobj_src_reloc; // value of objective function
-    CUSTOMREAL vobj_grad_norm_src_reloc; // norm of gradient of objective function
-};
+#include "timer.h"
+#include "src_rec.h"
 
 
 // InputParams class for reading/storing and outputing input parameters and src_rec information
@@ -119,6 +41,7 @@ public:
     bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
     SrcRec&              get_src_point(int);  // return SrcRec object
     std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
+    bool get_if_src_teleseismic(int); // return true if the source is teleseismic
 
     CUSTOMREAL get_conv_tol(){return conv_tol;};
     void set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
@@ -165,6 +88,7 @@ public:
     bool get_is_output_model_dat()    {return is_output_model_dat;};
     bool get_is_verbose_output()      {return is_verbose_output;};
     bool get_is_output_final_model()  {return is_output_final_model;};
+    bool get_is_output_in_process()   {return is_output_in_process;};
 
     bool get_is_inv_slowness()        {return is_inv_slowness;};
     bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
@@ -198,8 +122,8 @@ private:
     std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
-    int run_mode=0;                  // do inversion or not (0: no, 1: yes)
-    int n_inversion_grid=1;              // number of inversion grid
+    int run_mode=0;                                     // do inversion or not (0: no, 1: yes)
+    int n_inversion_grid=1;                             // number of inversion grid
     int type_dep_inv=0, type_lat_inv=0, type_lon_inv=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
     // type = 0: uniform inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
@@ -221,30 +145,17 @@ private:
     int        max_iter_inv=1; // maximum number of iterations for inversion
 
     // calculation method
-    int stencil_order; // stencil order
-    int stencil_type; // stencil order
-    int sweep_type; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
+    int stencil_order = 3; // stencil order
+    int stencil_type  = 1; // stencil type  (0: non upwind; 1: upwind)
+    int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
-    // parse src_rec_file
-    void parse_src_rec_file();
-    // parse src_list_file
-    void parse_src_list();
-    // parse rec_list_file
-    void parse_rec_list();
-    // parse src_rec_file new
-    void parse_src_rec_file_new();
     // parse sta_correction_file
     void parse_sta_correction_file();
-
-    // list for all src and rec info
-    // std::vector<SrcRec> src_list;
-    // std::vector<SrcRec> rec_list;
 
     // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
     std::map<std::string, SrcRec> rec_list;
     std::map<std::string, CUSTOMREAL> station_correction;
     std::map<std::string, CUSTOMREAL> station_correction_kernel;
-    // CUSTOMREAL* station_correction_kernel;
     CUSTOMREAL* station_correction_value;
     int N_receiver = 0;
 
@@ -257,13 +168,11 @@ private:
     std::vector< std::vector<SrcRec> > rec_points;
     std::vector< std::vector<SrcRec> > rec_points_back; // for backup purposes
     std::vector< std::vector<SrcRec> > rec_points_out;  // temporal storage for output
+
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
 
-    // swap the sources and receivers
-    void do_swap_src_rec();
     bool swap_src_rec = false;     // whether the src/rec are swapped or not
-    void reverse_src_rec_points(); // reverse the swapped src/rec
 
     // tele seismic source management
     void separate_region_and_tele_src();               // check if the source is tele seismic or not
@@ -300,6 +209,7 @@ private:
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
     bool is_verbose_output      = false; // output verbose information or not.
     bool is_output_final_model  = true;  // output merged final model or not.
+    bool is_output_in_process   = true;  // output merged model at each inv iteration or not.
 
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.
@@ -308,6 +218,101 @@ private:
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
     bool is_sta_correction = false; // apply station correction or not.
+
+    // function to communicate src_rec info
+    void send_src_inter_sim(SrcRec& src, int dest){
+        // send source parameters of SrcRec class to dest
+        // comm is inter_sub_comm or inter_comm
+
+        // id_src id_rec n_rec n_data
+        // lon lat dep weight is_teleseismic
+
+        send_i_single_sim(&src.id_src, dest);
+        send_i_single_sim(&src.id_rec, dest);
+        send_i_single_sim(&src.n_rec, dest);
+        send_i_single_sim(&src.n_data, dest);
+        send_cr_single_sim(&src.lon, dest);
+        send_cr_single_sim(&src.lat, dest);
+        send_cr_single_sim(&src.dep, dest);
+        send_cr_single_sim(&src.weight, dest);
+        send_bool_single_sim(&src.is_teleseismic, dest);
+
+    }
+
+    void send_rec_inter_sim(std::vector<SrcRec>& vrec, int dest){
+
+        // send receiver parameters of SrcRec class to dest
+        for (auto& rec: vrec) {
+            // id_src id_rec n_rec n_data
+            // lon lat dep weight arr_time arr_time_ori t_adj
+            // is_rec_pair n_rec_pair
+            send_i_single_sim(&rec.id_src, dest);
+            send_i_single_sim(&rec.id_rec, dest);
+            send_i_single_sim(&rec.n_rec, dest);
+            send_i_single_sim(&rec.n_data, dest);
+            send_cr_single_sim(&rec.lon, dest);
+            send_cr_single_sim(&rec.lat, dest);
+            send_cr_single_sim(&rec.dep, dest);
+            send_cr_single_sim(&rec.weight, dest);
+            send_cr_single_sim(&rec.arr_time, dest);
+            send_cr_single_sim(&rec.arr_time_ori, dest);
+            send_cr_single_sim(&rec.t_adj, dest);
+            send_bool_single_sim(&rec.is_rec_pair, dest);
+
+            // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
+            if (rec.is_rec_pair){
+                // TODO : check how to send double difference pairs
+            }
+        }
+
+    }
+
+    void recv_src_inter_sim(SrcRec& src, int orig){
+        // recv source parameters of SrcRec class from orig
+        // comm is inter_sub_comm or inter_comm
+
+        // id_src id_rec n_rec n_data
+        // lon lat dep weight is_teleseismic
+
+        recv_i_single_sim(&src.id_src, orig);
+        recv_i_single_sim(&src.id_rec, orig);
+        recv_i_single_sim(&src.n_rec, orig);
+        recv_i_single_sim(&src.n_data, orig);
+        recv_cr_single_sim(&src.lon, orig);
+        recv_cr_single_sim(&src.lat, orig);
+        recv_cr_single_sim(&src.dep, orig);
+        recv_cr_single_sim(&src.weight, orig);
+        recv_bool_single_sim(&src.is_teleseismic, orig);
+    }
+
+    void recv_rec_inter_sim(std::vector<SrcRec>& vrec, int orig){
+
+        // recv receiver parameters of SrcRec class from orig
+        for (auto& rec: vrec) {
+            // id_src id_rec n_rec n_data
+            // lon lat dep weight arr_time arr_time_ori t_adj
+            // is_rec_pair n_rec_pair
+            recv_i_single_sim(&rec.id_src, orig);
+            recv_i_single_sim(&rec.id_rec, orig);
+            recv_i_single_sim(&rec.n_rec, orig);
+            recv_i_single_sim(&rec.n_data, orig);
+            recv_cr_single_sim(&rec.lon, orig);
+            recv_cr_single_sim(&rec.lat, orig);
+            recv_cr_single_sim(&rec.dep, orig);
+            recv_cr_single_sim(&rec.weight, orig);
+            recv_cr_single_sim(&rec.arr_time, orig);
+            recv_cr_single_sim(&rec.arr_time_ori, orig);
+            recv_cr_single_sim(&rec.t_adj, orig);
+            recv_bool_single_sim(&rec.is_rec_pair, orig);
+
+            // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
+            if (rec.is_rec_pair){
+                // TODO : check how to recv double difference pairs
+            }
+        }
+
+    }
+
 };
 
 

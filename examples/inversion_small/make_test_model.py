@@ -141,13 +141,12 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-n_src = 500
+n_srcs = [10,20,20]
+n_src = n_srcs[0]*n_srcs[1]*n_srcs[2]
 n_rec = [30 for x in range(n_src)]
-
 
 lines = []
 
-nij_src = math.sqrt(n_src)
 nij_rec = math.sqrt(n_rec[0])
 
 pos_src=[]
@@ -175,37 +174,38 @@ for i in range(n_rec[0]):
 
 
 # create source coordinates
-for i_src in range(n_src):
-    # define one point in the domain (rr1 bottom, rr2 top)
-    # random
-    #dep = random.uniform((R_earth-rr1)*0.5,(R_earth-rr1)*0.98)
-    #lon = random.uniform(pp1deg,pp2deg)
-    #lat = random.uniform(tt1deg,tt2deg)
+for ir in range(n_srcs[0]):
+    for it in range(n_srcs[1]):
+        for ip in range(n_srcs[2]):
+            i_src = ir*n_srcs[1]*n_srcs[2] + it*n_srcs[2] + ip
+            # define one point in the domain (rr1 bottom, rr2 top)
+            # random
+            #dep = random.uniform((R_earth-rr1)*0.5,(R_earth-rr1)*0.98)
+            #lon = random.uniform(pp1deg,pp2deg)
+            #lat = random.uniform(tt1deg,tt2deg)
 
-    # regular
-    dep = (R_earth-rr1)*0.9
-    tmp_ilon = i_src%nij_src
-    tmp_ilat = int(i_src/nij_src)
-    lon = pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_src
-    lat = tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_src
+            # regular
+            dep = (R_earth-rr1)/n_srcs[0]*ir
+            lon = pp1deg + ip*(pp2deg-pp1deg)/n_srcs[2]
+            lat = tt1deg + it*(tt2deg-tt1deg)/n_srcs[1]
 
-    src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
-    lines.append(src)
+            src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
+            lines.append(src)
 
-    pos_src.append([lon,lat,dep])
+            pos_src.append([lon,lat,dep])
 
 
-    # create dummy station
-    for i_rec in range(n_rec[i_src]):
-        elev_rec = elev_recs[i_rec]
-        lon_rec  = lon_recs[i_rec]
-        lat_rec  = lat_recs[i_rec]
-        st_name_dummy = rec_names[i_rec]
+            # create dummy station
+            for i_rec in range(n_rec[i_src]):
+                elev_rec = elev_recs[i_rec]
+                lon_rec  = lon_recs[i_rec]
+                lat_rec  = lat_recs[i_rec]
+                st_name_dummy = rec_names[i_rec]
 
-        rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
-        lines.append(rec)
+                rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
+                lines.append(rec)
 
-        pos_rec.append([lon_rec,lat_rec,elev_rec])
+                pos_rec.append([lon_rec,lat_rec,elev_rec])
 
 
 # write out ev_arrivals file

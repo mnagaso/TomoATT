@@ -28,6 +28,10 @@ inline void synchronize_all_sim();
 inline void synchronize_all_sub();
 inline void synchronize_all_inter();
 inline void synchronize_all_world();
+inline void send_bool_single_sim(bool*, int);
+inline void recv_bool_single_sim(bool*, int);
+inline void send_i_single_sim(int*, int);
+inline void recv_i_single_sim(int*, int);
 inline void send_cr(CUSTOMREAL*, int, int);
 inline void recv_cr(CUSTOMREAL*, int, int);
 inline void isend_cr(CUSTOMREAL*, int, int, MPI_Request&);
@@ -42,9 +46,10 @@ inline void allreduce_cr_sim(CUSTOMREAL*, int, CUSTOMREAL*);
 inline void allreduce_cr_sim_inplace(CUSTOMREAL*, int);
 inline void allgather_i_single(int*, int*);
 inline void allgather_cr_single(CUSTOMREAL*, CUSTOMREAL*);
-inline void allgather_node_name(std::string, std::vector<std::string>&);
+inline void allgather_str(const std::string&, std::vector<std::string>&);
 inline void broadcast_bool_single(bool&, int);
 inline void broadcast_i_single(int&, int);
+inline void broadcast_i_single_inter_sim(int&, int);
 inline void broadcast_f_single(float&, int);
 inline void broadcast_cr(CUSTOMREAL* , int, int);
 inline void broadcast_cr_single(CUSTOMREAL&, int);
@@ -65,14 +70,27 @@ inline void initialize_mpi(){
     MPI_Init(NULL, NULL);
 #else
     int provided;
-    MPI_Init_thread(NULL,NULL,MPI_THREAD_FUNNELED,&provided); // #TODO: checkif SERIALIZED is needed
+    MPI_Init_thread(NULL,NULL,MPI_THREAD_FUNNELED,&provided);
     if(provided != MPI_THREAD_FUNNELED){
         std::cerr << "MPI_THREAD_FUNNELED is not supported" << std::endl;
         exit(1);
     }
+
+    // currently no routine except src/rec weight calculation is parallelized by openmp
+    // thus put 1 thread per process
+    omp_set_num_threads(1);
+
     // show the number of threads
     int nthreads = omp_get_max_threads();
-    std::cout << "Number of threads = " << nthreads << std::endl;
+
+    // error check
+    if (nthreads != 1){
+        std::cerr << "number of threads is not 1" << std::endl;
+        exit(1);
+    }
+
+    if (world_rank == 0)
+        std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
@@ -84,12 +102,11 @@ inline void initialize_mpi(){
     myrank = world_rank;
     inter_sub_comm = MPI_COMM_WORLD;
 
-    stdout_by_main("mpi initialized.");
+    stdout_by_rank_zero("mpi initialized.");
 }
 
 
 inline void finalize_mpi(){
-    stdout_by_main("mpi finalized.");
 
     synchronize_all_world();
 
@@ -103,6 +120,8 @@ inline void finalize_mpi(){
 
     // Finalize the MPI environment.
     MPI_Finalize();
+
+    stdout_by_rank_zero("mpi finalized.");
 }
 
 
@@ -120,32 +139,6 @@ inline std::vector<size_t> node_reordering(const std::vector<T>& vec){
     std::iota(idx.begin(), idx.end(), 0);
     std::sort(idx.begin(), idx.end(), [&vec](size_t i1, size_t i2) {return vec[i1] > vec[i2];});
     return idx;
-}
-
-
-
-inline void allgather_node_name(std::string this_name, std::vector<std::string>& list_name){
-    for (int i=0; i<world_nprocs; i++){
-        // send to i rank
-        if (i == world_rank){
-            for (int j=0; j<world_nprocs; j++){
-                if (j == world_rank){
-                    list_name[j] = this_name;
-                } else {
-                    MPI_Send(this_name.c_str(), this_name.size()+1, MPI_CHAR, j, 0, MPI_COMM_WORLD);
-                }
-            }
-        } else {
-            MPI_Status status;
-            MPI_Probe(i, 0, MPI_COMM_WORLD, &status);
-            int count;
-            MPI_Get_count(&status, MPI_CHAR, &count);
-            char* buf = new char[count];
-            MPI_Recv(buf, count, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            list_name[i] = std::string(buf);
-            delete[] buf;
-        }
-    }
 }
 
 
@@ -203,16 +196,21 @@ inline void split_mpi_comm(){
 //
 // DEBUG ONLY rename mpi node names into 4 different names
 //
-//    if (world_nprocs != 32){
-//        std::cout << "ERROR: world_nprocs is not 64. (for processor assignment test)" << std::endl;
+//    //if (world_nprocs != 32){
+//    //    std::cout << "ERROR: world_nprocs is not 64. (for processor assignment test)" << std::endl;
+//    //    exit(1);
+//    //}
+//    if (world_nprocs%2 != 0){
+//        std::cout << "ERROR: world_nprocs is not even. (for processor assignment test)" << std::endl;
 //        exit(1);
 //    }
-//    if (world_rank %4 == 0) {
+//
+//    if (world_rank %2 == 0) {
 //        mpi_node_names_pre[world_rank] = "node_inu";
-//    } else if (world_rank % 4 == 1) {
-//        mpi_node_names_pre[world_rank] = "node_neko";
-//    } else if (world_rank % 4 == 2) {
-//        mpi_node_names_pre[world_rank] = "node_kani";
+//    //} else if (world_rank % 4 == 1) {
+//    //    mpi_node_names_pre[world_rank] = "node_neko";
+//    //} else if (world_rank % 4 == 2) {
+//    //    mpi_node_names_pre[world_rank] = "node_kani";
 //    } else {
 //        mpi_node_names_pre[world_rank] = "node_usagi";
 //    }
@@ -230,7 +228,7 @@ inline void split_mpi_comm(){
 //
 
     // gather all the node names in std::vector
-    allgather_node_name(mpi_node_names_pre[world_rank], mpi_node_names_pre);
+    allgather_str(mpi_node_names_pre[world_rank], mpi_node_names_pre);
 
     // define node id for each node
     mpi_node_ids = define_node_ids(mpi_node_names_pre);
@@ -328,7 +326,7 @@ inline void split_mpi_comm(){
     }
 
     // inter-communicator (between simulation groups)
-    MPI_Comm_split(MPI_COMM_WORLD, sim_rank, sim_rank, &inter_sim_comm);
+    MPI_Comm_split(MPI_COMM_WORLD, sim_rank, id_sim, &inter_sim_comm);
     MPI_Comm_rank(inter_sim_comm, &inter_sim_rank);
 
     // number of subdomains
@@ -349,7 +347,7 @@ inline void split_mpi_comm(){
     // assign first ranks to the main node of subdomain
     // and create a commmunicator for main processes of subdomain
     if (id_proc_in_subdomain == 0) {
-        std::cout << "my sim_rank: " << sim_rank << std::endl;
+        //std::cout << "my sim_rank: " << sim_rank << std::endl;
         subdom_main = true;
         MPI_Comm_split(sim_comm, 0, sim_rank, &inter_sub_comm);
         MPI_Comm_rank(inter_sub_comm, &inter_sub_rank);
@@ -363,7 +361,7 @@ inline void split_mpi_comm(){
         nprocs = inter_sub_nprocs;
 
     } else {
-        std::cout << "my sim_rank to sub : " << sim_rank << std::endl;
+        //std::cout << "my sim_rank to sub : " << sim_rank << std::endl;
         MPI_Comm_split(sim_comm, 1, sim_rank, &inter_sub_comm);
 
         // assign those ranks as subprocesses of each sub domain.
@@ -377,7 +375,6 @@ inline void split_mpi_comm(){
     MPI_Comm_split(sim_comm, id_subdomain, sim_rank, &sub_comm);
     MPI_Comm_rank(sub_comm, &sub_rank);
     MPI_Comm_size(sub_comm, &sub_nprocs);
-
 
     // convert the sub_comm to shared memory available communicator
     MPI_Comm tmp_comm;
@@ -443,6 +440,30 @@ inline void synchronize_all_inter(){
 
 inline void synchronize_all_world(){
     MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
+inline void send_bool_single_sim(bool* b, int dest){
+    const int n = 1;
+    MPI_Send(b, n, MPI_C_BOOL, dest, MPI_DUMMY_TAG, inter_sim_comm);
+}
+
+
+inline void recv_bool_single_sim(bool* b, int src){
+    const int n = 1;
+    MPI_Recv(b, n, MPI_C_BOOL, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+}
+
+
+inline void send_i_single_sim(int* i, int dest){
+    const int n = 1;
+    MPI_Send(i, n, MPI_INT, dest, MPI_DUMMY_TAG, inter_sim_comm);
+}
+
+
+inline void recv_i_single_sim(int* i, int src){
+    const int n = 1;
+    MPI_Recv(i, n, MPI_INT, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
 }
 
 
@@ -544,6 +565,12 @@ inline void broadcast_i_single(int& value, int root){
     MPI_Bcast(&value, count, MPI_INT, root, inter_sub_comm);
 }
 
+
+inline void broadcast_i_single_inter_sim(int& value, int root){
+    int count = 1;
+    MPI_Bcast(&value, count, MPI_INT, root, inter_sim_comm);
+}
+
 inline void broadcast_f_single(float& value, int root){ // !!!! FOR ONLY READ PARAMETER !!!!!
     int count = 1;
     MPI_Bcast(&value, count, MPI_FLOAT, root, inter_sub_comm);
@@ -591,6 +618,35 @@ inline void broadcast_str(std::string& str, int root) {
     str = buf;
     delete[] buf;
 }
+
+
+inline void allgather_str(const std::string &str, std::vector<std::string> &result) {
+    MPI_Comm comm = MPI_COMM_WORLD;
+    int size = world_nprocs;
+
+    int str_size = str.size();
+    std::vector<int> str_sizes(size);
+    MPI_Allgather(&str_size, 1, MPI_INT, str_sizes.data(), 1, MPI_INT, comm);
+
+    int total_size = 0;
+    std::vector<int> displs(size);
+    for (int i = 0; i < size; i++) {
+      total_size += str_sizes[i];
+      displs[i] = (i == 0) ? 0 : (displs[i - 1] + str_sizes[i - 1]);
+    }
+
+    std::vector<char> data(total_size);
+    MPI_Allgatherv(str.data(), str_size, MPI_CHAR, data.data(), str_sizes.data(), displs.data(), MPI_CHAR, comm);
+
+    result.reserve(size);
+    int start = 0;
+    for (int i = 0; i < size; i++) {
+      result[i] = std::string(&data[start], str_sizes[i]);
+      start += str_sizes[i];
+    }
+
+}
+
 
 inline void prepare_shm_array_cr(int n_elms, CUSTOMREAL* &buf, MPI_Win& win){
     int* model;
@@ -689,5 +745,8 @@ inline void wait_req(MPI_Request& req){
 inline void shm_fence(MPI_Win& win){
     MPI_Win_fence(0, win);
 }
+
+
+
 
 #endif // MPI_FUNCS_H

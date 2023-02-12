@@ -257,11 +257,11 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         if(subdom_main) grid.restore_fun_xi_eta_bcf();
         set_new_model(grid, step_size, init_bfgs);
 
-        // check current objective function value #BUG: strange v_obj at the first sub iteration
+        // check current objective function value
         // v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
         v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
         v_obj_new = v_obj_misfit_new[0];
-        
+
         // update gradient
         sumup_kernels(grid);
 

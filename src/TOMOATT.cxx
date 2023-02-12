@@ -19,6 +19,11 @@
 #include "cuda_initialize.cuh"
 #endif
 
+//#ifdef USE_BLAS
+//#include "cblas.h"
+//#endif
+
+// TOMOATT main function
 int main(int argc, char *argv[])
 {
     // parse options
@@ -27,11 +32,9 @@ int main(int argc, char *argv[])
     // initialize mpi
     initialize_mpi();
 
-    
-
-    stdout_by_main("------------------------------------------------------");
-    stdout_by_main("start TOMOATT solver.");
-    stdout_by_main("------------------------------------------------------");
+    stdout_by_rank_zero("------------------------------------------------------");
+    stdout_by_rank_zero("start TOMOATT forward or inversion calculation.");
+    stdout_by_rank_zero("------------------------------------------------------");
 
     // read input file
     InputParams IP(input_file);
@@ -76,7 +79,7 @@ int main(int argc, char *argv[])
         io.write_grid(grid);
     }
 
-    // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
+    // preapre teleseismic boundary conditions (do nothing if no teleseismic source is defined)
     prepare_teleseismic_boundary_conditions(IP, grid, io);
 
     synchronize_all_world();
@@ -110,9 +113,9 @@ int main(int argc, char *argv[])
     // finalize mpi
     finalize_mpi();
 
-    stdout_by_main("------------------------------------------------------");
-    stdout_by_main("end TOMOATT solver.");
-    stdout_by_main("------------------------------------------------------");
+    stdout_by_rank_zero("------------------------------------------------------");
+    stdout_by_rank_zero("end TOMOATT solver.");
+    stdout_by_rank_zero("------------------------------------------------------");
 
     return 0;
 }

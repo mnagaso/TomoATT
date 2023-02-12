@@ -97,7 +97,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         synchronize_all_world();
 
         // output src rec file with the result arrival times
-        IP.write_src_rec_file(i_inv);
+        if (IP.get_is_output_in_process() || i_inv == IP.get_max_iter_inv() - 1)
+            IP.write_src_rec_file(i_inv);
 
         ///////////////
         // model update
@@ -122,28 +123,30 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             io.change_group_name_for_model();
 
             // write out model info
-            io.write_vel(grid, i_inv);
-            io.write_xi(grid, i_inv);
-            io.write_eta(grid, i_inv);
-            //io.write_zeta(grid, i_inv);
+            if (IP.get_is_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2){
+                io.write_vel(grid, i_inv+1);
+                io.write_xi( grid, i_inv+1);
+                io.write_eta(grid, i_inv+1);
+            }
+           //io.write_zeta(grid, i_inv);
 
             if (IP.get_is_verbose_output()){
-                io.write_a(grid, i_inv);
-                io.write_b(grid, i_inv);
-                io.write_c(grid, i_inv);
-                io.write_f(grid, i_inv);
-                io.write_fun(grid, i_inv);
+                io.write_a(grid,   i_inv+1);
+                io.write_b(grid,   i_inv+1);
+                io.write_c(grid,   i_inv+1);
+                io.write_f(grid,   i_inv+1);
+                io.write_fun(grid, i_inv+1);
             }
 
-            if (IP.get_is_output_model_dat())        // output model_parameters_inv_0000.dat
+            // output model_parameters_inv_0000.dat
+            if (IP.get_is_output_model_dat() \
+            && (IP.get_is_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2))
                 io.write_concerning_parameters(grid, i_inv + 1);
+
         }
 
         // writeout temporary xdmf file
         io.update_xdmf_file();
-
-        // wait for all processes to finish
-        synchronize_all_world();
 
         // wait for all processes to finish
         synchronize_all_world();
@@ -217,9 +220,6 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         i_iter++;
     }
-
-    // modify the receiver's location
-
 
     // write out new src_rec_file
     IP.write_src_rec_file(0);
