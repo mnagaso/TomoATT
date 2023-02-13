@@ -228,6 +228,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         rec.station_correction_pair[0] = station_correction[rec.name_rec_pair[0]];
                         // std::cout << "station exist, " << rec.name_rec_pair[0] << ", correction: " << rec.station_correction_pair[0] << std::endl;
                     }
+
                     if (rec_list.find(rec.name_rec_pair[1]) == rec_list.end()){
                         // a new receiver
                         SrcRec tmp_rec;
