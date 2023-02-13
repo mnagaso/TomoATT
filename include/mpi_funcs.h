@@ -508,6 +508,10 @@ inline void allreduce_cr_sim_single(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){
     MPI_Allreduce(&loc_buf, &all_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
 }
 
+inline void allreduce_cr_sim_single_inplace(CUSTOMREAL& loc_buf){
+    int count = 1;
+    MPI_Allreduce(MPI_IN_PLACE, &loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
+}
 
 inline void allreduce_cr_sim_inplace(CUSTOMREAL* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
@@ -561,6 +565,11 @@ inline void broadcast_cr(CUSTOMREAL* buf, int count, int root){
 
 inline void broadcast_cr_inter_sim(CUSTOMREAL* buf, int count, int root){
     MPI_Bcast(buf, count, MPI_CR, root, inter_sim_comm);
+}
+
+inline void broadcast_cr_single_inter_sim(CUSTOMREAL& buf, int root){
+    int count = 1;
+    MPI_Bcast(&buf, count, MPI_CR, root, inter_sim_comm);
 }
 
 inline void broadcast_bool_single_sub(bool& value, int root){

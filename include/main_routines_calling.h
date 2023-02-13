@@ -97,7 +97,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         synchronize_all_world();
 
         // output src rec file with the result arrival times
-        IP.write_src_rec_file(i_inv);
+        // IP.write_src_rec_file(i_inv);
+        IP.write_src_rec_file_nv(i_inv);
 
         ///////////////
         // model update

@@ -59,6 +59,8 @@ int main(int argc, char *argv[])
     // assign source for each simultaneous run group
     IP.prepare_src_list();
 
+    
+
     // initialize file IO object
     IO_utils io(IP); // create IO object for main and non-main process as well
 
@@ -77,9 +79,12 @@ int main(int argc, char *argv[])
     }
 
     // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
-    prepare_teleseismic_boundary_conditions(IP, grid, io);
+    prepare_teleseismic_boundary_conditions(IP, grid, io);      // not ready for new version of src rec data
 
     synchronize_all_world();
+
+
+    
 
     //
     // run main calculation routines depending on specified mode

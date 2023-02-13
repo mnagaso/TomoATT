@@ -11,9 +11,11 @@ public:
     ~Receiver();
 
     void calculate_arrival_time(InputParams&, Grid&);
+    void store_arrival_time(InputParams&, Grid&, std::string);       // only for common receiver differential traveltime
 
     // adjoint source
     std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&);
+    std::vector<CUSTOMREAL> calculate_adjoint_source_nv(InputParams&);
     // teleseismic source
     CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&);
     // Gradient of traveltime
@@ -31,6 +33,7 @@ public:
 
 private:
     void interpolate_travel_time(Grid&, SrcRec&);
+    void interpolate_travel_time_nv(Grid&, InputParams&, std::string, std::string);
     void calculate_T_gradient_one_rec(Grid&, SrcRec&);
     void interpolate_differential_travel_time(Grid&, SrcRec&);
 };

@@ -465,10 +465,14 @@ InputParams::InputParams(std::string& input_file){
         // size_t ext = src_rec_file.find_last_of(".");
         // src_rec_file_out = src_rec_file.substr(0, ext) + "_out.dat";
 
-
         // backup original src/rec list
         src_points_back = src_points;
         rec_points_back = rec_points;
+
+        // new version backup original src/rec list
+        src_list_back_nv = src_list_nv;
+        rec_list_back_nv = rec_list_nv;
+        data_info_back_nv = data_info_nv;
 
         // check if src positions are within the domain or not (teleseismic source)
         // detected teleseismic source is separated into tele_src_points and tele_rec_points
@@ -479,6 +483,15 @@ InputParams::InputParams(std::string& input_file){
             stdout_by_main("###### Swapping src and rec. (only regional events will be processed) ######\n");
             do_swap_src_rec();
         }
+
+        // rearrange and analize "data_info_nv" -> data_info_smap; 
+        rearrange_data_info();
+
+        // generate src_list_prepare_nv based on data_info_smap
+        generate_src_list_prepare();
+
+        // generate syn_time_list_sr
+        generate_syn_time_list();
 
         // concatenate resional and teleseismic src/rec points
         merge_region_and_tele_src();
@@ -566,6 +579,46 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 
 
 
+// return radious
+CUSTOMREAL InputParams::get_src_radius_nv() {
+    if (src_rec_file_exist)
+        return depth2radius(src_list_nv[name_sim_src].dep);
+    else
+        return depth2radius(src_dep);
+}
+
+
+CUSTOMREAL InputParams::get_src_lat_nv() {
+    if (src_rec_file_exist)
+        return src_list_nv[name_sim_src].lat*DEG2RAD;
+    else
+        return src_lat*DEG2RAD;
+}
+
+
+CUSTOMREAL InputParams::get_src_lon_nv() {
+    if (src_rec_file_exist)
+        return src_list_nv[name_sim_src].lon*DEG2RAD;
+    else
+        return src_lon*DEG2RAD;
+}
+
+SrcRecInfo& InputParams::get_src_point_nv(std::string name_src){
+    return src_list_nv[name_src];
+}
+
+SrcRecInfo& InputParams::get_rec_point_nv(std::string name_rec){
+    return rec_list_nv[name_rec];
+}
+
+std::vector<std::string> InputParams::get_rec_points_nv(std::string name_src){
+    std::vector<std::string> recs;
+    for(auto iter = syn_time_list_sr[name_src].begin(); iter != syn_time_list_sr[name_src].end(); iter++){
+        recs.push_back(iter->first);
+    }
+    return recs;
+}
+
 //
 // functions for processing src_rec_file
 // #TODO: functions concerinng SrcRec object may be moved to another file
@@ -585,6 +638,14 @@ void InputParams::parse_src_rec_file(){
     rec_points_tmp.clear();
     rec_points.clear();
 
+    src_list_nv.clear();
+    rec_list_nv.clear();
+    data_info_nv.clear();
+
+    std::string src_name;
+    CUSTOMREAL src_weight = 1.0;
+    CUSTOMREAL rec_weight = 1.0;
+    int src_id = -1;
     while (std::getline(ifs, line)) {
         // skip comment and empty lines
         if (line[0] == '#' || line.empty())
@@ -604,6 +665,9 @@ void InputParams::parse_src_rec_file(){
         }
 
         // store values into structure
+        
+        
+        
         if (cc == 0){
             SrcRec src;
             //src.id_src     = std::stoi(tokens[0]);
@@ -631,7 +695,37 @@ void InputParams::parse_src_rec_file(){
             src_points.push_back(src);
             cc++;
 
-        } else {
+
+            // new version of source
+            SrcRecInfo src_nv;
+            src_nv.id         = std::stoi(tokens[0]);
+            src_nv.year       = std::stoi(tokens[1]);
+            src_nv.month      = std::stoi(tokens[2]);
+            src_nv.day        = std::stoi(tokens[3]);
+            src_nv.hour       = std::stoi(tokens[4]);
+            src_nv.min        = std::stoi(tokens[5]);
+            src_nv.sec        = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
+            src_nv.lat        = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
+            src_nv.lon        = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+            src_nv.dep        = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
+            src_nv.mag        = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
+            src_nv.n_data     = std::stoi(tokens[11]);
+            src_nv.name       = tokens[12];
+
+            
+            if (tokens.size() > 13)
+                src_weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
+            else
+                src_weight = 1.0; // default weight
+
+            if (src_list_nv.find(src_nv.name) == src_list_nv.end()){   // new source
+                src_list_nv[src_nv.name] = src_nv;
+            }
+            
+            src_id = src_nv.id;
+            src_name = src_nv.name;
+
+        } else {    
 
             // read single receiver or differential traveltime data
             if (tokens.size() < 11) {
@@ -654,6 +748,8 @@ void InputParams::parse_src_rec_file(){
                     rec.weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
                 else
                     rec.weight = 1.0; // default weight
+                rec.is_src_rec = true;
+
                 rec_points_tmp.push_back(rec);
                 cc++;
                 src_points.at(src_points.size()-1).n_rec++;
@@ -663,6 +759,39 @@ void InputParams::parse_src_rec_file(){
                     rec_list[rec.name_rec] = rec;
                     N_receiver += 1;
                 }
+
+
+                // ----- new version of receiver and data -----
+                // receiver
+                SrcRecInfo rec_nv;
+                rec_nv.id       = std::stoi(tokens[1]);
+                rec_nv.name     = tokens[2];
+                rec_nv.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                rec_nv.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                rec_nv.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+
+                if(rec_list_nv.find(rec_nv.name) == rec_list_nv.end()){     // new receiver
+                    rec_list_nv[rec_nv.name] = rec_nv;
+                }
+
+                // traveltime data
+                DataInfo data_nv;
+                if (tokens.size() > 8)
+                    rec_weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
+                else
+                    rec_weight = 1.0;
+
+                data_nv.data_weight = src_weight * rec_weight;
+                data_nv.phase = tokens[6];
+
+                data_nv.is_src_rec = true;
+                data_nv.id_src      = src_id;
+                data_nv.name_src    = src_name;
+                data_nv.id_rec      = rec_nv.id;
+                data_nv.name_rec    = rec_nv.name;
+                data_nv.travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
+                
+                data_info_nv.push_back(data_nv);
 
             } else {
 
@@ -733,6 +862,51 @@ void InputParams::parse_src_rec_file(){
                 rec_points_tmp.push_back(rec);
                 cc++;
                 src_points.at(src_points.size()-1).n_rec_pair++;
+
+
+
+                // ----- new version of receiver and data -----
+                // receiver
+                SrcRecInfo rec_nv1;
+                rec_nv1.id       = std::stoi(tokens[1]);
+                rec_nv1.name     = tokens[2];
+                rec_nv1.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                rec_nv1.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                rec_nv1.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+
+                if(rec_list_nv.find(rec_nv1.name) == rec_list_nv.end()){     // new receiver
+                    rec_list_nv[rec_nv1.name] = rec_nv1;
+                }
+
+                SrcRecInfo rec_nv2;
+                rec_nv2.id       = std::stoi(tokens[6]);
+                rec_nv2.name     = tokens[7];
+                rec_nv2.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                rec_nv2.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                rec_nv2.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
+
+                if(rec_list_nv.find(rec_nv2.name) == rec_list_nv.end()){     // new receiver
+                    rec_list_nv[rec_nv2.name] = rec_nv2;
+                }
+
+
+                // common source differential traveltime 
+                DataInfo data_nv;
+                if (tokens.size() > 13)
+                    rec_weight = static_cast<CUSTOMREAL>(std::stod(tokens[8]));
+                else
+                    rec_weight = 1.0;
+                data_nv.data_weight = src_weight * rec_weight;
+                data_nv.phase = tokens[11];
+
+                data_nv.is_rec_pair         = true;
+                data_nv.id_src_single       = src_id;
+                data_nv.name_src_single     = src_name;
+                data_nv.id_rec_pair         = {rec_nv1.id, rec_nv2.id};
+                data_nv.name_rec_pair       = {rec_nv1.name, rec_nv2.name};
+                data_nv.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
+                
+                data_info_nv.push_back(data_nv);
             }
 
             if (cc > ndata_tmp) {
@@ -762,6 +936,39 @@ void InputParams::parse_src_rec_file(){
     if (n_src_points < n_sims){
         std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort." << std::endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+
+    // check new version of src rec data
+    if (1 < 0){     // check by Chen Jing
+        for(auto iter = src_list_nv.begin(); iter != src_list_nv.end(); iter++){
+            std::cout   << "source id: " << iter->second.id 
+                        << ", source name: " << iter->second.name
+                        << std::endl;
+        }
+
+        for(auto iter = rec_list_nv.begin(); iter != rec_list_nv.end(); iter++){
+            std::cout   << "receiver id: " << iter->second.id 
+                        << ", receiver name: " << iter->second.name
+                        << std::endl;
+        } 
+
+        for(int i = 0; i < (int)data_info_nv.size(); i++){
+            if (data_info_nv[i].is_src_rec){
+                std::cout   << "absolute traveltime: " << data_info_nv[i].travel_time_obs
+                            << ", source name: " << data_info_nv[i].name_src
+                            << ", receiver name: " << data_info_nv[i].name_rec
+                            << std::endl; 
+            }   
+            if (data_info_nv[i].is_rec_pair){
+                std::cout   << "common source differential traveltime: " << data_info_nv[i].cs_dif_travel_time_obs
+                            << ", source name: " << data_info_nv[i].name_src_single
+                            << ", receiver pair name: " << data_info_nv[i].name_rec_pair[0] 
+                            << ", " << data_info_nv[i].name_rec_pair[1]
+                            << std::endl; 
+            }
+        }
+        std::cout << data_info_nv.size() << std::endl;
     }
 }
 
@@ -853,7 +1060,7 @@ void InputParams::do_swap_src_rec(){
 
         for (auto& i_src_ori : new_srcs[i_src].id_srcs_ori){
 
-            SrcRec tmp_new_rec = src_points_back[i_src_ori];
+            SrcRec tmp_new_rec = src_points_back[i_src_ori];        // now src_points_back is the copy of src_points
 
             for (auto& tmp_rec_ori : rec_points_back[i_src_ori]){
                 if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec)==0) {
@@ -882,32 +1089,372 @@ void InputParams::do_swap_src_rec(){
     src_points = new_srcs;
     rec_points = new_recs;
 
+
+
+    // for new version
+    std::map<std::string, SrcRecInfo> tmp_src_rec_list_nv = src_list_nv;
+    src_list_nv = rec_list_nv;
+    rec_list_nv = tmp_src_rec_list_nv;
+
+    for(int i = 0; i < (int)data_info_nv.size(); i++){
+        DataInfo tmp_data = data_info_nv[i];
+        if (tmp_data.is_src_rec){   // absolute traveltime  ->  absolute traveltime
+            tmp_data.id_src = data_info_nv[i].id_rec;
+            tmp_data.name_src = data_info_nv[i].name_rec;
+            tmp_data.id_rec = data_info_nv[i].id_src;
+            tmp_data.name_rec = data_info_nv[i].name_src;
+        } else if (tmp_data.is_rec_pair) {      // common source differential traveltime  ->  common receiver differential traveltime
+            tmp_data.is_rec_pair = false;
+            tmp_data.is_src_pair = true;
+            tmp_data.id_src_pair = data_info_nv[i].id_rec_pair;
+            tmp_data.name_src_pair = data_info_nv[i].name_rec_pair;
+            tmp_data.id_rec_single = data_info_nv[i].id_src_single; 
+            tmp_data.name_rec_single = data_info_nv[i].name_src_single; 
+            tmp_data.cr_dif_travel_time_obs = data_info_nv[i].cs_dif_travel_time_obs;
+        } else if (tmp_data.is_src_pair) {       // common receiver differential traveltime  ->  common source differential traveltime
+            tmp_data.is_src_pair = false;
+            tmp_data.is_rec_pair = true;
+            tmp_data.id_rec_pair = data_info_nv[i].id_src_pair;
+            tmp_data.name_rec_pair = data_info_nv[i].name_src_pair;
+            tmp_data.id_src_single = data_info_nv[i].id_rec_single; 
+            tmp_data.name_src_single = data_info_nv[i].name_rec_single; 
+            tmp_data.cs_dif_travel_time_obs = data_info_nv[i].cr_dif_travel_time_obs;
+        }
+        data_info_nv[i] = tmp_data;
+    } 
+
+    // check new version of src rec data
+    if (1 > 0){     // check by Chen Jing
+        for(auto iter = src_list_nv.begin(); iter != src_list_nv.end(); iter++){
+            std::cout   << "source id: " << iter->second.id 
+                        << ", source name: " << iter->second.name
+                        << std::endl;
+        }
+
+        for(auto iter = rec_list_nv.begin(); iter != rec_list_nv.end(); iter++){
+            std::cout   << "receiver id: " << iter->second.id 
+                        << ", receiver name: " << iter->second.name
+                        << std::endl;
+        } 
+
+        for(int i = 0; i < (int)data_info_nv.size(); i++){
+            if (data_info_nv[i].is_src_rec){
+                std::cout   << "absolute traveltime: " << data_info_nv[i].travel_time_obs
+                            << ", source name: " << data_info_nv[i].name_src
+                            << ", receiver name: " << data_info_nv[i].name_rec
+                            << std::endl; 
+            } else if (data_info_nv[i].is_rec_pair){
+                std::cout   << "common source differential traveltime: " << data_info_nv[i].cs_dif_travel_time_obs
+                            << ", source name: " << data_info_nv[i].name_src_single
+                            << ", receiver pair name: " << data_info_nv[i].name_rec_pair[0] 
+                            << ", " << data_info_nv[i].name_rec_pair[1]
+                            << std::endl; 
+            } else if (data_info_nv[i].is_src_pair){
+                std::cout   << "common receiver differential traveltime: " << data_info_nv[i].cr_dif_travel_time_obs
+                            << ", source pair name: " << data_info_nv[i].name_src_pair[0]
+                            << ", " << data_info_nv[i].name_src_pair[1]
+                            << ", receiver name: " << data_info_nv[i].name_rec_single 
+                            << std::endl; 
+            } 
+        }
+        std::cout << data_info_nv.size() << std::endl;
+    }
+}
+
+void InputParams::rearrange_data_info(){
+    for(int i = 0; i < (int)data_info_nv.size(); i++){
+        DataInfo data = data_info_nv[i];
+        if(data.is_src_rec){    // add absolute traveltime 
+            data_info_smap[data.name_src].push_back(data);
+        } else if (data.is_rec_pair){   // add common source differential traveltime 
+            data_info_smap[data.name_src_single].push_back(data);
+        } else if (data.is_src_pair){   // add common receiver differential traveltime 
+            data_info_smap[data.name_src_pair[0]].push_back(data);
+            data_info_smap[data.name_src_pair[1]].push_back(data);
+        }
+    }
+}
+
+void InputParams::generate_src_list_prepare(){
+    for(auto iter = data_info_smap.begin(); iter != data_info_smap.end(); iter++){
+        for (DataInfo data : iter->second){
+            if (data.is_src_pair){      // if this source has common source differential traveltime data
+                // add this source and turn to the next source
+                src_list_prepare_nv[iter->first] = src_list_nv[iter->first];
+                break;  
+            }
+        }
+    }
+}
+
+void InputParams::generate_syn_time_list(){
+    for(int i = 0; i < (int)data_info_nv.size(); i++){
+        DataInfo data = data_info_nv[i];
+        if(data.is_src_rec){    // add absolute traveltime 
+            syn_time_list_sr[data.name_src][data.name_rec] = 0.0;
+        } else if (data.is_rec_pair){   // add common source differential traveltime 
+            syn_time_list_sr[data.name_src_single][data.name_rec_pair[0]] = 0.0;
+            syn_time_list_sr[data.name_src_single][data.name_rec_pair[1]] = 0.0;
+        } else if (data.is_src_pair){   // add common receiver differential traveltime 
+            syn_time_list_sr[data.name_src_pair[0]][data.name_rec_single] = 0.0;
+            syn_time_list_sr[data.name_src_pair[1]][data.name_rec_single] = 0.0;
+        }
+    }
+}
+
+void InputParams::initialize_syn_time_list(){
+    for(auto iter1 = syn_time_list_sr.begin(); iter1 != syn_time_list_sr.end(); iter1++){
+        for(auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
+            iter2->second = 0.0;
+        }
+    }
+}
+void InputParams::reduce_syn_time_list(){
+    for(auto iter1 = syn_time_list_sr.begin(); iter1 != syn_time_list_sr.end(); iter1++){
+        for(auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
+            allreduce_cr_sim_single_inplace(iter2->second);
+        }
+    }
+}
+
+void InputParams::initialize_adjoint_source(){
+    for(auto iter = rec_list_nv.begin(); iter != rec_list_nv.end(); iter++){
+        iter->second.adjoint_source = 0;
+    }
+}
+
+void InputParams::do_swap_src_rec_ver2(){
+
+    // swap src/rec points
+    // at this moment, all the sources are divided into src_points (regional) and tele_src_points (teleseismic)
+
+    std::vector<SrcRec> new_srcs; // new src points
+    std::vector<std::vector<SrcRec>> new_recs;
+
+    // generate new source list
+    for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++) {
+        for(long unsigned int i_rec = 0; i_rec < rec_points[i_src].size(); i_rec++) {
+
+            if (new_srcs.size() == 0){
+                if (rec_points[i_src][i_rec].is_src_rec == true){       // single source-receiver pair, absolute traveltime
+                    new_srcs.push_back(rec_points[i_src][i_rec]);
+                    new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
+                } else if (rec_points[i_src][i_rec].is_rec_pair == true) {      // common source  differential traveltime 
+                    SrcRec src1;        // src 1
+                    SrcRec src2;        // src 2
+                    // build src1
+                    src1.lat = rec_points[i_src][i_rec].lat_pair[0];
+                    src1.lon = rec_points[i_src][i_rec].lon_pair[0];
+                    src1.dep = rec_points[i_src][i_rec].dep_pair[0];
+                    src1.name_rec = rec_points[i_src][i_rec].name_rec_pair[0];
+
+                    src2.lat = rec_points[i_src][i_rec].lat_pair[1];
+                    src2.lon = rec_points[i_src][i_rec].lon_pair[1];
+                    src2.dep = rec_points[i_src][i_rec].dep_pair[1];
+                    src2.name_rec = rec_points[i_src][i_rec].name_rec_pair[1];
+                    
+                    new_srcs.push_back(src1);
+                    new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);     // CHS: 这个是用记录new_src中每个新源(台站) 对应的旧源(地震)，并生成新的rec
+                    new_srcs.push_back(src2);
+                    new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
+                }
+            } else if (new_srcs.size() != 0) {
+                if (rec_points[i_src][i_rec].is_src_rec == true){       // single source-receiver pair, absolute traveltime
+                    bool found = false;
+                    // check if the existing element has same name
+                    for (long unsigned int i_new_src = 0; i_new_src < new_srcs.size(); i_new_src++) {
+                        if (new_srcs[i_new_src].name_rec.compare(rec_points[i_src][i_rec].name_rec) == 0) {
+                            new_srcs[i_new_src].id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);     // CHS: 附上关联地震
+                            found=true;
+                            break;
+                        }
+                        else {
+                        }
+                    }
+                    if (!found) {
+                        new_srcs.push_back(rec_points[i_src][i_rec]);
+                        new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
+                    }
+                } else if (rec_points[i_src][i_rec].is_rec_pair == true) {      // common source  differential traveltime 
+                    for (int i = 0; i <= 1; i++){   // 
+                        bool found = false;
+                        // check if the existing element has same name
+                        for (long unsigned int i_new_src = 0; i_new_src < new_srcs.size(); i_new_src++) {
+                            if (new_srcs[i_new_src].name_rec.compare(rec_points[i_src][i_rec].name_rec_pair[i]) == 0) {
+                                new_srcs[i_new_src].id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);     
+                                found=true;
+                                break;
+                            }
+                            else {
+                            }
+                        }
+                        if (!found) {
+                            SrcRec src1;
+                            src1.lat = rec_points[i_src][i_rec].lat_pair[i];
+                            src1.lon = rec_points[i_src][i_rec].lon_pair[i];
+                            src1.dep = rec_points[i_src][i_rec].dep_pair[i];
+                            src1.name_rec = rec_points[i_src][i_rec].name_rec_pair[i];
+
+                            new_srcs.push_back(src1);
+                            new_srcs.back().id_srcs_ori.push_back(rec_points[i_src][i_rec].id_src);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // generate new rec list
+    for (long unsigned int i_src = 0; i_src < new_srcs.size(); i_src++) {
+        std::vector<SrcRec> tmp_list_recs;
+
+        new_recs.push_back(tmp_list_recs);
+    }
+
+    for (long unsigned int i_src = 0; i_src < new_srcs.size(); i_src++) {
+
+        for (auto& i_src_ori : new_srcs[i_src].id_srcs_ori){
+
+            for (auto& tmp_rec_ori : rec_points_back[i_src_ori]){   // CHS: 循环旧源对应的数据，如果发现一致的台站(对)名，就将信息提取出来，构造新的rec
+                if (tmp_rec_ori.is_src_rec == true){    // CHS: 如果这个数据是 绝对走时数据 
+                    if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec)==0) {
+                        // we can use the same arrival time for a src-rec pair by principle of reciprocity (Aki & Richards, 2002).
+                        SrcRec tmp_new_rec = src_points_back[i_src_ori];    // CHS: 找到旧源
+                        tmp_new_rec.arr_time     = tmp_rec_ori.arr_time;
+                        tmp_new_rec.arr_time_ori = tmp_rec_ori.arr_time_ori;
+                        tmp_new_rec.id_rec_ori   = tmp_rec_ori.id_rec;      // CHS: 后面输出src rec 文件会用到，现在先不管
+                        tmp_new_rec.is_src_rec = true;
+                        new_recs[i_src].push_back(tmp_new_rec);
+                    }
+                } 
+                else if (tmp_rec_ori.is_src_rec == true) {  // CHS: 如果这个数据是 common source differential traveltime 数据
+                    if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec_pair[0])==0) {
+                        SrcRec tmp_new_rec;
+                        tmp_new_rec.dif_arr_time = tmp_rec_ori.dif_arr_time;
+                        tmp_new_rec.dif_arr_time_ori = tmp_rec_ori.dif_arr_time_ori;
+                        tmp_new_rec.is_src_pair = true;
+                        tmp_new_rec.id_rec_pair[0] = src_points_back[i_src_ori].id_src;
+                        tmp_new_rec.dep_pair[0] = src_points_back[i_src_ori].dep;   // CHS: pair 的第一个是原震源，第二个是关联的另一个台站
+                        tmp_new_rec.lat_pair[0] = src_points_back[i_src_ori].lat;   
+                        tmp_new_rec.lon_pair[0] = src_points_back[i_src_ori].lon;   
+                        tmp_new_rec.name_rec_pair[0] = src_points_back[i_src_ori].name_src;   
+
+                        tmp_new_rec.id_rec_pair[1] = tmp_rec_ori.id_rec_pair[1];
+                        tmp_new_rec.dep_pair[1] = tmp_rec_ori.dep_pair[1];   // CHS: pair 的第一个是原震源，第二个是关联的另一个台站
+                        tmp_new_rec.lat_pair[1] = tmp_rec_ori.lat_pair[1];   
+                        tmp_new_rec.lon_pair[1] = tmp_rec_ori.lon_pair[1];   
+                        tmp_new_rec.name_rec_pair[1] = tmp_rec_ori.name_rec_pair[1];  
+                        new_recs[i_src].push_back(tmp_new_rec);
+                    } else if (tmp_rec_ori.name_rec.compare(new_srcs[i_src].name_rec_pair[0])==1) {
+                        SrcRec tmp_new_rec;
+                        tmp_new_rec.dif_arr_time = - tmp_rec_ori.dif_arr_time;
+                        tmp_new_rec.dif_arr_time_ori = - tmp_rec_ori.dif_arr_time_ori;
+                        tmp_new_rec.is_src_pair = true;
+                        tmp_new_rec.id_rec_pair[0] = src_points_back[i_src_ori].id_src;
+                        tmp_new_rec.dep_pair[0] = src_points_back[i_src_ori].dep;   // CHS: pair 的第一个是原震源，第二个是关联的另一个台站
+                        tmp_new_rec.lat_pair[0] = src_points_back[i_src_ori].lat;   
+                        tmp_new_rec.lon_pair[0] = src_points_back[i_src_ori].lon;   
+                        tmp_new_rec.name_rec_pair[0] = src_points_back[i_src_ori].name_src;   
+
+                        tmp_new_rec.id_rec_pair[1] = tmp_rec_ori.id_rec_pair[0];
+                        tmp_new_rec.dep_pair[1] = tmp_rec_ori.dep_pair[0];   // CHS: pair 的第一个是原震源，第二个是关联的另一个台站
+                        tmp_new_rec.lat_pair[1] = tmp_rec_ori.lat_pair[0];   
+                        tmp_new_rec.lon_pair[1] = tmp_rec_ori.lon_pair[0];   
+                        tmp_new_rec.name_rec_pair[1] = tmp_rec_ori.name_rec_pair[0];  
+                        new_recs[i_src].push_back(tmp_new_rec);
+                    }
+
+                }
+            }
+
+        }
+
+    }
+
+
+    // backup and set new src/rec points
+    // !! ONLY REGIONAL EVENTS AND RECESVERS ARE STORED IN *_back VECTORS !!
+    src_points.clear();
+    rec_points.clear();
+    // teleseismic events are concatenate to the vectors below later
+    src_points = new_srcs;
+    rec_points = new_recs;
+
 }
 
 
 
 void InputParams::prepare_src_list(){
-    if (src_rec_file_exist) {
+    // if (src_rec_file_exist) {
 
-        int n_all_src = src_points.size();
-        src_ids_this_sim.clear();
+    //     int n_all_src = src_points.size();
+    //     src_ids_this_sim.clear();
+
+    //     // assign elements of src_points
+    //     for (int i_src = 0; i_src < n_all_src; i_src++){
+    //         if (i_src % n_sims == id_sim){
+    //             src_ids_this_sim.push_back(i_src);
+    //         }
+    //     }
+
+    //     // check IP.src_ids_this_sim for this rank
+    //     if (myrank==0) {
+    //         std::cout << id_sim << " assigned src id : ";
+    //         for (auto& src_id : src_ids_this_sim) {
+    //             std::cout << src_id << " ";
+    //         }
+    //         std::cout << std::endl;
+    //     }
+    // }
+
+    // new version
+    if (src_rec_file_exist) {
+        src_ids_this_sim.clear();       
+        src_names_this_sim.clear();
 
         // assign elements of src_points
-        for (int i_src = 0; i_src < n_all_src; i_src++){
+        int i_src = 0;
+        for (auto iter = src_list_nv.begin(); iter != src_list_nv.end(); iter++){
             if (i_src % n_sims == id_sim){
-                src_ids_this_sim.push_back(i_src);
+                src_ids_this_sim.push_back(iter->second.id);
+                src_names_this_sim.push_back(iter->second.name);
             }
+            i_src++;
         }
 
         // check IP.src_ids_this_sim for this rank
         if (myrank==0) {
-            std::cout << id_sim << " assigned src id : ";
-            for (auto& src_id : src_ids_this_sim) {
-                std::cout << src_id << " ";
+            std::cout << id_sim << " assigned src id(name) : ";
+            for (int i = 0; i < (int)src_ids_this_sim.size(); i++) {
+                std::cout << src_ids_this_sim[i] << "(" << src_names_this_sim[i] << ") ";
             }
             std::cout << std::endl;
         }
-   }
+
+
+        src_ids_this_sim_prepare.clear();       
+        src_names_this_sim_prepare.clear();
+
+        // assign elements of src_points
+        i_src = 0;
+        for (auto iter = src_list_prepare_nv.begin(); iter != src_list_prepare_nv.end(); iter++){
+            if (i_src % n_sims == id_sim){
+                src_ids_this_sim_prepare.push_back(iter->second.id);
+                src_names_this_sim_prepare.push_back(iter->second.name);
+            }
+            i_src++;
+        }
+
+        // check IP.src_ids_this_sim for this rank
+        if (myrank==0) {
+            std::cout << id_sim << "(prepare synthetic time) assigned src id(name) : ";
+            for (int i = 0; i < (int)src_ids_this_sim_prepare.size(); i++) {
+                std::cout << src_ids_this_sim_prepare[i] << "(" << src_names_this_sim_prepare[i] << ") ";
+            }
+            std::cout << std::endl;
+        }
+    }
+
 }
 
 
@@ -943,6 +1490,41 @@ void InputParams::gather_all_arrival_times_to_main(){
         }
     }
 }
+
+void InputParams::gather_all_arrival_times_to_main_nv(){
+
+    for (auto iter = src_list_nv.begin(); iter != src_list_nv.end(); iter++){
+        int id_src = iter->second.id;
+        std::string name_src = iter->second.name;
+
+        if (subdom_main && id_subdomain==0){
+            // check if the target source is calculated by this simulation group
+            if (std::find(src_ids_this_sim.begin(), src_ids_this_sim.end(), id_src) != src_ids_this_sim.end()) {
+                if (id_sim == 0) {
+                    // do nothing
+                } else {
+                    // send to main simulation group
+                    for (auto iter2 = syn_time_list_sr[name_src].begin(); iter2 != syn_time_list_sr[name_src].end(); iter2++){
+                        send_cr_single_sim(&(iter2->second), 0);
+                    }
+                    
+                }
+            } else {
+                if (id_sim == 0) {
+                    // receive
+                    int id_sim_group = id_src % n_sims;
+
+                    for (auto iter2 = syn_time_list_sr[name_src].begin(); iter2 != syn_time_list_sr[name_src].end(); iter2++){
+                        recv_cr_single_sim(&(iter2->second), id_sim_group);
+                    }
+                } else {
+                    // do nothing
+                }
+            }
+        }
+    }
+}
+
 
 void InputParams::write_station_correction_file(int i_inv){
     if(is_sta_correction && run_mode == DO_INVERSION) {  // if apply station correction
@@ -1088,6 +1670,143 @@ void InputParams::write_src_rec_file(int i_inv) {
     }
 }
 
+void InputParams::write_src_rec_file_nv(int i_inv) {
+
+    // check src and rec:
+    // for (int i_proc = 0; i_proc<=world_nprocs; i_proc++){
+    //     if (i_proc == world_rank){
+    //         std::cout << "check src info" << std::endl;
+    //         for(auto& src: src_points){
+    //             std::cout << "world_rank: "<< world_rank <<", src name: " << src.name_rec << ", lat: " << src.lat << ", lon:"
+    //                     << src.lon << ", dep:" << src.dep << std::endl;
+    //         }
+    //         std::cout << "check rec info" << std::endl;
+    //         for(auto& rec: rec_points){
+    //             for (auto &data: rec){
+    //                 std::cout << "world_rank: "<< world_rank <<", rec name: " << data.name_src << ", lat: " << data.lat << ", lon:"
+    //                     << data.lon << ", dep:" << data.dep << ", arrival time: " << data.arr_time << std::endl;
+    //             }
+    //         }
+    //     }
+    //     synchronize_all_world();
+    // }
+
+
+    if (src_rec_file_exist){
+
+        std::ofstream ofs;
+
+        // gather all arrival time info to the main process
+        if (n_sims > 1)
+            gather_all_arrival_times_to_main_nv();
+
+        if (run_mode == ONLY_FORWARD)
+            src_rec_file_out = output_dir + "/src_rec_file_forward.dat";
+        else if (run_mode == DO_INVERSION){
+            // write out source and receiver points with current inversion iteration number
+            src_rec_file_out = output_dir + "/src_rec_file_step_" + int2string_zero_fill(i_inv) +".dat";
+        } else if (run_mode == TELESEIS_PREPROCESS) {
+            src_rec_file_out = output_dir + "/src_rec_file_teleseis_pre.dat";
+        } else if (run_mode == SRC_RELOCATION) {
+            src_rec_file_out = output_dir + "/src_rec_file_src_reloc.dat";
+        } else {
+            std::cerr << "Error: run_mode is not defined" << std::endl;
+            exit(1);
+        }
+
+        int data_count = 0;
+        for (auto iter = src_list_back_nv.begin(); iter != src_list_back_nv.end(); iter++){
+            if (world_rank == 0 && subdom_main && id_subdomain==0){    // main processor of subdomain && the first id of subdoumains
+                if (iter == src_list_back_nv.begin())
+                    ofs.open(src_rec_file_out);
+                else
+                    ofs.open(src_rec_file_out, std::ios_base::app);
+
+                std::string name_src = iter->first;
+                SrcRecInfo src = iter->second;
+
+                // format should be the same as input src_rec_file
+                // source line :  id_src yearm month day hour min sec lat lon dep_km mag num_recs id_event
+                ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
+                    << src.year << " " << src.month << " " << src.day << " "
+                    << src.hour << " " << src.min   << " "
+                    << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.sec << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lat << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lon << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.dep << " "
+                    << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.mag << " "
+                    << std::setw(5) << std::right << std::setfill(' ') << src.n_data << " "
+                    << src.name << " "
+                    << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0     // the weight of source is assigned to data
+                    << std::endl;
+                // data line
+                for(int i = 0; i < src.n_data; i++){
+                    DataInfo data = data_info_back_nv[data_count];
+                    if (data.is_src_rec){       // absolute traveltime data
+                        std::string name_rec = data.name_rec;
+                        SrcRecInfo rec = rec_list_back_nv[name_rec];
+                        CUSTOMREAL travel_time;
+                        if (get_is_srcrec_swap())     // do swap
+                            travel_time = syn_time_list_sr[name_rec][name_src]; 
+                        else // undo swap
+                            travel_time = syn_time_list_sr[name_src][name_rec]; 
+
+                        // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
+                        ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
+                            << std::setw(5) << std::right << std::setfill(' ') << rec.id << " "
+                            << rec.name << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << rec.lat << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
+                            << data.phase << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time << " "
+                            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
+                            << std::endl;
+                    } else if (data.is_rec_pair){   // common source differential traveltime 
+                        std::string name_rec1 = data.name_rec_pair[0];
+                        SrcRecInfo rec1 = rec_list_back_nv[name_rec1];
+                        std::string name_rec2 = data.name_rec_pair[1];
+                        SrcRecInfo rec2 = rec_list_back_nv[name_rec2];
+                        CUSTOMREAL cs_dif_travel_time;
+                        if (get_is_srcrec_swap())      // do swap
+                            cs_dif_travel_time = syn_time_list_sr[name_rec1][name_src] - syn_time_list_sr[name_rec2][name_src]; 
+                        else // undo swap
+                            cs_dif_travel_time = syn_time_list_sr[name_src][name_rec1] - syn_time_list_sr[name_src][name_rec2]; 
+
+                        // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
+                        ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
+                            << std::setw(5) << std::right << std::setfill(' ') <<  rec1.id << " "
+                            << rec1.name << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lat << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lon << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec1.dep*1000.0 << " "
+                            << std::setw(5) << std::right << std::setfill(' ') << rec2.id << " "
+                            << rec2.name << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec2.lat << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec2.lon << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec2.dep*1000.0 << " "
+                            << data.phase << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << cs_dif_travel_time << " "
+                            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
+                            << std::endl;
+                    } else if (data.is_src_pair){   // common receiver differential traveltime 
+                        // not ready
+                    }
+
+                    data_count++;
+                }
+
+
+                ofs.close();
+            }
+            // synchro
+            synchronize_all_world();
+        }
+
+    }
+}
+
+
 
 void InputParams::reverse_src_rec_points(){
 
@@ -1179,6 +1898,28 @@ void InputParams::separate_region_and_tele_src(){
         }
         cc++;
     }
+
+
+    // for new version
+    tele_src_list_nv.clear();
+    src_list_nv.clear();
+
+    for(auto iter = src_list_back_nv.begin(); iter != src_list_back_nv.end(); iter++){
+        SrcRecInfo src = iter->second;
+        if (src.lat < min_lat || src.lat > max_lat \
+         || src.lon < min_lon || src.lon > max_lon \
+         || src.dep < min_dep || src.dep > max_dep){
+
+            // out of region (teleseismic events) 
+            src.is_out_of_region = true;
+            tele_src_list_nv[iter->first] = src;
+        } else {
+            // within region (teleseismic events) 
+            src.is_out_of_region = false;
+            src_list_nv[iter->first] = src;
+        }
+    }
+
 }
 
 void InputParams::merge_region_and_tele_src(){

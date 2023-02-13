@@ -13,9 +13,13 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic) {
         delta_r   = grid.get_delta_r();
 
         // set source position
-        src_lon = IP.get_src_lon();    // in radian
-        src_lat = IP.get_src_lat();    // in rad
-        src_r   = IP.get_src_radius(); // already radious
+        // src_lon = IP.get_src_lon();    // in radian
+        // src_lat = IP.get_src_lat();    // in rad
+        // src_r   = IP.get_src_radius(); // already radious
+        src_lon = IP.get_src_lon_nv();    // in radian
+        src_lat = IP.get_src_lat_nv();    // in rad
+        src_r   = IP.get_src_radius_nv(); // already radious
+
 
         // descretize source position (LOCAL ID)
         i_src_loc = std::floor((src_lon - grid.get_lon_min_loc()) / grid.get_delta_lon());

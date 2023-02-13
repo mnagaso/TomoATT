@@ -142,6 +142,7 @@ inline int      id_sim           = 0; // simultaneous run id  (not equal to src 
 inline int      id_sim_src       = 0; // id of current target source
 inline int      id_subdomain     = 0; // subdomain id
 inline bool     subdom_main      = false; // true if this process is main process in subdomain
+inline std::string name_sim_src  = "unknown";   //name of current target source
 
 // read input yaml file
 inline std::string input_file="input_params.yaml";
