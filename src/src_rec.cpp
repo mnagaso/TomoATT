@@ -298,6 +298,118 @@ void parse_src_rec_file(std::string& src_rec_file, \
 }
 
 
+void parse_sta_correction_file(std::string& sta_correction_file, \
+                               std::map<std::string, SrcRec>& rec_list, \
+                               std::map<std::string, CUSTOMREAL>& station_correction, \
+                               std::map<std::string, CUSTOMREAL>& station_correction_kernel){
+
+    // read station correction file
+    std::ifstream ifs;
+    std::stringstream ss, ss_whole;
+
+    if (sim_rank == 0){
+        ifs.open(sta_correction_file);
+        if (!ifs.is_open()){
+            std::cout << "Error: cannot open sta_correction_file. Abort." << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        ss_whole << ifs.rdbuf();
+        ifs.close();
+    }
+
+    std::string line;
+
+    while(true){
+        bool end_of_file = false;
+        bool skip_this_line = false;
+
+        line.clear();
+
+        // read a line
+        if (sim_rank == 0){
+            if (!std::getline(ss_whole,line))
+                end_of_file = true;
+        }
+
+        broadcast_bool_single(end_of_file, 0);
+
+        if (end_of_file)
+            break;
+
+        // skip this line if it is a comment line
+        if (sim_rank == 0){
+            if (line[0] == '#' || line.empty())
+                skip_this_line = true;
+        }
+
+        broadcast_bool_single(skip_this_line, 0);
+
+        if (skip_this_line)
+            continue;
+
+        // parse the line
+        int ntokens = 0;
+        std::string token;
+        std::vector<std::string> tokens;
+
+        if (sim_rank == 0){
+            // erase the last space
+            line.erase(line.find_last_not_of(" \n\r\t")+1);
+
+            // parse the line with arbitrary number of spaces
+            ss.clear();
+            ss << line;
+
+            while (std::getline(ss,token,' ')) {
+                if (token.size() > 0)
+                    tokens.push_back(token);
+            }
+            // number of tokens
+            ntokens = tokens.size();
+        }
+
+        // broadcast ntokens
+        broadcast_i_single(ntokens, 0);
+        // broadcast tokens
+        for (int i=0; i<ntokens; i++){
+            if (sim_rank == 0)
+                token = tokens[i];
+            broadcast_str(token, 0);
+            if (sim_rank != 0)
+                tokens.push_back(token);
+        }
+
+        try { // check failure of parsion line by line
+
+            // store station corrections into rec_list
+            std::string tmp_sta_name = tokens[0];
+            CUSTOMREAL tmp_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
+
+            if (rec_list.find(tmp_sta_name) == rec_list.end()){
+                // new station
+                SrcRec tmp_rec;
+                tmp_rec.name_rec = tmp_sta_name;
+                tmp_rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
+                tmp_rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
+                tmp_rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
+                rec_list[tmp_sta_name] = tmp_rec;
+                station_correction[tmp_sta_name] = tmp_correct;
+                station_correction_kernel[tmp_sta_name] = 0.0;
+            } else {
+                // pre exist station
+                station_correction[tmp_sta_name] = tmp_correct;
+                station_correction_kernel[tmp_sta_name] = 0.0;
+            }
+        } catch (std::invalid_argument& e) {
+            std::cout << "Error: invalid argument in sta_correction_file. Abort." << std::endl;
+            std::cout << "problematic line: \n\n" << line << std::endl;
+
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    }
+}
+
+
 void do_swap_src_rec(std::vector<SrcRec>& src_points, std::vector<std::vector<SrcRec>>& rec_points, \
                      std::vector<SrcRec>& src_points_back, std::vector<std::vector<SrcRec>>& rec_points_back){
 

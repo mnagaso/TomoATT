@@ -448,17 +448,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(is_sta_correction, 0);
 
 
-    // read station correction file by all processes
-    if (sta_correction_file_exist) {
-        for (int i_proc = 0; i_proc < world_nprocs; i_proc++){
-            if (i_proc == world_rank) {
-                // store all src/rec info
-                parse_sta_correction_file();
-            }
-            synchronize_all_world();
-        }
-    }
-
     // check contradictory settings
     check_contradictions();
 
@@ -574,50 +563,6 @@ std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
 }
 
 
-void InputParams::parse_sta_correction_file(){
-    std::ifstream ifs(sta_correction_file);
-    std::string line;
-
-    while(std::getline(ifs,line)) {
-        if(line[0] == '#' || line.empty())
-            continue;
-
-        line.erase(line.find_last_not_of(" \n\r\t")+1);
-
-        std::stringstream ss(line);
-        std::string token;
-        std::vector<std::string> tokens;
-
-        while (std::getline(ss,token,' ')) {
-            if (token.size() > 0)
-                tokens.push_back(token);
-        }
-
-        // store station corrections into rec_list
-
-        std::string tmp_sta_name = tokens[0];
-        CUSTOMREAL tmp_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
-
-        if (rec_list.find(tmp_sta_name) == rec_list.end()){
-            // new station
-            SrcRec tmp_rec;
-            tmp_rec.name_rec = tmp_sta_name;
-            tmp_rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
-            tmp_rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
-            tmp_rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
-            rec_list[tmp_sta_name] = tmp_rec;
-            station_correction[tmp_sta_name] = tmp_correct;
-            station_correction_kernel[tmp_sta_name] = 0.0;
-            N_receiver += 1;
-        } else {
-            // pre exist station
-            station_correction[tmp_sta_name] = tmp_correct;
-            station_correction_kernel[tmp_sta_name] = 0.0;
-        }
-    }
-
-}
-
 bool InputParams::get_if_src_teleseismic(int id_src) {
     bool if_src_teleseismic;
 
@@ -673,7 +618,23 @@ void InputParams::prepare_src_list(){
     // wait
     synchronize_all_world();
 
-    // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
+    // read station correction file by all processes
+    if (sta_correction_file_exist && id_sim==0 && subdom_main) {
+        // store all src/rec info
+        parse_sta_correction_file(sta_correction_file,
+                                  rec_list,
+                                  station_correction,
+                                  station_correction_kernel);
+        // store number of unique receivers
+        N_receiver = rec_list.size();
+    }
+
+    // wait
+    synchronize_all_world();
+
+    // broadcast src_points,
+    //           rec_points,
+    // to all the subdom_main processes of each simultaneous run group
     if (src_rec_file_exist) {
         int n_all_src=0;
 
@@ -746,7 +707,6 @@ void InputParams::prepare_src_list(){
 
     // wait
     synchronize_all_world();
-
 
 }
 
@@ -1061,9 +1021,6 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
             station_correction_value[tmp_count] = station_correction[iter->first];
             tmp_count++;
         }
-
-
-
     }
 
     // step 5, broadcast the station correction all all procesors
@@ -1074,7 +1031,6 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
         iter->second = station_correction_value[tmp_count];
         tmp_count++;
     }
-
 
     // step 6, all processor update the station correction of receiver pair
     for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){

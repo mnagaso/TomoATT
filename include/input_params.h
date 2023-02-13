@@ -149,9 +149,6 @@ private:
     int stencil_type  = 1; // stencil type  (0: non upwind; 1: upwind)
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
-    // parse sta_correction_file
-    void parse_sta_correction_file();
-
     // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
     std::map<std::string, SrcRec> rec_list;
     std::map<std::string, CUSTOMREAL> station_correction;
@@ -237,6 +234,8 @@ private:
         send_cr_single_sim(&src.weight, dest);
         send_bool_single_sim(&src.is_teleseismic, dest);
 
+        send_i_single_sim(&src.n_rec_pair, dest);
+
     }
 
     void send_rec_inter_sim(std::vector<SrcRec>& vrec, int dest){
@@ -262,7 +261,19 @@ private:
             // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
             if (rec.is_rec_pair){
                 // TODO : check how to send double difference pairs
-            }
+                for (int i = 0; i < 2; i++){
+                    send_i_single_sim(&rec.id_rec_pair[i], dest);
+                    send_cr_single_sim(&rec.dep_pair[i], dest);
+                    send_cr_single_sim(&rec.lat_pair[i], dest);
+                    send_cr_single_sim(&rec.lon_pair[i], dest);
+                    send_cr_single_sim(&rec.ddt_adj_pair[i], dest);
+                    send_str_sim(rec.name_rec_pair[i], dest);
+                    send_cr_single_sim(&rec.station_correction_pair[i], dest);
+                }
+
+                send_cr_single_sim(&rec.dif_arr_time, dest);
+                send_cr_single_sim(&rec.dif_arr_time_ori, dest);
+           }
         }
 
     }
@@ -283,6 +294,8 @@ private:
         recv_cr_single_sim(&src.dep, orig);
         recv_cr_single_sim(&src.weight, orig);
         recv_bool_single_sim(&src.is_teleseismic, orig);
+
+        recv_i_single_sim(&src.n_rec_pair, orig);
     }
 
     void recv_rec_inter_sim(std::vector<SrcRec>& vrec, int orig){
@@ -308,6 +321,19 @@ private:
             // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
             if (rec.is_rec_pair){
                 // TODO : check how to recv double difference pairs
+                for (int i = 0; i < 2; i++){
+                    recv_i_single_sim(&rec.id_rec_pair[i],              orig);
+                    recv_cr_single_sim(&rec.dep_pair[i],                orig);
+                    recv_cr_single_sim(&rec.lat_pair[i],                orig);
+                    recv_cr_single_sim(&rec.lon_pair[i],                orig);
+                    recv_cr_single_sim(&rec.ddt_adj_pair[i],            orig);
+                    recv_str_sim(rec.name_rec_pair[i],                  orig);
+                    recv_cr_single_sim(&rec.station_correction_pair[i], orig);
+                }
+
+                recv_cr_single_sim(&rec.dif_arr_time,     orig);
+                recv_cr_single_sim(&rec.dif_arr_time_ori, orig);
+
             }
         }
 
