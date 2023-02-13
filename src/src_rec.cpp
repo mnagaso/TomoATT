@@ -249,6 +249,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     rec_points_tmp.push_back(rec);
                     cc++;
+                    src_points.at(src_points.size()-1).n_rec++;
                     src_points.at(src_points.size()-1).n_rec_pair++;
                 }
                 //////////////////////////////////////////////////////////// end new function

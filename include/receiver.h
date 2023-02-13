@@ -12,10 +12,8 @@ public:
 
     void calculate_arrival_time(InputParams&, Grid&);
 
-    // adjoint source
+    // adjoint source for both regional and teleseismic source
     std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&);
-    // teleseismic source
-    CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&);
     // Gradient of traveltime
     void calculate_T_gradient(InputParams&, Grid&);
     // initialize variables for source relocation

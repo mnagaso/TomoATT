@@ -156,9 +156,9 @@ endif()
 # add one by one
 set(APP_SOURCES
   src/TOMOATT.cxx
-  src/TOMOATT_solver_only.cxx
-  src/TOMOATT_2d_precalc.cxx
-  src/SrcRecWeight.cxx
+  #src/TOMOATT_solver_only.cxx
+  #src/TOMOATT_2d_precalc.cxx
+  #src/SrcRecWeight.cxx
   )
 
 foreach( execsourcefile ${APP_SOURCES} )
@@ -209,3 +209,4 @@ foreach( execsourcefile ${APP_SOURCES} )
 
 
 endforeach( execsourcefile ${APP_SOURCES} )
+

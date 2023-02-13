@@ -629,6 +629,10 @@ void InputParams::prepare_src_list(){
         N_receiver = rec_list.size();
     }
 
+    // broadcast N_receiver to all processes
+    broadcast_i_single_inter_sim(N_receiver, 0);
+    broadcast_i_single_sub(N_receiver, 0);
+
     // wait
     synchronize_all_world();
 
@@ -726,6 +730,7 @@ void InputParams::gather_all_arrival_times_to_main(){
         if (id_sim == 0 && sim_rank == 0)
             n_all_src = src_points.size();
 
+        // broadcast n_all_src to all processes
         broadcast_i_single_inter_sim(n_all_src, 0);
 
         for (int i_src = 0; i_src < n_all_src; i_src++){

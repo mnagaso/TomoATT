@@ -82,55 +82,6 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
 }
 
 
-// CUSTOMREAL Receiver::calculate_adjoint_source_teleseismic(InputParams& IP) {
-
-//     CUSTOMREAL allsum_obj = 0;
-
-//     if(subdom_main){
-//         // get receiver positions from input parameters
-//         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
-
-//         // get the source weight
-//         CUSTOMREAL src_weight = IP.get_src_point(id_sim_src).weight;
-
-//         // store sum of adjoint sources for the current source as an objective function value
-//         CUSTOMREAL sum_adj_src = 0;
-
-//         // initialize adjoint sources
-//         for (auto& rec: receivers) {
-//             rec.t_adj = 0;
-//         }
-
-//         // calculate double-difference travel times
-//         int nrec = receivers.size();
-//         for (int irec=0; irec<nrec-1; irec++) {
-//             SrcRec& rec_i = receivers[irec];
-//             for (int jrec=irec+1; jrec<nrec; jrec++) {
-
-//                 SrcRec& rec_j = receivers[jrec];
-
-//                 CUSTOMREAL deg_diff;
-//                 Epicentral_distance_sphere(rec_i.lat*DEG2RAD, rec_i.lon*DEG2RAD, rec_j.lat*DEG2RAD, rec_j.lon*DEG2RAD, deg_diff);
-
-//                 if (std::abs(deg_diff) < DIST_SRC_DDT){
-//                     CUSTOMREAL DDT = (rec_i.arr_time - rec_j.arr_time) - (rec_i.arr_time_ori - rec_j.arr_time_ori);
-//                     rec_i.t_adj += DDT * rec_i.weight * rec_j.weight * src_weight;
-//                     rec_j.t_adj -= DDT * rec_i.weight * rec_j.weight * src_weight;
-//                     sum_adj_src += my_square(DDT);
-//                 }
-//             }
-//         }
-
-//         allsum_obj = sum_adj_src;
-//     }
-
-//     // share the calculated objective function value to other processes
-//     broadcast_cr_single_sub(allsum_obj,0);
-
-//     return allsum_obj;
-// }
-
-
 void Receiver::interpolate_travel_time(Grid& grid, SrcRec& rec) {
     // calculate the travel time of the receiver by 3d linear interpolation
 
