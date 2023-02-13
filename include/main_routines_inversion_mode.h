@@ -21,9 +21,12 @@
 
 
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
-inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode){
+inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode){
 
     CUSTOMREAL v_obj = _0_CR;
+    CUSTOMREAL v_misfit = _0_CR;
+
+    std::vector<CUSTOMREAL> v_obj_misfit(2);
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION)
@@ -126,7 +129,10 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
 
         if (IP.get_run_mode()==DO_INVERSION){
             // calculate adjoint source
-            v_obj += recs.calculate_adjoint_source(IP);
+            // v_obj += recs.calculate_adjoint_source(IP);
+            v_obj_misfit = recs.calculate_adjoint_source(IP);
+            v_obj += v_obj_misfit[0];
+            v_misfit += v_obj_misfit[1];
 
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
@@ -139,6 +145,7 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
                 // output the result of adjoint simulation
                 io.write_adjoint_field(grid,i_inv);
             }
+
        }
 
 
@@ -149,10 +156,13 @@ inline CUSTOMREAL run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils&
 
     // allreduce sum_adj_src
     allreduce_cr_sim_inplace(&v_obj, 1);
+    allreduce_cr_sim_inplace(&v_misfit, 1);
 
     // return current objective function value
-    return v_obj;
+    v_obj_misfit[0] = v_obj;
+    v_obj_misfit[1] = v_misfit;
 
+    return v_obj_misfit;
 }
 
 

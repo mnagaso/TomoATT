@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <unordered_set>
+#include <map>
 
 #include "config.h"
 #include "yaml-cpp/yaml.h"
@@ -110,7 +111,10 @@ private:
     std::string src_list_file;       // source list file
     std::string rec_list_file;       // source list file
     std::string src_rec_file_out;    // source receiver file to be output
+    std::string sta_correction_file;         // station correction file to be input
+    std::string station_correction_file_out; // station correction file to be output
     bool src_rec_file_exist = false; // source receiver file exist
+    bool sta_correction_file_exist = false;   // station correction file exist
 
     // model input files
     std::string init_model_type; // model type
@@ -118,8 +122,8 @@ private:
     std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
-    int run_mode=0;                  // do inversion or not (0: no, 1: yes)
-    int n_inversion_grid=1;              // number of inversion grid
+    int run_mode=0;                                     // do inversion or not (0: no, 1: yes)
+    int n_inversion_grid=1;                             // number of inversion grid
     int type_dep_inv=0, type_lat_inv=0, type_lon_inv=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
     // type = 0: uniform inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
@@ -142,12 +146,15 @@ private:
 
     // calculation method
     int stencil_order = 3; // stencil order
-    int sweep_type = 1; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
-    int stencil_type = 0;  // stencil type (0: non upwind; 1: upwind)
+    int stencil_type  = 0; // stencil type  (0: non upwind; 1: upwind)
+    int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
-    // list for all src and rec info
-    std::vector<SrcRec> src_list;
-    std::vector<SrcRec> rec_list;
+    // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
+    std::map<std::string, SrcRec> rec_list;
+    std::map<std::string, CUSTOMREAL> station_correction;
+    std::map<std::string, CUSTOMREAL> station_correction_kernel;
+    CUSTOMREAL* station_correction_value;
+    int N_receiver = 0;
 
     // list for all of src point data
     std::vector<SrcRec> src_points;
@@ -186,6 +193,13 @@ public:
     // write out src_rec_file
     void write_src_rec_file(int);
 
+    // write out station_correction_file
+    void write_station_correction_file(int);
+
+    // station correction
+    // void station_correction_kernel();
+    void station_correction_update( CUSTOMREAL );
+
 private:
     // output setting
     bool is_output_source_field = false; // output out_data_sim_X.h or not.
@@ -197,10 +211,10 @@ private:
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.
     bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
-    bool is_inv_rad_ani  = true; // update radial anisotropy (in future) or not.
+    bool is_inv_rad_ani  = false; // update radial anisotropy (in future) or not.
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
-
+    bool is_sta_correction = false; // apply station correction or not.
 
     // function to communicate src_rec info
     void send_src_inter_sim(SrcRec& src, int dest){
@@ -219,6 +233,8 @@ private:
         send_cr_single_sim(&src.dep, dest);
         send_cr_single_sim(&src.weight, dest);
         send_bool_single_sim(&src.is_teleseismic, dest);
+
+        send_i_single_sim(&src.n_rec_pair, dest);
 
     }
 
@@ -245,7 +261,19 @@ private:
             // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
             if (rec.is_rec_pair){
                 // TODO : check how to send double difference pairs
-            }
+                for (int i = 0; i < 2; i++){
+                    send_i_single_sim(&rec.id_rec_pair[i], dest);
+                    send_cr_single_sim(&rec.dep_pair[i], dest);
+                    send_cr_single_sim(&rec.lat_pair[i], dest);
+                    send_cr_single_sim(&rec.lon_pair[i], dest);
+                    send_cr_single_sim(&rec.ddt_adj_pair[i], dest);
+                    send_str_sim(rec.name_rec_pair[i], dest);
+                    send_cr_single_sim(&rec.station_correction_pair[i], dest);
+                }
+
+                send_cr_single_sim(&rec.dif_arr_time, dest);
+                send_cr_single_sim(&rec.dif_arr_time_ori, dest);
+           }
         }
 
     }
@@ -266,6 +294,8 @@ private:
         recv_cr_single_sim(&src.dep, orig);
         recv_cr_single_sim(&src.weight, orig);
         recv_bool_single_sim(&src.is_teleseismic, orig);
+
+        recv_i_single_sim(&src.n_rec_pair, orig);
     }
 
     void recv_rec_inter_sim(std::vector<SrcRec>& vrec, int orig){
@@ -291,6 +321,19 @@ private:
             // if (is_rec_pair) id_rec_pair dep_pair lat_pair lon_pair ddt_adj_pair
             if (rec.is_rec_pair){
                 // TODO : check how to recv double difference pairs
+                for (int i = 0; i < 2; i++){
+                    recv_i_single_sim(&rec.id_rec_pair[i],              orig);
+                    recv_cr_single_sim(&rec.dep_pair[i],                orig);
+                    recv_cr_single_sim(&rec.lat_pair[i],                orig);
+                    recv_cr_single_sim(&rec.lon_pair[i],                orig);
+                    recv_cr_single_sim(&rec.ddt_adj_pair[i],            orig);
+                    recv_str_sim(rec.name_rec_pair[i],                  orig);
+                    recv_cr_single_sim(&rec.station_correction_pair[i], orig);
+                }
+
+                recv_cr_single_sim(&rec.dif_arr_time,     orig);
+                recv_cr_single_sim(&rec.dif_arr_time_ori, orig);
+
             }
         }
 

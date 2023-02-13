@@ -21,6 +21,12 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
         CUSTOMREAL src_lat = IP.get_src_lat();
         CUSTOMREAL src_r   = IP.get_src_radius();
 
+        // std::cout << ", id_sim: " << id_sim 
+        //           << ", id_subdomain: " << id_subdomain
+        //           << ", id_sim_src: " << id_sim_src 
+        //           << ", subdom_main: " << subdom_main 
+        //           << std::endl;
+
         CUSTOMREAL weight   = _1_CR;
         // CUSTOMREAL * taper  = IP.get_kernel_taper();
 

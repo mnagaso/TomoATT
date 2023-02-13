@@ -165,6 +165,15 @@ void set_new_model(Grid& grid, CUSTOMREAL step_size_new, bool init_bfgs=false) {
                         grid.fac_b_loc[I2V(i,j,k)] = _1_CR - _2_CR * grid.xi_loc[I2V(i,j,k)];
                         grid.fac_c_loc[I2V(i,j,k)] = _1_CR + _2_CR * grid.xi_loc[I2V(i,j,k)];
                         grid.fac_f_loc[I2V(i,j,k)] =       - _2_CR * grid.eta_loc[I2V(i,j,k)];
+
+                        // grid.fun_loc[I2V(i,j,k)] *= (_1_CR);
+                        // grid.xi_loc[I2V(i,j,k)]  -= (_0_CR);
+                        // grid.eta_loc[I2V(i,j,k)] -= (_0_CR);
+
+                        // grid.fac_b_loc[I2V(i,j,k)] = _1_CR - _2_CR * grid.xi_loc[I2V(i,j,k)];
+                        // grid.fac_c_loc[I2V(i,j,k)] = _1_CR + _2_CR * grid.xi_loc[I2V(i,j,k)];
+                        // grid.fac_f_loc[I2V(i,j,k)] =       - _2_CR * grid.eta_loc[I2V(i,j,k)];
+
                     }
                 }
             }

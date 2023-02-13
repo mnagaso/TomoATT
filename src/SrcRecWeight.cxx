@@ -334,9 +334,17 @@ int main(int argc, char *argv[])
     std::vector<SrcRec> src_points;
     std::vector<std::vector<SrcRec>> rec_points;
     std::string output_file = "src_rec_with_weight.txt";
+    std::map<std::string, SrcRec> dummy_rec_list;
+    std::map<std::string, CUSTOMREAL> dummy_station_correction;
+    std::map<std::string, CUSTOMREAL> dummy_station_correction_kernel;
 
     // read src_rec file
-    parse_src_rec_file(input_file, src_points, rec_points);
+    parse_src_rec_file(input_file,
+                       src_points,
+                       rec_points,
+                       dummy_rec_list,
+                       dummy_station_correction,
+                       dummy_station_correction_kernel);
 
     // calculate source and receiver weight
     calculate_src_rec_weight(src_points, rec_points);

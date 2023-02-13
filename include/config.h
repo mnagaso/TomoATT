@@ -82,11 +82,12 @@ inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
 
 // radious of the earth in km
 //inline CUSTOMREAL R_earth = 6378.1370;
-inline CUSTOMREAL       R_earth         = 6371.0; // for compatibility with fortran code
-inline const CUSTOMREAL GAMMA           = 0.0;
-inline const CUSTOMREAL r_kermel_mask   = 40.0;
-inline CUSTOMREAL       step_size_init  = 0.01; // update step size limit
-inline CUSTOMREAL       step_size_decay = 0.9; // step size decay
+inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
+inline const CUSTOMREAL GAMMA          = 0.0;
+inline const CUSTOMREAL r_kermel_mask  = 40.0;
+inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
+inline CUSTOMREAL       step_size_init_sc = 0.001; // update step size limit (for station correction)
+inline CUSTOMREAL       step_size_decay = 0.9;
 inline CUSTOMREAL       step_size_lbfgs;
 
 // RUN MODE TYPE FLAG
@@ -191,7 +192,7 @@ inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 4000;
 inline const CUSTOMREAL SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
 inline const int        N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
 inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
-inline const std::string OUTPUT_DIR_2D      = "2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
+inline const std::string OUTPUT_DIR_2D      = "/2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
 // earthquake relocation
 inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation

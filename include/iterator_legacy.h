@@ -69,4 +69,14 @@ private:
 
 };
 
+class Iterator_legacy_1st_order_upwind_tele : public Iterator_legacy_tele {
+
+public:
+    Iterator_legacy_1st_order_upwind_tele(InputParams&, Grid&, Source&, IO_utils&, bool, bool, bool);
+    //void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&);
+private:
+    void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+
+};
+
 #endif // ITERATOR_LEGACY_H
