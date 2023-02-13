@@ -27,12 +27,12 @@ IO_utils::IO_utils(InputParams& IP) {
             // initialize simulation data file.
             if (n_sims > 1){
                 // for simultaneous run, data file is created for each simulation group
-                h5_output_fname = "/out_data_sim_group_" + std::to_string(id_sim) + ".h5";
-                xdmf_output_fname = "/out_data_sim_group_"+std::to_string(id_sim)+".xmf";
+                h5_output_fname = "./out_data_sim_group_" + std::to_string(id_sim) + ".h5";
+                xdmf_output_fname = "./out_data_sim_group_"+std::to_string(id_sim)+".xmf";
             } else {
                 // otherwise, only one single data file is created for storing model params
-                h5_output_fname = "/out_data_sim.h5";
-                xdmf_output_fname = "/out_data_sim.xmf";
+                h5_output_fname = "./out_data_sim.h5";
+                xdmf_output_fname = "./out_data_sim.xmf";
             }
             // create data file
             h5_create_file_by_group_main(h5_output_fname);

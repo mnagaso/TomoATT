@@ -132,9 +132,9 @@ public:
 
 private:
     // member variables
-    std::string h5_output_grid_fname = "out_data_grid.h5"; // output file name
-    std::string h5_output_fname      = "out_data.h5";      // output file name
-    std::string xdmf_output_fname    = "out_data.xmf";     // output file name
+    std::string h5_output_grid_fname = "./out_data_grid.h5"; // output file name
+    std::string h5_output_fname      = "./out_data.h5";      // output file name
+    std::string xdmf_output_fname    = "./out_data.xmf";     // output file name
     std::string h5_group_name_grid   = "Mesh";               // group name for grid data
     std::string h5_group_name_event  = "Event";              // group name for event data
     std::string h5_group_name_data   = "Data";               // group name for event data
