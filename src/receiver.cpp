@@ -41,12 +41,12 @@ CUSTOMREAL Receiver::calculate_adjoint_source(InputParams& IP) {
         // calculate the adjoint source of the receiver by interpolation
         for (auto& rec: receivers) {
             if(!rec.is_rec_pair){
-                rec.t_adj = rec.arr_time - rec.arr_time_ori;
-                sum_adj_src += my_square(rec.t_adj) * rec.weight * src_weight; // multiply by weight and
+                rec.t_adj = (rec.arr_time - rec.arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                sum_adj_src += my_square(rec.t_adj);
             } else {
-                rec.ddt_adj_pair[0] = rec.dif_arr_time - rec.dif_arr_time_ori;
+                rec.ddt_adj_pair[0] = (rec.dif_arr_time - rec.dif_arr_time_ori) * std::sqrt(rec.weight * src_weight);
                 rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
-                sum_adj_src += my_square(rec.ddt_adj_pair[0]) * rec.weight * src_weight;
+                sum_adj_src += my_square(rec.ddt_adj_pair[0]);
             }
         }
 
