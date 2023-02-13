@@ -146,7 +146,7 @@ private:
 
     // calculation method
     int stencil_order = 3; // stencil order
-    int stencil_type  = 1; // stencil type  (0: non upwind; 1: upwind)
+    int stencil_type  = 0; // stencil type  (0: non upwind; 1: upwind)
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
     // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name

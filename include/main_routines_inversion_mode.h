@@ -26,7 +26,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     CUSTOMREAL v_obj = _0_CR;
     CUSTOMREAL v_misfit = _0_CR;
 
-    std::vector<CUSTOMREAL> v_obj_misfit;
+    std::vector<CUSTOMREAL> v_obj_misfit(2);
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION)
@@ -158,10 +158,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     allreduce_cr_sim_inplace(&v_obj, 1);
     allreduce_cr_sim_inplace(&v_misfit, 1);
 
+    // return current objective function value
     v_obj_misfit[0] = v_obj;
     v_obj_misfit[1] = v_misfit;
-    // return current objective function value
-    // return v_obj;
+
     return v_obj_misfit;
 }
 
