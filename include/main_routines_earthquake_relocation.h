@@ -132,6 +132,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 }
 
 
+// TODO: this function is no longer needed as IP.rec_list is already unique. Thus to be removed.
 std::vector<SrcRec> create_unique_rec_list(InputParams& IP) {
 
     // unique vector of SrcRec objects
