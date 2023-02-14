@@ -7,7 +7,10 @@
 
 void parse_src_rec_file(std::string& src_rec_file, \
                         std::vector<SrcRec>& src_points, \
-                        std::vector<std::vector<SrcRec>>& rec_points){
+                        std::vector<std::vector<SrcRec>>& rec_points, \
+                        std::map<std::string, SrcRec>& rec_list, \
+                        std::map<std::string, CUSTOMREAL>& station_correction, \
+                        std::map<std::string, CUSTOMREAL>& station_correction_kernel){
 
     // start timer
     std::string timer_name = "parse_src_rec_file";
@@ -172,6 +175,12 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     cc++;
                     src_points.at(src_points.size()-1).n_rec++;
 
+                    // craeting a unique list of receivers
+                    if (rec_list.find(rec.name_rec) == rec_list.end()){
+                        // new receiver found
+                        rec_list[rec.name_rec] = rec;
+                    }
+
                 } else {
 
                     // read differential traveltime
@@ -199,11 +208,51 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     else
                         rec.weight = 1.0; // default weight
                     rec.is_rec_pair = true;
+
+                    // creating a unique list of receivers
+                    if (rec_list.find(rec.name_rec_pair[0]) == rec_list.end()){
+                        // a new receiver
+                        SrcRec tmp_rec;
+                        tmp_rec.id_rec                 = std::stoi(tokens[1]);
+                        tmp_rec.name_rec               = tokens[2];
+                        tmp_rec.lat                    = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                        tmp_rec.lon                    = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                        tmp_rec.dep                    = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+                        rec_list[rec.name_rec_pair[0]] = tmp_rec;
+
+                        rec.station_correction_pair[0]                  = 0.0;
+                        station_correction[rec.name_rec_pair[0]]        = 0.0;
+                        station_correction_kernel[rec.name_rec_pair[0]] = 0.0;
+                    } else {
+                        // station exists in the rec_list
+                        rec.station_correction_pair[0] = station_correction[rec.name_rec_pair[0]];
+                        // std::cout << "station exist, " << rec.name_rec_pair[0] << ", correction: " << rec.station_correction_pair[0] << std::endl;
+                    }
+
+                    if (rec_list.find(rec.name_rec_pair[1]) == rec_list.end()){
+                        // a new receiver
+                        SrcRec tmp_rec;
+                        tmp_rec.id_rec                 = std::stoi(tokens[6]);
+                        tmp_rec.name_rec               = tokens[7];
+                        tmp_rec.lat                    = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                        tmp_rec.lon                    = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                        tmp_rec.dep                    = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
+                        rec_list[rec.name_rec_pair[1]] = tmp_rec;
+
+                        station_correction[rec.name_rec_pair[1]]        = 0.0;
+                        station_correction_kernel[rec.name_rec_pair[1]] = 0.0;
+                    } else {
+                        // station exists in the rec_list
+                        rec.station_correction_pair[1] = station_correction[rec.name_rec_pair[1]];
+                        // std::cout << "station exist, " << rec.name_rec_pair[1] << ", correction: " << rec.station_correction_pair[1] << std::endl;
+                    }
+
                     rec_points_tmp.push_back(rec);
                     cc++;
+                    src_points.at(src_points.size()-1).n_rec++;
                     src_points.at(src_points.size()-1).n_rec_pair++;
-
                 }
+                //////////////////////////////////////////////////////////// end new function
 
                 if (cc > ndata_tmp) {
                     // go to the next source
@@ -248,6 +297,118 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
     // indicate elapsed time
     std::cout << "Total elapsed time for reading src_rec_file: " << timer.get_t() << " seconds.\n";
+}
+
+
+void parse_sta_correction_file(std::string& sta_correction_file, \
+                               std::map<std::string, SrcRec>& rec_list, \
+                               std::map<std::string, CUSTOMREAL>& station_correction, \
+                               std::map<std::string, CUSTOMREAL>& station_correction_kernel){
+
+    // read station correction file
+    std::ifstream ifs;
+    std::stringstream ss, ss_whole;
+
+    if (sim_rank == 0){
+        ifs.open(sta_correction_file);
+        if (!ifs.is_open()){
+            std::cout << "Error: cannot open sta_correction_file. Abort." << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        ss_whole << ifs.rdbuf();
+        ifs.close();
+    }
+
+    std::string line;
+
+    while(true){
+        bool end_of_file = false;
+        bool skip_this_line = false;
+
+        line.clear();
+
+        // read a line
+        if (sim_rank == 0){
+            if (!std::getline(ss_whole,line))
+                end_of_file = true;
+        }
+
+        broadcast_bool_single(end_of_file, 0);
+
+        if (end_of_file)
+            break;
+
+        // skip this line if it is a comment line
+        if (sim_rank == 0){
+            if (line[0] == '#' || line.empty())
+                skip_this_line = true;
+        }
+
+        broadcast_bool_single(skip_this_line, 0);
+
+        if (skip_this_line)
+            continue;
+
+        // parse the line
+        int ntokens = 0;
+        std::string token;
+        std::vector<std::string> tokens;
+
+        if (sim_rank == 0){
+            // erase the last space
+            line.erase(line.find_last_not_of(" \n\r\t")+1);
+
+            // parse the line with arbitrary number of spaces
+            ss.clear();
+            ss << line;
+
+            while (std::getline(ss,token,' ')) {
+                if (token.size() > 0)
+                    tokens.push_back(token);
+            }
+            // number of tokens
+            ntokens = tokens.size();
+        }
+
+        // broadcast ntokens
+        broadcast_i_single(ntokens, 0);
+        // broadcast tokens
+        for (int i=0; i<ntokens; i++){
+            if (sim_rank == 0)
+                token = tokens[i];
+            broadcast_str(token, 0);
+            if (sim_rank != 0)
+                tokens.push_back(token);
+        }
+
+        try { // check failure of parsion line by line
+
+            // store station corrections into rec_list
+            std::string tmp_sta_name = tokens[0];
+            CUSTOMREAL tmp_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
+
+            if (rec_list.find(tmp_sta_name) == rec_list.end()){
+                // new station
+                SrcRec tmp_rec;
+                tmp_rec.name_rec = tmp_sta_name;
+                tmp_rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
+                tmp_rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
+                tmp_rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
+                rec_list[tmp_sta_name] = tmp_rec;
+                station_correction[tmp_sta_name] = tmp_correct;
+                station_correction_kernel[tmp_sta_name] = 0.0;
+            } else {
+                // pre exist station
+                station_correction[tmp_sta_name] = tmp_correct;
+                station_correction_kernel[tmp_sta_name] = 0.0;
+            }
+        } catch (std::invalid_argument& e) {
+            std::cout << "Error: invalid argument in sta_correction_file. Abort." << std::endl;
+            std::cout << "problematic line: \n\n" << line << std::endl;
+
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    }
 }
 
 

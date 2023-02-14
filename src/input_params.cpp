@@ -91,6 +91,12 @@ InputParams::InputParams(std::string& input_file){
                 output_dir = config["inversion"]["output_dir"].as<std::string>();
             }
 
+            // sta_correction_file
+            if (config["inversion"]["sta_correction_file"]) {
+                sta_correction_file_exist = true;
+                sta_correction_file = config["inversion"]["sta_correction_file"].as<std::string>();
+            }
+
             // type of input inversion grid
             if (config["inversion"]["type_dep_inv"]) {
                 type_dep_inv = config["inversion"]["type_dep_inv"].as<int>();
@@ -153,8 +159,9 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion"]["step_size"]) {
                 step_size_init = config["inversion"]["step_size"].as<CUSTOMREAL>();
             }
-
-            // step_size_decay
+            if (config["inversion"]["step_size_sc"]) {
+                step_size_init_sc = config["inversion"]["step_size_sc"].as<CUSTOMREAL>();
+            }
             if (config["inversion"]["step_size_decay"]) {
                 step_size_decay = config["inversion"]["step_size_decay"].as<CUSTOMREAL>();
             }
@@ -210,6 +217,11 @@ InputParams::InputParams(std::string& input_file){
             if (config["inv_strategy"]["kernel_taper"]){
                 kernel_taper[0] = config["inv_strategy"]["kernel_taper"][0].as<CUSTOMREAL>();
                 kernel_taper[1] = config["inv_strategy"]["kernel_taper"][1].as<CUSTOMREAL>();
+            }
+
+            // station correction (now only for teleseismic data)
+            if (config["inv_strategy"]["is_sta_correction"]){
+                is_sta_correction = config["inv_strategy"]["is_sta_correction"].as<int>();
             }
         }
 
@@ -364,8 +376,10 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(swap_src_rec, 0);
 
     broadcast_str(src_rec_file, 0);
-    broadcast_bool_single(src_rec_file_exist, 0);
+    broadcast_str(sta_correction_file, 0);
     broadcast_str(output_dir, 0);
+    broadcast_bool_single(src_rec_file_exist, 0);
+    broadcast_bool_single(sta_correction_file_exist, 0);
     broadcast_str(init_model_type, 0);
     broadcast_str(init_model_path, 0);
     broadcast_i_single(run_mode, 0);
@@ -403,6 +417,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(optim_method, 0);
     broadcast_i_single(max_iter_inv, 0);
     broadcast_cr_single(step_size_init, 0);
+    broadcast_cr_single(step_size_init_sc, 0);
     broadcast_cr_single(step_size_decay, 0);
     broadcast_cr_single(regularization_weight, 0);
     broadcast_i_single(max_sub_iterations, 0);
@@ -430,6 +445,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(is_inv_azi_ani, 0);
     broadcast_bool_single(is_inv_rad_ani, 0);
     broadcast_cr(kernel_taper,2,0);
+    broadcast_bool_single(is_sta_correction, 0);
 
     // check contradictory settings
     check_contradictions();
@@ -533,7 +549,6 @@ SrcRec& InputParams::get_src_point(int i_src){
 
 
 std::vector<SrcRec>& InputParams::get_rec_points(int id_src) {
-
     if (subdom_main){
         for (auto& vrecs: rec_points) {
             if (vrecs[0].id_src == id_src)
@@ -565,6 +580,27 @@ bool InputParams::get_if_src_teleseismic(int id_src) {
 
 
 void InputParams::broadcast_src_list(){
+    // read station correction file by all processes
+    if (sta_correction_file_exist && id_sim==0 && subdom_main) {
+        // store all src/rec info
+        parse_sta_correction_file(sta_correction_file,
+                                  rec_list,
+                                  station_correction,
+                                  station_correction_kernel);
+        // store number of unique receivers
+        N_receiver = rec_list.size();
+    }
+
+    // broadcast N_receiver to all processes
+    broadcast_i_single_inter_sim(N_receiver, 0);
+    broadcast_i_single_sub(N_receiver, 0);
+
+    // wait
+    synchronize_all_world();
+
+    // broadcast src_points,
+    //           rec_points,
+    // to all the subdom_main processes of each simultaneous run group
     if (src_rec_file_exist) {
         int n_all_src=0;
 
@@ -632,17 +668,12 @@ void InputParams::broadcast_src_list(){
                 }
             }
         }
-
-        // check IP.src_ids_this_sim for this rank
-        //if (myrank==0) {
-        //    std::cout << id_sim << " assigned src id : ";
-        //    for (auto& src_id : src_ids_this_sim) {
-        //        std::cout << src_id << " ";
-        //    }
-        //    std::cout << std::endl;
-        //}
     }
+
+    // wait
+    synchronize_all_world();
 }
+
 
 void InputParams::prepare_src_list(){
     //
@@ -655,7 +686,15 @@ void InputParams::prepare_src_list(){
     // read src rec file
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
 
-        parse_src_rec_file(src_rec_file, src_points, rec_points);
+        parse_src_rec_file(src_rec_file,
+                           src_points,
+                           rec_points,
+                           rec_list,
+                           station_correction,
+                           station_correction_kernel);
+
+        // total number of unique receivers
+        N_receiver = rec_list.size();
 
         // backup original src/rec list
         src_points_back = src_points;
@@ -678,11 +717,19 @@ void InputParams::prepare_src_list(){
     // wait
     synchronize_all_world();
 
+
+    // check IP.src_ids_this_sim for this rank
+    //if (myrank==0) {
+    //    std::cout << id_sim << " assigned src id : ";
+    //    for (auto& src_id : src_ids_this_sim) {
+    //        std::cout << src_id << " ";
+    //    }
+    //    std::cout << std::endl;
+    //}
+
     // broadcast src_points and rec_points to all the subdom_main processes of each simultaneous run group
     broadcast_src_list();
 
-    // wait
-    synchronize_all_world();
 }
 
 
@@ -714,6 +761,7 @@ void InputParams::prepare_src_list_for_backward_run(){
     synchronize_all_world();
 }
 
+
 void InputParams::gather_all_arrival_times_to_main(){
     //
     // calculated arrival times at receivers are stored in rec_points of its simultaneous run group
@@ -729,6 +777,7 @@ void InputParams::gather_all_arrival_times_to_main(){
         if (id_sim == 0 && sim_rank == 0)
             n_all_src = src_points.size();
 
+        // broadcast n_all_src to all processes
         broadcast_i_single_inter_sim(n_all_src, 0);
 
         for (int i_src = 0; i_src < n_all_src; i_src++){
@@ -761,13 +810,40 @@ void InputParams::gather_all_arrival_times_to_main(){
                         // do nothing
                     }
                 }
-            }
-        }
-
-
-    }
+            } // end if (sim_rank==0)
+        } // end for (int i_src = 0; i_src < n_all_src; i_src++)
+    } // end if (src_rec_file_exist)
 }
 
+
+void InputParams::write_station_correction_file(int i_inv){
+    if(is_sta_correction && run_mode == DO_INVERSION) {  // if apply station correction
+        station_correction_file_out = output_dir + "/station_correction_file_step_" + int2string_zero_fill(i_inv) +".dat";
+
+        std::ofstream ofs;
+
+        if (world_rank == 0 && subdom_main && id_subdomain==0){    // main processor of subdomain && the first id of subdoumains
+
+            ofs.open(station_correction_file_out);
+
+            ofs << "# stname " << "   lat   " << "   lon   " << "elevation   " << " station correction (s) " << std::endl;
+            for(auto iter = station_correction.begin(); iter != station_correction.end(); iter++){
+                std::string tmp_sta_name = iter->first;
+                SrcRec rec = rec_list[tmp_sta_name];
+                ofs << iter->first << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec.lat << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec.lon << " "
+                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec.dep * -1000.0 << " "
+                    << std::fixed << std::setprecision(6) << std::setw(9) << std::right << std::setfill(' ') << iter->second << " "
+                    << std::endl;
+            }
+
+            ofs.close();
+
+        }
+        synchronize_all_world();
+    }
+}
 
 void InputParams::write_src_rec_file(int i_inv) {
 
@@ -945,5 +1021,91 @@ void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, int sr
         // boundary source flag
         src.is_bound_src = (bool*)malloc(sizeof(bool)*5);
     }
+
+}
+
+// station correction kernel
+void InputParams::station_correction_update(CUSTOMREAL stepsize){
+    if (!is_sta_correction)
+        return;
+
+    // station correction kernel is generated in the main process and sent the value to all other processors
+
+    // step 1, gather all arrival time info to the main process
+    if (n_sims > 1){
+        gather_all_arrival_times_to_main();
+    }
+
+    station_correction_value = new CUSTOMREAL[N_receiver];
+
+    // do it in the main processor
+    if (id_sim == 0){
+
+        // step 2, initialize the kernel K_{\hat T_i}
+        for (auto iter = station_correction_kernel.begin(); iter!=station_correction_kernel.end(); iter++){
+            iter->second = 0.0;
+        }
+
+        CUSTOMREAL max_kernel = 0.0;
+
+        // step 3, calculate the kernel
+        for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
+            for (auto &rec : rec_points[i_src]) {
+                // loop all data
+                if(src_points[i_src].is_teleseismic ){
+                    station_correction_kernel[rec.name_rec_pair[0]] += _2_CR * rec.weight * src_points[i_src].weight
+                        * (rec.dif_arr_time - rec.dif_arr_time_ori + rec.station_correction_pair[0] - rec.station_correction_pair[1]);
+
+                    station_correction_kernel[rec.name_rec_pair[1]] -= _2_CR * rec.weight * src_points[i_src].weight
+                        * (rec.dif_arr_time - rec.dif_arr_time_ori + rec.station_correction_pair[0] - rec.station_correction_pair[1]);
+                    max_kernel = std::max(max_kernel,station_correction_kernel[rec.name_rec_pair[0]]);
+                    max_kernel = std::max(max_kernel,station_correction_kernel[rec.name_rec_pair[1]]);
+                }
+            }
+        }
+
+        // step 4, update station correction
+        int tmp_count = 0;
+
+        for (auto iter = station_correction_kernel.begin(); iter!=station_correction_kernel.end(); iter++){
+            station_correction[iter->first] += iter->second / (-max_kernel) * stepsize;
+            station_correction_value[tmp_count] = station_correction[iter->first];
+            tmp_count++;
+        }
+    }
+
+    // step 5, broadcast the station correction all all procesors
+    broadcast_cr(station_correction_value, N_receiver, 0);
+    broadcast_cr_inter_sim(station_correction_value, N_receiver, 0);
+    int tmp_count = 0;
+    for (auto iter = station_correction.begin(); iter!=station_correction.end(); iter++){
+        iter->second = station_correction_value[tmp_count];
+        tmp_count++;
+    }
+
+    // step 6, all processor update the station correction of receiver pair
+    for (long unsigned int i_src = 0; i_src < src_points.size(); i_src++){
+        for (auto &rec : rec_points[i_src]) {
+            // loop all data
+            if(src_points[i_src].is_teleseismic ){
+                rec.station_correction_pair[0] = station_correction[rec.name_rec_pair[0]];
+                rec.station_correction_pair[1] = station_correction[rec.name_rec_pair[1]];
+            }
+        }
+    }
+
+    // std::cout << "final station correction" << std::endl;
+    // auto iter = station_correction.begin();
+    // std::cout << "world_rank: " << world_rank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
+    //           << ", subdom_main" << subdom_main
+    //           << ", station name: " << iter->first << ", station correction: " << iter->second << std::endl;
+    // iter = station_correction.end();
+    // iter --;
+    // std::cout << "world_rank: " << world_rank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
+    //           << ", subdom_main" << subdom_main
+    //           << ", station name: " << iter->first << ", station correction: " << iter->second << std::endl;
+
+    // free memory
+    delete [] station_correction_value;
 
 }

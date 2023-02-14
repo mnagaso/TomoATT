@@ -24,9 +24,12 @@ void Receiver::calculate_arrival_time(InputParams& IP, Grid& grid) {
     }
 }
 
-CUSTOMREAL Receiver::calculate_adjoint_source(InputParams& IP) {
+std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
 
     CUSTOMREAL allsum_obj = 0;
+    CUSTOMREAL allsum_misfit = 0;
+
+    std::vector<CUSTOMREAL> allsum = std::vector<CUSTOMREAL>(2);
 
     if(subdom_main){
         // get receiver positions from input parameters
@@ -41,61 +44,27 @@ CUSTOMREAL Receiver::calculate_adjoint_source(InputParams& IP) {
         // calculate the adjoint source of the receiver by interpolation
         for (auto& rec: receivers) {
             if(!rec.is_rec_pair){
-                rec.t_adj = rec.arr_time - rec.arr_time_ori;
-                sum_adj_src += my_square(rec.t_adj) * rec.weight * src_weight; // multiply by weight and
+                rec.t_adj = (rec.arr_time - rec.arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                sum_adj_src += my_square(rec.t_adj); // multiply by weight and
+                allsum_misfit += my_square(rec.t_adj);
             } else {
-                rec.ddt_adj_pair[0] = rec.dif_arr_time - rec.dif_arr_time_ori;
-                rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
-                sum_adj_src += my_square(rec.ddt_adj_pair[0]) * rec.weight * src_weight;
-            }
-        }
-
-        allsum_obj = sum_adj_src;
-    }
-
-    // share the calculated objective function value to other processes
-    broadcast_cr_single_sub(allsum_obj,0);
-
-    return allsum_obj;
-}
-
-
-CUSTOMREAL Receiver::calculate_adjoint_source_teleseismic(InputParams& IP) {
-
-    CUSTOMREAL allsum_obj = 0;
-
-    if(subdom_main){
-        // get receiver positions from input parameters
-        std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
-
-        // get the source weight
-        CUSTOMREAL src_weight = IP.get_src_point(id_sim_src).weight;
-
-        // store sum of adjoint sources for the current source as an objective function value
-        CUSTOMREAL sum_adj_src = 0;
-
-        // initialize adjoint sources
-        for (auto& rec: receivers) {
-            rec.t_adj = 0;
-        }
-
-        // calculate double-difference travel times
-        int nrec = receivers.size();
-        for (int irec=0; irec<nrec-1; irec++) {
-            SrcRec& rec_i = receivers[irec];
-            for (int jrec=irec+1; jrec<nrec; jrec++) {
-
-                SrcRec& rec_j = receivers[jrec];
-
-                CUSTOMREAL deg_diff;
-                Epicentral_distance_sphere(rec_i.lat*DEG2RAD, rec_i.lon*DEG2RAD, rec_j.lat*DEG2RAD, rec_j.lon*DEG2RAD, deg_diff);
-
-                if (std::abs(deg_diff) < DIST_SRC_DDT){
-                    CUSTOMREAL DDT = (rec_i.arr_time - rec_j.arr_time) - (rec_i.arr_time_ori - rec_j.arr_time_ori);
-                    rec_i.t_adj += DDT * rec_i.weight * rec_j.weight * src_weight;
-                    rec_j.t_adj -= DDT * rec_i.weight * rec_j.weight * src_weight;
-                    sum_adj_src += my_square(DDT);
+                if(!IP.get_src_point(id_sim_src).is_teleseismic){
+                    // differential traveltimes of local earthquake, do not consider station correction
+                    rec.ddt_adj_pair[0] = (rec.dif_arr_time - rec.dif_arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                    rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
+                    sum_adj_src += my_square(rec.ddt_adj_pair[0]);
+                    allsum_misfit += my_square(rec.ddt_adj_pair[0]);
+                } else {
+                    // differential traveltimes of teleseismic earthquake, consider station correction
+                    rec.ddt_adj_pair[0] = (rec.dif_arr_time + (rec.station_correction_pair[0] - rec.station_correction_pair[1]) - rec.dif_arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                    rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
+                    sum_adj_src += my_square(rec.ddt_adj_pair[0]);
+                    allsum_misfit += my_square(rec.ddt_adj_pair[0]);
+                    // std::cout << "dif_arr_time: " << rec.dif_arr_time << ", correction_pair[0]: " << rec.station_correction_pair[0]
+                    //           << ", correction_pair[1]: " << rec.station_correction_pair[1]
+                    //           << ", dif_arr_time_ori: " << rec.dif_arr_time_ori << std::endl;
                 }
+
             }
         }
 
@@ -104,8 +73,12 @@ CUSTOMREAL Receiver::calculate_adjoint_source_teleseismic(InputParams& IP) {
 
     // share the calculated objective function value to other processes
     broadcast_cr_single_sub(allsum_obj,0);
+    broadcast_cr_single_sub(allsum_misfit,0);
 
-    return allsum_obj;
+    allsum[0] = allsum_obj;
+    allsum[1] = allsum_misfit;
+
+    return allsum;
 }
 
 

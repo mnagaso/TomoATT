@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <algorithm>
 
 #include "config.h"
@@ -35,17 +36,18 @@ public:
     CUSTOMREAL weight       = 1.0; // weight
 
     //
-    // another case of receiver pair (now only for teleseismicity)
+    // another case of receiver pair (now only for teleseismicity/src-rec swap is not supported)
     //
     bool is_rec_pair = false;
-    int n_rec_pair = 0;
+    int  n_rec_pair  = 0;
 
-    std::vector<int> id_rec_pair{std::vector<int>(2)};
-    std::vector<CUSTOMREAL> dep_pair{std::vector<CUSTOMREAL>(2)};
-    std::vector<CUSTOMREAL> lat_pair{std::vector<CUSTOMREAL>(2)};
-    std::vector<CUSTOMREAL> lon_pair{std::vector<CUSTOMREAL>(2)};
-    std::vector<CUSTOMREAL> ddt_adj_pair{std::vector<CUSTOMREAL>(2)}; // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
+    std::vector<int>         id_rec_pair{ std::vector<int>(2)};
+    std::vector<CUSTOMREAL>  dep_pair{    std::vector<CUSTOMREAL>(2)};
+    std::vector<CUSTOMREAL>  lat_pair{    std::vector<CUSTOMREAL>(2)};
+    std::vector<CUSTOMREAL>  lon_pair{    std::vector<CUSTOMREAL>(2)};
+    std::vector<CUSTOMREAL>  ddt_adj_pair{std::vector<CUSTOMREAL>(2)}; // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
     std::vector<std::string> name_rec_pair = std::vector<std::string>(2);
+    std::vector<CUSTOMREAL>  station_correction_pair = {0.0, 0.0}; // station correction value (only use for teleseismic data)
 
     CUSTOMREAL dif_arr_time     = 0.0; // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
     CUSTOMREAL dif_arr_time_ori = 0.0; // recorded/original differential arrival time (written in the input file)
@@ -92,9 +94,18 @@ public:
 // methods for managing SrcRec objects/lists
 
 // parse src_rec_file
-void parse_src_rec_file(std::string&                      src_rec_file, \
-                        std::vector<SrcRec>&              src_points, \
-                        std::vector<std::vector<SrcRec>>& rec_points);
+void parse_src_rec_file(std::string&                      , \
+                        std::vector<SrcRec>&              , \
+                        std::vector<std::vector<SrcRec>>& , \
+                        std::map<std::string, SrcRec>&    , \
+                        std::map<std::string, CUSTOMREAL>&, \
+                        std::map<std::string, CUSTOMREAL>&);
+
+// parse sta_correctoion_file
+void parse_sta_correction_file(std::string&, \
+                               std::map<std::string, SrcRec>&, \
+                               std::map<std::string, CUSTOMREAL>&, \
+                               std::map<std::string, CUSTOMREAL>&);
 
 
 // swap the sources and receivers

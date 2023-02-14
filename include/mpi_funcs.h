@@ -36,8 +36,10 @@ inline void send_cr(CUSTOMREAL*, int, int);
 inline void recv_cr(CUSTOMREAL*, int, int);
 inline void isend_cr(CUSTOMREAL*, int, int, MPI_Request&);
 inline void irecv_cr(CUSTOMREAL*, int, int, MPI_Request&);
-inline void send_cr_single_sim(CUSTOMREAL *cr, int dest);
-inline void recv_cr_single_sim(CUSTOMREAL *cr, int src);
+inline void send_cr_single_sim(CUSTOMREAL *, int);
+inline void recv_cr_single_sim(CUSTOMREAL *, int);
+inline void send_str_sim(std::string,  int);
+inline void recv_str_sim(std::string&, int);
 inline void allreduce_i_single(int&, int&);
 inline void allreduce_cr_single(CUSTOMREAL&, CUSTOMREAL&);
 inline void allreduce_i_inplace(int*, int);
@@ -75,8 +77,20 @@ inline void initialize_mpi(){
         std::cerr << "MPI_THREAD_FUNNELED is not supported" << std::endl;
         exit(1);
     }
+
+    // currently no routine except src/rec weight calculation is parallelized by openmp
+    // thus put 1 thread per process
+    omp_set_num_threads(1);
+
     // show the number of threads
     int nthreads = omp_get_max_threads();
+
+    // error check
+    if (nthreads != 1){
+        std::cerr << "number of threads is not 1" << std::endl;
+        exit(1);
+    }
+
     if (world_rank == 0)
         std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
@@ -460,9 +474,32 @@ inline void send_cr_single_sim(CUSTOMREAL *cr, int dest){
     MPI_Send(cr, n, MPI_CR, dest, MPI_DUMMY_TAG, inter_sim_comm);
 }
 
+
 inline void recv_cr_single_sim(CUSTOMREAL *cr, int src){
     const int n = 1;
     MPI_Recv(cr, n, MPI_CR, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+}
+
+
+inline void send_str_sim(std::string str, int dest){
+    const int n = str.size();
+    char* cstr = new char[n+1];
+    strcpy(cstr, str.c_str());
+    MPI_Send(cstr, n, MPI_CHAR, dest, MPI_DUMMY_TAG, inter_sim_comm);
+    delete[] cstr;
+}
+
+
+inline void recv_str_sim(std::string& str, int src){
+    MPI_Status status;
+    int n;
+    MPI_Probe(src, MPI_DUMMY_TAG, inter_sim_comm, &status);
+    MPI_Get_count(&status, MPI_CHAR, &n);
+    char* cstr = new char[n+1];
+    MPI_Recv(cstr, n, MPI_CHAR, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+    cstr[n] = '\0';
+    str = std::string(cstr);
+    delete[] cstr;
 }
 
 
@@ -606,7 +643,6 @@ inline void broadcast_str(std::string& str, int root) {
     str = buf;
     delete[] buf;
 }
-
 
 inline void allgather_str(const std::string &str, std::vector<std::string> &result) {
     MPI_Comm comm = MPI_COMM_WORLD;
