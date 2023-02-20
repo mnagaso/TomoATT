@@ -286,11 +286,11 @@ void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::
         }
     }
 
-//    // normalize the receiver weight
-//    // (the receiver weight is normalized for each source)
-//    for (auto& recs_one_src: rec_points) {
-//        normalize_weight(recs_one_src);
-//    }
+    // normalize the receiver weight
+    // (the receiver weight is normalized for each source)
+    for (auto& recs_one_src: rec_points) {
+        normalize_weight(recs_one_src);
+    }
 
     // end
 }
