@@ -44,19 +44,19 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
         // calculate the adjoint source of the receiver by interpolation
         for (auto& rec: receivers) {
             if(!rec.is_rec_pair){
-                rec.t_adj = (rec.arr_time - rec.arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                rec.t_adj = (rec.arr_time - rec.arr_time_ori) * (rec.weight * src_weight);
                 sum_adj_src += my_square(rec.t_adj); // multiply by weight and
                 allsum_misfit += my_square(rec.t_adj);
             } else {
                 if(!IP.get_src_point(id_sim_src).is_teleseismic){
                     // differential traveltimes of local earthquake, do not consider station correction
-                    rec.ddt_adj_pair[0] = (rec.dif_arr_time - rec.dif_arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                    rec.ddt_adj_pair[0] = (rec.dif_arr_time - rec.dif_arr_time_ori) * (rec.weight * src_weight);
                     rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
                     sum_adj_src += my_square(rec.ddt_adj_pair[0]);
                     allsum_misfit += my_square(rec.ddt_adj_pair[0]);
                 } else {
                     // differential traveltimes of teleseismic earthquake, consider station correction
-                    rec.ddt_adj_pair[0] = (rec.dif_arr_time + (rec.station_correction_pair[0] - rec.station_correction_pair[1]) - rec.dif_arr_time_ori) * std::sqrt(rec.weight * src_weight);
+                    rec.ddt_adj_pair[0] = (rec.dif_arr_time + (rec.station_correction_pair[0] - rec.station_correction_pair[1]) - rec.dif_arr_time_ori) * (rec.weight * src_weight);
                     rec.ddt_adj_pair[1] = -rec.ddt_adj_pair[0];
                     sum_adj_src += my_square(rec.ddt_adj_pair[0]);
                     allsum_misfit += my_square(rec.ddt_adj_pair[0]);
