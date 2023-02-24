@@ -49,7 +49,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     }
 
     if (subdom_main && id_sim==0 && IP.get_is_output_model_dat()==1) {
-        io.write_concerning_parameters(grid, 0);
+        io.write_concerning_parameters(grid, 0, IP);
     }
 
     // output station correction file (only for teleseismic differential data)
@@ -110,8 +110,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
                 model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
-            
-            
+
+
         }
 
         // output station correction file (only for teleseismic differential data)
@@ -141,7 +141,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             // output model_parameters_inv_0000.dat
             if (IP.get_is_output_model_dat() \
             && (IP.get_is_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2))
-                io.write_concerning_parameters(grid, i_inv + 1);
+                io.write_concerning_parameters(grid, i_inv + 1, IP);
 
         }
 

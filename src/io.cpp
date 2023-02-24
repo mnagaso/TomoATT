@@ -734,7 +734,7 @@ std::vector<CUSTOMREAL> IO_utils::get_grid_data(CUSTOMREAL* data) {
     return parameter;
 }
 
-void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
+void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& IP) {
     std::string dset_name = "model_parameters_inv_" + int2string_zero_fill(i_inv);
     std::string fname = create_fname_ascii_model(dset_name);
 
@@ -753,12 +753,14 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " ";
                     // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " "
-                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
-                    // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks_update" << " "
-                    << std::endl;
+                    if (IP.get_run_mode() == 1) {
+                        fout << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
+                        // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
+                        << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks_update" << " ";
+                    }
+                    fout << std::endl;
             } else
                 fout.open(fname.c_str(), std::ios_base::app); // append
             if (!fout.is_open()) {
@@ -774,9 +776,12 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
             std::vector<CUSTOMREAL> slowness = get_grid_data(grid.get_fun());
             std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
             std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
-            // std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
-            std::vector<CUSTOMREAL> Ks = get_grid_data(grid.get_Ks());
-            std::vector<CUSTOMREAL> Ks_update = get_grid_data(grid.get_Ks_update());
+            std::vector<CUSTOMREAL> Ks, Ks_update;
+            if (IP.get_run_mode() == 1) {
+                //std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
+                Ks = get_grid_data(grid.get_Ks());
+                Ks_update = get_grid_data(grid.get_Ks_update());
+            }
             // std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
 
             for (int k = 0; k < loc_K_vis; k++){
@@ -789,12 +794,15 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " ";
                             // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
-                            // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " "
-                            << std::endl;
+
+                            if (IP.get_run_mode() == 1) {
+                                fout << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
+                                // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
+                                << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " ";
+                            }
+                            fout << std::endl;
                     }
                 }
             }
