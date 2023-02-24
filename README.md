@@ -3,7 +3,9 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
 
-TomoATT is a library which implements an eikonal equation solver based Adjoint-state Travel-Time Tomography for a very large-scale computation, following a published article [Ping Tong (2021)](https://doi.org/10.1029/2021JB021818) and [Jing Chen (2022)](add_here_when_published).
+![logo](docs/logo/TomoATT_logo_2.png)
+
+TomoATT is a library which implements an eikonal equation solver based Adjoint-state Travel-Time Tomography for a very large-scale computation, which implemens the methods described in the published works [Ping Tong (2021)](https://doi.org/10.1029/2021JB021818) and [Jing Chen (2022)](add_here_when_published).
 The slowness field and anisotropy fields are computed in spherical coordinate system.
 
 Thanks to the efficiency of an eikonal equation solver, the computation of the travel-time is very fast and requires less amount of computational resources.
@@ -22,7 +24,7 @@ Regional events (sources within the global domain) and teleseismic events (sourc
 ## dependency
 - MPI v3.0 or higher  
 
-below is optinal:
+optinal:
 - HDF5 (parallel IO needs to be enabled)
 - h5py (used in pre/post processes examples)
 
@@ -36,6 +38,11 @@ git clone --recursive https://github.com/mnagaso/TomoATT.git
 mkdir build && cd build
 cmake .. && make -j 8
 ```
+
+compile with cuda support
+``` bash
+cmake .. -DUSE_CUDA=True && make -j 8
+``` 
 
 ## to run an example
 ``` bash

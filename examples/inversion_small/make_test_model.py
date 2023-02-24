@@ -34,10 +34,6 @@ xi_init  = np.zeros(n_rtp)
 zeta_init = np.zeros(n_rtp)
 fun_init = np.zeros(n_rtp)
 vel_init = np.zeros(n_rtp)
-a_init = np.zeros(n_rtp)
-b_init = np.zeros(n_rtp)
-c_init = np.zeros(n_rtp)
-f_init = np.zeros(n_rtp)
 
 # true model
 eta_true = np.zeros(n_rtp)
@@ -45,10 +41,6 @@ xi_true  = np.zeros(n_rtp)
 zeta_true = np.zeros(n_rtp)
 fun_true = np.zeros(n_rtp)
 vel_true = np.zeros(n_rtp)
-a_true = np.zeros(n_rtp)
-b_true = np.zeros(n_rtp)
-c_true = np.zeros(n_rtp)
-f_true = np.zeros(n_rtp)
 
 c=0
 for ir in range(n_rtp[0]):
@@ -60,10 +52,6 @@ for ir in range(n_rtp[0]):
             zeta_init[ir,it,ip] = gamma*math.sqrt(eta_init[ir,it,ip]**2 + xi_init[ir,it,ip]**2)
             fun_init[ir,it,ip] = s0
             vel_init[ir,it,ip] = 1.0/s0
-            a_init[ir,it,ip] = 1.0 + 2.0*zeta_init[ir,it,ip]
-            b_init[ir,it,ip] = 1.0 - 2.0*xi_init[ir,it,ip]
-            c_init[ir,it,ip] = 1.0 + 2.0*xi_init[ir,it,ip]
-            f_init[ir,it,ip] = -2.0 * eta_init[ir,it,ip]
 
             # true model
             if (tt[it] >= 38.0/180.0*math.pi and tt[it] <= 42.0/180.0*math.pi \
@@ -85,11 +73,6 @@ for ir in range(n_rtp[0]):
             zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
             fun_true[ir,it,ip] = s0/(1.0+sigma*slow_p)
             vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
-            a_true[ir,it,ip] = 1.0 + 2.0*zeta_true[ir,it,ip]
-            b_true[ir,it,ip] = 1.0 - 2.0*xi_true[ir,it,ip]
-            c_true[ir,it,ip] = 1.0 + 2.0*xi_true[ir,it,ip]
-            f_true[ir,it,ip] = -2.0 * eta_true[ir,it,ip]
-
 
 
 #r_earth = 6378.1370
@@ -108,23 +91,13 @@ fout_true = h5py.File('test_model_true.h5', 'w')
 fout_init.create_dataset('eta', data=eta_init)
 fout_init.create_dataset('xi', data=xi_init)
 fout_init.create_dataset('zeta', data=zeta_init)
-fout_init.create_dataset('fun', data=fun_init)
-fout_init.create_dataset('fac_a', data=a_init)
-fout_init.create_dataset('fac_b', data=b_init)
-fout_init.create_dataset('fac_c', data=c_init)
-fout_init.create_dataset('fac_f', data=f_init)
-#fout_init.create_dataset('vel', data=vel_init)
+fout_init.create_dataset('vel', data=vel_init)
 
 # writeout the arrays eta_true, xi_true, zeta_true, fun_true, a_true, b_true, c_true, f_true
 fout_true.create_dataset('eta', data=eta_true)
 fout_true.create_dataset('xi', data=xi_true)
 fout_true.create_dataset('zeta', data=zeta_true)
-fout_true.create_dataset('fun', data=fun_true)
-fout_true.create_dataset('fac_a', data=a_true)
-fout_true.create_dataset('fac_b', data=b_true)
-fout_true.create_dataset('fac_c', data=c_true)
-fout_true.create_dataset('fac_f', data=f_true)
-#fout_true.create_dataset('vel', data=vel_true)
+fout_true.create_dataset('vel', data=vel_true)
 
 fout_init.close()
 fout_true.close()
@@ -160,7 +133,6 @@ mag_dummy = 3.0
 id_dummy = 1000
 st_name_dummy = 'AAAA'
 phase_dummy = 'P'
-dist_dummy = 100.0
 arriv_t_dummy = 0.0
 
 tt1deg = tt1 * 180.0/math.pi
@@ -169,13 +141,12 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-n_src = 500
+n_srcs = [10,20,20]
+n_src = n_srcs[0]*n_srcs[1]*n_srcs[2]
 n_rec = [30 for x in range(n_src)]
-
 
 lines = []
 
-nij_src = math.sqrt(n_src)
 nij_rec = math.sqrt(n_rec[0])
 
 pos_src=[]
@@ -203,37 +174,38 @@ for i in range(n_rec[0]):
 
 
 # create source coordinates
-for i_src in range(n_src):
-    # define one point in the domain (rr1 bottom, rr2 top)
-    # random
-    #dep = random.uniform((R_earth-rr1)*0.5,(R_earth-rr1)*0.98)
-    #lon = random.uniform(pp1deg,pp2deg)
-    #lat = random.uniform(tt1deg,tt2deg)
+for ir in range(n_srcs[0]):
+    for it in range(n_srcs[1]):
+        for ip in range(n_srcs[2]):
+            i_src = ir*n_srcs[1]*n_srcs[2] + it*n_srcs[2] + ip
+            # define one point in the domain (rr1 bottom, rr2 top)
+            # random
+            #dep = random.uniform((R_earth-rr1)*0.5,(R_earth-rr1)*0.98)
+            #lon = random.uniform(pp1deg,pp2deg)
+            #lat = random.uniform(tt1deg,tt2deg)
 
-    # regular
-    dep = (R_earth-rr1)*0.9
-    tmp_ilon = i_src%nij_src
-    tmp_ilat = int(i_src/nij_src)
-    lon = pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_src
-    lat = tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_src
+            # regular
+            dep = (R_earth-rr1)/n_srcs[0]*ir
+            lon = pp1deg + ip*(pp2deg-pp1deg)/n_srcs[2]
+            lat = tt1deg + it*(tt2deg-tt1deg)/n_srcs[1]
 
-    src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
-    lines.append(src)
+            src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
+            lines.append(src)
 
-    pos_src.append([lon,lat,dep])
+            pos_src.append([lon,lat,dep])
 
 
-    # create dummy station
-    for i_rec in range(n_rec[i_src]):
-        elev_rec = elev_recs[i_rec]
-        lon_rec  = lon_recs[i_rec]
-        lat_rec  = lat_recs[i_rec]
-        st_name_dummy = rec_names[i_rec]
+            # create dummy station
+            for i_rec in range(n_rec[i_src]):
+                elev_rec = elev_recs[i_rec]
+                lon_rec  = lon_recs[i_rec]
+                lat_rec  = lat_recs[i_rec]
+                st_name_dummy = rec_names[i_rec]
 
-        rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, dist_dummy, arriv_t_dummy]
-        lines.append(rec)
+                rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
+                lines.append(rec)
 
-        pos_rec.append([lon_rec,lat_rec,elev_rec])
+                pos_rec.append([lon_rec,lat_rec,elev_rec])
 
 
 # write out ev_arrivals file

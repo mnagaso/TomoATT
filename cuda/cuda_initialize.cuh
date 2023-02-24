@@ -29,6 +29,9 @@ void get_free_memory(double* free_db, double* used_db, double* total_db) {
 
 // setup cuda constants and variables by reading device properties
 void initialize_cuda(){
+
+    std::cout << "Initializing CUDA..." << std::endl;
+
     int ncuda_device;
     int device;
 

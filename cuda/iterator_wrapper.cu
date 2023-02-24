@@ -1,1194 +1,883 @@
 #include "iterator_wrapper.cuh"
 
+__device__ const CUSTOMREAL PLUS = 1.0;
+__device__ const CUSTOMREAL MINUS = -1.0;
+__device__ const CUSTOMREAL v_eps = 1e-12;
 
+__device__ const CUSTOMREAL _0_5_CR   = 0.5;
+__device__ const CUSTOMREAL _1_CR     = 1.0;
+__device__ const CUSTOMREAL _2_CR     = 2.0;
+__device__ const CUSTOMREAL _3_CR     = 3.0;
+__device__ const CUSTOMREAL _4_CR     = 4.0;
 
-__global__ void L1_reduce_kernel(CUSTOMREAL* d_in, CUSTOMREAL* g_out, int n)
-{
-
-    extern __shared__ CUSTOMREAL diff_shared[]; // use shared memory accumulation for reduction
-    //CUSTOMREAL *diff_shared = SharedMemory<CUSTOMREAL>();
-    unsigned int i_block = blockIdx.x + blockIdx.y*gridDim.x;
-    //unsigned int n_blocks = gridDim.x*gridDim.y;
-
-    unsigned int ithread = threadIdx.x;
-    // x y grid
-    unsigned int iglobal = threadIdx.x + (i_block)*blockDim.x;
-
-    if (iglobal >= n || ithread >= blockDim.x) return;
-
-    //printf("%d %d %d\n", iglobal, ithread, blockDim.x);
-    //printf("iglobal %d\n", iglobal);
-    //printf("d_in[iglobal] %f\n", d_in[iglobal]);
-    diff_shared[ithread] = d_in[iglobal];
-
-    //printf("diff_shared[ithread] %f\n", diff_shared[ithread]);
-
-    __syncthreads();
-
-
-   // do reduction in shared mem
-//    for(unsigned int s=1; s < blockDim.x; s *= 2) {
-//        if (ithread % (2*s) == 0) {
-//            diff_shared[ithread] += diff_shared[ithread + s];
-//        }
-//        __syncthreads();
-//    }
-
-    for (unsigned int s=blockDim.x/2; s>0; s>>=1) {
-        if (ithread < s) {
-            diff_shared[ithread] += diff_shared[ithread + s];
-        }
-        __syncthreads();
-    }
-
-    // write result for this block to global mem
-    if (ithread == 0) g_out[i_block] = diff_shared[0];
-
-    __syncthreads();
-
+__device__ CUSTOMREAL my_square_cu(CUSTOMREAL const& x) {
+    return x*x;
 }
 
-__global__ void calculate_L1_kernel(CUSTOMREAL* tau_loc, CUSTOMREAL* tau_old_loc, CUSTOMREAL* T0v_loc, \
-                                    CUSTOMREAL* L1_tmp_dev, \
-                                    int loc_I, int loc_J, int loc_K, int n_ghost_layer, CUSTOMREAL* L1){
-
-
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-
-    // skip if the assigned ijk is greater than the grid size
-    if (i >= loc_I-n_ghost_layer || j >= loc_J-n_ghost_layer || k >= loc_K-n_ghost_layer || i < n_ghost_layer || j < n_ghost_layer || k < n_ghost_layer){
-        return;
-        //tmp = 0.0;
-        //unsigned int ijk = I2V_cuda(i,j,k, loc_I, loc_J);
-        //printf("i j k ijk %d %d %d %d\n", i, j, k, ijk);
-
-        //printf("ijk %d ithread %d\n", ijk, ithread);
-        //L1_tmp_dev[ijk] = 0.0;
-
-    }
-    else{
-        unsigned int ijk = I2V_cuda(i,j,k, loc_I, loc_J);
-        //printf("i j k ijk %d %d %d %d\n", i, j, k, ijk);
-
-        //printf("ijk %d ithread %d\n", ijk, ithread);
-        L1_tmp_dev[ijk] = (CUSTOMREAL) fabs(tau_loc[ijk] - tau_old_loc[ijk])*T0v_loc[ijk];
-    }
-
+__device__ CUSTOMREAL calc_stencil_1st(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& Dinv){
+    return Dinv*(a-b);
 }
 
-
-void cuda_calculate_L1(Grid_on_device* grid_on_dv){
-    // calculate L1
-
-    // set tau_old_loc to 0.0
-    print_CUDA_error_if_any(cudaMemset(grid_on_dv->L1_tmp_dev, 0, grid_on_dv->loc_I_host*grid_on_dv->loc_J_host*grid_on_dv->loc_K_host*sizeof(CUSTOMREAL)), 44444);
-
-    // calculate the initial L1 and Linf values
-
-    calculate_L1_kernel<<<grid_on_dv->grid_3d_full_incr_host, grid_on_dv->threads_3d_full_incr_host>>>\
-                                             (grid_on_dv->tau_loc_dev, grid_on_dv->tau_old_loc_dev, grid_on_dv->T0v_loc_dev, \
-                                              grid_on_dv->L1_tmp_dev, \
-                                              grid_on_dv->loc_I_host, grid_on_dv->loc_J_host, grid_on_dv->loc_K_host, \
-                                              grid_on_dv->n_ghost_layers_host, \
-                                              &(grid_on_dv->L1_host));
-    cudaDeviceSynchronize();
-
-    //printf("nblocks %d\n", nblocks);
-
-    // initialize
-    grid_on_dv->L1_host = 0.0;
-    for (int i = 0; i < grid_on_dv->n_blocks_L1_host; i++){
-        grid_on_dv->L1_arr_unified[i] = 0.0;
-    }
-
-
-    int n_total_pt = grid_on_dv->loc_I_host*grid_on_dv->loc_J_host*grid_on_dv->loc_K_host;
-
-    L1_reduce_kernel<<<grid_on_dv->grid_L1_host, grid_on_dv->threads_L1_host, CUDA_L1_BLOCK_SIZE*sizeof(CUSTOMREAL)>>> \
-                        (grid_on_dv->L1_tmp_dev, grid_on_dv->L1_arr_unified, n_total_pt);
-    cudaDeviceSynchronize();
-
-    // reduce among the blocks
-    for (int i = 0; i < grid_on_dv->n_blocks_L1_host; ++i) {
-        //printf("L1_arr_unified[%d] %f\n", i, grid_on_dv->L1_arr_unified[i]);
-        grid_on_dv->L1_host += grid_on_dv->L1_arr_unified[i];
-    }
-
-
-    // copy L1_dev to L1_host
-    //printf("L1: %3.16f\n", grid_on_dv->L1_host);
-
-    // mpi reduce summation of L1
-    CUSTOMREAL L1tmp=grid_on_dv->L1_host;
-    MPI_Allreduce(&L1tmp, &(grid_on_dv->L1_host), 1, MPI_CR, MPI_SUM, grid_on_dv->inter_sub_comm_host);
-
-    grid_on_dv->L1_host = grid_on_dv->L1_host/((grid_on_dv->ngrid_i_host-2) \
-                                             * (grid_on_dv->ngrid_j_host-2) \
-                                             * (grid_on_dv->ngrid_k_host-2));
-    //printf("L1: %3.16f\n", grid_on_dv->L1_host);
-
-
+__device__ CUSTOMREAL calc_stencil_3rd(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c, CUSTOMREAL const& d, CUSTOMREAL const& Dinv_half, CUSTOMREAL const& sign){
+    CUSTOMREAL tmp1 = v_eps + my_square_cu(a-_2_CR*b+c);
+    CUSTOMREAL tmp2 = v_eps + my_square_cu(d-_2_CR*a+b);
+    CUSTOMREAL ww   = _1_CR/(_1_CR+_2_CR*my_square_cu(tmp1/tmp2));
+    return sign*((_1_CR-ww)* (b-d)*Dinv_half + ww*(-_3_CR*a+_4_CR*b-c)*Dinv_half);
 }
-
-
-__global__ void copy_tau_to_tau_old_kernel( \
-    int loc_I, int loc_J, int loc_K, \
-    CUSTOMREAL* tau_loc, CUSTOMREAL* tau_old_loc){
-
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-    // skip if the assigned ijk is greater than the grid size
-    if (i >= loc_I || j >= loc_J || k >= loc_K)
-        return;
-
-    int ijk = I2V_cuda(i,j,k, loc_I, loc_J);
-    tau_old_loc[ijk] = tau_loc[ijk];
-
-}
-
-
-void cuda_tau2old_tau(Grid_on_device* grid_on_dv){
-    // copy tau to tau_old
-    //copy_tau_to_tau_old_kernel<<<grid_on_dv->grid_3d_full_incr_host, grid_on_dv->threads_3d_full_incr_host>>>\
-    //                                               (grid_on_dv->loc_I_host,grid_on_dv->loc_J_host, grid_on_dv->loc_K_host, \
-    //                                                grid_on_dv->tau_loc_dev, grid_on_dv->tau_old_loc_dev);
-
-    print_CUDA_error_if_any( cudaMemcpy(grid_on_dv->tau_old_loc_dev, grid_on_dv->tau_loc_dev, grid_on_dv->loc_I_host*grid_on_dv->loc_J_host*grid_on_dv->loc_K_host*sizeof(CUSTOMREAL), cudaMemcpyDeviceToDevice), 33333);
-}
-
-
 
 __device__ CUSTOMREAL cuda_calc_LF_Hamiltonian( \
-                                            CUSTOMREAL* fac_a_loc, \
-                                            CUSTOMREAL* fac_b_loc, \
-                                            CUSTOMREAL* fac_c_loc, \
-                                            CUSTOMREAL* fac_f_loc, \
-                                            CUSTOMREAL* T0r_loc, \
-                                            CUSTOMREAL* T0t_loc, \
-                                            CUSTOMREAL* T0p_loc, \
-                                            CUSTOMREAL* T0v_loc, \
-                                            CUSTOMREAL* tau_loc, \
-                                            CUSTOMREAL& pp1, CUSTOMREAL& pp2, \
-                                            CUSTOMREAL& pt1, CUSTOMREAL& pt2, \
-                                            CUSTOMREAL& pr1, CUSTOMREAL& pr2, \
-                                            int& i_j_k_) {
-    // LF Hamiltonian for T = T0 + tau
-    /*
-    return sqrt(
-              grid.fac_a_loc[i_j_k_] * (pow((pr1+pr2)/2.0,2.0)) \
-      +       grid.fac_b_loc[i_j_k_] * (pow((pt1+pt2)/2.0,2.0)) \
-      +       grid.fac_c_loc[i_j_k_] * (pow((pp1+pp2)/2.0,2.0)) \
-      - 2.0*grid.fac_f_loc[i_j_k_] * (pt1+pt2)/2.0 * (pp1+pp2)/2.0 \
-
-      +       grid.fac_a_loc[i_j_k_] * (pr1+pr2) * grid.T0r_loc[i_j_k_] \
-      +       grid.fac_b_loc[i_j_k_] * (pt1+pt2) * grid.T0t_loc[i_j_k_] - grid.fac_f_loc[i_j_k_] * (pt1+pt2) * grid.T0p_loc[i_j_k_] \
-      +       grid.fac_c_loc[i_j_k_] * (pp1+pp2) * grid.T0p_loc[i_j_k_] - grid.fac_f_loc[i_j_k_] * (pp1+pp2) * grid.T0t_loc[i_j_k_] \
-
-      +       grid.fac_a_loc[i_j_k_] * pow(grid.T0r_loc[i_j_k_],2.0) \
-      +       grid.fac_b_loc[i_j_k_] * pow(grid.T0t_loc[i_j_k_],2.0) \
-      +       grid.fac_c_loc[i_j_k_] * pow(grid.T0p_loc[i_j_k_],2.0) \
-      - 2.0*grid.fac_f_loc[i_j_k_] * grid.T0t_loc[i_j_k_] * grid.T0p_loc[i_j_k_] \
-    );
-    */
-
+                                            CUSTOMREAL const& fac_a_, \
+                                            CUSTOMREAL const& fac_b_, \
+                                            CUSTOMREAL const& fac_c_, \
+                                            CUSTOMREAL const& fac_f_, \
+                                            CUSTOMREAL const& T0r_, \
+                                            CUSTOMREAL const& T0t_, \
+                                            CUSTOMREAL const& T0p_, \
+                                            CUSTOMREAL const& T0v_, \
+                                            CUSTOMREAL& tau_, \
+                                            CUSTOMREAL const& pp1, CUSTOMREAL& pp2, \
+                                            CUSTOMREAL const& pt1, CUSTOMREAL& pt2, \
+                                            CUSTOMREAL const& pr1, CUSTOMREAL& pr2 \
+                                            ) {
     // LF Hamiltonian for T = T0 * tau
     return sqrt(
-              fac_a_loc[i_j_k_] * pow((T0r_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pr1+pr2)/2.0),2.0) \
-    +         fac_b_loc[i_j_k_] * pow((T0t_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pt1+pt2)/2.0),2.0) \
-    +         fac_c_loc[i_j_k_] * pow((T0p_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pp1+pp2)/2.0),2.0) \
-    -     2.0*fac_f_loc[i_j_k_] * (T0t_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pt1+pt2)/2.0) \
-                                * (T0p_loc[i_j_k_] * tau_loc[i_j_k_] + T0v_loc[i_j_k_] * (pp1+pp2)/2.0) \
+              fac_a_ * my_square_cu(T0r_ * tau_ + T0v_ * (pr1+pr2)/_2_CR) \
+    +         fac_b_ * my_square_cu(T0t_ * tau_ + T0v_ * (pt1+pt2)/_2_CR) \
+    +         fac_c_ * my_square_cu(T0p_ * tau_ + T0v_ * (pp1+pp2)/_2_CR) \
+    -   _2_CR*fac_f_ * (T0t_ * tau_ + T0v_ * (pt1+pt2)/_2_CR) \
+                     * (T0p_ * tau_ + T0v_ * (pp1+pp2)/_2_CR) \
     );
-
-
 }
 
+__global__ void cuda_do_sweep_level_kernel_1st(\
+    const int i__j__k__[],\
+    const int ip1j__k__[],\
+    const int im1j__k__[],\
+    const int i__jp1k__[],\
+    const int i__jm1k__[],\
+    const int i__j__kp1[],\
+    const int i__j__km1[],\
+    const CUSTOMREAL fac_a[], \
+    const CUSTOMREAL fac_b[], \
+    const CUSTOMREAL fac_c[], \
+    const CUSTOMREAL fac_f[], \
+    const CUSTOMREAL T0v[], \
+    const CUSTOMREAL T0r[], \
+    const CUSTOMREAL T0t[], \
+    const CUSTOMREAL T0p[], \
+    const CUSTOMREAL fun[], \
+    const bool changed[], \
+    CUSTOMREAL tau[], \
+    const int loc_I, \
+    const int loc_J, \
+    const int loc_K, \
+    const CUSTOMREAL dr, \
+    const CUSTOMREAL dt, \
+    const CUSTOMREAL dp, \
+    const int n_nodes_this_level, \
+    const int i_start \
+){
 
-__device__ void cuda_calculate_stencil_1st_order( \
-                                            CUSTOMREAL* fac_a_loc, \
-                                            CUSTOMREAL* fac_b_loc, \
-                                            CUSTOMREAL* fac_c_loc, \
-                                            CUSTOMREAL* fac_f_loc, \
-                                            CUSTOMREAL* T0r_loc, \
-                                            CUSTOMREAL* T0t_loc, \
-                                            CUSTOMREAL* T0p_loc, \
-                                            CUSTOMREAL* T0v_loc, \
-                                            CUSTOMREAL* tau_loc, \
-                                            CUSTOMREAL* fun_loc, \
-                                            CUSTOMREAL dr, CUSTOMREAL dt, CUSTOMREAL dp, \
-                                            int i_j_k_, \
-                                            int ipj_k_, \
-                                            int imj_k_, \
-                                            int i_jpk_, \
-                                            int i_jmk_, \
-                                            int i_j_kp, \
-                                            int i_j_km){
+    unsigned int i_node = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
 
-    CUSTOMREAL sigr = 1.0*sqrt(fac_a_loc[i_j_k_])*T0v_loc[i_j_k_];
-    CUSTOMREAL sigt = 1.0*sqrt(fac_b_loc[i_j_k_])*T0v_loc[i_j_k_];
-    CUSTOMREAL sigp = 1.0*sqrt(fac_c_loc[i_j_k_])*T0v_loc[i_j_k_];
-    CUSTOMREAL coe  = 1.0/((sigr/dr)+(sigt/dt)+(sigp/dp));
+    if (i_node >= n_nodes_this_level) return;
 
-    //printf("i_j_k_ , imj_k_ , ipj_k_ , i_jpk_ , i_jmk_ , i_j_kp , i_j_km, dp, dt, dr :  %d , %d , %d , %d , %d , %d , %d , %f , %f, %f \n", i_j_k_, imj_k_, ipj_k_, i_jpk_, i_jmk_, i_j_kp, i_j_km, dp, dt, dr);
+    i_node += i_start;
 
-    CUSTOMREAL pp1 = (tau_loc[i_j_k_] - tau_loc[imj_k_])/dp;
-    CUSTOMREAL pp2 = (tau_loc[ipj_k_] - tau_loc[i_j_k_])/dp;
+    //if (i_node >= loc_I*loc_J*loc_K) return;
 
-    CUSTOMREAL pt1 = (tau_loc[i_j_k_] - tau_loc[i_jmk_])/dt;
-    CUSTOMREAL pt2 = (tau_loc[i_jpk_] - tau_loc[i_j_k_])/dt;
+    if (changed[i_node] != true) return;
 
-    CUSTOMREAL pr1 = (tau_loc[i_j_k_] - tau_loc[i_j_km])/dr;
-    CUSTOMREAL pr2 = (tau_loc[i_j_kp] - tau_loc[i_j_k_])/dr;
+    CUSTOMREAL sigr = _1_CR*sqrt(fac_a[i_node])*T0v[i_node];
+    CUSTOMREAL sigt = _1_CR*sqrt(fac_b[i_node])*T0v[i_node];
+    CUSTOMREAL sigp = _1_CR*sqrt(fac_c[i_node])*T0v[i_node];
+    CUSTOMREAL coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
+
+    CUSTOMREAL pp1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[im1j__k__[i_node]], _1_CR/dp);
+    CUSTOMREAL pp2 = calc_stencil_1st(tau[ip1j__k__[i_node]],tau[i__j__k__[i_node]], _1_CR/dp);
+
+    CUSTOMREAL pt1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__jm1k__[i_node]], _1_CR/dt);
+    CUSTOMREAL pt2 = calc_stencil_1st(tau[i__jp1k__[i_node]],tau[i__j__k__[i_node]], _1_CR/dt);
+
+    CUSTOMREAL pr1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__j__km1[i_node]], _1_CR/dr);
+    CUSTOMREAL pr2 = calc_stencil_1st(tau[i__j__kp1[i_node]],tau[i__j__k__[i_node]], _1_CR/dr);
 
     // LF Hamiltonian
     CUSTOMREAL Htau = cuda_calc_LF_Hamiltonian(\
-                                               fac_a_loc, \
-                                               fac_b_loc, \
-                                               fac_c_loc, \
-                                               fac_f_loc, \
-                                               T0r_loc, \
-                                               T0t_loc, \
-                                               T0p_loc, \
-                                               T0v_loc, \
-                                               tau_loc, \
-                                               pp1, pp2, pt1, pt2, pr1, pr2, i_j_k_);
+                                               fac_a[i_node], \
+                                               fac_b[i_node], \
+                                               fac_c[i_node], \
+                                               fac_f[i_node], \
+                                               T0r[i_node], \
+                                               T0t[i_node], \
+                                               T0p[i_node], \
+                                               T0v[i_node], \
+                                               tau[i__j__k__[i_node]], \
+                                               pp1, pp2, pt1, pt2, pr1, pr2);
 
-    tau_loc[i_j_k_] += coe*(fun_loc[i_j_k_] - Htau) \
-                     + coe*(sigr*(pr2-pr1)/2.0 + sigt*(pt2-pt1)/2.0 + sigp*(pp2-pp1)/2.0);
+    tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
+                                  +(sigr*(pr2-pr1) \
+                                  + sigt*(pt2-pt1) \
+                                  + sigp*(pp2-pp1))/_2_CR);
 
 }
 
-
-__device__ void cuda_calculate_stencil_3rd_order( \
-                                            CUSTOMREAL* fac_a_loc, \
-                                            CUSTOMREAL* fac_b_loc, \
-                                            CUSTOMREAL* fac_c_loc, \
-                                            CUSTOMREAL* fac_f_loc, \
-                                            CUSTOMREAL* T0r_loc, \
-                                            CUSTOMREAL* T0t_loc, \
-                                            CUSTOMREAL* T0p_loc, \
-                                            CUSTOMREAL* T0v_loc, \
-                                            CUSTOMREAL* tau_loc, \
-                                            CUSTOMREAL* fun_loc, \
-                                            CUSTOMREAL dr, CUSTOMREAL dt, CUSTOMREAL dp, \
-                                            int i_j_k_, \
-                                            int ipj_k_, \
-                                            int imj_k_, \
-                                            int i_jpk_, \
-                                            int i_jmk_, \
-                                            int i_j_kp, \
-                                            int i_j_km, \
-                                            int ip2j_k_, \
-                                            int im2j_k_, \
-                                            int i_jp2k_, \
-                                            int i_jm2k_, \
-                                            int i_j_kp2, \
-                                            int i_j_km2, \
-                                            int i, int j, int k, \
-                                            int loc_I, int loc_J, int loc_K){
-
-    CUSTOMREAL sigr = 1.0*sqrt(fac_a_loc[i_j_k_])*T0v_loc[i_j_k_];
-    CUSTOMREAL sigt = 1.0*sqrt(fac_b_loc[i_j_k_])*T0v_loc[i_j_k_];
-    CUSTOMREAL sigp = 1.0*sqrt(fac_c_loc[i_j_k_])*T0v_loc[i_j_k_];
-    CUSTOMREAL coe  = 1.0/((sigr/dr)+(sigt/dt)+(sigp/dp));
+__global__ void cuda_do_sweep_level_kernel_3rd(\
+    const int i__j__k__[],\
+    const int ip1j__k__[],\
+    const int im1j__k__[],\
+    const int i__jp1k__[],\
+    const int i__jm1k__[],\
+    const int i__j__kp1[],\
+    const int i__j__km1[],\
+    const int ip2j__k__[],\
+    const int im2j__k__[],\
+    const int i__jp2k__[],\
+    const int i__jm2k__[],\
+    const int i__j__kp2[],\
+    const int i__j__km2[],\
+    const CUSTOMREAL fac_a[], \
+    const CUSTOMREAL fac_b[], \
+    const CUSTOMREAL fac_c[], \
+    const CUSTOMREAL fac_f[], \
+    const CUSTOMREAL T0v[], \
+    const CUSTOMREAL T0r[], \
+    const CUSTOMREAL T0t[], \
+    const CUSTOMREAL T0p[], \
+    const CUSTOMREAL fun[], \
+    const bool changed[], \
+    CUSTOMREAL tau[], \
+    const int loc_I, \
+    const int loc_J, \
+    const int loc_K, \
+    const CUSTOMREAL dr, \
+    const CUSTOMREAL dt, \
+    const CUSTOMREAL dp,  \
+    const int n_nodes_this_level, \
+    const int i_start \
+){
 
     CUSTOMREAL pp1, pp2, pt1, pt2, pr1, pr2;
-    CUSTOMREAL wp1, wp2, wt1, wt2, wr1, wr2;
 
-    CUSTOMREAL eps = 1.0e-12;
+    unsigned int i_node = (blockIdx.y * gridDim.x + blockIdx.x) * blockDim.x + threadIdx.x;
+
+    if (i_node >= n_nodes_this_level) return;
+
+    i_node += i_start;
+    //if (i_node >= loc_I*loc_J*loc_K) return;
+
+    if (changed[i_node] != true) return;
+
+    int k =  i__j__k__[i_node] / (loc_I*loc_J);
+    int j = (i__j__k__[i_node] - k*loc_I*loc_J)/loc_I;
+    int i =  i__j__k__[i_node] - k*loc_I*loc_J - j*loc_I;
+
+
+    CUSTOMREAL DRinv = _1_CR/dr;
+    CUSTOMREAL DTinv = _1_CR/dt;
+    CUSTOMREAL DPinv = _1_CR/dp;
+    CUSTOMREAL DRinv_half = DRinv*_0_5_CR;
+    CUSTOMREAL DTinv_half = DTinv*_0_5_CR;
+    CUSTOMREAL DPinv_half = DPinv*_0_5_CR;
+
+    CUSTOMREAL sigr = _1_CR*sqrt(fac_a[i_node])*T0v[i_node];
+    CUSTOMREAL sigt = _1_CR*sqrt(fac_b[i_node])*T0v[i_node];
+    CUSTOMREAL sigp = _1_CR*sqrt(fac_c[i_node])*T0v[i_node];
+    CUSTOMREAL coe  = _1_CR/((sigr/dr)+(sigt/dt)+(sigp/dp));
 
     // direction p
     if (i == 1) {
-        pp1 = (tau_loc[i_j_k_] \
-             - tau_loc[imj_k_]) / dp;
-
-        wp2 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[ipj_k_] \
-                                             +    tau_loc[ip2j_k_],2.0) ) \
-                               / (eps + pow(      tau_loc[imj_k_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                             +    tau_loc[ipj_k_],2.0) ),2.0) );
-
-        pp2 = (1.0 - wp2) * (         tau_loc[ipj_k_] \
-                              -       tau_loc[imj_k_]) / 2.0 / dp \
-                   + wp2  * ( - 3.0 * tau_loc[i_j_k_] \
-                              + 4.0 * tau_loc[ipj_k_] \
-                              -       tau_loc[ip2j_k_] ) / 2.0 / dp;
-
+        pp1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[im1j__k__[i_node]],DPinv);
+        pp2 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[ip1j__k__[i_node]],tau[ip2j__k__[i_node]],tau[im1j__k__[i_node]],DPinv_half, PLUS);
     } else if (i == loc_I-2) {
-        wp1 = 1.0/(1.0+2.0*pow((eps + pow(            tau_loc[i_j_k_] \
-                                                 -2.0*tau_loc[imj_k_] \
-                                                 +    tau_loc[im2j_k_],2.0) ) \
-                                   / (eps + pow(      tau_loc[ipj_k_] \
-                                                 -2.0*tau_loc[i_j_k_] \
-                                                 +    tau_loc[imj_k_],2.0) ),2.0) );
-
-        pp1 = (1.0 - wp1) * (           tau_loc[ipj_k_] \
-                                -       tau_loc[imj_k_]) / 2.0 / dp \
-                     + wp1  * ( + 3.0 * tau_loc[i_j_k_] \
-                                - 4.0 * tau_loc[imj_k_] \
-                                +       tau_loc[im2j_k_] ) / 2.0 / dp;
-
-        pp2 = (tau_loc[ipj_k_] - tau_loc[i_j_k_]) / dp;
-
+        pp1 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[im1j__k__[i_node]],tau[im2j__k__[i_node]],tau[ip1j__k__[i_node]],DPinv_half, MINUS);
+        pp2 = calc_stencil_1st(tau[ip1j__k__[i_node]],tau[i__j__k__[i_node]],DPinv);
     } else {
-        wp1 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[imj_k_] \
-                                             +    tau_loc[im2j_k_],2.0) ) \
-                               / (eps + pow(      tau_loc[ipj_k_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                             +    tau_loc[imj_k_],2.0) ),2.0) );
-
-        pp1 = (1.0 - wp1) * (         tau_loc[ipj_k_] \
-                              -       tau_loc[imj_k_]) / 2.0 / dp \
-                   + wp1  * ( + 3.0 * tau_loc[i_j_k_] \
-                              - 4.0 * tau_loc[imj_k_] \
-                              +       tau_loc[im2j_k_] ) / 2.0 / dp;
-
-        wp2 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[ipj_k_] \
-                                             +    tau_loc[ip2j_k_],2.0) ) \
-                             / (eps + pow(        tau_loc[imj_k_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                             +    tau_loc[ipj_k_],2.0) ),2.0) );
-
-        pp2 = (1.0 - wp2) * (           tau_loc[ipj_k_] \
-                                -       tau_loc[imj_k_]) / 2.0 / dp \
-                     + wp2  * ( - 3.0 * tau_loc[i_j_k_] \
-                                + 4.0 * tau_loc[ipj_k_] \
-                                -       tau_loc[ip2j_k_] ) / 2.0 / dp;
-
+        pp1 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[im1j__k__[i_node]],tau[im2j__k__[i_node]],tau[ip1j__k__[i_node]],DPinv_half, MINUS);
+        pp2 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[ip1j__k__[i_node]],tau[ip2j__k__[i_node]],tau[im1j__k__[i_node]],DPinv_half, PLUS);
     }
 
     // direction t
     if (j == 1) {
-        pt1 = (tau_loc[i_j_k_] \
-             - tau_loc[i_jmk_]) / dt;
-
-        wt2 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_jpk_] \
-                                             +    tau_loc[i_jp2k_],2.0) ) \
-                             / (eps + pow(        tau_loc[i_jmk_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_jpk_],2.0) ),2.0) );
-
-        pt2 = (1.0 - wt2) * (         tau_loc[i_jpk_] \
-                            -         tau_loc[i_jmk_]) / 2.0 / dt \
-                   + wt2  * ( - 3.0 * tau_loc[i_j_k_] \
-                              + 4.0 * tau_loc[i_jpk_] \
-                            -         tau_loc[i_jp2k_] ) / 2.0 / dt;
-
+        pt1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__jm1k__[i_node]],DTinv);
+        pt2 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__jp1k__[i_node]],tau[i__jp2k__[i_node]],tau[i__jm1k__[i_node]],DTinv_half, PLUS);
     } else if (j == loc_J-2) {
-        wt1 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_jmk_] \
-                                           +      tau_loc[i_jm2k_],2.0) ) \
-                             / (eps + pow(        tau_loc[i_jpk_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_jmk_],2.0) ),2.0) );
-
-        pt1 = (1.0 - wt1) * (           tau_loc[i_jpk_] \
-                                -       tau_loc[i_jmk_]) / 2.0 / dt \
-                     + wt1  * ( + 3.0 * tau_loc[i_j_k_] \
-                                - 4.0 * tau_loc[i_jmk_] \
-                                +       tau_loc[i_jm2k_] ) / 2.0 / dt;
-
-        pt2 = (tau_loc[i_jpk_] - tau_loc[i_j_k_]) / dt;
-
+        pt1 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__jm1k__[i_node]],tau[i__jm2k__[i_node]],tau[i__jp1k__[i_node]],DTinv_half, MINUS);
+        pt2 = calc_stencil_1st(tau[i__jp1k__[i_node]],tau[i__j__k__[i_node]],DTinv);
     } else {
-        wt1 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_jmk_] \
-                                             +    tau_loc[i_jm2k_],2.0) ) \
-                             / (eps + pow(        tau_loc[i_jpk_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                             +    tau_loc[i_jmk_],2.0) ),2.0) );
-
-        pt1 = (1.0 - wt1) * (           tau_loc[i_jpk_] \
-                                -       tau_loc[i_jmk_]) / 2.0 / dt \
-                     + wt1  * ( + 3.0 * tau_loc[i_j_k_] \
-                                - 4.0 * tau_loc[i_jmk_] \
-                                +       tau_loc[i_jm2k_] ) / 2.0 / dt;
-
-        wt2 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_jpk_] \
-                                           +      tau_loc[i_jp2k_],2.0) ) \
-                             / (eps + pow(        tau_loc[i_jmk_] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_jpk_],2.0) ),2.0) );
-
-        pt2 = (1.0 - wt2) * (           tau_loc[i_jpk_] \
-                                -       tau_loc[i_jmk_]) / 2.0 / dt \
-                     + wt2  * ( - 3.0 * tau_loc[i_j_k_] \
-                                + 4.0 * tau_loc[i_jpk_] \
-                                -       tau_loc[i_jp2k_] ) / 2.0 / dt;
-
+        pt1 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__jm1k__[i_node]],tau[i__jm2k__[i_node]],tau[i__jp1k__[i_node]],DTinv_half, MINUS);
+        pt2 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__jp1k__[i_node]],tau[i__jp2k__[i_node]],tau[i__jm1k__[i_node]],DTinv_half, PLUS);
     }
 
     // direction r
     if (k == 1) {
-        pr1 = (tau_loc[i_j_k_] \
-             - tau_loc[i_j_km]) / dr;
-
-        wr2 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_j_kp] \
-                                           +      tau_loc[i_j_kp2],2.0) ) \
-                             / (eps + pow(        tau_loc[i_j_km] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_j_kp],2.0) ),2.0) );
-
-        pr2 = (1.0 - wr2) * (           tau_loc[i_j_kp] \
-                              -         tau_loc[i_j_km]) / 2.0 / dr \
-                     + wr2  * ( - 3.0 * tau_loc[i_j_k_] \
-                                + 4.0 * tau_loc[i_j_kp] \
-                              -         tau_loc[i_j_kp2] ) / 2.0 / dr;
-
-    } else if (k == loc_K - 2) {
-        wr1 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_j_km] \
-                                           +      tau_loc[i_j_km2],2.0) ) \
-                             / (eps + pow(        tau_loc[i_j_kp] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_j_km],2.0) ),2.0) );
-
-        pr1 = (1.0 - wr1) * (            tau_loc[i_j_kp] \
-                              -          tau_loc[i_j_km]) / 2.0 / dr \
-                      + wr1  * ( + 3.0 * tau_loc[i_j_k_] \
-                                 - 4.0 * tau_loc[i_j_km] \
-                               +         tau_loc[i_j_km2] ) / 2.0 / dr;
-
-        pr2 = (tau_loc[i_j_kp] \
-             - tau_loc[i_j_k_]) / dr;
-
+        pr1 = calc_stencil_1st(tau[i__j__k__[i_node]],tau[i__j__km1[i_node]],DRinv);
+        pr2 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__j__kp1[i_node]],tau[i__j__kp2[i_node]],tau[i__j__km1[i_node]],DRinv_half, PLUS);
+    } else if (k == loc_K-2) {
+        pr1 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__j__km1[i_node]],tau[i__j__km2[i_node]],tau[i__j__kp1[i_node]],DRinv_half, MINUS);
+        pr2 = calc_stencil_1st(tau[i__j__kp1[i_node]],tau[i__j__k__[i_node]],DRinv);
     } else {
-        wr1 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_j_km] \
-                                           +      tau_loc[i_j_km2],2.0) ) \
-                             / (eps + pow(        tau_loc[i_j_kp] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_j_km],2.0) ),2.0) );
-
-        pr1 = (1.0 - wr1) * (           tau_loc[i_j_kp] \
-                              -         tau_loc[i_j_km]) / 2.0 / dr \
-                     + wr1  * ( + 3.0 * tau_loc[i_j_k_] \
-                                - 4.0 * tau_loc[i_j_km] \
-                              +         tau_loc[i_j_km2] ) / 2.0 / dr;
-
-        wr2 = 1.0/(1.0+2.0*pow((eps + pow(        tau_loc[i_j_k_] \
-                                             -2.0*tau_loc[i_j_kp] \
-                                           +      tau_loc[i_j_kp2],2.0) ) \
-                             / (eps + pow(        tau_loc[i_j_km] \
-                                             -2.0*tau_loc[i_j_k_] \
-                                           +      tau_loc[i_j_kp],2.0) ),2.0) );
-
-        pr2 = (1.0 - wr2) * (          tau_loc[i_j_kp] \
-                              -        tau_loc[i_j_km]) / 2.0 / dr \
-                     + wr2  * ( - 3.0 *tau_loc[i_j_k_] \
-                                + 4.0 *tau_loc[i_j_kp] \
-                              -        tau_loc[i_j_kp2] ) / 2.0 / dr;
-
+        pr1 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__j__km1[i_node]],tau[i__j__km2[i_node]],tau[i__j__kp1[i_node]],DRinv_half, MINUS);
+        pr2 = calc_stencil_3rd(tau[i__j__k__[i_node]],tau[i__j__kp1[i_node]],tau[i__j__kp2[i_node]],tau[i__j__km1[i_node]],DRinv_half, PLUS);
     }
 
-    // LF Hamiltonian
     CUSTOMREAL Htau = cuda_calc_LF_Hamiltonian(\
-                                               fac_a_loc, \
-                                               fac_b_loc, \
-                                               fac_c_loc, \
-                                               fac_f_loc, \
-                                               T0r_loc, \
-                                               T0t_loc, \
-                                               T0p_loc, \
-                                               T0v_loc, \
-                                               tau_loc, \
-                                               pp1, pp2, pt1, pt2, pr1, pr2, i_j_k_);
+                                               fac_a[i_node], \
+                                               fac_b[i_node], \
+                                               fac_c[i_node], \
+                                               fac_f[i_node], \
+                                               T0r[i_node], \
+                                               T0t[i_node], \
+                                               T0p[i_node], \
+                                               T0v[i_node], \
+                                               tau[i__j__k__[i_node]], \
+                                               pp1, pp2, pt1, pt2, pr1, pr2);
 
-
-    // update tau
-    tau_loc[i_j_k_] += coe * (fun_loc[i_j_k_] - Htau) \
-                     + coe * (sigr*(pr2-pr1)/2.0 + sigt*(pt2-pt1)/2.0 + sigp*(pp2-pp1)/2.0);
-
-
-}
-
-
-__global__ void cuda_do_sweep_level_kernel_1st(\
-                                           int i_level_in, \
-                                           int id_start_in, \
-                                           int actual_end_level, \
-                                           int* n_points_each_level, \
-                                           int r_dirc, int t_dirc, int p_dirc, \
-                                           int* i_id_all_level, \
-                                           int* j_id_all_level, \
-                                           int* k_id_all_level, \
-                                           int loc_I, int loc_J, int loc_K, \
-                                           int stencil_order, \
-                                           CUSTOMREAL* fac_a_loc, \
-                                           CUSTOMREAL* fac_b_loc, \
-                                           CUSTOMREAL* fac_c_loc, \
-                                           CUSTOMREAL* fun_loc, \
-                                           CUSTOMREAL* T0v_loc, \
-                                           CUSTOMREAL* tau_loc, \
-                                           CUSTOMREAL dr, CUSTOMREAL dt, CUSTOMREAL dp, \
-                                           CUSTOMREAL* fac_f_loc, \
-                                           CUSTOMREAL* T0r_loc, \
-                                           CUSTOMREAL* T0t_loc, \
-                                           CUSTOMREAL* T0p_loc, \
-                                           bool* is_changed){
-
-
-    // prepare for grid synchronization (60 Pascal or later version of CUDA device is required)
-    cooperative_groups::grid_group   grid = cooperative_groups::this_grid(); // use for grid synchronization
-    cooperative_groups::thread_block block = cooperative_groups::this_thread_block(); // use for thread synchronization
-
-    int id_start = 0; // offset
-    int i_level_start = 0;
-    bool unified_kernel = true;
-
-    if (i_level_in != 9999) {
-        actual_end_level = i_level_in;
-        i_level_start = i_level_in;
-        id_start = id_start_in;
-        unified_kernel = false;
-    }
-
-    for (int i_level = i_level_start; i_level <= actual_end_level; i_level++) {
-
-        if (unified_kernel) {
-            block.sync();
-            grid.sync();
-        }
-
-        int n_point_this_level = n_points_each_level[i_level];
-
-        int id_point = (blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x + threadIdx.x;
-
-        //grid.sync(); // synchronize grid
-        //printf("i_level id_point %d %d\n", i_level, id_point);
-        // continue if the point is out of the range of this level
-        if (id_point < n_point_this_level) {
-
-            int i = i_id_all_level[id_start+id_point];
-            int j = j_id_all_level[id_start+id_point];
-            int k = k_id_all_level[id_start+id_point];
-
-            //printf("id_point, id_start  , i, j, k, loc_I, loc_J, loc_K : %d %d %d, %d, %d, %d, %d, %d \n", id_point,id_start,i, j, k, loc_I, loc_J, loc_K);
-            //if (i >= loc_I-1|| j >= loc_J-1 || k >= loc_K-1 || i <= 1 || j <= 1 || k <= 1) return;
-
-            if (r_dirc < 0) k = loc_K-k; //kk-1;
-            else            k = k-1;  //nr-kk;
-            if (t_dirc < 0) j = loc_J-j; //jj-1;
-            else            j = j-1;  //nt-jj;
-            if (p_dirc < 0) i = loc_I-i; //ii-1;
-            else            i = i-1; //np-ii;
-
-            // indices
-            int i_j_k_ = I2V_cuda(i, j, k, loc_I, loc_J);
-            int ipj_k_ = I2V_cuda(i+1,j,k, loc_I, loc_J);
-            int imj_k_ = I2V_cuda(i-1,j,k, loc_I, loc_J);
-            int i_jpk_ = I2V_cuda(i,j+1,k, loc_I, loc_J);
-            int i_jmk_ = I2V_cuda(i,j-1,k, loc_I, loc_J);
-            int i_j_kp = I2V_cuda(i,j,k+1, loc_I, loc_J);
-            int i_j_km = I2V_cuda(i,j,k-1, loc_I, loc_J);
-
-            // return if is_changed is false
-            if (is_changed[i_j_k_]) {
-                // calculate stencil
-                // first order
-                cuda_calculate_stencil_1st_order( \
-                                                fac_a_loc, \
-                                                fac_b_loc, \
-                                                fac_c_loc, \
-                                                fac_f_loc, \
-                                                T0r_loc, \
-                                                T0t_loc, \
-                                                T0p_loc, \
-                                                T0v_loc, \
-                                                tau_loc, \
-                                                fun_loc, \
-                                                dr, dt, dp, \
-                i_j_k_, ipj_k_, imj_k_, i_jpk_, i_jmk_, i_j_kp, i_j_km);
-
-            } // end if is_changed
-
-            if(unified_kernel) id_start += n_point_this_level;
-
-        } // end if id_point < n_point_this_level
-        // synchronize threads
-        // synchronize grids
-
-    } // end for i_level
+    tau[i__j__k__[i_node]] += coe*((fun[i_node] - Htau) \
+                                  +(sigr*(pr2-pr1) \
+                                  + sigt*(pt2-pt1) \
+                                  + sigp*(pp2-pp1))/_2_CR);
 
 
 }
 
 
-__global__ void cuda_do_sweep_level_kernel_3rd(\
-                                           int i_level_in, \
-                                           int id_start_in, \
-                                           int actual_end_level, \
-                                           int* n_points_each_level, \
-                                           int r_dirc, int t_dirc, int p_dirc, \
-                                           int* i_id_all_level, \
-                                           int* j_id_all_level, \
-                                           int* k_id_all_level, \
-                                           int loc_I, int loc_J, int loc_K, \
-                                           int stencil_order, \
-                                           CUSTOMREAL* fac_a_loc, \
-                                           CUSTOMREAL* fac_b_loc, \
-                                           CUSTOMREAL* fac_c_loc, \
-                                           CUSTOMREAL* fun_loc, \
-                                           CUSTOMREAL* T0v_loc, \
-                                           CUSTOMREAL* tau_loc, \
-                                           CUSTOMREAL dr, CUSTOMREAL dt, CUSTOMREAL dp, \
-                                           CUSTOMREAL* fac_f_loc, \
-                                           CUSTOMREAL* T0r_loc, \
-                                           CUSTOMREAL* T0t_loc, \
-                                           CUSTOMREAL* T0p_loc, \
-                                           bool* is_changed){
-
-
-    // prepare for grid synchronization (60 Pascal or later version of CUDA device is required)
-    cooperative_groups::grid_group        grid  = cooperative_groups::this_grid(); // use for grid synchronization
-    cooperative_groups::thread_block      block = cooperative_groups::this_thread_block(); // use for thread synchronization
-    //cooperative_groups::coalesced_group active = cooperative_groups::coalesced_threads();
-
-    int id_start = 0; // offset
-    int i_level_start = 0;
-    bool unified_kernel = true;
-
-    if (i_level_in != 9999) {
-        actual_end_level = i_level_in;
-        i_level_start = i_level_in;
-        id_start = id_start_in;
-        unified_kernel = false;
-    }
-
-    for (int i_level = i_level_start; i_level <= actual_end_level; i_level++) {
-
-        if (unified_kernel) {
-            block.sync();
-            grid.sync();
-        }
-
-
-        int n_point_this_level = n_points_each_level[i_level];
-
-        int id_point = (blockIdx.y*gridDim.x+blockIdx.x)*blockDim.x + threadIdx.x;
-
-        //printf("i_level id_point %d %d\n", i_level, id_point);
-        // continue if the point is out of the range of this level
-        if (id_point < n_point_this_level) {
-
-            int i = i_id_all_level[id_start+id_point];
-            int j = j_id_all_level[id_start+id_point];
-            int k = k_id_all_level[id_start+id_point];
-
-            //printf("id_point, id_start  , i, j, k, loc_I, loc_J, loc_K : %d %d %d, %d, %d, %d, %d, %d \n", id_point,id_start,i, j, k, loc_I, loc_J, loc_K);
-            //if (i >= loc_I-1|| j >= loc_J-1 || k >= loc_K-1 || i <= 1 || j <= 1 || k <= 1) continue;
-            //if (i >= loc_I - 1|| j >= loc_J -1|| k >= loc_K -1 || i <= 0 || j <= 0 || k <= 0) continue;
-
-            if (r_dirc < 0) k = loc_K-k; //kk-1;
-            else            k = k-1;  //nr-kk;
-            if (t_dirc < 0) j = loc_J-j; //jj-1;
-            else            j = j-1;  //nt-jj;
-            if (p_dirc < 0) i = loc_I-i; //ii-1;
-            else            i = i-1; //np-ii;
-
-            // indices
-            int i_j_k_ = I2V_cuda(i, j, k, loc_I, loc_J);
-            int ipj_k_ = I2V_cuda(i+1,j,k, loc_I, loc_J);
-            int imj_k_ = I2V_cuda(i-1,j,k, loc_I, loc_J);
-            int i_jpk_ = I2V_cuda(i,j+1,k, loc_I, loc_J);
-            int i_jmk_ = I2V_cuda(i,j-1,k, loc_I, loc_J);
-            int i_j_kp = I2V_cuda(i,j,k+1, loc_I, loc_J);
-            int i_j_km = I2V_cuda(i,j,k-1, loc_I, loc_J);
-            int ip2j_k_ = I2V_cuda(i+2,j,k, loc_I, loc_J);
-            int im2j_k_ = I2V_cuda(i-2,j,k, loc_I, loc_J);
-            int i_jp2k_ = I2V_cuda(i,j+2,k, loc_I, loc_J);
-            int i_jm2k_ = I2V_cuda(i,j-2,k, loc_I, loc_J);
-            int i_j_kp2 = I2V_cuda(i,j,k+2, loc_I, loc_J);
-            int i_j_km2 = I2V_cuda(i,j,k-2, loc_I, loc_J);
-
-
-            // return if is_changed is false
-            if (is_changed[i_j_k_]) {
-                // calculate stencil
-                // third order
-                cuda_calculate_stencil_3rd_order( \
-                                                fac_a_loc, \
-                                                fac_b_loc, \
-                                                fac_c_loc, \
-                                                fac_f_loc, \
-                                                T0r_loc, \
-                                                T0t_loc, \
-                                                T0p_loc, \
-                                                T0v_loc, \
-                                                tau_loc, \
-                                                fun_loc, \
-                                                dr, dt, dp, \
-                i_j_k_, ipj_k_, imj_k_, i_jpk_, i_jmk_, i_j_kp, i_j_km, \
-                ip2j_k_, im2j_k_, i_jp2k_, i_jm2k_, i_j_kp2, i_j_km2, \
-                                                i,j,k, \
-                                                loc_I, loc_J, loc_K);
-            } // end if is_changed
-
-            if(unified_kernel) id_start += n_point_this_level;
-
-        } // end if id_point < n_point_this_level
-
-        // synchronize threads
-        // synchronize grids
-        //if (unified_kernel) {
-        //    block.sync();
-        //    grid.sync();
-        //}
-
-    } // end for i_level
-
-
-}
-
-
-
-
-__global__ void cuda_calc_boundary_nodes_kernel_ij( \
-    int loc_I, int loc_J, int loc_K, \
-    CUSTOMREAL* tau_loc) {
-
-    int i = blockIdx.x*blockDim.x+threadIdx.x;
-    int j = blockIdx.y*blockDim.y+threadIdx.y;
-
-    if (i >= loc_I || j >= loc_J || i < 0 || j < 0) return;
-
-    int i_j_0_ = I2V_cuda(i, j, 0, loc_I, loc_J);
-    int i_j_1_ = I2V_cuda(i, j, 1, loc_I, loc_J);
-    int i_j_2_ = I2V_cuda(i, j, 2, loc_I, loc_J);
-    int i_j_n1 = I2V_cuda(i, j, loc_K-1, loc_I, loc_J);
-    int i_j_n2 = I2V_cuda(i, j, loc_K-2, loc_I, loc_J);
-    int i_j_n3 = I2V_cuda(i, j, loc_K-3, loc_I, loc_J);
-
-    CUSTOMREAL v0 = 2.0 * tau_loc[i_j_1_] - tau_loc[i_j_2_];
-    CUSTOMREAL v1 = tau_loc[i_j_2_];
-    if (v0 > v1)
-        tau_loc[i_j_0_] = v0;
-    else
-        tau_loc[i_j_0_] = v1;
-
-
-    v0 = 2.0 * tau_loc[i_j_n2] - tau_loc[i_j_n3];
-    v1 = tau_loc[i_j_n3];
-    if (v0 > v1)
-        tau_loc[i_j_n1] = v0;
-    else
-        tau_loc[i_j_n1] = v1;
-}
-
-
-__global__ void cuda_calc_boundary_nodes_kernel_ik( \
-    int loc_I, int loc_J, int loc_K, \
-    CUSTOMREAL* tau_loc) {
-
-    int i = blockIdx.x*blockDim.x+threadIdx.x;
-    int k = blockIdx.z*blockDim.z+threadIdx.z;
-
-    if (i >= loc_I || k >= loc_K || i < 0 || k < 0) return;
-
-    int i_0_j_ = I2V_cuda(i, 0, k, loc_I, loc_J);
-    int i_1_j_ = I2V_cuda(i, 1, k, loc_I, loc_J);
-    int i_2_j_ = I2V_cuda(i, 2, k, loc_I, loc_J);
-    int i_n1_j_ = I2V_cuda(i, loc_J-1, k, loc_I, loc_J);
-    int i_n2_j_ = I2V_cuda(i, loc_J-2, k, loc_I, loc_J);
-    int i_n3_j_ = I2V_cuda(i, loc_J-3, k, loc_I, loc_J);
-
-    CUSTOMREAL v0 = 2.0 * tau_loc[i_1_j_] - tau_loc[i_2_j_];
-    CUSTOMREAL v1 = tau_loc[i_2_j_];
-    if (v0 > v1)
-        tau_loc[i_0_j_] = v0;
-    else
-        tau_loc[i_0_j_] = v1;
-
-    v0 = 2.0 * tau_loc[i_n2_j_] - tau_loc[i_n3_j_];
-    v1 = tau_loc[i_n3_j_];
-    if (v0 > v1)
-        tau_loc[i_n1_j_] = v0;
-    else
-        tau_loc[i_n1_j_] = v1;
-}
-
-
-__global__ void cuda_calc_boundary_nodes_kernel_jk(\
-    int loc_I, int loc_J, int loc_K, \
-    CUSTOMREAL* tau_loc) {
-
-    int j = blockIdx.y*blockDim.y+threadIdx.y;
-    int k = blockIdx.z*blockDim.z+threadIdx.z;
-
-    if (j >= loc_J || k >= loc_K || j < 0 || k < 0) return;
-
-    int _0_j_k_ = I2V_cuda(0, j, k, loc_I, loc_J);
-    int _1_j_k_ = I2V_cuda(1, j, k, loc_I, loc_J);
-    int _2_j_k_ = I2V_cuda(2, j, k, loc_I, loc_J);
-    int n1_j_k_ = I2V_cuda(loc_I-1, j, k, loc_I, loc_J);
-    int n2_j_k_ = I2V_cuda(loc_I-2, j, k, loc_I, loc_J);
-    int n3_j_k_ = I2V_cuda(loc_I-3, j, k, loc_I, loc_J);
-
-    CUSTOMREAL v0 = 2.0 * tau_loc[_1_j_k_] \
-                        - tau_loc[_2_j_k_];
-    CUSTOMREAL v1 = tau_loc[_2_j_k_];
-    if (v0 > v1)
-        tau_loc[_0_j_k_] = v0;
-    else
-        tau_loc[_0_j_k_] = v1;
-
-    v0 = 2.0 * tau_loc[n2_j_k_] \
-             - tau_loc[n3_j_k_];
-    v1 = tau_loc[n3_j_k_];
-    if (v0 > v1)
-        tau_loc[n1_j_k_] = v0;
-    else
-        tau_loc[n1_j_k_] = v1;
-}
-
-
-void cuda_calculate_boundary_nodes(Grid_on_device* grid) {
-    dim3 blocks, threads;
-
-    // i-j plane
-    get_thread_block_for_kbound(grid->loc_I_host, grid->loc_J_host, 1, &threads, &blocks);
-    cuda_calc_boundary_nodes_kernel_ij<<<blocks, threads>>>( \
-                                    grid->loc_I_host, grid->loc_J_host, grid->loc_K_host, \
-                                    grid->tau_loc_dev);
-
-    // i-k plane
-    get_thread_block_for_jbound(grid->loc_I_host, 1, grid->loc_K_host, &threads, &blocks);
-    cuda_calc_boundary_nodes_kernel_ik<<<blocks, threads>>>( \
-                                    grid->loc_I_host, grid->loc_J_host, grid->loc_K_host, \
-                                    grid->tau_loc_dev);
-
-    // j-k plane
-    get_thread_block_for_ibound(1, grid->loc_J_host, grid->loc_K_host, &threads, &blocks);
-    cuda_calc_boundary_nodes_kernel_jk<<<blocks, threads>>>( \
-                                    grid->loc_I_host, grid->loc_J_host, grid->loc_K_host, \
-                                    grid->tau_loc_dev);
-
-}
-
-
-void cuda_do_sweep_level(int iswp, Grid_on_device* grid_on_dv) {
-
-    int actual_end_level = grid_on_dv->ed_level_host - grid_on_dv->st_level_host;
-    //int start_point = 0; // count up for checking the start id of linearized level-point collection
-    int r_dirc, t_dirc, p_dirc;
-
-    // set sweep direction
-    if (iswp == 0) {
-        r_dirc = -1;
-        t_dirc = -1;
-        p_dirc = -1;
-    } else if (iswp == 1) {
-        r_dirc = -1;
-        t_dirc = -1;
-        p_dirc =  1;
-    } else if (iswp == 2) {
-        r_dirc = -1;
-        t_dirc =  1;
-        p_dirc = -1;
-    } else if (iswp == 3) {
-        r_dirc = -1;
-        t_dirc =  1;
-        p_dirc =  1;
-    } else if (iswp == 4) {
-        r_dirc =  1;
-        t_dirc = -1;
-        p_dirc = -1;
-    } else if (iswp == 5) {
-        r_dirc =  1;
-        t_dirc = -1;
-        p_dirc =  1;
-    } else if (iswp == 6) {
-        r_dirc =  1;
-        t_dirc =  1;
-        p_dirc = -1;
-    } else if (iswp == 7) {
-        r_dirc =  1;
-        t_dirc =  1;
-        p_dirc =  1;
-    }
-
-//
-// slow method : definition of threads grid
-//
-//
-// kernel launching by each level (slow by overheads for kernel launch)
-//
-//
-// launch kernel for each level
-// (this may be slower for an overhead to launch kernel each time,)
-// (but at the moment use this, because grid synchronization is not working well)
-
-    if (grid_on_dv->use_unified_kernel_host == false) {
-        // define thread and block size for this level
-        int block_size = CUDA_SWEEPING_BLOCK_SIZE;
-        int num_blocks_x, num_blocks_y;
-
-        get_block_xy(ceil(grid_on_dv->n_max_points_level_host/block_size+0.5), &num_blocks_x, &num_blocks_y);
-        dim3 grid_each(num_blocks_x,num_blocks_y);
-        dim3 threads_each(block_size,1,1);
-
-        int id_start = 0;
-
-        for (int i_level = 0; i_level <= actual_end_level; i_level++) {
-
-            //get_block_xy(ceil(grid_on_dv->n_points_per_level_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
-            //dim3 grid_each(num_blocks_x,num_blocks_y);
-            //dim3 threads_each(block_size,1,1);
-
-            void *kernelArgs[] = {\
-                                    &i_level, \
-                                    &id_start, \
-                                    &actual_end_level, \
-                                    &(grid_on_dv->n_points_per_level_dev), \
-                                    &r_dirc, &t_dirc, &p_dirc, \
-                                    &(grid_on_dv->i_id_all_level), \
-                                    &(grid_on_dv->j_id_all_level), \
-                                    &(grid_on_dv->k_id_all_level), \
-                                    &grid_on_dv->loc_I_host, &grid_on_dv->loc_J_host, &grid_on_dv->loc_K_host, \
-                                    &grid_on_dv->stencil_order_host, \
-                                    &(grid_on_dv->fac_a_loc_dev), \
-                                    &(grid_on_dv->fac_b_loc_dev), \
-                                    &(grid_on_dv->fac_c_loc_dev), \
-                                    &(grid_on_dv->fun_loc_dev), \
-                                    &(grid_on_dv->T0v_loc_dev), \
-                                    &(grid_on_dv->tau_loc_dev), \
-                                    &grid_on_dv->dr_host, &grid_on_dv->dt_host, &grid_on_dv->dp_host, \
-                                    &(grid_on_dv->fac_f_loc_dev), \
-                                    &(grid_on_dv->T0r_loc_dev  ), \
-                                    &(grid_on_dv->T0t_loc_dev  ), \
-                                    &(grid_on_dv->T0p_loc_dev  ), \
-                                    &(grid_on_dv->is_changed_dev) \
-                                    };
-            if (grid_on_dv->stencil_order_host == 3)
-                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_on_dv->level_streams[i_level]), 30001);
-            else if (grid_on_dv->stencil_order_host == 1)
-                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_on_dv->level_streams[i_level]), 30002);
-
-            id_start += grid_on_dv->n_points_per_level_host[i_level];
-
-            // sychronize the stream for this level
-            //cudaStreamSynchronize(grid_on_dv->level_streams[i_level]);
-
-        }
-
-    } else {
-
-        //
-        // launch kernel only once for all levels
-        //
-        int i_level_dummy = 9999;
-        int id_start_dummy = 9999;
-
-        void *kernelArgs[] = {\
-                                &i_level_dummy, \
-                                &id_start_dummy, \
-                                &actual_end_level, \
-                                &(grid_on_dv->n_points_per_level_dev), \
-                                &r_dirc, &t_dirc, &p_dirc, \
-                                &(grid_on_dv->i_id_all_level), \
-                                &(grid_on_dv->j_id_all_level), \
-                                &(grid_on_dv->k_id_all_level), \
-                                &grid_on_dv->loc_I_host, &grid_on_dv->loc_J_host, &grid_on_dv->loc_K_host, \
-                                &grid_on_dv->stencil_order_host, \
-                                &(grid_on_dv->fac_a_loc_dev), \
-                                &(grid_on_dv->fac_b_loc_dev), \
-                                &(grid_on_dv->fac_c_loc_dev), \
-                                &(grid_on_dv->fun_loc_dev), \
-                                &(grid_on_dv->T0v_loc_dev), \
-                                &(grid_on_dv->tau_loc_dev), \
-                                &grid_on_dv->dr_host, &grid_on_dv->dt_host, &grid_on_dv->dp_host, \
-                                &(grid_on_dv->fac_f_loc_dev), \
-                                &(grid_on_dv->T0r_loc_dev  ), \
-                                &(grid_on_dv->T0t_loc_dev  ), \
-                                &(grid_on_dv->T0p_loc_dev  ), \
-                                &(grid_on_dv->is_changed_dev) \
-                                };
-        if (grid_on_dv->stencil_order_host == 3)
-            print_CUDA_error_if_any(cudaLaunchCooperativeKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_on_dv->grid_sweep_host, grid_on_dv->threads_sweep_host, kernelArgs), 30001);
-        else if (grid_on_dv->stencil_order_host == 1)
-            print_CUDA_error_if_any(cudaLaunchCooperativeKernel((void*) cuda_do_sweep_level_kernel_1st, grid_on_dv->grid_sweep_host, grid_on_dv->threads_sweep_host, kernelArgs), 30002);
-
-    }
-
-
-    // update boundary
-    cuda_calculate_boundary_nodes(grid_on_dv);
-
-}
-
-
-__global__ void cuda_calc_T_plus_tau_kernel(\
-    int loc_I, int loc_J, int loc_K, \
-    CUSTOMREAL* T0v_loc, \
-    CUSTOMREAL* tau_loc, \
-    CUSTOMREAL* T_loc) {
-
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
-    int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-    // skip if the assigned ijk is greater than the grid size
-    if (i >= loc_I || j >= loc_J || k >= loc_K)
-        return;
-
-    int ijk = I2V_cuda(i,j,k, loc_I, loc_J);
-    T_loc[ijk] = T0v_loc[ijk] * tau_loc[ijk];
-
-}
-
-
-void cuda_calc_T_plus_tau(Grid_on_device* grid_on_dv) {
-    dim3 blocks, threads;
-    get_thread_block_for_3d_loop(grid_on_dv->loc_I_host, grid_on_dv->loc_J_host, grid_on_dv->loc_K_host, &threads, &blocks);
-
-    cuda_calc_T_plus_tau_kernel<<<blocks, threads>>>(grid_on_dv->loc_I_host, grid_on_dv->loc_J_host, grid_on_dv->loc_K_host, \
-                                                     grid_on_dv->T0v_loc_dev, \
-                                                     grid_on_dv->tau_loc_dev, \
-                                                     grid_on_dv->T_loc_dev);
-}
-
-
-void cuda_copy_T_loc_tau_loc_to_host(CUSTOMREAL* h_T_loc, CUSTOMREAL* h_tau_loc, Grid_on_device* grid) {
-    print_CUDA_error_if_any(copy_device_to_host_cv(h_T_loc,   grid->T_loc_dev,   grid->loc_I_host*grid->loc_J_host*grid->loc_K_host),20001);
-    print_CUDA_error_if_any(copy_device_to_host_cv(h_tau_loc, grid->tau_loc_dev, grid->loc_I_host*grid->loc_J_host*grid->loc_K_host),20002);
-}
-
-
-void initialize_sweep_params(Grid_on_device* grid_on_dv) {
-
-    // set threads and grid for 3d loop
-    get_thread_block_for_3d_loop(grid_on_dv->loc_I_host, grid_on_dv->loc_J_host, grid_on_dv->loc_K_host, &(grid_on_dv->threads_3d_full_incr_host), &(grid_on_dv->grid_3d_full_incr_host));
-
-    // for L1 calculation
-    int n_blocks_x, n_blocks_y;
-    int n_theads_per_block = CUDA_L1_BLOCK_SIZE;
-    int n_total_pt = grid_on_dv->loc_I_host*grid_on_dv->loc_J_host*grid_on_dv->loc_K_host;
-    get_block_xy(ceil(n_total_pt/n_theads_per_block+0.5), &n_blocks_x, &n_blocks_y);
-    grid_on_dv->grid_L1_host     = dim3(n_blocks_x, n_blocks_y, 1);
-    grid_on_dv->threads_L1_host  = dim3(n_theads_per_block, 1, 1);
-    grid_on_dv->n_blocks_L1_host = grid_on_dv->grid_L1_host.x * grid_on_dv->grid_L1_host.y;
+void initialize_sweep_params(Grid_on_device* grid_dv){
 
     // check the numBlockPerSm and set the block size accordingly
-    int numBlocksPerSm = 0;
-    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
+    //int numBlocksPerSm = 0;
+    //int block_size = CUDA_SWEEPING_BLOCK_SIZE;
 
-    int device;
-    cudaGetDevice(&device);
+    //int device;
+    //cudaGetDevice(&device);
 
-    cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, device);
-    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_3rd, CUDA_SWEEPING_BLOCK_SIZE, 0);
+    //cudaDeviceProp deviceProp;
+    //cudaGetDeviceProperties(&deviceProp, device);
+    //if(grid_dv->if_3rd_order)
+    //    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_3rd, CUDA_SWEEPING_BLOCK_SIZE, 0);
+    //else
+    //    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&numBlocksPerSm, cuda_do_sweep_level_kernel_1st, CUDA_SWEEPING_BLOCK_SIZE, 0);
 
-//    printf("numBlocksPerSm = %d\n", numBlocksPerSm);
-//    printf("multiprocessor_count = %d\n", deviceProp.multiProcessorCount);
-//    printf("max number of blocks for cooperative kernel launch: %d\n", deviceProp.multiProcessorCount*numBlocksPerSm);
-//    printf("max number of points on each level: %d\n", deviceProp.multiProcessorCount*numBlocksPerSm*deviceProp.maxThreadsPerBlock);
-//    printf("current number of points on each level: %d\n", grid_on_dv->n_max_points_level_host);
+    //int max_cooperative_blocks = deviceProp.multiProcessorCount*numBlocksPerSm;
 
-    int max_cooperative_blocks = deviceProp.multiProcessorCount*numBlocksPerSm;
+    //grid_dv->threads_sweep_host = dim3(block_size, 1, 1);
+    //grid_dv->grid_sweep_host = dim3(max_cooperative_blocks, 1, 1);
 
-    grid_on_dv->threads_sweep_host = dim3(block_size, 1, 1);
-    grid_on_dv->grid_sweep_host = dim3(max_cooperative_blocks, 1, 1);
+    // spawn streams
+    //grid_dv->level_streams = (cudaStream_t*)malloc(CUDA_MAX_NUM_STREAMS*sizeof(cudaStream_t));
+    //for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
+    grid_dv->level_streams = (cudaStream_t*)malloc(grid_dv->n_levels_host*sizeof(cudaStream_t));
+    for (int i = 0; i < grid_dv->n_levels_host; i++) {
+        //cudaStreamCreate(&(grid_dv->level_streams[i]));
+        // add null
+        //cudaStreamCreateWithFlags(&(grid_dv->level_streams[i]), cudaStreamNonBlocking);
+        grid_dv->level_streams[i] = nullptr;
 
-
-    // don't use unified kernel if the device has insufficient memory
-    // abort if max_cooperative_blocks*threads is smaller than the max number of points on each level
-    if (max_cooperative_blocks*block_size < grid_on_dv->n_max_points_level_host || FORCE_UNUSE_UNIFIED_KERNEL) {
-        //#TODO: for the case that the block size for cooperative launch is not enogh,
-        // we need to divide the large level int to smaller levels.
-
-//        printf("max_cooperative_blocks*block_size < grid_on_dv->n_max_points_level_host\n");
-//        printf("max_cooperative_blocks*block_size = %d\n", max_cooperative_blocks*block_size);
-//        printf("grid_on_dv->n_max_points_level_host = %d\n", grid_on_dv->n_max_points_level_host);
-        //printf("abort\n");
-        //exit(1);
-        // allocate level_streams
-        // required only for kernel launching for each level
-        //
-        int n_levels = grid_on_dv->ed_level_host - grid_on_dv->st_level_host + 1;
-        grid_on_dv->level_streams = (cudaStream_t*)malloc(n_levels*sizeof(cudaStream_t));
-        // spawn streams
-        for (int i = 0; i < n_levels; i++) {
-            cudaStreamCreate(&(grid_on_dv->level_streams[i]));
-        }
-        grid_on_dv->use_unified_kernel_host = false;
-    } else {
-        printf("use unified kernel for all levels\n");
-        grid_on_dv->use_unified_kernel_host = true;
     }
+
 
 }
 
 
 void finalize_sweep_params(Grid_on_device* grid_on_dv){
-    if (grid_on_dv->use_unified_kernel_host == false)
-        free(grid_on_dv->level_streams);
+    // destroy streams
+    //for (int i = 0; i < CUDA_MAX_NUM_STREAMS; i++) {
+    //for (int i = 0; i < grid_on_dv->n_levels_host; i++) {
+    //    cudaStreamDestroy(grid_on_dv->level_streams[i]);
+    //}
+
+    free(grid_on_dv->level_streams);
 }
 
 
-void cuda_run_iterate_forward(Grid_on_device* grid_on_dv, \
-                              CUSTOMREAL tolerance, \
-                              int max_iter, \
-                              int stencil_order_host) {
-    //
-    //printf("cuda_run_iterate_forward\n");
+void run_kernel(Grid_on_device* grid_dv, int const& iswp, int& i_node_offset, int const& i_level, \
+                dim3& grid_each, dim3& threads_each, int& n_nodes_this_level){
 
-    grid_on_dv->stencil_order_host = stencil_order_host;
+        int id_stream = i_level;// % CUDA_MAX_NUM_STREAMS;
 
-    initialize_sweep_params(grid_on_dv);
+        if (grid_dv->if_3rd_order) {
+           if (iswp == 0){
+                void *kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___0), \
+                    &(grid_dv->vv_ip1j__k___0), \
+                    &(grid_dv->vv_im1j__k___0), \
+                    &(grid_dv->vv_i__jp1k___0), \
+                    &(grid_dv->vv_i__jm1k___0), \
+                    &(grid_dv->vv_i__j__kp1_0), \
+                    &(grid_dv->vv_i__j__km1_0), \
+                    &(grid_dv->vv_ip2j__k___0), \
+                    &(grid_dv->vv_im2j__k___0), \
+                    &(grid_dv->vv_i__jp2k___0), \
+                    &(grid_dv->vv_i__jm2k___0), \
+                    &(grid_dv->vv_i__j__kp2_0), \
+                    &(grid_dv->vv_i__j__km2_0), \
+                    &(grid_dv->vv_fac_a_0    ), \
+                    &(grid_dv->vv_fac_b_0    ), \
+                    &(grid_dv->vv_fac_c_0    ), \
+                    &(grid_dv->vv_fac_f_0    ), \
+                    &(grid_dv->vv_T0v_0      ), \
+                    &(grid_dv->vv_T0r_0      ), \
+                    &(grid_dv->vv_T0t_0      ), \
+                    &(grid_dv->vv_T0p_0      ), \
+                    &(grid_dv->vv_fun_0      ), \
+                    &(grid_dv->vv_change_0   ), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
-    const int nswp = 8;
-    int iter_count = 0;
+            } else if (iswp == 1){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___1), \
+                    &(grid_dv->vv_i__jp1k___1), \
+                    &(grid_dv->vv_i__jm1k___1), \
+                    &(grid_dv->vv_i__j__kp1_1), \
+                    &(grid_dv->vv_i__j__km1_1), \
+                    &(grid_dv->vv_ip1j__k___1), \
+                    &(grid_dv->vv_im1j__k___1), \
+                    &(grid_dv->vv_ip2j__k___1), \
+                    &(grid_dv->vv_im2j__k___1), \
+                    &(grid_dv->vv_i__jp2k___1), \
+                    &(grid_dv->vv_i__jm2k___1), \
+                    &(grid_dv->vv_i__j__kp2_1), \
+                    &(grid_dv->vv_i__j__km2_1), \
+                    &(grid_dv->vv_fac_a_1    ), \
+                    &(grid_dv->vv_fac_b_1    ), \
+                    &(grid_dv->vv_fac_c_1    ), \
+                    &(grid_dv->vv_fac_f_1    ), \
+                    &(grid_dv->vv_T0v_1      ), \
+                    &(grid_dv->vv_T0r_1      ), \
+                    &(grid_dv->vv_T0t_1      ), \
+                    &(grid_dv->vv_T0p_1      ), \
+                    &(grid_dv->vv_fun_1      ), \
+                    &(grid_dv->vv_change_1   ), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
-    // calculate initial L1
-    cuda_calculate_L1(grid_on_dv);
+            } else if (iswp == 2){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___2), \
+                    &(grid_dv->vv_i__j__kp1_2), \
+                    &(grid_dv->vv_i__j__km1_2), \
+                    &(grid_dv->vv_ip1j__k___2), \
+                    &(grid_dv->vv_im1j__k___2), \
+                    &(grid_dv->vv_i__jp1k___2), \
+                    &(grid_dv->vv_i__jm1k___2), \
+                    &(grid_dv->vv_ip2j__k___2), \
+                    &(grid_dv->vv_im2j__k___2), \
+                    &(grid_dv->vv_i__jp2k___2), \
+                    &(grid_dv->vv_i__jm2k___2), \
+                    &(grid_dv->vv_i__j__kp2_2), \
+                    &(grid_dv->vv_i__j__km2_2), \
+                    &(grid_dv->vv_fac_a_2), \
+                    &(grid_dv->vv_fac_b_2), \
+                    &(grid_dv->vv_fac_c_2), \
+                    &(grid_dv->vv_fac_f_2), \
+                    &(grid_dv->vv_T0v_2), \
+                    &(grid_dv->vv_T0r_2), \
+                    &(grid_dv->vv_T0t_2), \
+                    &(grid_dv->vv_T0p_2), \
+                    &(grid_dv->vv_fun_2), \
+                    &(grid_dv->vv_change_2), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
-    // start iteration
-    while (true) {
-        // store tau to tau_old
-        cuda_tau2old_tau(grid_on_dv);
+            } else if (iswp == 3){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___3), \
+                    &(grid_dv->vv_ip1j__k___3), \
+                    &(grid_dv->vv_im1j__k___3), \
+                    &(grid_dv->vv_i__jp1k___3), \
+                    &(grid_dv->vv_i__jm1k___3), \
+                    &(grid_dv->vv_i__j__kp1_3), \
+                    &(grid_dv->vv_i__j__km1_3), \
+                    &(grid_dv->vv_ip2j__k___3), \
+                    &(grid_dv->vv_im2j__k___3), \
+                    &(grid_dv->vv_i__jp2k___3), \
+                    &(grid_dv->vv_i__jm2k___3), \
+                    &(grid_dv->vv_i__j__kp2_3), \
+                    &(grid_dv->vv_i__j__km2_3), \
+                    &(grid_dv->vv_fac_a_3), \
+                    &(grid_dv->vv_fac_b_3), \
+                    &(grid_dv->vv_fac_c_3), \
+                    &(grid_dv->vv_fac_f_3), \
+                    &(grid_dv->vv_T0v_3), \
+                    &(grid_dv->vv_T0r_3), \
+                    &(grid_dv->vv_T0t_3), \
+                    &(grid_dv->vv_T0p_3), \
+                    &(grid_dv->vv_fun_3), \
+                    &(grid_dv->vv_change_3), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
 
-        // do sweeping for all direction
-        for (int iswp = nswp-1; iswp > -1; iswp--) {
-            // do sweeping
-            cuda_do_sweep_level(iswp, grid_on_dv);
-            // copy the values of communication nodes to the ghost nodes of adjacent subdomains
-            cuda_send_recev_boundary_data(grid_on_dv);
+            } else if (iswp == 4){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___4), \
+                    &(grid_dv->vv_ip1j__k___4), \
+                    &(grid_dv->vv_im1j__k___4), \
+                    &(grid_dv->vv_i__jp1k___4), \
+                    &(grid_dv->vv_i__jm1k___4), \
+                    &(grid_dv->vv_i__j__kp1_4), \
+                    &(grid_dv->vv_i__j__km1_4), \
+                    &(grid_dv->vv_ip2j__k___4), \
+                    &(grid_dv->vv_im2j__k___4), \
+                    &(grid_dv->vv_i__jp2k___4), \
+                    &(grid_dv->vv_i__jm2k___4), \
+                    &(grid_dv->vv_i__j__kp2_4), \
+                    &(grid_dv->vv_i__j__km2_4), \
+                    &(grid_dv->vv_fac_a_4), \
+                    &(grid_dv->vv_fac_b_4), \
+                    &(grid_dv->vv_fac_c_4), \
+                    &(grid_dv->vv_fac_f_4), \
+                    &(grid_dv->vv_T0v_4), \
+                    &(grid_dv->vv_T0r_4), \
+                    &(grid_dv->vv_T0t_4), \
+                    &(grid_dv->vv_T0p_4), \
+                    &(grid_dv->vv_fun_4), \
+                    &(grid_dv->vv_change_4), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
+
+            } else if (iswp == 5) {
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___5), \
+                    &(grid_dv->vv_ip1j__k___5), \
+                    &(grid_dv->vv_im1j__k___5), \
+                    &(grid_dv->vv_i__jp1k___5), \
+                    &(grid_dv->vv_i__jm1k___5), \
+                    &(grid_dv->vv_i__j__kp1_5), \
+                    &(grid_dv->vv_i__j__km1_5), \
+                    &(grid_dv->vv_ip2j__k___5), \
+                    &(grid_dv->vv_im2j__k___5), \
+                    &(grid_dv->vv_i__jp2k___5), \
+                    &(grid_dv->vv_i__jm2k___5), \
+                    &(grid_dv->vv_i__j__kp2_5), \
+                    &(grid_dv->vv_i__j__km2_5), \
+                    &(grid_dv->vv_fac_a_5), \
+                    &(grid_dv->vv_fac_b_5), \
+                    &(grid_dv->vv_fac_c_5), \
+                    &(grid_dv->vv_fac_f_5), \
+                    &(grid_dv->vv_T0v_5), \
+                    &(grid_dv->vv_T0r_5), \
+                    &(grid_dv->vv_T0t_5), \
+                    &(grid_dv->vv_T0p_5), \
+                    &(grid_dv->vv_fun_5), \
+                    &(grid_dv->vv_change_5), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
+
+            } else if (iswp == 6) {
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___6), \
+                    &(grid_dv->vv_ip1j__k___6), \
+                    &(grid_dv->vv_im1j__k___6), \
+                    &(grid_dv->vv_i__jp1k___6), \
+                    &(grid_dv->vv_i__jm1k___6), \
+                    &(grid_dv->vv_i__j__kp1_6), \
+                    &(grid_dv->vv_i__j__km1_6), \
+                    &(grid_dv->vv_ip2j__k___6), \
+                    &(grid_dv->vv_im2j__k___6), \
+                    &(grid_dv->vv_i__jp2k___6), \
+                    &(grid_dv->vv_i__jm2k___6), \
+                    &(grid_dv->vv_i__j__kp2_6), \
+                    &(grid_dv->vv_i__j__km2_6), \
+                    &(grid_dv->vv_fac_a_6), \
+                    &(grid_dv->vv_fac_b_6), \
+                    &(grid_dv->vv_fac_c_6), \
+                    &(grid_dv->vv_fac_f_6), \
+                    &(grid_dv->vv_T0v_6), \
+                    &(grid_dv->vv_T0r_6), \
+                    &(grid_dv->vv_T0t_6), \
+                    &(grid_dv->vv_T0p_6), \
+                    &(grid_dv->vv_fun_6), \
+                    &(grid_dv->vv_change_6), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
+
+            } else {
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___7), \
+                    &(grid_dv->vv_ip1j__k___7), \
+                    &(grid_dv->vv_im1j__k___7), \
+                    &(grid_dv->vv_i__jp1k___7), \
+                    &(grid_dv->vv_i__jm1k___7), \
+                    &(grid_dv->vv_i__j__kp1_7), \
+                    &(grid_dv->vv_i__j__km1_7), \
+                    &(grid_dv->vv_ip2j__k___7), \
+                    &(grid_dv->vv_im2j__k___7), \
+                    &(grid_dv->vv_i__jp2k___7), \
+                    &(grid_dv->vv_i__jm2k___7), \
+                    &(grid_dv->vv_i__j__kp2_7), \
+                    &(grid_dv->vv_i__j__km2_7), \
+                    &(grid_dv->vv_fac_a_7), \
+                    &(grid_dv->vv_fac_b_7), \
+                    &(grid_dv->vv_fac_c_7), \
+                    &(grid_dv->vv_fac_f_7), \
+                    &(grid_dv->vv_T0v_7), \
+                    &(grid_dv->vv_T0r_7), \
+                    &(grid_dv->vv_T0t_7), \
+                    &(grid_dv->vv_T0p_7), \
+                    &(grid_dv->vv_fun_7), \
+                    &(grid_dv->vv_change_7), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_3rd, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
+
+            }
+        } else { // 1st order
+            if (iswp == 0){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___0), \
+                    &(grid_dv->vv_ip1j__k___0), \
+                    &(grid_dv->vv_im1j__k___0), \
+                    &(grid_dv->vv_i__jp1k___0), \
+                    &(grid_dv->vv_i__jm1k___0), \
+                    &(grid_dv->vv_i__j__kp1_0), \
+                    &(grid_dv->vv_i__j__km1_0), \
+                    &(grid_dv->vv_fac_a_0), \
+                    &(grid_dv->vv_fac_b_0), \
+                    &(grid_dv->vv_fac_c_0), \
+                    &(grid_dv->vv_fac_f_0), \
+                    &(grid_dv->vv_T0v_0), \
+                    &(grid_dv->vv_T0r_0), \
+                    &(grid_dv->vv_T0t_0), \
+                    &(grid_dv->vv_T0p_0), \
+                    &(grid_dv->vv_fun_0), \
+                    &(grid_dv->vv_change_0), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30000);
+
+            } else if (iswp == 1){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___1), \
+                    &(grid_dv->vv_i__jp1k___1), \
+                    &(grid_dv->vv_i__jm1k___1), \
+                    &(grid_dv->vv_i__j__kp1_1), \
+                    &(grid_dv->vv_i__j__km1_1), \
+                    &(grid_dv->vv_ip1j__k___1), \
+                    &(grid_dv->vv_im1j__k___1), \
+                    &(grid_dv->vv_fac_a_1), \
+                    &(grid_dv->vv_fac_b_1), \
+                    &(grid_dv->vv_fac_c_1), \
+                    &(grid_dv->vv_fac_f_1), \
+                    &(grid_dv->vv_T0v_1), \
+                    &(grid_dv->vv_T0r_1), \
+                    &(grid_dv->vv_T0t_1), \
+                    &(grid_dv->vv_T0p_1), \
+                    &(grid_dv->vv_fun_1), \
+                    &(grid_dv->vv_change_1), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30001);
+
+            } else if (iswp == 2){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___2), \
+                    &(grid_dv->vv_i__j__kp1_2), \
+                    &(grid_dv->vv_i__j__km1_2), \
+                    &(grid_dv->vv_ip1j__k___2), \
+                    &(grid_dv->vv_im1j__k___2), \
+                    &(grid_dv->vv_i__jp1k___2), \
+                    &(grid_dv->vv_i__jm1k___2), \
+                    &(grid_dv->vv_fac_a_2), \
+                    &(grid_dv->vv_fac_b_2), \
+                    &(grid_dv->vv_fac_c_2), \
+                    &(grid_dv->vv_fac_f_2), \
+                    &(grid_dv->vv_T0v_2), \
+                    &(grid_dv->vv_T0r_2), \
+                    &(grid_dv->vv_T0t_2), \
+                    &(grid_dv->vv_T0p_2), \
+                    &(grid_dv->vv_fun_2), \
+                    &(grid_dv->vv_change_2), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30002);
+
+            } else if (iswp == 3){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___3), \
+                    &(grid_dv->vv_ip1j__k___3), \
+                    &(grid_dv->vv_im1j__k___3), \
+                    &(grid_dv->vv_i__jp1k___3), \
+                    &(grid_dv->vv_i__jm1k___3), \
+                    &(grid_dv->vv_i__j__kp1_3), \
+                    &(grid_dv->vv_i__j__km1_3), \
+                    &(grid_dv->vv_fac_a_3), \
+                    &(grid_dv->vv_fac_b_3), \
+                    &(grid_dv->vv_fac_c_3), \
+                    &(grid_dv->vv_fac_f_3), \
+                    &(grid_dv->vv_T0v_3), \
+                    &(grid_dv->vv_T0r_3), \
+                    &(grid_dv->vv_T0t_3), \
+                    &(grid_dv->vv_T0p_3), \
+                    &(grid_dv->vv_fun_3), \
+                    &(grid_dv->vv_change_3), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30003);
+
+            } else if (iswp == 4){
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___4), \
+                    &(grid_dv->vv_ip1j__k___4), \
+                    &(grid_dv->vv_im1j__k___4), \
+                    &(grid_dv->vv_i__jp1k___4), \
+                    &(grid_dv->vv_i__jm1k___4), \
+                    &(grid_dv->vv_i__j__kp1_4), \
+                    &(grid_dv->vv_i__j__km1_4), \
+                    &(grid_dv->vv_fac_a_4), \
+                    &(grid_dv->vv_fac_b_4), \
+                    &(grid_dv->vv_fac_c_4), \
+                    &(grid_dv->vv_fac_f_4), \
+                    &(grid_dv->vv_T0v_4), \
+                    &(grid_dv->vv_T0r_4), \
+                    &(grid_dv->vv_T0t_4), \
+                    &(grid_dv->vv_T0p_4), \
+                    &(grid_dv->vv_fun_4), \
+                    &(grid_dv->vv_change_4), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30004);
+
+            } else if (iswp == 5) {
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___5), \
+                    &(grid_dv->vv_ip1j__k___5), \
+                    &(grid_dv->vv_im1j__k___5), \
+                    &(grid_dv->vv_i__jp1k___5), \
+                    &(grid_dv->vv_i__jm1k___5), \
+                    &(grid_dv->vv_i__j__kp1_5), \
+                    &(grid_dv->vv_i__j__km1_5), \
+                    &(grid_dv->vv_fac_a_5), \
+                    &(grid_dv->vv_fac_b_5), \
+                    &(grid_dv->vv_fac_c_5), \
+                    &(grid_dv->vv_fac_f_5), \
+                    &(grid_dv->vv_T0v_5), \
+                    &(grid_dv->vv_T0r_5), \
+                    &(grid_dv->vv_T0t_5), \
+                    &(grid_dv->vv_T0p_5), \
+                    &(grid_dv->vv_fun_5), \
+                    &(grid_dv->vv_change_5), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30005);
+
+            } else if (iswp == 6) {
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___6), \
+                    &(grid_dv->vv_ip1j__k___6), \
+                    &(grid_dv->vv_im1j__k___6), \
+                    &(grid_dv->vv_i__jp1k___6), \
+                    &(grid_dv->vv_i__jm1k___6), \
+                    &(grid_dv->vv_i__j__kp1_6), \
+                    &(grid_dv->vv_i__j__km1_6), \
+                    &(grid_dv->vv_fac_a_6), \
+                    &(grid_dv->vv_fac_b_6), \
+                    &(grid_dv->vv_fac_c_6), \
+                    &(grid_dv->vv_fac_f_6), \
+                    &(grid_dv->vv_T0v_6), \
+                    &(grid_dv->vv_T0r_6), \
+                    &(grid_dv->vv_T0t_6), \
+                    &(grid_dv->vv_T0p_6), \
+                    &(grid_dv->vv_fun_6), \
+                    &(grid_dv->vv_change_6), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30006);
+
+
+            } else {
+                void* kernelArgs[]{\
+                    &(grid_dv->vv_i__j__k___7), \
+                    &(grid_dv->vv_ip1j__k___7), \
+                    &(grid_dv->vv_im1j__k___7), \
+                    &(grid_dv->vv_i__jp1k___7), \
+                    &(grid_dv->vv_i__jm1k___7), \
+                    &(grid_dv->vv_i__j__kp1_7), \
+                    &(grid_dv->vv_i__j__km1_7), \
+                    &(grid_dv->vv_fac_a_7    ), \
+                    &(grid_dv->vv_fac_b_7    ), \
+                    &(grid_dv->vv_fac_c_7    ), \
+                    &(grid_dv->vv_fac_f_7    ), \
+                    &(grid_dv->vv_T0v_7      ), \
+                    &(grid_dv->vv_T0r_7      ), \
+                    &(grid_dv->vv_T0t_7      ), \
+                    &(grid_dv->vv_T0p_7      ), \
+                    &(grid_dv->vv_fun_7      ), \
+                    &(grid_dv->vv_change_7   ), \
+                    &(grid_dv->tau), \
+                    &(grid_dv->loc_I_host), \
+                    &(grid_dv->loc_J_host), \
+                    &(grid_dv->loc_K_host), \
+                    &(grid_dv->dr_host), \
+                    &(grid_dv->dt_host), \
+                    &(grid_dv->dp_host), \
+                    &n_nodes_this_level, \
+                    &i_node_offset \
+                };
+
+                print_CUDA_error_if_any(cudaLaunchKernel((void*) cuda_do_sweep_level_kernel_1st, grid_each, threads_each, kernelArgs, 0, grid_dv->level_streams[id_stream]), 30007);
+
+            }
         }
 
-        // calculate the obj for this subdomain and mpi reduce
-        cuda_calculate_L1(grid_on_dv);
+        // synchronize all streams
+        //print_CUDA_error_if_any(cudaStreamSynchronize(grid_dv->level_streams[id_stream]), 30008);
+}
 
-        // check convergence
-        if (grid_on_dv->L1_host < tolerance) {
-            goto iter_end;
-        } else if (iter_count >= max_iter) {
-            goto iter_end;
-        } else {
-            //if (grid_on_dv->myrank_host== 0)
-            //    printf("iter_count, L1 , tolerance : %d, %5.16f, %5.16f\n", iter_count, grid_on_dv->L1_host, tolerance);
-            iter_count++;
-        }
+
+// this function calculate all levels of one single sweep direction
+void cuda_run_iteration_forward(Grid_on_device* grid_dv, int const& iswp){
+
+    initialize_sweep_params(grid_dv);
+
+    int block_size = CUDA_SWEEPING_BLOCK_SIZE;
+    int num_blocks_x, num_blocks_y;
+    int i_node_offset=0;
+    //get_block_xy(ceil(grid_dv->n_nodes_max_host/block_size+0.5), &num_blocks_x, &num_blocks_y);
+    //dim3 grid_each(num_blocks_x, num_blocks_y);
+    //dim3 threads_each(block_size, 1, 1);
+
+    for (size_t i_level = 0; i_level < grid_dv->n_levels_host; i_level++){
+        get_block_xy(ceil(grid_dv->n_nodes_on_levels_host[i_level]/block_size+0.5), &num_blocks_x, &num_blocks_y);
+        dim3 grid_each(num_blocks_x, num_blocks_y);
+        dim3 threads_each(block_size, 1, 1);
+
+        run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_each, threads_each, grid_dv->n_nodes_on_levels_host[i_level]);
+        //run_kernel(grid_dv, iswp, i_node_offset, i_level, grid_dv->grid_sweep_host, grid_dv->threads_sweep_host, grid_dv->n_nodes_on_levels_host[i_level]);
+
+        i_node_offset += grid_dv->n_nodes_on_levels_host[i_level];
     }
 
-iter_end:
-    // after convergence
-    printf("GPU iteration end, iter_count, L1 = %d, %5.16f\n", iter_count, grid_on_dv->L1_host);
+    finalize_sweep_params(grid_dv);
 
-    // calculate T
-    cuda_calc_T_plus_tau(grid_on_dv);
-
-    finalize_sweep_params(grid_on_dv);
+    // check memory leak
+    //print_memory_usage();
 
 }

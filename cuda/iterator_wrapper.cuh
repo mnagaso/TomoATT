@@ -1,24 +1,27 @@
 #ifndef ITERATOR_WRAPPER_CUH
 #define ITERATOR_WRAPPER_CUH
 
+#include <memory>
+#include <iostream>
+#include <algorithm>
+
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
-#include <cooperative_groups.h>
-//#include <cooperative_groups/reduce.h>
 
 #include <stdio.h>
-//#include "mpi_funcs.h"
 #include "grid_wrapper.cuh"
 #include "cuda_utils.cuh"
 
-//namespace cg = cooperative_groups;
 
+//void cuda_do_sweep_level_kernel_3rd();
+//void cuda_do_sweep_level_kernel_1st();
 
-void cuda_run_iterate_forward(Grid_on_device*, CUSTOMREAL, int, int);
+void run_kernel(Grid_on_device*, int const&, int const&, int const&, dim3&, dim3&, int const&);
 
-void cuda_copy_T_loc_tau_loc_to_host(CUSTOMREAL* h_T_loc, CUSTOMREAL* h_tau_loc, Grid_on_device* grid);
-
+void initialize_sweep_params(Grid_on_device*);
+void finalize_sweep_params(Grid_on_device*);
+void cuda_run_iteration_forward(Grid_on_device*, int const&);
 
 
 #endif // ITERATOR_WRAPPER_CUH

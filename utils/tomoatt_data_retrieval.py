@@ -4,10 +4,10 @@ import numpy
 import h5py
 
 
-# output arrays has one overlapping layer between adjusted subdomains
-# this function will skip those layers and reconstruct the entire grid dataset
 def get_data_from_h5(fpath, fpath_grid, dataset_name, nr_glob, nt_glob, np_glob, ndiv_r, ndiv_t, ndiv_p, verbose=False):
     """
+    Output arrays has one overlapping layer between adjusted subdomains.
+    This function will skip those layers and reconstruct the entire grid dataset.
 
     fpath: path to field data file
     fpaht_grid: path to grid data file

@@ -21,8 +21,8 @@
 #include "io.h"
 
 #ifdef USE_CUDA
-#include "cuda_constants.cuh"
-#include "grid_wrapper.cuh"
+#include <cuda_runtime.h>
+#include <cuda.h>
 #endif
 
 class Grid {
@@ -37,7 +37,7 @@ public:
     // set factors
     void setup_factors(Source &);
     // calculate initial fields T0 T0r T0t T0p and initialize tau
-    void initialize_fields(Source &);
+    void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
     void initialize_fields_teleseismic(Source &, SrcRec&);
     // calculate L1 and Linf diff (sum of value change on the nodes)
@@ -68,13 +68,18 @@ public:
     void initialize_kernels();               // fill 0 to kernels
 
     //
-    // getter
+    // getters
     //
 
     int get_ngrid_total_excl_ghost(){return loc_nnodes;};
     int get_nelms_total_excl_ghost(){return loc_nelms;};
     int get_offset_nnodes()         {return offset_nnodes;};
     int get_offset_elms()           {return offset_nelms;};
+    void get_offsets_3d(int* arr) {
+        arr[0] = offset_k;
+        arr[1] = offset_j;
+        arr[2] = offset_i;
+    };
 
     int get_ngrid_total_vis()  {return loc_nnodes_vis;};
     int get_nelms_total_vis()  {return loc_nelms_vis;};
@@ -95,28 +100,28 @@ public:
     CUSTOMREAL* get_nodes_coords_r(){return r_loc_3d;}; // r
     int*        get_proc_dump()     {return my_proc_dump;}; // array storing the process ids
 
-    CUSTOMREAL* get_true_solution(){return get_array_for_vis(u_loc);}; // true solution
-    CUSTOMREAL* get_fun()          {return get_array_for_vis(fun_loc);}; //
-    CUSTOMREAL* get_xi()           {return get_array_for_vis(xi_loc);}; //
-    CUSTOMREAL* get_eta()          {return get_array_for_vis(eta_loc);}; //
-    CUSTOMREAL* get_a()            {return get_array_for_vis(fac_a_loc);}; //
-    CUSTOMREAL* get_b()            {return get_array_for_vis(fac_b_loc);}; //
-    CUSTOMREAL* get_c()            {return get_array_for_vis(fac_c_loc);}; //
-    CUSTOMREAL* get_f()            {return get_array_for_vis(fac_f_loc);}; //
-    //CUSTOMREAL* get_true_velo()    {return get_array_for_vis(velo_loc);}; // true velocity field
-    CUSTOMREAL* get_T0v()          {return get_array_for_vis(T0v_loc);}; // initial T0
-    CUSTOMREAL* get_u()            {return get_array_for_vis(u_loc);}; // current solution
-    CUSTOMREAL* get_tau()          {return get_array_for_vis(tau_loc);}; // current tau
-    CUSTOMREAL* get_T()            {return get_array_for_vis(T_loc);};
+    CUSTOMREAL* get_true_solution(){return get_array_for_vis(u_loc,     false);}; // true solution
+    CUSTOMREAL* get_fun()          {return get_array_for_vis(fun_loc,   false);}; //
+    CUSTOMREAL* get_xi()           {return get_array_for_vis(xi_loc,    false);}; //
+    CUSTOMREAL* get_eta()          {return get_array_for_vis(eta_loc,   false);}; //
+    CUSTOMREAL* get_a()            {return get_array_for_vis(fac_a_loc, false);}; //
+    CUSTOMREAL* get_b()            {return get_array_for_vis(fac_b_loc, false);}; //
+    CUSTOMREAL* get_c()            {return get_array_for_vis(fac_c_loc, false);}; //
+    CUSTOMREAL* get_f()            {return get_array_for_vis(fac_f_loc, false);}; //
+    CUSTOMREAL* get_vel()          {return get_array_for_vis(fun_loc,   true);}; // true velocity field
+    CUSTOMREAL* get_T0v()          {return get_array_for_vis(T0v_loc,   false);}; // initial T0
+    CUSTOMREAL* get_u()            {return get_array_for_vis(u_loc,     false);}; // current solution
+    CUSTOMREAL* get_tau()          {return get_array_for_vis(tau_loc,   false);}; // current tau
+    CUSTOMREAL* get_T()            {return get_array_for_vis(T_loc,     false);};
     CUSTOMREAL* get_residual()     { calc_residual();
-                                     return get_array_for_vis(u_loc);}; // calculate residual (T_loc over written!!)
-    CUSTOMREAL* get_Tadj()         {return get_array_for_vis(Tadj_loc);}; // adjoint solution
-    CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc);}; // Ks
-    CUSTOMREAL* get_Kxi()          {return get_array_for_vis(Kxi_loc);}; // Kxi
-    CUSTOMREAL* get_Keta()         {return get_array_for_vis(Keta_loc);}; // Keta
-    CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc);}; // Ks_update
-    CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc);}; // Kxi_update
-    CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc);}; // Keta_update
+                                     return get_array_for_vis(u_loc,   false);}; // calculate residual (T_loc over written!!)
+    CUSTOMREAL* get_Tadj()         {return get_array_for_vis(Tadj_loc, false);}; // adjoint solution
+    CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc,   false);}; // Ks
+    CUSTOMREAL* get_Kxi()          {return get_array_for_vis(Kxi_loc,         false);}; // Kxi
+    CUSTOMREAL* get_Keta()         {return get_array_for_vis(Keta_loc,        false);}; // Keta
+    CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc,   false);}; // Ks_update
+    CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc,  false);}; // Kxi_update
+    CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc, false);}; // Keta_update
 
     // get physical parameters
     CUSTOMREAL get_r_min()       {return r_min;};
@@ -152,9 +157,9 @@ public:
     int get_offset_k_excl_gl()           {return offset_k;};
 
 
-    CUSTOMREAL get_delta_lon_inv() {return dinv_p;}
-    CUSTOMREAL get_delta_lat_inv() {return dinv_t;}
-    CUSTOMREAL get_delta_r_inv()   {return dinv_r;}
+    // CUSTOMREAL get_delta_lon_inv() {return dinv_p;}
+    // CUSTOMREAL get_delta_lat_inv() {return dinv_t;}
+    // CUSTOMREAL get_delta_r_inv()   {return dinv_r;}
 
     // return index of the first node excluding ghost layer
     int get_k_start_loc()        {return k_start_loc;};
@@ -180,6 +185,12 @@ public:
     void back_up_fun_xi_eta_bcf();
     // restore fun xi eta
     void restore_fun_xi_eta_bcf();
+
+    // write out inversion grid file
+    void write_inversion_grid_file();
+
+private:
+    std::string inversion_grid_file_out;     // inversion grid file to be output
 
 private:
     //
@@ -209,7 +220,7 @@ private:
 
     // neighbors domain_id (-1 if no neighbor)
     // order of directions: -i,+i,-j,+j,-k,+k
-    std::vector<int> neighbors_id{-1, -1, -1, -1, -1, -1};
+    std::vector<int> neighbors_id{-1,-1,-1,-1,-1,-1};
     // neighbors domain_id line and point contact
     // ij plane nn, np, pn, pp
     std::vector<int> neighbors_id_ij{-1,-1,-1,-1};
@@ -225,8 +236,6 @@ private:
 
     // number of points on each boundary surface
     int n_grid_bound_i, n_grid_bound_j, n_grid_bound_k;
-    int n_grid_bound_i_inv, n_grid_bound_j_inv, n_grid_bound_k_inv;
-
 
     // mpi parameters
     int offset_nnodes=0, offset_nelms=0;
@@ -243,7 +252,6 @@ private:
     int loc_nnodes_vis, loc_nelms_vis;
     int *nnodes_vis, *nelms_vis;
     int offset_nnodes_vis=0, offset_nelms_vis=0;
-    CUSTOMREAL *vis_data;
 
 public:
     // 3d arrays
@@ -271,7 +279,10 @@ public:
     CUSTOMREAL *Ks_grad_store_loc, *Keta_grad_store_loc, *Kxi_grad_store_loc;
     CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc;
     CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
+    CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
     CUSTOMREAL *Ks_regularization_penalty_loc, *Keta_regularization_penalty_loc, *Kxi_regularization_penalty_loc;
+    // tmp array for file IO
+    CUSTOMREAL *vis_data;
 
 private:
     // windows for shm arrays
@@ -283,13 +294,13 @@ private:
     MPI_Win win_xi_loc, win_eta_loc, win_zeta_loc;
     MPI_Win win_r_loc_1d, win_t_loc_1d, win_p_loc_1d;
 
-    CUSTOMREAL *x_loc_3d; // local (lon) x (global position)
-    CUSTOMREAL *y_loc_3d; // local (lat) y (global position)
-    CUSTOMREAL *z_loc_3d; // local (r  ) z (global position)
-    CUSTOMREAL *p_loc_3d; // local lon (x) (global position)
-    CUSTOMREAL *t_loc_3d; // local lat (y) (global position)
-    CUSTOMREAL *r_loc_3d; // local r   (z) (global position)
-    int        *elms_conn; // connectivity array
+    CUSTOMREAL *x_loc_3d;     // local (lon) x (global position)
+    CUSTOMREAL *y_loc_3d;     // local (lat) y (global position)
+    CUSTOMREAL *z_loc_3d;     // local (r  ) z (global position)
+    CUSTOMREAL *p_loc_3d;     // local lon (x) (global position)
+    CUSTOMREAL *t_loc_3d;     // local lat (y) (global position)
+    CUSTOMREAL *r_loc_3d;     // local r   (z) (global position)
+    int        *elms_conn;    // connectivity array
     int        *my_proc_dump; // dump process id for each node  DEBUG
 public:
     // 1d arrays for coordinates, storing only subdomain's local coordinates
@@ -387,6 +398,7 @@ private:
     // anisotropic factors
     CUSTOMREAL a0, b0, c0, f0, fun0;
 
+    CUSTOMREAL source_width;
     //
     // member functions
     //
@@ -396,9 +408,11 @@ private:
     void shm_memory_allocation();            // allocate memory for shared memory
     void shm_memory_deallocation();          // deallocate memory from shared memory
 
-    CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr); // get array for visualization
-
+    CUSTOMREAL *get_array_for_vis(CUSTOMREAL *arr, bool);  // get array for visualization
 public:
+    void get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_field);  // get array for 3d output
+    void        set_array_from_vis(CUSTOMREAL *arr); // set vis array to local array
+
     // finalize the Time table
     void calc_T_plus_tau();
 private:
@@ -422,18 +436,6 @@ private:
     //const bool store_cartesian = true; // store both cartesian and spherical coordinates
     // vtk format cell type
     const int cell_type = 9;
-
-
-public:
-    //
-    // gpu grid object
-    //
-#ifdef USE_CUDA
-    Grid_on_device *gpu_grid;
-#endif
-    void initialize_gpu_grid(std::vector<std::vector<std::vector<int>>>&);
-    void reinitialize_gpu_grid();
-
 
 
 };

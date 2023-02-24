@@ -216,7 +216,7 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // inversion setup
     // check if inversion grids are needed
-    if (IP.get_do_inversion()==1){
+    if (IP.get_run_mode()==1){
         inverse_flag = true;
         setup_inversion_grids(IP);
     } else {
@@ -287,31 +287,35 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // debug output
     stdout_by_main("domain decomposition initialization end.");
+
+
     for (int i = 0; i < nprocs; i++) {
         synchronize_all_inter();
 
-        if (i == myrank) {
-            std::cout << "--- myrank: ---" << myrank << std::endl;
+        if (id_sim == 0){
+            if (i == myrank) {
+                std::cout << "--- myrank: ---" << myrank << std::endl;
 
-            if (i == 0) {
-                std::cout << "ndiv_i j k : "  << ndiv_i  << " " << ndiv_j  << " " << ndiv_k  << std::endl;
-                std::cout << "ngrid_i j k : " << ngrid_i << " " << ngrid_j << " " << ngrid_k << std::endl;
-            }
+                if (i == 0) {
+                    std::cout << "ndiv_i j k : "  << ndiv_i  << " " << ndiv_j  << " " << ndiv_k  << std::endl;
+                    std::cout << "ngrid_i j k : " << ngrid_i << " " << ngrid_j << " " << ngrid_k << std::endl;
+                }
 
-            std::cout << "domain_i j k: "          << domain_i << " " << domain_j << " " << domain_k << std::endl;
-            std::cout << "loc_I J K: "             << loc_I << " " << loc_J << " " << loc_K << std::endl;
-            std::cout << "loc_I_excl_ghost J_excl_ghost K_excl_ghost: " << loc_I_excl_ghost << " " << loc_J_excl_ghost << " " << loc_K_excl_ghost << std::endl;
-            std::cout << "i_start_loc i_end_loc: " << i_start_loc << " " << i_end_loc << std::endl;
-            std::cout << "j_start_loc j_end_loc: " << j_start_loc << " " << j_end_loc << std::endl;
-            std::cout << "k_start_loc k_end_loc: " << k_start_loc << " " << k_end_loc << std::endl;
-            std::cout << "offset_nnodes offset_nelms: " << offset_nnodes << " " << offset_nelms << std::endl;
-            std::cout << "n total local grids: "   << loc_I*loc_J*loc_K << "   max vector elm id:  " << I2V(loc_I-1,loc_J-1,loc_K-1) << std::endl;
-            // print neighbors_id
-            std::cout << "neighbors_id: ";
-            for (int i = 0; i < 6; i++) {
-                std::cout << neighbors_id[i] << " ";
+                std::cout << "domain_i j k: "          << domain_i << " " << domain_j << " " << domain_k << std::endl;
+                std::cout << "loc_I J K: "             << loc_I << " " << loc_J << " " << loc_K << std::endl;
+                std::cout << "loc_I_excl_ghost J_excl_ghost K_excl_ghost: " << loc_I_excl_ghost << " " << loc_J_excl_ghost << " " << loc_K_excl_ghost << std::endl;
+                std::cout << "i_start_loc i_end_loc: " << i_start_loc << " " << i_end_loc << std::endl;
+                std::cout << "j_start_loc j_end_loc: " << j_start_loc << " " << j_end_loc << std::endl;
+                std::cout << "k_start_loc k_end_loc: " << k_start_loc << " " << k_end_loc << std::endl;
+                std::cout << "offset_nnodes offset_nelms: " << offset_nnodes << " " << offset_nelms << std::endl;
+                std::cout << "n total local grids: "   << loc_I*loc_J*loc_K << "   max vector elm id:  " << I2V(loc_I-1,loc_J-1,loc_K-1) << std::endl;
+                // print neighbors_id
+                std::cout << "neighbors_id: ";
+                for (int i = 0; i < 6; i++) {
+                    std::cout << neighbors_id[i] << " ";
+                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
         }
     }
 
@@ -322,9 +326,33 @@ void Grid::init_decomposition(InputParams& IP) {
 void Grid::setup_inversion_grids(InputParams& IP) {
 
     n_inv_grids = IP.get_n_inversion_grid();
-    ngrid_i_inv = IP.get_n_inv_p();
-    ngrid_j_inv = IP.get_n_inv_t();
-    ngrid_k_inv = IP.get_n_inv_r();
+
+    if(IP.get_type_dep_inv() == 0){
+        ngrid_k_inv = IP.get_n_inv_r();
+    } else if (IP.get_type_dep_inv() == 1) {
+        ngrid_k_inv = IP.get_n_inv_r_flex();
+    } else {
+        std::cout << "unknown type of inversion grid" << std::endl;
+        exit(1);
+    }
+
+    if(IP.get_type_lat_inv() == 0){
+        ngrid_j_inv = IP.get_n_inv_t();
+    } else if (IP.get_type_lat_inv() == 1) {
+        ngrid_j_inv = IP.get_n_inv_t_flex();
+    } else {
+        std::cout << "unknown type of inversion grid" << std::endl;
+        exit(1);
+    }
+
+    if(IP.get_type_lon_inv() == 0){
+        ngrid_i_inv = IP.get_n_inv_p();
+    } else if (IP.get_type_lon_inv() == 1) {
+        ngrid_i_inv = IP.get_n_inv_p_flex();
+    } else {
+        std::cout << "unknown type of inversion grid" << std::endl;
+        exit(1);
+    }
 
     n_inv_I_loc = ngrid_i_inv;
     n_inv_J_loc = ngrid_j_inv;
@@ -339,6 +367,15 @@ void Grid::memory_allocation() {
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
     // skip allocation of shm arrays if not using shm
     if (sub_nprocs <= 1) {
+#ifdef USE_CUDA
+        if(use_gpu)
+            cudaMallocHost((void**)&tau_loc, n_total_loc_grid_points * sizeof(CUSTOMREAL));
+        else
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+#else
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+#endif
+
         xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -349,7 +386,6 @@ void Grid::memory_allocation() {
         T0t_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T0p_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         T0v_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_a_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_b_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_c_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -544,6 +580,10 @@ void Grid::memory_allocation() {
             Ks_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Kxi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Keta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+
 
             // initialize
             for (int i = 0; i < n_total_loc_lbfgs; i++) {
@@ -556,41 +596,15 @@ void Grid::memory_allocation() {
                 Ks_descent_dir_loc[i]   = _0_CR;
                 Kxi_descent_dir_loc[i]  = _0_CR;
                 Keta_descent_dir_loc[i] = _0_CR;
+                fun_regularization_penalty_loc[i] = _0_CR;
+                xi_regularization_penalty_loc[i]  = _0_CR;
+                eta_regularization_penalty_loc[i] = _0_CR;
                 Ks_regularization_penalty_loc[i]   = _0_CR;
                 Kxi_regularization_penalty_loc[i]  = _0_CR;
                 Keta_regularization_penalty_loc[i] = _0_CR;
             }
         }
     } // end of if inverse_flag
-
-#ifdef USE_CUDA
-    if (use_gpu){
-        // structure storing device memory
-        gpu_grid = new Grid_on_device();
-        // allocate memory for device
-        cuda_allocate_memory_for_grid(gpu_grid, \
-            ngrid_i, ngrid_j, ngrid_k, \
-            loc_I, \
-            loc_J, \
-            loc_K, \
-            loc_I_excl_ghost, \
-            loc_J_excl_ghost, \
-            loc_K_excl_ghost, \
-            n_grid_bound_i, \
-            n_grid_bound_j, \
-            n_grid_bound_k, \
-            n_ghost_layers, \
-            inverse_flag, \
-            i_start_loc, \
-            j_start_loc, \
-            k_start_loc, \
-            i_end_loc, \
-            j_end_loc, \
-            k_end_loc, \
-            n_subdomains, \
-            inter_sub_rank);
-    }
-#endif
 
     stdout_by_main("Memory allocation done.");
 }
@@ -599,17 +613,6 @@ void Grid::memory_allocation() {
 void Grid::shm_memory_allocation() {
 
     synchronize_all_sub();
-
-#ifdef USE_CUDA
-    // free memory on device before host arrays
-    // otherwise the program crashes
-    if (use_gpu) {
-        // free memory on device
-        cuda_free_memory_for_grid(gpu_grid);
-
-        delete gpu_grid;
-    }
-#endif
 
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
     if (sub_rank != 0)
@@ -652,6 +655,15 @@ void Grid::shm_memory_deallocation() {
 void Grid::memory_deallocation() {
    // shm array deallocation is done in shm_memory_deallocation() if shm is used
     if (sub_nprocs <= 1) {
+
+#ifdef USE_CUDA
+        if(use_gpu)
+            cudaFree(tau_loc);
+        else
+            free(tau_loc);
+#else
+        free(tau_loc);
+#endif
         free(xi_loc);
         free(eta_loc);
         free(zeta_loc);
@@ -666,7 +678,6 @@ void Grid::memory_deallocation() {
         free(fac_b_loc);
         free(fac_c_loc);
         free(fac_f_loc);
-        free(tau_loc);
         free(fun_loc);
         free(is_changed);
 
@@ -844,6 +855,9 @@ void Grid::memory_deallocation() {
             free(Ks_descent_dir_loc);
             free(Kxi_descent_dir_loc);
             free(Keta_descent_dir_loc);
+            free(fun_regularization_penalty_loc);
+            free(xi_regularization_penalty_loc);
+            free(eta_regularization_penalty_loc);
             free(Ks_regularization_penalty_loc);
             free(Kxi_regularization_penalty_loc);
             free(Keta_regularization_penalty_loc);
@@ -877,7 +891,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     int tmp_offset_i = get_offset_i(); // offset_i - i_start_loc
 
     // output global grid parameters
-    if (inter_sub_rank == 0 && myrank == 0) {
+    if (inter_sub_rank == 0 && myrank == 0 && id_sim == 0) {
         std::cout << "\n\n Global grid information: \n\n" << std::endl;
         std::cout << "  r_min r_max dr : "                << r_min   << " " << r_max << " " << dr << std::endl;
         std::cout << "  depth_min depth_max dz : "        << IP.get_min_dep() << " " << IP.get_max_dep() << std::endl;
@@ -903,7 +917,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 
     for (int i = 0; i < nprocs; i++) {
         synchronize_all_inter();
-        if (i == myrank) {
+        if (i == myrank && id_sim == 0) {
             std::cout << "\n--- subdomain info ---- rank : " << i << "\n\n" << std::endl;
             std::cout << "  p_loc_1d min max in deg.: "  << p_loc_1d[0]*RAD2DEG << " " << p_loc_1d[loc_I-1]*RAD2DEG << std::endl;
             std::cout << "  t_loc_1d min max in deg.: "  << t_loc_1d[0]*RAD2DEG << " " << t_loc_1d[loc_J-1]*RAD2DEG << std::endl;
@@ -926,12 +940,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
         io.read_model(f_model_path,"xi",   xi_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fun",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_a",fac_a_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_b",fac_b_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_c",fac_c_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"fac_f",fac_f_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        //io.read_model(f_model_path,"vel",  velo_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
+        io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
         if(if_test) {
             // solver test
             io.read_model(f_model_path, "u", u_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
@@ -943,12 +952,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     broadcast_cr_inter_sim(xi_loc,    n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(eta_loc,   n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(zeta_loc,  n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_a_loc, n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_b_loc, n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_c_loc, n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fac_f_loc, n_total_loc_grid_points, 0);
-    //broadcast_cr_inter_sim(velo_loc,  n_total_loc_grid_points, 0);
+    broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0); // here passing velocity array
     if(if_test) {
         broadcast_cr_inter_sim(u_loc, n_total_loc_grid_points, 0);
     }
@@ -961,6 +965,15 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+
+                // convert velocity to slowness
+                fun_loc[I2V(i_lon, j_lat, k_r)] = _1_CR / fun_loc[I2V(i_lon, j_lat, k_r)];
+
+                // calculate fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc
+                fac_a_loc[I2V(i_lon, j_lat, k_r)] = _1_CR + _2_CR * zeta_loc[I2V(i_lon, j_lat, k_r)];
+                fac_b_loc[I2V(i_lon, j_lat, k_r)] = _1_CR - _2_CR *   xi_loc[I2V(i_lon, j_lat, k_r)];
+                fac_c_loc[I2V(i_lon, j_lat, k_r)] = _1_CR + _2_CR *   xi_loc[I2V(i_lon, j_lat, k_r)];
+                fac_f_loc[I2V(i_lon, j_lat, k_r)] =       - _2_CR *  eta_loc[I2V(i_lon, j_lat, k_r)];
 
                 // construct 3d coordinate arrays and node connectivity for visualization
                 // exclude the ghost nodes
@@ -981,7 +994,8 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
                     z_loc_3d[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = z;
                     p_loc_3d[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = p_loc_1d[i_lon]*RAD2DEG;
                     t_loc_3d[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = t_loc_1d[j_lat]*RAD2DEG;
-                    r_loc_3d[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = r_loc_1d[k_r]*M2KM;
+                    // r_loc_3d[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = r_loc_1d[k_r]*M2KM;
+                    r_loc_3d[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = r_loc_1d[k_r];
 
                     // dump proc id
                     my_proc_dump[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = myrank;
@@ -1014,34 +1028,88 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 
 
 void Grid::setup_inv_grid_params(InputParams& IP) {
-    // the grid points need to be on the same position with normal grids
-    // on the bounds.
-    CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
-    CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
-    CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
-    CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
-    CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
-    CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
 
-    // inversion grid is defined for all processes which covers entire domain
-    dinv_r = (r_max_inv   - r_min_inv)   / (ngrid_k_inv-1);
-    dinv_t = (lat_max_inv - lat_min_inv) / (ngrid_j_inv-1);
-    dinv_p = (lon_max_inv - lon_min_inv) / (ngrid_i_inv-1);
+    // inversion grid for depth
+    if(IP.get_type_dep_inv() == 0){     // uniform inversion grid for depth
+        CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
+        CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
+        // inversion grid is defined for all processes which covers entire domain
+        dinv_r = (r_max_inv   - r_min_inv)   / (ngrid_k_inv-1);
+        // shift of each set of inversion grid
+        dinv_lr = dinv_r/n_inv_grids;
 
+        for (int l = 0; l < n_inv_grids; l++) {
+            for (int k = 0; k < n_inv_K_loc; k++)
+                r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
+        }
+    } else {            // flexibly designed inversion grid for depth
+        CUSTOMREAL* dep_inv = IP.get_dep_inv();
 
-    // shift of each set of inversion grid
-    dinv_lr = dinv_r/n_inv_grids;
-    dinv_lt = dinv_t/n_inv_grids;
-    dinv_lp = dinv_p/n_inv_grids;
+        for (int k = 0; k < n_inv_K_loc; k++){
+            if(k < n_inv_K_loc - 1)
+                dinv_lr = (depth2radius(dep_inv[k+1]) - depth2radius(dep_inv[k]))/n_inv_grids;
+            else
+                dinv_lr = (depth2radius(dep_inv[n_inv_K_loc-1]) - depth2radius(dep_inv[n_inv_K_loc-2]))/n_inv_grids;
 
-    for (int l = 0; l < n_inv_grids; l++) {
-        for (int k = 0; k < n_inv_K_loc; k++)
-            r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
-        for (int j = 0; j < n_inv_J_loc; j++)
-            t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_min_inv + j*dinv_t - l*dinv_lt;
-        for (int i = 0; i < n_inv_I_loc; i++)
-            p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_min_inv + i*dinv_p - l*dinv_lp;
+            for (int l = 0; l < n_inv_grids; l++)
+                r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = depth2radius(dep_inv[k]) + l*dinv_lr;
+        }
     }
+
+    // inversion grid for latitude
+    if(IP.get_type_lat_inv() == 0){     // uniform inversion grid for latitude
+        CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
+        CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
+        // inversion grid is defined for all processes which covers entire domain
+        dinv_t = (lat_max_inv - lat_min_inv) / (ngrid_j_inv-1);
+        // shift of each set of inversion grid
+        dinv_lt = dinv_t/n_inv_grids;
+
+        for (int l = 0; l < n_inv_grids; l++) {
+            for (int j = 0; j < n_inv_J_loc; j++)
+                t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_min_inv + j*dinv_t - l*dinv_lt;
+        }
+    } else {                // flexibly designed inversion grid for latitude
+        CUSTOMREAL* lat_inv = IP.get_lat_inv();
+
+        for (int j = 0; j < n_inv_J_loc; j++){
+            if(j < n_inv_J_loc - 1)
+                dinv_lt = (lat_inv[j+1] - lat_inv[j])*DEG2RAD/n_inv_grids;
+            else
+                dinv_lt = (lat_inv[n_inv_J_loc-1] - lat_inv[n_inv_J_loc-2])*DEG2RAD/n_inv_grids;
+
+            for (int l = 0; l < n_inv_grids; l++)
+                t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_inv[j]*DEG2RAD - l*dinv_lt;
+        }
+    }
+
+    // inversion grid for longitude
+    if(IP.get_type_lon_inv() == 0){     // uniform inversion grid for longitude
+        CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
+        CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
+        // inversion grid is defined for all processes which covers entire domain
+        dinv_p = (lon_max_inv - lon_min_inv) / (ngrid_i_inv-1);
+        // shift of each set of inversion grid
+        dinv_lp = dinv_p/n_inv_grids;
+
+        for (int l = 0; l < n_inv_grids; l++) {
+            for (int i = 0; i < n_inv_I_loc; i++)
+                p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_min_inv + i*dinv_p - l*dinv_lp;
+        }
+    } else {
+        CUSTOMREAL* lon_inv = IP.get_lon_inv();
+
+        for (int i = 0; i < n_inv_I_loc; i++){
+            if(i < n_inv_I_loc - 1)
+                dinv_lp = (lon_inv[i+1] - lon_inv[i])*DEG2RAD/n_inv_grids;
+            else
+                dinv_lp = (lon_inv[n_inv_I_loc-1] - lon_inv[n_inv_I_loc-2])*DEG2RAD/n_inv_grids;
+
+            for (int l = 0; l < n_inv_grids; l++)
+                p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_inv[i]*DEG2RAD - l*dinv_lp;
+        }
+    }
+
 
 }
 
@@ -1063,7 +1131,7 @@ void Grid::initialize_kernels(){
 
 
 // get a part of pointers from the requested array for visualization
-CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
+CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr, bool inverse_value) {
 
     //send_recev_boundary_data(arr);
     // add a routine for communication the boundary value
@@ -1080,7 +1148,10 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
                     int j_loc_tmp = j_lat - j_start_vis;
                     int k_loc_tmp = k_r   - k_start_vis;
 
-                    vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    if(!inverse_value)
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr[I2V(i_lon,j_lat,k_r)];
+                    else
+                        vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr[I2V(i_lon,j_lat,k_r)]; // used for convert from slowness to velocity
                  }
             }
         }
@@ -1090,6 +1161,51 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr) {
 }
 
 
+// set visualization array to local array
+void Grid::set_array_from_vis(CUSTOMREAL* arr) {
+
+    for (int k_r = 0; k_r < loc_K; k_r++) {
+        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+                 if (i_start_vis <= i_lon && i_lon <= i_end_vis \
+                  && j_start_vis <= j_lat && j_lat <= j_end_vis \
+                  && k_start_vis <= k_r   && k_r   <= k_end_vis) {
+                    int i_loc_tmp = i_lon - i_start_vis;
+                    int j_loc_tmp = j_lat - j_start_vis;
+                    int k_loc_tmp = k_r   - k_start_vis;
+
+                    arr[I2V(i_lon,j_lat,k_r)] = vis_data[I2V_VIS(i_loc_tmp,j_loc_tmp,k_loc_tmp)];
+                 }
+            }
+        }
+    }
+
+    // set values to ghost layer
+    send_recev_boundary_data(arr);
+
+}
+
+
+// get a part of pointers from the requested array for visualization
+void Grid::get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out, bool inverse_value) {
+
+    for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+        for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+            for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
+                    int i_loc_tmp = i_lon - i_start_loc;
+                    int j_loc_tmp = j_lat - j_start_loc;
+                    int k_loc_tmp = k_r   - k_start_loc;
+                    if (!inverse_value)
+                        arr_out[I2V_3D(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = arr_in[I2V(i_lon,j_lat,k_r)];
+                    else
+                        arr_out[I2V_3D(i_loc_tmp,j_loc_tmp,k_loc_tmp)] = _1_CR/arr_in[I2V(i_lon,j_lat,k_r)]; // used for convert from slowness to velocity
+            }
+        }
+    }
+}
+
+
+
 void Grid::reinitialize_abcf(){
     if (subdom_main) {
         for (int k_r = 0; k_r < loc_K; k_r++) {
@@ -1097,9 +1213,9 @@ void Grid::reinitialize_abcf(){
                 for (int i_lon = 0; i_lon < loc_I; i_lon++) {
                     // initialize arrays
                     fac_a_loc[I2V(i_lon,j_lat,k_r)] = fac_a_loc[I2V(i_lon,j_lat,k_r)];
-                    fac_b_loc[I2V(i_lon,j_lat,k_r)] = fac_b_loc[I2V(i_lon,j_lat,k_r)]/ std::pow(r_loc_1d[k_r],2);
-                    fac_c_loc[I2V(i_lon,j_lat,k_r)] = fac_c_loc[I2V(i_lon,j_lat,k_r)]/(std::pow(r_loc_1d[k_r],2)*std::pow(std::cos(t_loc_1d[j_lat]),2));
-                    fac_f_loc[I2V(i_lon,j_lat,k_r)] = fac_f_loc[I2V(i_lon,j_lat,k_r)]/(std::pow(r_loc_1d[k_r],2)*         std::cos(t_loc_1d[j_lat]));
+                    fac_b_loc[I2V(i_lon,j_lat,k_r)] = fac_b_loc[I2V(i_lon,j_lat,k_r)]/ my_square(r_loc_1d[k_r]);
+                    fac_c_loc[I2V(i_lon,j_lat,k_r)] = fac_c_loc[I2V(i_lon,j_lat,k_r)]/(my_square(r_loc_1d[k_r])*my_square(std::cos(t_loc_1d[j_lat])));
+                    fac_f_loc[I2V(i_lon,j_lat,k_r)] = fac_f_loc[I2V(i_lon,j_lat,k_r)]/(my_square(r_loc_1d[k_r])*          std::cos(t_loc_1d[j_lat]));
                 }
             }
         }
@@ -1119,7 +1235,7 @@ void Grid::setup_factors(Source &src){
 }
 
 
-void Grid::initialize_fields(Source& src){
+void Grid::initialize_fields(Source& src, InputParams& IP){
 
     // get source position
     CUSTOMREAL src_r = src.get_src_r();
@@ -1132,6 +1248,10 @@ void Grid::initialize_fields(Source& src){
     // debug
     int n_source_node = 0;
 
+    // std::cout << a0 << ' ' << b0 << ' ' << c0 << ' ' << f0 << ' ' << std::endl;
+
+
+
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
             for (int i_lon = 0; i_lon < loc_I; i_lon++) {
@@ -1139,9 +1259,9 @@ void Grid::initialize_fields(Source& src){
                 CUSTOMREAL dt_from_src = t_loc_1d[j_lat] - src_t;
                 CUSTOMREAL dp_from_src = p_loc_1d[i_lon] - src_p;
 
-                T0v_loc[I2V(i_lon,j_lat,k_r)] = fun0 * std::sqrt( _1_CR/a0                  *std::pow((dr_from_src),2) \
-                                                                + c0/(c0b0_minus_f0f0)      *std::pow((dt_from_src),2) \
-                                                                + b0/(c0b0_minus_f0f0)      *std::pow((dp_from_src),2) \
+                T0v_loc[I2V(i_lon,j_lat,k_r)] = fun0 * std::sqrt( _1_CR/a0                  *my_square(dr_from_src) \
+                                                                + c0/(c0b0_minus_f0f0)      *my_square(dt_from_src) \
+                                                                + b0/(c0b0_minus_f0f0)      *my_square(dp_from_src) \
                                                                 + _2_CR*f0/(c0b0_minus_f0f0)*dt_from_src*dp_from_src);
 
                 is_changed[I2V(i_lon,j_lat,k_r)] = true;
@@ -1151,14 +1271,20 @@ void Grid::initialize_fields(Source& src){
                     T0t_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
                     T0p_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
                 } else {
-                    T0r_loc[I2V(i_lon,j_lat,k_r)] = std::pow(fun0,2)*(_1_CR/a0*dr_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
-                    T0t_loc[I2V(i_lon,j_lat,k_r)] = std::pow(fun0,2)*(c0/(c0b0_minus_f0f0)*dt_from_src+f0/(c0b0_minus_f0f0)*dp_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
-                    T0p_loc[I2V(i_lon,j_lat,k_r)] = std::pow(fun0,2)*(b0/(c0b0_minus_f0f0)*dp_from_src+f0/(c0b0_minus_f0f0)*dt_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0r_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(_1_CR/a0*dr_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0t_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(c0/(c0b0_minus_f0f0)*dt_from_src+f0/(c0b0_minus_f0f0)*dp_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0p_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(b0/(c0b0_minus_f0f0)*dp_from_src+f0/(c0b0_minus_f0f0)*dt_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
                 }
 
-                if (std::abs(dr_from_src/dr) <= _2_CR \
-                 && std::abs(dt_from_src/dt) <= _2_CR \
-                 && std::abs(dp_from_src/dp) <= _2_CR) {
+                if (IP.get_stencil_order() == 1){
+                    source_width = _1_CR-0.1;
+                } else {
+                    source_width = _2_CR;
+                }
+
+                if (std::abs(dr_from_src/dr) <= source_width \
+                 && std::abs(dt_from_src/dt) <= source_width \
+                 && std::abs(dp_from_src/dp) <= source_width) {
 
                     tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
                     is_changed[I2V(i_lon,j_lat,k_r)] = false;
@@ -1175,8 +1301,10 @@ void Grid::initialize_fields(Source& src){
                     }
 
                 } else {
-
-                    tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
+                    if (IP.get_stencil_type()==1)   // upwind scheme, initial tau should be large enough
+                        tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INF_VAL;
+                    else
+                        tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
                     is_changed[I2V(i_lon,j_lat,k_r)] = true;
 
                 }
@@ -1321,6 +1449,7 @@ void Grid::calc_L1_and_Linf_diff(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)];
                     Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]) * T0v_loc[I2V(i_lon,j_lat,k_r)]);
+                    // std::cout << R_earth-r_loc_3d[k_r] << ' ' << t_loc_3d[j_lat] << ' ' << p_loc_3d[i_lon] << ' ' << T0v_loc[I2V(i_lon,j_lat,k_r)] << ' ' << std::endl;
                 }
             }
         }
@@ -1676,7 +1805,8 @@ void Grid::send_recev_boundary_data(CUSTOMREAL* arr){
         }
     }
 
-    //synchronize_all_inter();
+    // THIS SYNCHRONIZATION IS IMPORTANT.
+    synchronize_all_inter();
 
     assign_received_data_to_ghost(arr);
 
@@ -2130,65 +2260,30 @@ void Grid::calc_residual() {
     }
 }
 
+void Grid::write_inversion_grid_file(){
 
-void Grid::initialize_gpu_grid(std::vector<std::vector<std::vector<int>>> &ijk_levels) {
-    // initialize gpu grid
-#ifdef USE_CUDA
+    std::ofstream ofs;
 
-    // initialize gpu parameters
-    cuda_init_gpu_params(gpu_grid, inter_sub_comm, ijk_levels, dr, dt, dp);
+    inversion_grid_file_out = output_dir + "/inversion_grid.txt";
+    ofs.open(inversion_grid_file_out);
 
-    // allocate memory for device
-    // transfer data to device
-
-    cuda_data_transfer_to_device(gpu_grid,
-        loc_I, \
-        loc_J, \
-        loc_K, \
-        n_grid_bound_i, \
-        n_grid_bound_j, \
-        n_grid_bound_k, \
-        n_ghost_layers, \
-        dr, \
-        dt, \
-        dp, \
-        neighbors_id, \
-        tau_old_loc, \
-        tau_loc, \
-        fac_a_loc, \
-        fac_b_loc, \
-        fac_c_loc, \
-        fac_f_loc, \
-        T0v_loc, \
-        T0r_loc, \
-        T0t_loc, \
-        T0p_loc, \
-        fun_loc, \
-        Tadj_loc, \
-        t_loc_1d, \
-        r_loc_1d, \
-        zeta_loc, \
-        xi_loc, \
-        eta_loc, \
-        T_loc, \
-        is_changed);
-
-
-
-#endif
-
-}
-
-void Grid::reinitialize_gpu_grid(){
-    if (subdom_main) {
-        if(use_gpu){
-#ifdef USE_CUDA
-            cuda_reinitialize_grid(gpu_grid, fac_a_loc, fac_b_loc, fac_c_loc, fac_f_loc, \
-                T0v_loc, T0r_loc, T0t_loc, T0p_loc, tau_loc, tau_old_loc, is_changed);
-#endif
+    if(subdom_main && id_subdomain == 0){       // main processor of subdomain && the first id of subdoumains
+        for(int l = 0; l < n_inv_grids; l++){
+            ofs << l << " " << ngrid_k_inv << " " << ngrid_j_inv << " " << ngrid_i_inv << std::endl;    // number of ivnersion grid
+            // inversion grid of depth
+            for(int k =0; k < ngrid_k_inv; k++)
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                    << radius2depth(r_loc_inv[I2V_INV_GRIDS_1DK(k,l)]) << " ";
+            ofs << std::endl;
+            for(int j =0; j < ngrid_j_inv; j++)
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                    << t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)]*RAD2DEG << " ";
+            ofs << std::endl;
+            for(int i =0; i < ngrid_i_inv; i++)
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                    << p_loc_inv[I2V_INV_GRIDS_1DI(i,l)]*RAD2DEG << " ";
+            ofs << std::endl;
         }
     }
 
 }
-
-

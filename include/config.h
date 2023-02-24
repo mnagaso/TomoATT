@@ -13,6 +13,7 @@
 #define CUSTOMREAL double
 #define MPI_CR MPI_DOUBLE
 
+
 #define MPI_DUMMY_TAG 1000
 
 inline int loc_I, loc_J, loc_K;
@@ -23,6 +24,11 @@ inline int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc;
 
 // 3d indices to 1d index
 #define I2V(A,B,C) ((C)*loc_I*loc_J + (B)*loc_I + A)
+inline void V2I(const int& ijk, int& i, int& j, int& k) {
+    k = ijk / (loc_I * loc_J);
+    j = (ijk - k * loc_I * loc_J) / loc_I;
+    i = ijk - k * loc_I * loc_J - j * loc_I;
+}
 
 #define I2V_INV_GRIDS(A,B,C,D) ((D)*n_inv_I_loc*n_inv_J_loc*n_inv_K_loc + (C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_KNL(A,B,C)     ((C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
@@ -33,6 +39,7 @@ inline int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc;
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
 //#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
 #define I2V_VIS(A,B,C)         ((C)* loc_I_vis   * loc_J_vis +    (B)* loc_I_vis    + A)
+#define I2V_3D(A,B,C)          ((C)* loc_I_excl_ghost*loc_J_excl_ghost + (B)* loc_I_excl_ghost + A)
 #define I2V_ELM_CONN(A,B,C)    ((C)*(loc_I_vis-1)*(loc_J_vis-1) + (B)*(loc_I_vis-1) + A)
 #define I2VLBFGS(A,B,C,D)      ((A)*loc_I*loc_J*loc_K + (D)*loc_I*loc_J + (C)*loc_I + B)
 
@@ -66,17 +73,33 @@ inline const CUSTOMREAL _3_CR     = 3.0;
 inline const CUSTOMREAL _4_CR     = 4.0;
 inline const CUSTOMREAL _8_CR     = 8.0;
 inline const CUSTOMREAL TAU_INITIAL_VAL = 1.0;
+inline const CUSTOMREAL TAU_INF_VAL = 20.0;
+inline const int        SWEEPING_COEFF  = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
+
 // ASCII output precision
 typedef std::numeric_limits< CUSTOMREAL > dbl;
 inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
-inline const int        SWEEPING_COEFF       = 1.0; // coefficient for calculationg sigr/sigt/sigp for cpu
 
 // radious of the earth in km
 //inline CUSTOMREAL R_earth = 6378.1370;
-inline CUSTOMREAL R_earth = 6371.0; // for compatibility with fortran code
-inline const CUSTOMREAL GAMMA = 0.0;
-inline const CUSTOMREAL r_kermel_mask = 40.0;
-inline CUSTOMREAL step_size_init = 0.01; // update step size limit
+inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
+inline const CUSTOMREAL GAMMA          = 0.0;
+inline const CUSTOMREAL r_kermel_mask  = 40.0;
+inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
+inline CUSTOMREAL       step_size_init_sc = 0.001; // update step size limit (for station correction)
+inline CUSTOMREAL       step_size_decay = 0.9;
+inline CUSTOMREAL       step_size_lbfgs;
+
+// RUN MODE TYPE FLAG
+inline const int ONLY_FORWARD        = 0;
+inline const int DO_INVERSION        = 1;
+inline const int TELESEIS_PREPROCESS = 2;
+inline const int SRC_RELOCATION      = 3;
+
+// SWEEPING TYPE FLAG
+inline const int SWEEP_TYPE_LEGACY = 0;
+inline const int SWEEP_TYPE_LEVEL  = 1;
+inline      bool hybrid_stencil_order = false; // if true, code at first run 1st order, then change to 3rd order (Dong Cui 2020)
 
 // convert depth <-> radius
 inline CUSTOMREAL depth2radius(CUSTOMREAL depth) {
@@ -144,25 +167,39 @@ inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
+inline const CUSTOMREAL LBFGS_RELATIVE_STEP_SIZE = 0.3; // relative step size for the second and later iteration
 
 // variables for test
 inline bool if_test = false;
 
 // verboose mode
 inline bool if_verbose = false;
+// inline bool if_verbose = true;
 
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
 
 // 2d solver parameters
-inline       CUSTOMREAL r_margin            = 0.1; // margin ratio for 2d solver
-inline       CUSTOMREAL t_margin            = 0.2;
+// use fixed domain size for all 2d simulations
+inline       CUSTOMREAL rmin_2d             = 3370.5;
+inline       CUSTOMREAL rmax_2d             = 6471.5;
+inline       CUSTOMREAL tmin_2d             = -5.0/180.0*PI;
+inline       CUSTOMREAL tmax_2d             = 120.0/180.0*PI;
 inline       CUSTOMREAL dr_2d               = 2.0;
 inline       CUSTOMREAL dt_2d               = PI/1000.0;
 inline const CUSTOMREAL TOL_2D_SOLVER       = 1e-4;
-inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 1000;
+inline const CUSTOMREAL MAX_ITER_2D_SOLVER  = 4000;
 inline const CUSTOMREAL SWEEPING_COEFF_TELE = 1.05;        // coefficient for calculationg sigr/sigt/sigp
 inline const int        N_LAYER_SRC_BOUND   = 1;           // number of layers for source boundary
 inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold of two stations
+inline const std::string OUTPUT_DIR_2D      = "/2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
+
+// earthquake relocation
+inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation
+inline const int  N_ITER_MAX_SRC_RELOC  = 1000;
+inline const CUSTOMREAL TOL_SRC_RELOC   = 1e-2;
+
+// source receiver  weight calculation
+inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation
 
 #endif // CONFIG_H

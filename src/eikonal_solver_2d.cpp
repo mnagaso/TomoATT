@@ -4,8 +4,9 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
+    // TODO: currently this routine is run in only serial.
+    // it can be work in parallel with simultaneous run,
     if (subdom_main) {
-
         for (long unsigned int i = 0; i < IP.src_ids_this_sim.size(); i++) {
             int src_id = IP.src_ids_this_sim[i];
             // get source info
@@ -75,70 +76,15 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
         std::abs(epicentral_distance_2d[3]),
     });
 
-    // if South West corner has the maximum epicentral distance, then activate SW boundaries
-    // which are closer to the teleseismic source
-    if (max_degree == std::abs(epicentral_distance_2d[0])) {
-        // N+E
-        activated_boundaries[0] = true;  // N
-        activated_boundaries[1] = true;  // E
-        activated_boundaries[2] = false; // W
-        activated_boundaries[3] = false; // S
-        activated_boundaries[4] = true;  // Bot.
-    } else if (max_degree == std::abs(epicentral_distance_2d[1])) {
-        // N+W
-        activated_boundaries[0] = true;
-        activated_boundaries[1] = false;
-        activated_boundaries[2] = true;
-        activated_boundaries[3] = false;
-        activated_boundaries[4] = true;
-    } else if (max_degree == std::abs(epicentral_distance_2d[2])) {
-        // S+E
-        activated_boundaries[0] = false;
-        activated_boundaries[1] = true;
-        activated_boundaries[2] = false;
-        activated_boundaries[3] = true;
-        activated_boundaries[4] = true;
-    } else if (max_degree == std::abs(epicentral_distance_2d[3])) {
-        // S+W
-        activated_boundaries[0] = false;
-        activated_boundaries[1] = false;
-        activated_boundaries[2] = true;
-        activated_boundaries[3] = true;
-        activated_boundaries[4] = true;
-    }
-
-    // if source is on the west or east direction, N and S boundaries are deactifvated
-    if (src_p > tmin_3d && src_t < tmax_3d){
-        activated_boundaries[0] = false;
-        activated_boundaries[3] = false;
-    }
-    // if source is no the north or south direction, E and W boundaris are deactifvated
-    if (src_p > pmin_3d && src_p < pmax_3d){
-        activated_boundaries[1] = false;
-        activated_boundaries[2] = false;
-    }
-
-    // if source depth is about the deepest part of the forward grid
-    // then deactivate the bottom boundary
-    if (src.dep > rmin_3d){
-        activated_boundaries[4] = false;
-    }
-
-//    // calculate all the boundaries instead
-//    // because the calculation is not that heavy
-//    activated_boundaries[0] = true; // N
-//    activated_boundaries[1] = true; // E
-//    activated_boundaries[2] = true; // W
-//    activated_boundaries[3] = true; // S
-//    activated_boundaries[4] = true; // Bot
+    activated_boundaries[0] = true; // N
+    activated_boundaries[1] = true; // E
+    activated_boundaries[2] = true; // W
+    activated_boundaries[3] = true; // S
+    activated_boundaries[4] = true; // Bot
 
     // grid setup
-    rmin_2d = rmin_3d*(1.0-r_margin);
-    rmax_2d = rmax_3d*(1.0+r_margin);
-    tmin_2d = -max_degree*(t_margin);
-    tmax_2d = max_degree*(1.0+t_margin);
-    nr_2d   = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
-    nt_2d   = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
+    nr_2d = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
+    nt_2d = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
 
     // initialize arrays
     r_2d = new CUSTOMREAL[nr_2d];
@@ -182,13 +128,13 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
     is_changed_2d = new bool[nr_2d*nt_2d];
 
     // load 1d model to 2d field
-    load_1d_model();
+    load_1d_model(IP.get_model_1d_name());
 
     // initialize other field
     for (int ir = 0; ir < nr_2d; ir++){
         for (int it = 0; it < nt_2d; it++){
             fac_a_2d[ir*nt_2d+it] = _1_CR;
-            fac_b_2d[ir*nt_2d+it] = _1_CR/std::pow(r_2d[ir], 2.0);
+            fac_b_2d[ir*nt_2d+it] = _1_CR/my_square(r_2d[ir]);
             u_2d[ir*nt_2d+it] = _0_CR;
             T_2d[ir*nt_2d+it] = _0_CR;
         }
@@ -222,15 +168,15 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
         for (int it = 0; it < nt_2d; it++){
 
             int irt = ir*nt_2d+it;
-            T0v_2d[irt] = fun0 * std::sqrt((_1_CR/a0) * std::pow((r_2d[ir]-src_r),2.0)
-                                          + _1_CR/b0  * std::pow((t_2d[it]-src_t_dummy),2.0));
+            T0v_2d[irt] = fun0 * std::sqrt((_1_CR/a0) * my_square((r_2d[ir]-src_r))
+                                          + _1_CR/b0  * my_square((t_2d[it]-src_t_dummy)));
 
             if (isZero(T0v_2d[irt])) {
                 T0r_2d[irt] = _0_CR;
                 T0t_2d[irt] = _0_CR;
             } else {
-                T0r_2d[irt] = std::pow(fun0,2.0) * (_1_CR/a0 * (r_2d[ir]-src_r))       / T0v_2d[irt];
-                T0t_2d[irt] = std::pow(fun0,2.0) * (_1_CR/b0 * (t_2d[it]-src_t_dummy)) / T0v_2d[irt];
+                T0r_2d[irt] = my_square(fun0) * (_1_CR/a0 * (r_2d[ir]-src_r))       / T0v_2d[irt];
+                T0t_2d[irt] = my_square(fun0) * (_1_CR/b0 * (t_2d[it]-src_t_dummy)) / T0v_2d[irt];
             }
 
             if (std::abs((r_2d[ir]-src_r)/dr_2d)       <= _2_CR \
@@ -245,9 +191,7 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
             tau_old_2d[irt] = _0_CR;
         }
     }
-
-
-};
+}
 
 
 void PlainGrid::allocate_arrays(){
@@ -282,24 +226,40 @@ PlainGrid::~PlainGrid() {
 };
 
 
-void PlainGrid::load_1d_model(){
+void PlainGrid::select_1d_model(std::string model_1d_name){
+    if(model_1d_name.compare("iasp91")==0) {
+        model_1d_ref = model_1d_iasp91;
+    } else if (model_1d_name.compare("ak135")==0) {
+        model_1d_ref = model_1d_ak135;
+    } else if (model_1d_name.compare("user_defined")==0) {
+        model_1d_ref = model_1d_prem;
+    } else {
+        model_1d_ref = model_1d_prem;
+    }
+}
+
+
+void PlainGrid::load_1d_model(std::string model_1d_name){
 
     // debug output 1d model to a file
     std::ofstream file_1d_model;
-    file_1d_model.open("1d_model.txt");
+    file_1d_model.open(output_dir + "/model_1d.txt");
 
     // load 1d model to 2d field
     for (int i = 0; i < nr_2d; i++) {
 
         // interpolate from model_1d_ref by linear interpolation
         CUSTOMREAL r = r_2d[i];
+
+        // select 1d model
+        select_1d_model(model_1d_name);
+
         // find 2 closest r in model_1d_ref
         int ir = 0;
         for (auto& dep_vel : model_1d_ref) {
             CUSTOMREAL r_model = depth2radius(dep_vel[0]);
             if (r > r_model)
                 break;
-
             ir++;
         }
 
@@ -404,7 +364,7 @@ void PlainGrid::run_iteration(InputParams& IP){
                 tau_2d[ir*nt_2d+nt_2d-1] = std::max(_2_CR*tau_2d[ir*nt_2d+nt_2d-2]-tau_2d[ir*nt_2d+nt_2d-3], tau_2d[ir*nt_2d+nt_2d-3]);
             }
             for (int it = 0; it < nt_2d; it++) {
-                tau_2d[it]                 = std::max(_2_CR*tau_2d[1*nt_2d+it]              -tau_2d[2*nt_2d+it],               tau_2d[2*nt_2d+it]);
+                tau_2d[it]                 = std::max(_2_CR*tau_2d[1*nt_2d+it]        -tau_2d[2*nt_2d+it],         tau_2d[2*nt_2d+it]);
                 tau_2d[(nr_2d-1)*nt_2d+it] = std::max(_2_CR*tau_2d[(nr_2d-2)*nt_2d+it]-tau_2d[(nr_2d-3)*nt_2d+it], tau_2d[(nr_2d-3)*nt_2d+it]);
             }
 
@@ -420,14 +380,18 @@ void PlainGrid::run_iteration(InputParams& IP){
         }
         L1_dif /= nr_2d*nt_2d;
 
+        // calculate L1 and Linf error
+        L1_err  = _0_CR;
+        Linf_err= _0_CR;
+
         for (int ii = 0; ii < nr_2d*nt_2d; ii++){
             L1_err  += std::abs(tau_2d[ii]*T0v_2d[ii] - u_2d[ii]);
             Linf_err = std::max(Linf_err, std::abs(tau_2d[ii]*T0v_2d[ii] - u_2d[ii]));
         }
-        L1_err /= (nr_2d-4)*(nt_2d-4);
+        L1_err /= nr_2d*nt_2d;
 
         // check convergence
-        if (std::abs(L1_dif) < TOL_2D_SOLVER){ // && Linf_dif < TOL_2D_SOLVER){
+        if (std::abs(L1_dif) < TOL_2D_SOLVER && std::abs(Linf_dif) < TOL_2D_SOLVER){
             if (myrank==0)
                 std::cout << "Converged at iteration " << iter << std::endl;
             goto iter_end;
@@ -437,10 +401,13 @@ void PlainGrid::run_iteration(InputParams& IP){
             goto iter_end;
         } else {
             if (myrank==0 && if_verbose)
-                std::cout << "Iteration " << iter << ": L1 error = " << L1_dif << ", Linf error = " << Linf_dif << std::endl;
+                std::cout << "Iteration " << iter << ": L1 error = " << L1_err << ", Linf error = " << Linf_err << std::endl;
             iter++;
         }
-
+        // if (myrank==0){
+        //     std::cout << "Iteration " << iter << "L_1(Tnew-Told)= " << L1_dif << " , L_inf(Tnew-Told) = " << Linf_dif << std::endl;
+        //     std::cout << "Iteration " << iter << ": L1 error = " << L1_err << ", Linf error = " << Linf_err << std::endl;
+        // }
     } // end of wile
 
 iter_end:
@@ -469,62 +436,62 @@ void PlainGrid::calculate_stencil_2d(int& ir, int& it){
     CUSTOMREAL sigt = std::sqrt(fac_b_2d[ii])*T0v_2d[ii];
     CUSTOMREAL coe  = _1_CR/(sigr/dr_2d + sigt/dt_2d);
 
-    CUSTOMREAL px1, px2, wx1, wx2;
-    CUSTOMREAL py1, py2, wy1, wy2;
+    CUSTOMREAL px1, px2, wx1=0, wx2=0;
+    CUSTOMREAL py1, py2, wy1=0, wy2=0;
 
     if(ir==1){
         px1=(tau_2d[ii]-tau_2d[ii_nr])/dr_2d;
-        wx2=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr]),2)))),2);
+        wx2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]     - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r])) \
+                                       /  (eps_2d +my_square(tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr] ))));
         px2=(_1_CR-wx2)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pr]-tau_2d[ii_p2r])/_2_CR/dr_2d;
 
     }
     else if (ir == nr_2d-2){
-        wx1=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr]),2)))),2);
+        wx1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr] ))));
         px1=(_1_CR-wx1)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nr]+tau_2d[ii_n2r])/_2_CR/dr_2d;
         px2=(tau_2d[ii_pr]-tau_2d[ii_nr])/dr_2d;
     }
     else {
-        wx1=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr]),2)))),2);
+        wx1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nr]+ tau_2d[ii_n2r])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pr] - _2_CR*tau_2d[ii]   + tau_2d[ii_nr] ))));
         px1=(_1_CR-wx1)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nr]+tau_2d[ii_n2r])/_2_CR/dr_2d;
-        wx2=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr]),2)))),2);
+        wx2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_pr]+ tau_2d[ii_p2r])) \
+                                        / (eps_2d+my_square(tau_2d[ii_nr] - _2_CR*tau_2d[ii]   + tau_2d[ii_pr] ))));
         px2=(_1_CR-wx2)*(       tau_2d[ii_pr]                 -tau_2d[ii_nr]) /_2_CR/dr_2d \
                  + wx2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pr]-tau_2d[ii_p2r])/_2_CR/dr_2d;
     }
 
     if(it==1){
         py1=(tau_2d[ii]-tau_2d[ii_nt])/dt_2d;
-        wy2=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt]),2)))),2);
+        wy2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt] ))));
         py2=(_1_CR-wy2)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pt]-tau_2d[ii_p2t])/_2_CR/dt_2d;
     }
     else if (it == nt_2d-2){
-        wy1=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt]),2)))),2);
+        wy1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt] ))));
         py1=(_1_CR-wy1)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nt]+tau_2d[ii_n2t])/_2_CR/dt_2d;
         py2=(tau_2d[ii_pt]-tau_2d[ii])/dt_2d;
     }
     else {
-        wy1=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt]),2)))),2);
+        wy1=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_nt]+ tau_2d[ii_n2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_pt] - _2_CR*tau_2d[ii]   + tau_2d[ii_nt] ))));
         py1=(_1_CR-wy1)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy1 *( _3_CR*tau_2d[ii]-_4_CR*tau_2d[ii_nt]+tau_2d[ii_n2t])/_2_CR/dt_2d;
-        wy2=_1_CR/std::pow((_1_CR+_2_CR*((eps_2d+std::pow((tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t]),2)) \
-                                       / (eps_2d+std::pow((tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt]),2)))),2);
+        wy2=_1_CR/(_1_CR+_2_CR*my_square( (eps_2d+my_square(tau_2d[ii]    - _2_CR*tau_2d[ii_pt]+ tau_2d[ii_p2t])) \
+                                        / (eps_2d+my_square(tau_2d[ii_nt] - _2_CR*tau_2d[ii]   + tau_2d[ii_pt] ))));
         py2=(_1_CR-wy2)*(       tau_2d[ii_pt]                 -tau_2d[ii_nt]) /_2_CR/dt_2d \
                  + wy2 *(-_3_CR*tau_2d[ii]+_4_CR*tau_2d[ii_pt]-tau_2d[ii_p2t])/_2_CR/dt_2d;
     }
 
-    CUSTOMREAL Htau = std::sqrt(fac_a_2d[ii]*std::pow((T0r_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(px1+px2)/_2_CR),2) \
-                               +fac_b_2d[ii]*std::pow((T0t_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(py1+py2)/_2_CR),2));
+    CUSTOMREAL Htau = std::sqrt(fac_a_2d[ii]*my_square(T0r_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(px1+px2)/_2_CR) \
+                               +fac_b_2d[ii]*my_square(T0t_2d[ii]*tau_2d[ii]+T0v_2d[ii]*(py1+py2)/_2_CR));
 
     tau_2d[ii] = coe * ( (fun_2d[ii] - Htau) + (sigr*(px2-px1)/_2_CR + sigt*(py2-py1)/_2_CR) ) + tau_2d[ii];
 
@@ -577,18 +544,29 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
 
         std::string fname_2d_src;
 
+        // create output directory for 2d solver
+        std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
+        create_output_dir(dir_2d);
+
         if (output_format == OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-            fname_2d_src = output_dir + "/2d_travel_time_field_" + std::to_string(src.id_src)+".h5";
+            // add the depth of the source to the file name
+            // to share the travel time field if sources have the same depth of hypocenter
+            auto str = std::to_string(src.dep);
+            fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".h5";
 #else
             std::cout << "HDF5 is not enabled. Please recompile with HDF5" << std::endl;
 #endif
         } else if (output_format == OUTPUT_FORMAT_ASCII) {
-            fname_2d_src = output_dir + "/2d_travel_time_field_" + std::to_string(src.id_src)+".dat";
+            auto str = std::to_string(src.dep);
+            fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".dat";
         }
 
         if (is_file_exist(fname_2d_src.c_str())) {
             pre_calculated = true;
+            // remark :: TODO :: we need to check whether the 2d_traveltime file has the same size of T_2d here.
+            // Otherwise, we need to recalculate the 2d traveltime field and write it out.
+
             // read 2d travel time field from file
             io.read_2d_travel_time_field(fname_2d_src, plain_grid.T_2d, plain_grid.nt_2d, plain_grid.nr_2d);
 
@@ -596,12 +574,13 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
 
         } else { // if not, calculate and store it
             // run iteration
+            std::cout << "start run iteration myrank: " << myrank << std::endl;
             plain_grid.run_iteration(IP);
         }
     }
 
     // share T_2d, r_2d and t_2d to all processes
-    broadcast_cr(plain_grid.T_2d, plain_grid.nr_2d*plain_grid.nt_2d, 0); // #TODO: here blocked
+    broadcast_cr(plain_grid.T_2d, plain_grid.nr_2d*plain_grid.nt_2d, 0);
     broadcast_cr(plain_grid.r_2d, plain_grid.nr_2d, 0);
     broadcast_cr(plain_grid.t_2d, plain_grid.nt_2d, 0);
 
@@ -660,7 +639,7 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
 
     // write out calculated 2D travel time field
     if (!pre_calculated && myrank == 0)
-        io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.id_src);
+        io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.dep);
 
 }
 

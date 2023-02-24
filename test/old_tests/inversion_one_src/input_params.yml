@@ -17,9 +17,9 @@ model :
   init_model_path : './test_model_init.h5' # path to initial model file (ignored if init_model_type is '1d_*')
 
 inversion :
-  do_inversion : 1 # 0 for forward simulation only, 1 for inversion
+  run_mode : 1 # 0 for forward simulation only, 1 for inversion
   n_inversion_grid : 4  # number of inversion grid sets
-  n_inv_rtp : [5,10,10] # number of the base inversion grid points
+  n_inv_dep_lat_lon : [5,10,10] # number of the base inversion grid points
   optim_method : 0 # optimization method. 0 : "grad_descent" or 1 : "lbfgs"
   max_iterations_inv : 2  # maximum number of inversion iterations
   step_size : 0.01  # initial step size for inversion
@@ -39,6 +39,6 @@ calculation :
   convergence_tolerance : 1e-10
   max_iterations : 200
   stencil_order : 3 # 1 or 3
-  sweep_type : 2   # 0: legacy, 1: cuthill-mckee. 2: cuthill-mckee with shm parallelization
+  sweep_type : 2   # 0: legacy, 1: cuthill-mckee with shm parallelization
 
 

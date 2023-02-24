@@ -4,12 +4,20 @@
 #include <iostream>
 #include <math.h>
 #include <string.h>
-#include "config.h"
-#include <filesystem>
 #include <fstream>
+#include <sys/stat.h>
+#include <iomanip>
+#include <sstream>
 
-inline void create_output_dir(){
-    std::filesystem::create_directory(output_dir);
+#include "config.h"
+
+
+inline void create_output_dir(std::string dir_path){
+    // create output directory
+    if (mkdir(dir_path.c_str(), 0777) == -1){
+        if (world_rank==0)
+            std::cout << "Warning : directory " << dir_path << " can not be created. Maybe already exists (no problem in this case)." << std::endl;
+    }
 }
 
 
@@ -18,8 +26,15 @@ inline bool is_file_exist(const char* fileName)
     return static_cast<bool>(std::ifstream(fileName));
 }
 
+
 inline void stdout_by_main(char const* str){
-    if (sim_rank == 0 && inter_sub_rank == 0 && sub_rank == 0)
+    if (sim_rank == 0 && inter_sub_rank == 0 && sub_rank == 0 && id_sim == 0)
+        std::cout << str << std::endl;
+}
+
+
+inline void stdout_by_rank_zero(char const* str){
+    if(world_rank == 0)
         std::cout << str << std::endl;
 }
 
@@ -36,9 +51,33 @@ inline void parse_options(int argc, char* argv[]){
         }
     }
 
-    // error if input_file is  not found
+    // error if input_file is not found
     if(!input_file_found){
         stdout_by_main("usage: mpirun -np 4 ./TOMOATT -i input_params.yaml");
+        std::cout << argc << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+inline void parse_options_srcrec_weight(int argc, char* argv[]){
+    bool input_file_found = false;
+
+    for (int i = 1; i < argc; i++){
+        if(strcmp(argv[i], "-v") == 0)
+            if_verbose = true;
+        else if (strcmp(argv[i],"-i") == 0){
+            input_file = argv[i+1];
+            input_file_found = true;
+        } else if (strcmp(argv[i],"-r") == 0){
+            // reference value
+            ref_value = atof(argv[i+1]);
+        }
+    }
+
+    // error if input_file is not found
+    if(!input_file_found){
+        stdout_by_main("usage: ./SrcRecWeight -i srcrec_file.txt -r 10.0");
         std::cout << argc << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -62,6 +101,16 @@ inline int check_data_type(T const& data){
         exit(1);
     }
 }
+
+
+template <typename T>
+inline T my_square(T const& a){
+    return a * a;
+}
+
+
+// defined function is more than 2 times slower than inline function
+//#define my_square(a) (a * a)
 
 
 inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL& x, CUSTOMREAL& y, CUSTOMREAL& z){
@@ -88,11 +137,12 @@ inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL
 inline void Epicentral_distance_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
                                        CUSTOMREAL lat2, CUSTOMREAL lon2, \
                                        CUSTOMREAL& dist) {
-    if (isZero(std::pow((lat1-lat2),2) \
-     &&      + std::pow((lon1-lon2),2))){
+    if (isZero(my_square((lat1-lat2)) \
+     &&      + my_square((lon1-lon2)))){
         dist = _0_CR;
     } else {
-        dist = acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1));
+        // calculate epicentral distance in radian
+        dist = std::abs(acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1)));
     }
 }
 
@@ -102,8 +152,8 @@ inline void Azimuth_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
                              CUSTOMREAL lat2, CUSTOMREAL lon2, \
                              CUSTOMREAL& azi) {
 
-    if (isZero(std::pow((lat1-lat2),2) \
-        &&   + std::pow((lon1-lon2),2))){
+    if (isZero(my_square((lat1-lat2)) \
+        &&   + my_square((lon1-lon2)))){
         azi = _0_CR;
     } else {
         azi = atan2(sin(lon2-lon1)*cos(lat2), \
@@ -182,5 +232,14 @@ inline T calc_l2norm(T const* const a, int const& n){
     }
     return result;
 }
+
+
+inline std::string int2string_zero_fill(int i) {
+    std::stringstream ss;
+    ss << std::setfill('0') << std::setw(4) << i;
+    return ss.str();
+}
+
+
 
 #endif // UTILS_H
