@@ -120,7 +120,6 @@ private:
     bool sta_correction_file_exist = false;   // station correction file exist
 
     // model input files
-    std::string init_model_type; // model type
     std::string init_model_path; // model file path init
     std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
