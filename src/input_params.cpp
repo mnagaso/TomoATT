@@ -341,6 +341,10 @@ InputParams::InputParams(std::string& input_file){
             lat_inv = new CUSTOMREAL[n_inv_t_flex];
         if (!n_inv_p_flex_read)
             lon_inv = new CUSTOMREAL[n_inv_p_flex];
+
+        // write parameter file to output directory
+        write_params_to_file();
+
     }
 
     stdout_by_rank_zero("parameter file read done.");
@@ -491,6 +495,127 @@ InputParams::~InputParams(){
     rec_points_out.clear();
 }
 
+
+void InputParams::write_params_to_file() {
+    // write all the simulation parameters in another yaml file
+    std::string file_name = "params_log.yaml";
+    std::ofstream fout(file_name);
+    fout << "domain:" << std::endl;
+    fout << "   min_max_dep: [" << min_dep << ", " << max_dep << "]" << std::endl;
+    fout << "   min_max_lat: [" << min_lat << ", " << max_lat << "]" << std::endl;
+    fout << "   min_max_lon: [" << min_lon << ", " << max_lon << "]" << std::endl;
+    fout << "   n_rtp: [" << ngrid_k << ", " << ngrid_j << ", " << ngrid_i << "]" << std::endl;
+    fout << "source:" << std::endl;
+    fout << "   src_rec_file: " << src_rec_file << std::endl;
+    fout << "   swap_src_rec: " << int(swap_src_rec) << std::endl;
+    fout << "model:" << std::endl;
+    fout << "   init_model_type: " << init_model_type << std::endl;
+    fout << "   init_model_path: " << init_model_path << std::endl;
+    fout << "   model_1d_name: "   << model_1d_name << std::endl;
+    fout << "inversion:" << std::endl;
+    fout << "   run_mode: "           << run_mode << std::endl;
+    fout << "   n_inversion_grid: "   << n_inversion_grid << std::endl;
+    fout << "   n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "]" << std::endl;
+    fout << "   output_dir: " << output_dir << std::endl;
+    if (sta_correction_file_exist)
+        fout << "   sta_correction_file: " << sta_correction_file << std::endl;
+    else
+        fout << "#   sta_correction_file: " << "dummy_sta_correction_file" << std::endl;
+    fout << "   type_dep_inv: " << type_dep_inv << std::endl;
+    fout << "   type_lat_inv: " << type_lat_inv << std::endl;
+    fout << "   type_lon_inv: " << type_lon_inv << std::endl;
+    fout << "   min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "]" << std::endl;
+    fout << "   min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "]" << std::endl;
+    fout << "   min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "]" << std::endl;
+    if (n_inv_r_flex_read) {
+        fout << "   n_inv_r_flex: " << n_inv_r_flex << std::endl;
+        fout << "   dep_inv: [";
+        for (int i = 0; i < n_inv_r_flex; i++){
+            fout << dep_inv[i];
+            if (i != n_inv_r_flex-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#   n_inv_r_flex: " << "3" << std::endl;
+        fout << "#   dep_inv: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_t_flex_read) {
+        fout << "   n_inv_t_flex: " << n_inv_t_flex << std::endl;
+        fout << "   lat_inv: [";
+        for (int i = 0; i < n_inv_t_flex; i++){
+            fout << lat_inv[i];
+            if (i != n_inv_t_flex-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#   n_inv_t_flex: " << "3" << std::endl;
+        fout << "#   lat_inv: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_p_flex_read) {
+        fout << "   n_inv_p_flex: " << n_inv_p_flex << std::endl;
+        fout << "   lon_inv: [";
+        for (int i = 0; i < n_inv_p_flex; i++){
+            fout << lon_inv[i];
+            if (i != n_inv_p_flex-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#   n_inv_p_flex: " << "3" << std::endl;
+        fout << "#   lon_inv: " << "[1, 1, 1]" << std::endl;
+    }
+    fout << "   max_iterations_inv: "    << max_iter_inv << std::endl;
+    fout << "   step_size: "             << step_size_init << std::endl;
+    fout << "   step_size_sc: "          << step_size_init_sc << std::endl;
+    fout << "   step_size_decay: "       << step_size_decay << std::endl;
+    fout << "   smooth_method: "         << smooth_method << std::endl;
+    fout << "   l_smooth_rtp: ["         << smooth_lr << ", " << smooth_lt << ", " << smooth_lp << "]" << std::endl;
+    fout << "   optim_method: "          << optim_method << std::endl;
+    fout << "   regularization_weight: " << regularization_weight << std::endl;
+    fout << "   max_sub_iterations: "    << max_sub_iterations << std::endl;
+
+    fout << "inv_strategy:" << std::endl;
+    fout << "   is_inv_slowness: " << int(is_inv_slowness) << std::endl;
+    fout << "   is_inv_azi_ani: "  << int(is_inv_azi_ani) << std::endl;
+    fout << "   is_inv_rad_ani: "  << int(is_inv_rad_ani) << std::endl;
+    fout << "   kernel_taper: ["   << kernel_taper[0] << ", " << kernel_taper[1] << "]" << std::endl;
+    fout << "   is_sta_correction: " << int(is_sta_correction) << std::endl;
+
+    fout << "parallel:" << std::endl;
+    fout << "   n_sims: " << n_sims << std::endl;
+    fout << "   ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "]" << std::endl;
+    fout << "   nproc_sub: " << n_subprocs << std::endl;
+    fout << "   use_gpu: " << int(use_gpu) << std::endl;
+
+    fout << "calculation:" << std::endl;
+    fout << "   convergence_tolerance: " << conv_tol << std::endl;
+    fout << "   max_iterations: " << max_iter << std::endl;
+    fout << "   stencil_order: " << stencil_order << std::endl;
+    fout << "   stencil_type: " << stencil_type << std::endl;
+    fout << "   sweep_type: " << sweep_type << std::endl;
+    int ff_flag=0;
+    if (output_format == OUTPUT_FORMAT_HDF5) ff_flag = 0;
+    else if (output_format == OUTPUT_FORMAT_ASCII) ff_flag = 1;
+    else {
+        std::cout << "Error: output_format is not defined!" << std::endl;
+        exit(1);
+    }
+    fout << "   output_file_format: " << ff_flag << std::endl;
+
+    fout << "output_setting:" << std::endl;
+    fout << "   is_output_source_field: " << int(is_output_source_field) << std::endl;
+    fout << "   is_output_model_dat: " << int(is_output_model_dat) << std::endl;
+    fout << "   is_verbose_output: " << int(is_verbose_output) << std::endl;
+    fout << "   is_output_final_model: " << int(is_output_final_model) << std::endl;
+    fout << "   is_output_in_process: " << int(is_output_in_process) << std::endl;
+
+    fout << "debug:" << std::endl;
+    fout << "   debug_mode: " << int(if_test) << std::endl;
+
+
+}
 
 // return radious
 CUSTOMREAL InputParams::get_src_radius() {

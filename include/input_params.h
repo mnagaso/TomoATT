@@ -26,6 +26,9 @@ public:
     InputParams(std::string&);
     ~InputParams();
 
+    // write parameters to output file
+    void write_params_to_file();
+
     // get parameters
     CUSTOMREAL get_min_dep(){return min_dep;};
     CUSTOMREAL get_max_dep(){return max_dep;};
