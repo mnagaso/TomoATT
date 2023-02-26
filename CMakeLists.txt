@@ -193,6 +193,10 @@ foreach( execsourcefile ${APP_SOURCES} )
     target_include_directories(${EXEC_NAME} PUBLIC ${BLAS_INCLUDE_DIRS})
   endif()
 
+  # link sacio
+  target_link_libraries(${EXEC_NAME} PUBLIC sacio_static)
+  target_include_directories(${EXEC_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/sacio/include)
+
   # link cuda
   if (CUDA_FOUND)
 

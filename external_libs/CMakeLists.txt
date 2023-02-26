@@ -13,5 +13,7 @@ endfunction(initialize_submodule)
 
 
 initialize_submodule(yaml-cpp)
-
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
+
+initialize_submodule(sacio)
+add_subdirectory(sacio)

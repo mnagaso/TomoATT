@@ -1,3 +1,6 @@
 [submodule "external_libs/yaml-cpp"]
 	path = external_libs/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "external_libs/sacio"]
+	path = external_libs/sacio
+	url = https://gitlab.com/mnagaso/sacio.git
