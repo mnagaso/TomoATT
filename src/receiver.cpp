@@ -478,6 +478,19 @@ void Receiver::interpolate_travel_time_nv(Grid& grid, InputParams& IP, std::stri
                 +          e_lon  *          e_lat  *          e_r  * grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)];
 
         //std::cout << "DEBUG near and vinterp : " << grid.T_loc[I2V(i_rec,j_rec,k_rec)] << ", " << vinterp << std::endl;
+        // std::cout << "times: " << grid.T_loc[I2V(i_rec,   j_rec,   k_rec)] << ", "
+        //           << grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)] << ", "
+        //           << grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec)] << ", "
+        //           << grid.T_loc[I2V(i_rec,   j_rec,   k_rec_p1)] << ", "
+        //           << grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec)] << ", "
+        //           << grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec_p1)] << ", "
+        //           << grid.T_loc[I2V(i_rec,   j_rec_p1,k_rec_p1)] << ", "
+        //           << grid.T_loc[I2V(i_rec_p1,j_rec_p1,k_rec_p1)] << ", "
+        //           << std::endl;
+        // std::cout << "rec: " << rec.name << ", lat: " << rec_lat 
+        //           << ", lon: " << rec_lon << ", dep: " << rec.dep 
+        //           << ", time: " << vinterp
+        //           << std::endl;
 
         // broadcast interpolated travel time
         broadcast_cr_single(vinterp, rec_rank);

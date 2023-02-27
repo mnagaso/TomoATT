@@ -1287,6 +1287,11 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 
                     n_source_node++;
 
+                    // std::cout << "source def " << std::endl;
+                    // std::cout << "p_loc_1d (lon): " << p_loc_1d[i_lon]*RAD2DEG << ", id_i: " << i_lon << ", src_p: " << src_p*RAD2DEG << std::endl;
+                    // std::cout << "t_loc_1d (lat): " << t_loc_1d[j_lat]*RAD2DEG << ", id_j: " << j_lat << ", src_t: " << src_t*RAD2DEG << std::endl;
+                    // std::cout << "r_loc_1d (r): " << r_loc_1d[k_r] << ", id_k: " << k_r << ", src_r: " << src_r << std::endl;         
+
                     if (if_verbose) {
                         if ( (k_r == 0 && k_first()) || (k_r == loc_K-1 && k_last()) )
                             std::cout << "Warning: source is on the boundary k of the grid.\n";
@@ -1310,6 +1315,12 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
             } // end loop i
         } // end loop j
     } // end loop k
+
+    // std::cout << "p_loc_1d (lon): " << p_loc_1d[25]*RAD2DEG << ", id_i: " << 25  
+    //           << "t_loc_1d (lat): " << t_loc_1d[29]*RAD2DEG << ", id_j: " << 29  
+    //           << "r_loc_1d (r): " << r_loc_1d[41] << ", id_k: " << 41 <<  std::endl;         
+
+
 
     // warning if source node is not found
     if( n_source_node > 0 && if_verbose )

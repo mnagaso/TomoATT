@@ -130,6 +130,8 @@ Iterator::~Iterator() {
 void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
     if(if_verbose && myrank == 0) std::cout << "(re) initializing arrays" << std::endl;
 
+    // std::cout << "source lat: " << src.get_src_t()*RAD2DEG << ", source lon: " << src.get_src_p()*RAD2DEG << ", source dep: " << src.get_src_r() << std::endl;
+
     if (!is_second_run) { // field initialization has already been done in the second run
         if (subdom_main) {
             if (!is_teleseismic) {
@@ -562,6 +564,31 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 #endif
         }
 
+        // std::cout << "grid1, T0v_loc: " << grid.T0v_loc[I2V(23,29,40)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,29,40)]
+        //           << std::endl;
+        // std::cout << "grid2, T0v_loc: " << grid.T0v_loc[I2V(24,29,40)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,29,40)]
+        //           << std::endl;
+        // std::cout << "grid3, T0v_loc: " << grid.T0v_loc[I2V(23,30,40)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,30,40)]
+        //           << std::endl;
+        // std::cout << "grid4, T0v_loc: " << grid.T0v_loc[I2V(24,30,40)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,30,40)]
+        //           << std::endl;
+        // std::cout << "grid5, T0v_loc: " << grid.T0v_loc[I2V(23,29,41)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,29,41)]
+        //           << std::endl;
+        // std::cout << "grid6, T0v_loc: " << grid.T0v_loc[I2V(24,29,41)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,29,41)]
+        //           << std::endl;
+        // std::cout << "grid7, T0v_loc: " << grid.T0v_loc[I2V(23,30,41)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,30,41)]
+        //           << std::endl;
+        // std::cout << "grid8, T0v_loc: " << grid.T0v_loc[I2V(24,30,41)] 
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,30,41)]
+        //           << std::endl;
+
 #ifndef FREQ_SYNC_GHOST
         // synchronize ghost cells everytime after sweeping of all directions
         // as the same method with Detrixhe2016
@@ -967,6 +994,10 @@ void Iterator::fix_boundary_Tadj(Grid& grid) {
 
 void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, int&kkr){
 
+    bool check_out = false;
+    int iip_out = 24; 
+    int jjt_out = 29;
+    int kkr_out = 38;
     // preparations
 
     count_cand = 0;
@@ -1103,42 +1134,42 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 is_causality = false;
                 switch (i_case){
                     case 0:  //characteristic travels from -p, -t, -r
-                        if (charact_p >= 0 && charact_t >= 0 && charact_r >= 0){
+                        if (charact_p >= 0 && charact_t >= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 1:  //characteristic travels from -p, -t, +r
-                        if (charact_p >= 0 && charact_t >= 0 && charact_r <= 0){
+                        if (charact_p >= 0 && charact_t >= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 2:  //characteristic travels from -p, +t, -r
-                        if (charact_p >= 0 && charact_t <= 0 && charact_r >= 0){
+                        if (charact_p >= 0 && charact_t <= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 3:  //characteristic travels from -p, +t, +r
-                        if (charact_p >= 0 && charact_t <= 0 && charact_r <= 0){
+                        if (charact_p >= 0 && charact_t <= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 4:  //characteristic travels from +p, -t, -r
-                        if (charact_p <= 0 && charact_t >= 0 && charact_r >= 0){
+                        if (charact_p <= 0 && charact_t >= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 5:  //characteristic travels from +p, -t, +r
-                        if (charact_p <= 0 && charact_t >= 0 && charact_r <= 0){
+                        if (charact_p <= 0 && charact_t >= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 6:  //characteristic travels from +p, +t, -r
-                        if (charact_p <= 0 && charact_t <= 0 && charact_r >= 0){
+                        if (charact_p <= 0 && charact_t <= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 7:  //characteristic travels from +p, +t, +r
-                        if (charact_p <= 0 && charact_t <= 0 && charact_r <= 0){
+                        if (charact_p <= 0 && charact_t <= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
@@ -1150,12 +1181,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "body case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                                << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                                << ", " << std::endl;
+                }
 
 
             }
@@ -1228,22 +1259,22 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 is_causality = false;
                 switch (i_case){
                     case 0:  //characteristic travels from -t, -r
-                        if (charact_t >= 0 && charact_r >= 0){
+                        if (charact_t >= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 1:  //characteristic travels from -t, +r
-                        if (charact_t >= 0 && charact_r <= 0){
+                        if (charact_t >= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 2:  //characteristic travels from +t, -r
-                        if (charact_t <= 0 && charact_r >= 0){
+                        if (charact_t <= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 3:  //characteristic travels from +t, +r
-                        if (charact_t <= 0 && charact_r <= 0){
+                        if (charact_t <= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
@@ -1255,12 +1286,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "surface case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                                << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                                << ", " << std::endl;
+                }
 
             }
         }
@@ -1331,22 +1362,22 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 is_causality = false;
                 switch (i_case){
                     case 4:  //characteristic travels from -p, -r
-                        if (charact_p >= 0 && charact_r >= 0){
+                        if (charact_p >= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 5:  //characteristic travels from -p, +r
-                        if (charact_p >= 0 && charact_r <= 0){
+                        if (charact_p >= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 6:  //characteristic travels from +p, -r
-                        if (charact_p <= 0 && charact_r >= 0){
+                        if (charact_p <= 0 && charact_r >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 7:  //characteristic travels from +p, +r
-                        if (charact_p <= 0 && charact_r <= 0){
+                        if (charact_p <= 0 && charact_r <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
@@ -1358,12 +1389,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "surface, case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+                }
 
             }
         }
@@ -1436,22 +1467,22 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 is_causality = false;
                 switch (i_case){
                     case 8:  //characteristic travels from -p, -t
-                        if (charact_p >= 0 && charact_t >= 0){
+                        if (charact_p >= 0 && charact_t >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 9:  //characteristic travels from -p, +t
-                        if (charact_p >= 0 && charact_t <= 0){
+                        if (charact_p >= 0 && charact_t <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 10:  //characteristic travels from +p, -t
-                        if (charact_p <= 0 && charact_t >= 0){
+                        if (charact_p <= 0 && charact_t >= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
                     case 11:  //characteristic travels from +p, +t
-                        if (charact_p <= 0 && charact_t <= 0){
+                        if (charact_p <= 0 && charact_t <= 0 && tmp_tau > 0){
                             is_causality = true;
                         }
                         break;
@@ -1463,12 +1494,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "surface case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+                }
 
             }
         }
@@ -1513,13 +1544,13 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
             switch (i_case){
                 case 0:  //characteristic travels from -r (we can simply compare the traveltime, which is the same as check the direction of characteristic)
                     if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt,kkr-1)] * grid.T0v_loc[I2V(iip,jjt,kkr-1)]
-                        && tmp_tau > grid.tau_loc[I2V(iip,jjt,kkr-1)]/_2_CR){   // this additional condition ensures the causality near the source
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt,kkr-1)]/_2_CR && tmp_tau > 0){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 1:  //characteristic travels from +r
                     if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt,kkr+1)] * grid.T0v_loc[I2V(iip,jjt,kkr+1)]
-                        && tmp_tau > grid.tau_loc[I2V(iip,jjt,kkr+1)]/_2_CR){
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt,kkr+1)]/_2_CR && tmp_tau > 0){
                         is_causality = true;
                     }
                     break;
@@ -1531,12 +1562,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 count_cand += 1;
             }
 
-            // if (iip == 3 && jjt == 2 && kkr == 2){
-            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-            //                 << ", " << std::endl;
-            // }
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+            }
 
         }
 
@@ -1580,13 +1611,13 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
             switch (i_case){
                 case 2:  //characteristic travels from -t (we can simply compare the traveltime, which is the same as check the direction of characteristic)
                     if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt-1,kkr)] * grid.T0v_loc[I2V(iip,jjt-1,kkr)]
-                        && tmp_tau > grid.tau_loc[I2V(iip,jjt-1,kkr)]/_2_CR){   // this additional condition ensures the causality near the source
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt-1,kkr)]/_2_CR && tmp_tau > 0){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 3:  //characteristic travels from +t
                     if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip,jjt+1,kkr)] * grid.T0v_loc[I2V(iip,jjt+1,kkr)]
-                        && tmp_tau > grid.tau_loc[I2V(iip,jjt+1,kkr)]/_2_CR){
+                        && tmp_tau > grid.tau_loc[I2V(iip,jjt+1,kkr)]/_2_CR && tmp_tau > 0){
                         is_causality = true;
                     }
                     break;
@@ -1599,12 +1630,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 count_cand += 1;
             }
 
-            // if (iip == 3 && jjt == 2 && kkr == 2){
-            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-            //                 << ", " << std::endl;
-            // }
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+            }
 
         }
     }
@@ -1648,25 +1679,25 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
             switch (i_case){
                 case 4:  //characteristic travels from -p (we can simply compare the traveltime, which is the same as check the direction of characteristic)
                     if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip-1,jjt,kkr)] * grid.T0v_loc[I2V(iip-1,jjt,kkr)]
-                        && tmp_tau > grid.tau_loc[I2V(iip-1,jjt,kkr)]/_2_CR){   // this additional condition ensures the causality near the source
+                        && tmp_tau > grid.tau_loc[I2V(iip-1,jjt,kkr)]/_2_CR && tmp_tau > 0){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 5:  //characteristic travels from +p
                     if (tmp_tau * grid.T0v_loc[I2V(iip,jjt,kkr)] > grid.tau_loc[I2V(iip+1,jjt,kkr)] * grid.T0v_loc[I2V(iip+1,jjt,kkr)]
-                        && tmp_tau > grid.tau_loc[I2V(iip+1,jjt,kkr)]/_2_CR){
+                        && tmp_tau > grid.tau_loc[I2V(iip+1,jjt,kkr)]/_2_CR && tmp_tau > 0){
                         is_causality = true;
                     }
                     break;
 
             }
 
-            // if (iip == 3 && jjt == 2 && kkr == 2){
-            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-            //                 << ", " << std::endl;
-            // }
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+            }
 
             // if satisfying the causility condition, retain it as a canditate solution
             if (is_causality) {
@@ -1679,6 +1710,24 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
     // final, choose the minimum candidate solution as the updated value
     for (int i_cand = 0; i_cand < count_cand; i_cand++){
         grid.tau_loc[I2V(iip, jjt, kkr)] = std::min(grid.tau_loc[I2V(iip, jjt, kkr)], canditate[i_cand]);
+
+        if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+            std::cout << "tau_loc: " << grid.tau_loc[I2V(iip, jjt, kkr)] << ", i_cand: " << i_cand << ", cand: " << canditate[i_cand] << std::endl;
+        }
+
+        if (grid.tau_loc[I2V(iip, jjt, kkr)] < 0 ){
+            std::cout << "error, tau_loc < 0. iip: " << iip << ", jjt: " << jjt << ", kkr: " << kkr << std::endl;
+            exit(1);
+        }
+
+    }
+
+                    
+
+    if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+            std::cout << "tau_loc: " << grid.tau_loc[I2V(iip, jjt, kkr)] 
+                      << ",  T_loc: " << grid.T0v_loc[I2V(iip,jjt,kkr)] * grid.tau_loc[I2V(iip, jjt, kkr)]
+                      << std::endl;
     }
 }
 
@@ -2121,42 +2170,42 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 is_causality = false;
                 switch (i_case){
                     case 0:  //characteristic travels from -p, -t, -r
-                        if (charact_p >= 0 && charact_t >= 0 && charact_r >= 0){
+                        if (charact_p >= 0 && charact_t >= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 1:  //characteristic travels from -p, -t, +r
-                        if (charact_p >= 0 && charact_t >= 0 && charact_r <= 0){
+                        if (charact_p >= 0 && charact_t >= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 2:  //characteristic travels from -p, +t, -r
-                        if (charact_p >= 0 && charact_t <= 0 && charact_r >= 0){
+                        if (charact_p >= 0 && charact_t <= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 3:  //characteristic travels from -p, +t, +r
-                        if (charact_p >= 0 && charact_t <= 0 && charact_r <= 0){
+                        if (charact_p >= 0 && charact_t <= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 4:  //characteristic travels from +p, -t, -r
-                        if (charact_p <= 0 && charact_t >= 0 && charact_r >= 0){
+                        if (charact_p <= 0 && charact_t >= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 5:  //characteristic travels from +p, -t, +r
-                        if (charact_p <= 0 && charact_t >= 0 && charact_r <= 0){
+                        if (charact_p <= 0 && charact_t >= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 6:  //characteristic travels from +p, +t, -r
-                        if (charact_p <= 0 && charact_t <= 0 && charact_r >= 0){
+                        if (charact_p <= 0 && charact_t <= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 7:  //characteristic travels from +p, +t, +r
-                        if (charact_p <= 0 && charact_t <= 0 && charact_r <= 0){
+                        if (charact_p <= 0 && charact_t <= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
@@ -2241,22 +2290,22 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 is_causality = false;
                 switch (i_case){
                     case 0:  //characteristic travels from -t, -r
-                        if (charact_t >= 0 && charact_r >= 0){
+                        if (charact_t >= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 1:  //characteristic travels from -t, +r
-                        if (charact_t >= 0 && charact_r <= 0){
+                        if (charact_t >= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 2:  //characteristic travels from +t, -r
-                        if (charact_t <= 0 && charact_r >= 0){
+                        if (charact_t <= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 3:  //characteristic travels from +t, +r
-                        if (charact_t <= 0 && charact_r <= 0){
+                        if (charact_t <= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
@@ -2340,22 +2389,22 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 is_causality = false;
                 switch (i_case){
                     case 4:  //characteristic travels from -p, -r
-                        if (charact_p >= 0 && charact_r >= 0){
+                        if (charact_p >= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 5:  //characteristic travels from -p, +r
-                        if (charact_p >= 0 && charact_r <= 0){
+                        if (charact_p >= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 6:  //characteristic travels from +p, -r
-                        if (charact_p <= 0 && charact_r >= 0){
+                        if (charact_p <= 0 && charact_r >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 7:  //characteristic travels from +p, +r
-                        if (charact_p <= 0 && charact_r <= 0){
+                        if (charact_p <= 0 && charact_r <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
@@ -2441,22 +2490,22 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 is_causality = false;
                 switch (i_case){
                     case 8:  //characteristic travels from -p, -t
-                        if (charact_p >= 0 && charact_t >= 0){
+                        if (charact_p >= 0 && charact_t >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 9:  //characteristic travels from -p, +t
-                        if (charact_p >= 0 && charact_t <= 0){
+                        if (charact_p >= 0 && charact_t <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 10:  //characteristic travels from +p, -t
-                        if (charact_p <= 0 && charact_t >= 0){
+                        if (charact_p <= 0 && charact_t >= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
                     case 11:  //characteristic travels from +p, +t
-                        if (charact_p <= 0 && charact_t <= 0){
+                        if (charact_p <= 0 && charact_t <= 0 && tmp_T > 0){
                             is_causality = true;
                         }
                         break;
@@ -2513,12 +2562,12 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
             is_causality = false;
             switch (i_case){
                 case 0:  //characteristic travels from -r (we can simply compare the traveltime, which is the same as check the direction of characteristic)
-                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr-1)]){   // this additional condition ensures the causality near the source
+                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr-1) && tmp_T > 0]){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 1:  //characteristic travels from +r
-                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr+1)]){
+                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr+1) && tmp_T > 0]){
                         is_causality = true;
                     }
                     break;
@@ -2574,12 +2623,12 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
             is_causality = false;
             switch (i_case){
                 case 2:  //characteristic travels from -t (we can simply compare the traveltime, which is the same as check the direction of characteristic)
-                    if (tmp_T >= grid.T_loc[I2V(iip,jjt-1,kkr)]){   // this additional condition ensures the causality near the source
+                    if (tmp_T >= grid.T_loc[I2V(iip,jjt-1,kkr)] && tmp_T > 0){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 3:  //characteristic travels from +t
-                    if (tmp_T >= grid.T_loc[I2V(iip,jjt+1,kkr)]){
+                    if (tmp_T >= grid.T_loc[I2V(iip,jjt+1,kkr)] && tmp_T > 0){
                         is_causality = true;
                     }
                     break;
@@ -2636,12 +2685,12 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
             is_causality = false;
             switch (i_case){
                 case 4:  //characteristic travels from -p (we can simply compare the traveltime, which is the same as check the direction of characteristic)
-                    if (tmp_T >= grid.T_loc[I2V(iip-1,jjt,kkr)]){   // this additional condition ensures the causality near the source
+                    if (tmp_T >= grid.T_loc[I2V(iip-1,jjt,kkr)] && tmp_T > 0){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 5:  //characteristic travels from +p
-                    if (tmp_T >= grid.T_loc[I2V(iip+1,jjt,kkr)]){
+                    if (tmp_T >= grid.T_loc[I2V(iip+1,jjt,kkr)] && tmp_T > 0){
                         is_causality = true;
                     }
                     break;

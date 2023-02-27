@@ -766,7 +766,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
-                    // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " "
+                    << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " "
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
                     // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks_update" << " "
@@ -789,7 +789,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
             // std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
             std::vector<CUSTOMREAL> Ks = get_grid_data(grid.get_Ks());
             std::vector<CUSTOMREAL> Ks_update = get_grid_data(grid.get_Ks_update());
-            // std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
+            std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
 
             for (int k = 0; k < loc_K_vis; k++){
                 for (int j = 0; j < loc_J_vis; j++){
@@ -802,7 +802,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
-                            // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " "
+                            << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
                             // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " "
