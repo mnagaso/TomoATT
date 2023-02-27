@@ -53,6 +53,7 @@ inline void broadcast_str(std::string&, int);
 inline void broadcast_bool_single_sub(bool&, int);
 inline void broadcast_i_single_sub(int&, int);
 inline void broadcast_cr_single_sub(CUSTOMREAL&, int);
+inline void broadcast_cr_sub(CUSTOMREAL*, int, int);
 inline void prepare_shm_array_cr(int, CUSTOMREAL*&, MPI_Win&);
 inline void prepare_shm_array_bool(int, bool*&, MPI_Win&);
 
@@ -588,7 +589,12 @@ inline void broadcast_i_single_sub(int& value, int root){
 //}
 
 inline void broadcast_cr_single_sub(CUSTOMREAL& buf, int root){
-    MPI_Bcast(&buf, 1, MPI_CR, root, sub_comm);
+    int count = 1;
+    MPI_Bcast(&buf, count, MPI_CR, root, sub_comm);
+}
+
+inline void broadcast_cr_sub(CUSTOMREAL* buf, int count, int root){
+    MPI_Bcast(buf, count, MPI_CR, root, sub_comm);
 }
 
 inline void broadcast_str(std::string& str, int root) {

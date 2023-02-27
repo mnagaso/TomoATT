@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
     // output inversion grid file (by main process)
     grid.write_inversion_grid_file();
 
+
     // initialize inversion grids (by other process)
     grid.setup_inversion_grids(IP);
 
@@ -81,10 +82,9 @@ int main(int argc, char *argv[])
     // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
     prepare_teleseismic_boundary_conditions(IP, grid, io);      // not ready for new version of src rec data
 
-    synchronize_all_world();
-
-
     
+
+    synchronize_all_world();
 
     //
     // run main calculation routines depending on specified mode
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     } else if (IP.get_run_mode() == TELESEIS_PREPROCESS) {
         // terminate the program here if the run mode is TELESEIS_PREPROCESS
         // because prepare_teleseismic_boundary_conditions is already called.
-    } else if (IP.get_run_mode() == SRC_RELOCATION) {
+    } else if (IP.get_run_mode() == SRC_RELOCATION) {              
         run_earthquake_relocation(IP, grid, io);
     } else {
         std::cerr << "Error: invalid run mode is specified." << std::endl;

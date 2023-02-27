@@ -23,10 +23,8 @@
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
 inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode){
 
-    CUSTOMREAL v_obj = _0_CR;
-    CUSTOMREAL v_misfit = _0_CR;
-
-    std::vector<CUSTOMREAL> v_obj_misfit;
+    // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele
+    std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(20);
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION)
@@ -82,21 +80,26 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
 
     // check syn_time_list_sr
-    for(auto iter1 = IP.syn_time_list_sr.begin(); iter1 != IP.syn_time_list_sr.end(); iter1++){        
-        for (auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
-            std::cout << "id_sim: " << id_sim << ", src name: " << iter1->first << ", rec name: " << iter2->first 
-                      << ", syn time is: " << iter2->second
-                      << std::endl;
-        }
-    }
+    // for(auto iter1 = IP.syn_time_list_sr.begin(); iter1 != IP.syn_time_list_sr.end(); iter1++){        
+    //     for (auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
+    //         std::cout << "id_sim: " << id_sim << ", src name: " << iter1->first << ", rec name: " << iter2->first 
+    //                   << ", syn time is: " << iter2->second
+    //                   << std::endl;
+    //     }
+    // }
 
-
+    
     ///////////////////////
     // loop for each source
     ///////////////////////
 
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
+        // check src_list_id
+        // for(auto iter = IP.src_list_nv.begin(); iter != IP.src_list_nv.end(); iter++){
+        //     std::cout << "id_sim: " << id_sim << ", myrank: " << myrank << ", id_subdomain: " << id_subdomain << ", id_src:" << iter->second.id << std::endl;
+        // }
+        
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
         name_sim_src = IP.src_names_this_sim[i_src];
@@ -106,7 +109,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // set group name to be used for output in h5
         io.change_group_name_for_source();
-
+        
         // output initial field
         if(first_src && IP.get_is_output_source_field()) {
             if (subdom_main) {
@@ -119,9 +122,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             }
             first_src = false;
         }
-
+        
         // get is_teleseismic flag
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
+        // bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
+        bool is_teleseismic = IP.get_src_point_nv(name_sim_src).is_out_of_region;
 
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic);
@@ -135,7 +139,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
-
+        
         if (!hybrid_stencil_order){
             select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
             It->run_iteration_forward(IP, grid, io, first_init);
@@ -175,7 +179,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             //if (if_test)
             //    io.write_residual(grid); // this will over write the u_loc, so we need to call write_u_h5 first
         }
-
+        
         // calculate the arrival times at each receivers
         Receiver recs;
         // recs.calculate_arrival_time(IP, grid);
@@ -184,33 +188,30 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
-
+        
         if (IP.get_run_mode()==DO_INVERSION){
-            // calculate adjoint source
-            // v_obj += recs.calculate_adjoint_source(IP);
-            // v_obj_misfit = recs.calculate_adjoint_source(IP);
-            v_obj_misfit = recs.calculate_adjoint_source_nv(IP);
-            v_obj += v_obj_misfit[0];
-            v_misfit += v_obj_misfit[1];
-            
+            // calculate adjoint source           
+            std::vector<CUSTOMREAL> v_obj_misfit_event = recs.calculate_adjoint_source_nv(IP);
+            for(int i = 0; i < (int)v_obj_misfit_event.size(); i++){
+                v_obj_misfit[i] += v_obj_misfit_event[i];
+            }
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
 
-            // calculate sensitivity kernel
+                        // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP);
-
+            
             if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
                 // adjoint field will be output only at the end of subiteration
                 // output the result of adjoint simulation
                 io.write_adjoint_field(grid,i_inv);
             }
         }    
-
+        
         // check adjoint source
-        for (auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
-            std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
-        }
-
+        // for (auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+        //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
+        // }
 
     } // end loop sources
 
@@ -218,11 +219,17 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     synchronize_all_world();
 
     // allreduce sum_adj_src
-    allreduce_cr_sim_single(v_obj, v_obj);
-    allreduce_cr_sim_single(v_misfit, v_misfit);
+    for(int i = 0; i < (int)v_obj_misfit.size(); i++){
+        allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
+        synchronize_all_world();
+    }
+    
+    // allreduce_cr_sim_single_inplace(v_misfit);
+    
+    
 
-    v_obj_misfit[0] = v_obj;
-    v_obj_misfit[1] = v_misfit;
+    // v_obj_misfit[0] = v_obj;
+    // v_obj_misfit[1] = v_misfit;
     // return current objective function value
     // return v_obj;
     return v_obj_misfit;

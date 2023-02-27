@@ -116,17 +116,45 @@ public:
     CUSTOMREAL sec       = -1.0;
     CUSTOMREAL mag       = -1.0;
 
-    bool is_out_of_region = false;     // is the source or receiver in the region; false: in the refion; true: teleseismic
-
     CUSTOMREAL adjoint_source = 0.0;
 
     int n_data = 0;
+
+    // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
+    bool is_out_of_region = false;     // is the source or receiver in the region; false: in the refion; true: teleseismic
+    CUSTOMREAL* arr_times_bound_N; // arrival time of the receiver at the north boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_E; // arrival time of the receiver at the east boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_W; // arrival time of the receiver at the west boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_S; // arrival time of the receiver at the south boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
+    bool*       is_bound_src; // true if the source is on the boundary surface
+
+    // kernel
+    CUSTOMREAL sta_correct = 0.0;
+    CUSTOMREAL sta_correct_kernel = 0.0;
+
+    // relocation
+    bool       is_stop      = false;
+    CUSTOMREAL tau_opt      = 0.0;
+    CUSTOMREAL grad_chi_i   = 0.0;
+    CUSTOMREAL grad_chi_j   = 0.0;
+    CUSTOMREAL grad_chi_k   = 0.0;
+    CUSTOMREAL sum_weight   = 0.0;
+    CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
+    CUSTOMREAL vobj_src_reloc           = 0.0;
+    CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
+    CUSTOMREAL DTi          = 0.0;
+    CUSTOMREAL DTj          = 0.0;
+    CUSTOMREAL DTk          = 0.0;
+    CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
 };
 
 class DataInfo {
 public:
 
-    CUSTOMREAL data_weight = 1.0;
+    CUSTOMREAL data_weight = 1.0;   // the weight in the src_rec file
+    CUSTOMREAL weight      = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+
     std::string phase = "unknown";
 
     bool is_src_rec = false;    // absolute traveltime, single source - receiver
@@ -180,19 +208,20 @@ public:
     CUSTOMREAL get_min_lon(){return min_lon*DEG2RAD;};
     CUSTOMREAL get_max_lon(){return max_lon*DEG2RAD;};
 
-    CUSTOMREAL           get_src_radius();
-    CUSTOMREAL           get_src_lat();
-    CUSTOMREAL           get_src_lon();
+    // CUSTOMREAL           get_src_radius();
+    // CUSTOMREAL           get_src_lat();
+    // CUSTOMREAL           get_src_lon();
     CUSTOMREAL           get_src_radius_nv();
     CUSTOMREAL           get_src_lat_nv();
     CUSTOMREAL           get_src_lon_nv();
     std::string          get_src_rec_file()      {return src_rec_file;};
     bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
-    SrcRec&              get_src_point(int);  // return SrcRec object
-    SrcRecInfo&          get_src_point_nv(std::string);  // return SrcRec object
-    std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
+    // SrcRec&              get_src_point(int);  // return SrcRec object
+    // std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
+    SrcRecInfo&                 get_src_point_nv(std::string);  // return SrcRec object
+    SrcRecInfo&                 get_rec_point_nv(std::string); // return receivers for the current source
     std::vector<std::string>    get_rec_points_nv(std::string);  // return SrcRec object
-    SrcRecInfo&          get_rec_point_nv(std::string); // return receivers for the current source
+    
 
     CUSTOMREAL get_conv_tol(){return conv_tol;};
     void set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
@@ -301,63 +330,92 @@ private:
 
     // parse src_rec_file
     void parse_src_rec_file();
-    // parse src_list_file
-    void parse_src_list();
-    // parse rec_list_file
-    void parse_rec_list();
-    // parse src_rec_file new
-    void parse_src_rec_file_new();
     // parse sta_correction_file
     void parse_sta_correction_file();
 
 public:
     // new version for reading src rec data (by Chen Jing, 20230212)
     std::map<std::string, SrcRecInfo> src_list_nv;
+    std::map<std::string, SrcRecInfo> rec_list_nv;
+public:
+    // functions for SrcRecInfo
+    void set_adjoint_source(std::string, CUSTOMREAL);
+
+    // new version for reading src rec data (by Chen Jing, 20230212)
+    auto get_src_list_nv_begin()                        {return src_list_nv.begin();};
+    auto get_src_list_nv_end()                          {return src_list_nv.end();};
+    SrcRecInfo get_src_list_nv(std::string);
+    
     std::map<std::string, SrcRecInfo> src_list_back_nv;     // for output purposes
     std::map<std::string, SrcRecInfo> src_list_prepare_nv;  // related to common receiver differential time, computed fist
+    std::map<std::string, SrcRecInfo> src_list_tele_nv;    // source list for teleseismic
+    std::vector<std::string> src_name_list;                 // name list for output
 
-    std::map<std::string, SrcRecInfo> tele_src_list_nv;    // source list for teleseismic   (not ready)
-    
-    std::map<std::string, SrcRecInfo> rec_list_nv;
+    auto get_rec_list_nv_begin()                        {return rec_list_nv.begin();};
+    auto get_rec_list_nv_end()                          {return rec_list_nv.end();};
+    SrcRecInfo get_rec_list_nv(std::string);    
     std::map<std::string, SrcRecInfo> rec_list_back_nv;    // for output purposes
+    std::map<std::string, SrcRecInfo> rec_list_tele_nv;    // rec list for teleseismic
 
     std::vector<DataInfo> data_info_nv;
+    std::vector<DataInfo> tele_data_info_nv;    // data list for teleseismic
     std::vector<DataInfo> data_info_back_nv;    // for backup purposes
+
 
     // std::map<std::vector<std::string>,CUSTOMREAL> syn_time_list;    // (evname, stname) -> syn_time
     std::map<std::string, std::map<std::string, CUSTOMREAL> > syn_time_list_sr;     // all used synthetic traveltime in forward modeling and inversion.  two level map, map1: source -> map2;  map 2: receiver -> time;
     std::map<std::string, std::vector<DataInfo> > data_info_smap;      // map source -> vector; vector: (related) Traveltime data
+    std::map<std::string, std::vector<DataInfo> > data_info_smap_reloc;      // map source -> vector; vector: (related) Traveltime data
+    
     // initialize_adjoint_source
     void initialize_adjoint_source();
 
+    // weight of different types of data
+    CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
+    CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
+    CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
+    CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+    // misfit balance
+    int is_balance_data_weight = 0;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
+    CUSTOMREAL total_abs_local_data_weight = 0.0;
+    CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
+    CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
+    CUSTOMREAL total_teleseismic_data_weight = 0.0;
+    // the number of data
+    int N_abs_local_data = 0;
+    int N_cr_dif_local_data = 0;
+    int N_cs_dif_local_data = 0;
+    int N_teleseismic_data = 0;
+    // the number of the types of data
+    int N_data_type = 0;
+    std::map<std::string, int> data_type;     // element: "abs", "cs_dif", "cr_dif", "tele"
 private:
     // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
-    std::map<std::string, SrcRec> rec_list;
-    std::map<std::string, CUSTOMREAL> station_correction;
-    std::map<std::string, CUSTOMREAL> station_correction_kernel;
+    // std::map<std::string, SrcRec> rec_list;
+    // std::map<std::string, CUSTOMREAL> station_correction;
+    // std::map<std::string, CUSTOMREAL> station_correction_kernel;
     // CUSTOMREAL* station_correction_kernel;
-    CUSTOMREAL* station_correction_value;
-    int N_receiver = 0;
+    // CUSTOMREAL* station_correction_value;
+    // int N_receiver = 0;
 
     // list for all of src point data
-    std::vector<SrcRec> src_points;
-    std::vector<SrcRec> src_points_back; // for backup purposes
-    std::vector<SrcRec> src_points_out;  // temporal storage for output
+    // std::vector<SrcRec> src_points;
+    // std::vector<SrcRec> src_points_back; // for backup purposes
+    // std::vector<SrcRec> src_points_out;  // temporal storage for output
 
     
     // list for all of rec point data
-    std::vector< std::vector<SrcRec> > rec_points;
-    std::vector< std::vector<SrcRec> > rec_points_back; // for backup purposes
-    std::vector< std::vector<SrcRec> > rec_points_out;  // temporal storage for output
+    // std::vector< std::vector<SrcRec> > rec_points;
+    // std::vector< std::vector<SrcRec> > rec_points_back; // for backup purposes
+    // std::vector< std::vector<SrcRec> > rec_points_out;  // temporal storage for output
     // gather all arrival times to a main process
-    void gather_all_arrival_times_to_main();
+    // void gather_all_arrival_times_to_main();
     void gather_all_arrival_times_to_main_nv();
 
     // swap the sources and receivers
     void do_swap_src_rec();
-    void do_swap_src_rec_ver2();
     bool swap_src_rec = false;     // whether the src/rec are swapped or not
-    void reverse_src_rec_points(); // reverse the swapped src/rec
+    // void reverse_src_rec_points(); // reverse the swapped src/rec
 
     // rearrange the data_info_nv to data_info_smap
     void rearrange_data_info();
@@ -366,20 +424,18 @@ private:
 public:
     // generate syn_time_list_nv based on data
     void generate_syn_time_list();
-    // initialize syn_time_list_nv
     void initialize_syn_time_list();
-    // reduce syn_time_list_nv
     void reduce_syn_time_list();
 private:
     // tele seismic source management
     void separate_region_and_tele_src();               // check if the source is tele seismic or not
     void merge_region_and_tele_src();                  // merge tele seismic source to the region source
-    std::vector<SrcRec> tele_src_points;               // tele seismic source points
-    std::vector<std::vector<SrcRec> > tele_rec_points; // tele seismic receiver points
+    // std::vector<SrcRec> tele_src_points;               // tele seismic source points
+    // std::vector<std::vector<SrcRec> > tele_rec_points; // tele seismic receiver points
     bool i_first=false, i_last=false, j_first=false, j_last=false, k_first=false; // store info if this subdomain has outer boundary
 
 public:
-    void allocate_memory_tele_boundaries(int, int, int, int,
+    void allocate_memory_tele_boundaries(int, int, int, std::string,
         bool, bool, bool, bool, bool); // allocate memory for tele boundaries
 private:
     // check contradictions in input parameters
@@ -392,12 +448,19 @@ public:
     std::vector<int> src_ids_this_sim;
     std::vector<std::string> src_names_this_sim;
 
-    // traveltime of src should be prepared for this sim group
+    // traveltime of src should be prepared for this sim group (have common receivr differential traveltime)
     std::vector<int> src_ids_this_sim_prepare;
     std::vector<std::string> src_names_this_sim_prepare;
 
+    // boundary of src should be computed for this sim group (teleseismic earthquake)
+    std::vector<int> src_ids_this_sim_tele;
+    std::vector<std::string> src_names_this_sim_tele;
+
+    // (relocation) modify (swapped source) receiver's location and time
+    void modift_swapped_source_location();
+
     // write out src_rec_file
-    void write_src_rec_file(int);
+    // void write_src_rec_file(int);
     void write_src_rec_file_nv(int);
 
     // write out station_correction_file

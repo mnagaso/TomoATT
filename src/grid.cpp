@@ -1318,7 +1318,7 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 }
 
 
-void Grid::initialize_fields_teleseismic(Source& src, SrcRec& srcrec){
+void Grid::initialize_fields_teleseismic(Source& src, SrcRecInfo& srcrec){
     CUSTOMREAL inf_T = 2000.0;
 
     for (int k_r = 0; k_r < loc_K; k_r++) {

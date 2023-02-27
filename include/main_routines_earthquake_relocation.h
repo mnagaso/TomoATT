@@ -23,7 +23,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     // check if this run is in source receiver swap mode
     // if not, stop the program
     if (IP.get_is_srcrec_swap() == false){
-        std::cout << "Error: Source relocation mode may run with swap_src_rec = 1" << std::endl;
+        std::cout << "Error: Source relocation mode must run with swap_src_rec = 1" << std::endl;
         exit(1);
     }
 
@@ -41,17 +41,19 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     // loop for each source
     ///////////////////////
 
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
 
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
+        
 
         // set group name to be used for output in h5
         io.change_group_name_for_source();
 
         // check if the source is teleseismic or not
         // because teleseismic source is not supported in this mode
-        bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
+        bool is_teleseismic = IP.get_src_point_nv(name_sim_src).is_out_of_region;
 
         if (is_teleseismic){
             std::cout << "Error: Teleseismic source is not supported in source relocation mode." << std::endl;
@@ -71,6 +73,10 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // run forward simulation
         /////////////////////////
 
+        std::cout << "forward modeling start, name: " << name_sim_src << ", lat: " << IP.src_list_nv[name_sim_src].lat 
+                  << ", lon: " << IP.src_list_nv[name_sim_src].lon << ", dep: " << IP.src_list_nv[name_sim_src].dep
+                  << std::endl; 
+
         It->run_iteration_forward(IP, grid, io, first_init);
 
         // writeout travel time field
@@ -84,37 +90,101 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 }
 
 
-void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, std::vector<SrcRec>& unique_rec_list){
+// void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, std::vector<SrcRec>& unique_rec_list){
 
-    // initialize source parameters
+//     // initialize source parameters
+//     Receiver recs; // here the source is swapped to receiver
+//     recs.init_vars_src_reloc(IP, unique_rec_list);
+
+//     // iterate over all sources for calculating optimal origin time
+//     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+
+//         // load the global id of this src
+//         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+//         // change target group to be read
+//         io.change_group_name_for_source();
+//         // load travel time field on grid.T_loc
+//         io.read_T(grid);
+
+//         // calculate travel time at the actual source location
+//         recs.calculate_arrival_time(IP, grid);
+
+//         // calculate approximated orptimal origin time
+//         recs.calculate_optimal_origin_time(IP, unique_rec_list);
+//     }
+
+//     // divide optimal origin time by summed weight
+//     recs.divide_optimal_origin_time_by_summed_weight(IP, unique_rec_list);
+
+//     // iterate over all sources for calculating gradient of objective function
+//     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+
+//         // load the global id of this src
+//         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+
+//         // reset the file name to be read
+//         io.change_group_name_for_source();
+
+//         // load travel time field on grid.T_loc
+//         io.read_T(grid);
+
+//         // calculate gradient at the actual source location
+//         recs.calculate_T_gradient(IP, grid);
+
+//         // calculate gradient of objective function
+//         recs.calculate_grad_obj_src_reloc(IP, unique_rec_list);
+
+//     }
+// }
+
+void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, int i_iter){
+
+    
     Receiver recs; // here the source is swapped to receiver
-    recs.init_vars_src_reloc(IP, unique_rec_list);
+    // recs.init_vars_src_reloc(IP, unique_rec_list);
+
+    // initialize source parameters (obj, kernel, )
+    recs.init_vars_src_reloc(IP);
 
     // iterate over all sources for calculating optimal origin time
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    // for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {    
 
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        name_sim_src = IP.src_names_this_sim[i_src]; // local src name to global src id
+        
         // change target group to be read
-        io.change_group_name_for_source();
+        io.change_group_name_for_source_nv();
         // load travel time field on grid.T_loc
         io.read_T(grid);
 
         // calculate travel time at the actual source location
-        recs.calculate_arrival_time(IP, grid);
+        // recs.calculate_arrival_time(IP, grid);
+        recs.store_arrival_time(IP, grid, name_sim_src);
 
         // calculate approximated orptimal origin time
-        recs.calculate_optimal_origin_time(IP, unique_rec_list);
+        // recs.calculate_optimal_origin_time(IP, unique_rec_list);
+        recs.calculate_optimal_origin_time(IP);
     }
-
+    
     // divide optimal origin time by summed weight
-    recs.divide_optimal_origin_time_by_summed_weight(IP, unique_rec_list);
+    recs.divide_optimal_origin_time_by_summed_weight(IP);
+
+    // compute the objective function
+    recs.calculate_obj_reloc(IP, i_iter);
+
+    // print the location info
+    // for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+    //     std::cout << "optimal_ortime is: " << iter->second.tau_opt << std::endl;
+    // }
 
     // iterate over all sources for calculating gradient of objective function
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
-
+    // for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
 
         // reset the file name to be read
         io.change_group_name_for_source();
@@ -126,54 +196,62 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         recs.calculate_T_gradient(IP, grid);
 
         // calculate gradient of objective function
-        recs.calculate_grad_obj_src_reloc(IP, unique_rec_list);
-
-    }
-}
-
-
-std::vector<SrcRec> create_unique_rec_list(InputParams& IP) {
-
-    // unique vector of SrcRec objects
-    std::vector<SrcRec> unique_rec_list;
-
-    // loop over all sources
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
-        // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-
-        // get receiver (swapped source) list for this source
-        std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
-
-        // loop over all receivers
-        for (auto& rec : receivers) {
-            // first element
-            if (unique_rec_list.size() == 0){
-                rec.id_unique_list = 0;
-                unique_rec_list.push_back(rec);
-            } else {
-                bool if_exists = false;
-                for (long unsigned int i_rec = 0; i_rec < unique_rec_list.size(); i_rec++) {
-                    if (unique_rec_list[i_rec].id_src == rec.id_src) {
-                        if_exists = true;
-                        // store the element id on the unique list
-                        rec.id_unique_list = i_rec;
-                        break;
-                    }
-                }
-
-                // add element to unique list if the same station name is not exist
-                if (!if_exists) {
-                    rec.id_unique_list = unique_rec_list.size();
-                    unique_rec_list.push_back(rec);
-                }
-            }
-        }
+        recs.calculate_grad_obj_src_reloc(IP);
 
     }
 
-    return unique_rec_list;
-
+    // sum grad_obj_src_reloc of all simulation groups
+    for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+        allreduce_cr_sim_single_inplace(iter->second.grad_chi_k);
+        allreduce_cr_sim_single_inplace(iter->second.grad_chi_j);
+        allreduce_cr_sim_single_inplace(iter->second.grad_chi_i);
+    }
+    synchronize_all_world();
 }
+
+
+// std::vector<SrcRec> create_unique_rec_list(InputParams& IP) {
+
+//     // unique vector of SrcRec objects
+//     std::vector<SrcRec> unique_rec_list;
+
+//     // loop over all sources
+//     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+//         // load the global id of this src
+//         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+
+//         // get receiver (swapped source) list for this source
+//         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
+
+//         // loop over all receivers
+//         for (auto& rec : receivers) {
+//             // first element
+//             if (unique_rec_list.size() == 0){
+//                 rec.id_unique_list = 0;
+//                 unique_rec_list.push_back(rec);
+//             } else {
+//                 bool if_exists = false;
+//                 for (long unsigned int i_rec = 0; i_rec < unique_rec_list.size(); i_rec++) {
+//                     if (unique_rec_list[i_rec].id_src == rec.id_src) {
+//                         if_exists = true;
+//                         // store the element id on the unique list
+//                         rec.id_unique_list = i_rec;
+//                         break;
+//                     }
+//                 }
+
+//                 // add element to unique list if the same station name is not exist
+//                 if (!if_exists) {
+//                     rec.id_unique_list = unique_rec_list.size();
+//                     unique_rec_list.push_back(rec);
+//                 }
+//             }
+//         }
+
+//     }
+
+//     return unique_rec_list;
+
+// }
 
 #endif // MAIN_ROUTINES_EARTHQUAKE_RELOCATION_H
