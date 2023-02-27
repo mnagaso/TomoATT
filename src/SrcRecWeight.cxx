@@ -333,7 +333,6 @@ int main(int argc, char *argv[])
 
     std::vector<SrcRec> src_points;
     std::vector<std::vector<SrcRec>> rec_points;
-    std::string output_file = "src_rec_with_weight.txt";
     std::map<std::string, SrcRec> dummy_rec_list;
     std::map<std::string, CUSTOMREAL> dummy_station_correction;
     std::map<std::string, CUSTOMREAL> dummy_station_correction_kernel;
@@ -353,11 +352,11 @@ int main(int argc, char *argv[])
     copy_arrival_times(rec_points);
 
     // write src_rec file with calculated weights
-    writeout_src_rec_file(output_file, src_points, rec_points);
+    writeout_src_rec_file(output_file_weight, src_points, rec_points);
 
     stdout_by_main("------------------------------------------------------");
     stdout_by_main("end Src Rec weight calculation.");
-    stdout_by_main(("output file: " + output_file).c_str());
+    stdout_by_main(("output file: " + output_file_weight).c_str());
     stdout_by_main("------------------------------------------------------");
     return 0;
 
