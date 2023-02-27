@@ -54,6 +54,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // make station correction
     IP.station_correction_update(step_size_init_sc);
 
+    // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
     if (subdom_main && IP.get_is_verbose_output()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
