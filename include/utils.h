@@ -72,12 +72,15 @@ inline void parse_options_srcrec_weight(int argc, char* argv[]){
         } else if (strcmp(argv[i],"-r") == 0){
             // reference value
             ref_value = atof(argv[i+1]);
+        } else if (strcmp(argv[i], "-o") == 0){
+            // get output filename
+            output_file_weight = argv[i+1];
         }
     }
 
     // error if input_file is not found
     if(!input_file_found){
-        stdout_by_main("usage: ./SrcRecWeight -i srcrec_file.txt -r 10.0");
+        stdout_by_main("usage: ./SrcRecWeight -i srcrec_file.txt -r 10.0 -o srcrec_weight.txt");
         std::cout << argc << std::endl;
         exit(EXIT_FAILURE);
     }

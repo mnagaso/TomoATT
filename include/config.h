@@ -201,5 +201,6 @@ inline const CUSTOMREAL TOL_SRC_RELOC   = 1e-2;
 
 // source receiver  weight calculation
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation
+inline std::string output_file_weight = "srcrec_weight.txt"; // output file name for source receiver weight calculation
 
 #endif // CONFIG_H
