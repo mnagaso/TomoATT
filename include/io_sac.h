@@ -4,8 +4,12 @@
 // ReadSac class
 class ReadSac
 {
+public:
     //
     ReadSac(const std::string &fname);
+
+private:
+    // necessary parameters
 
 };
 
