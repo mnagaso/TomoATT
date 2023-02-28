@@ -60,6 +60,7 @@ inline void broadcast_str(std::string&, int);
 inline void broadcast_bool_single_sub(bool&, int);
 inline void broadcast_i_single_sub(int&, int);
 inline void broadcast_cr_single_sub(CUSTOMREAL&, int);
+inline void broadcast_cr_sub(CUSTOMREAL*, int, int);
 inline void prepare_shm_array_cr(int, CUSTOMREAL*&, MPI_Win&);
 inline void prepare_shm_array_bool(int, bool*&, MPI_Win&);
 
@@ -554,6 +555,10 @@ inline void allreduce_cr_sim_single(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){
     MPI_Allreduce(&loc_buf, &all_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
 }
 
+inline void allreduce_cr_sim_single_inplace(CUSTOMREAL& loc_buf){
+    int count = 1;
+    MPI_Allreduce(MPI_IN_PLACE, &loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
+}
 
 inline void allreduce_cr_sim_inplace(CUSTOMREAL* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
@@ -615,6 +620,11 @@ inline void broadcast_cr_inter_sim(CUSTOMREAL* buf, int count, int root){
     MPI_Bcast(buf, count, MPI_CR, root, inter_sim_comm);
 }
 
+inline void broadcast_cr_single_inter_sim(CUSTOMREAL& buf, int root){
+    int count = 1;
+    MPI_Bcast(&buf, count, MPI_CR, root, inter_sim_comm);
+}
+
 inline void broadcast_bool_single_sub(bool& value, int root){
     int count = 1;
     MPI_Bcast(&value, count, MPI_CXX_BOOL, root, sub_comm);
@@ -631,7 +641,12 @@ inline void broadcast_i_single_sub(int& value, int root){
 //}
 
 inline void broadcast_cr_single_sub(CUSTOMREAL& buf, int root){
-    MPI_Bcast(&buf, 1, MPI_CR, root, sub_comm);
+    int count = 1;
+    MPI_Bcast(&buf, count, MPI_CR, root, sub_comm);
+}
+
+inline void broadcast_cr_sub(CUSTOMREAL* buf, int count, int root){
+    MPI_Bcast(buf, count, MPI_CR, root, sub_comm);
 }
 
 inline void broadcast_str(std::string& str, int root) {

@@ -16,7 +16,7 @@
 class PlainGrid {
 
 public:
-    PlainGrid(SrcRec& src, InputParams& IP);
+    PlainGrid(SrcRecInfo& src, InputParams& IP);
     ~PlainGrid();
 
     void run_iteration(InputParams& IP);
@@ -62,7 +62,7 @@ private:
 };
 
 void prepare_teleseismic_boundary_conditions(InputParams&, Grid&, IO_utils&);
-void run_2d_solver(InputParams&, int, Grid&, IO_utils&);
+void run_2d_solver(InputParams&, std::string, Grid&, IO_utils&);
 void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
 
 

@@ -37,23 +37,24 @@ public:
     CUSTOMREAL get_min_lon(){return min_lon*DEG2RAD;};
     CUSTOMREAL get_max_lon(){return max_lon*DEG2RAD;};
 
-    CUSTOMREAL           get_src_radius();
-    CUSTOMREAL           get_src_lat();
-    CUSTOMREAL           get_src_lon();
-    std::string          get_src_rec_file()      {return src_rec_file;};
-    bool                 get_src_rec_file_exist(){return src_rec_file_exist;};
-    SrcRec&              get_src_point(int);  // return SrcRec object
-    std::vector<SrcRec>& get_rec_points(int); // return receivers for the current source
-    bool get_if_src_teleseismic(int); // return true if the source is teleseismic
+    CUSTOMREAL                  get_src_radius();
+    CUSTOMREAL                  get_src_lat();
+    CUSTOMREAL                  get_src_lon();
+    std::string                 get_src_rec_file()      {return src_rec_file;};
+    bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
+    bool                        get_if_src_teleseismic(std::string); // return true if the source is teleseismic
+    SrcRecInfo&                 get_src_point(std::string);  // return SrcRec object
+    SrcRecInfo&                 get_rec_point(std::string);  // return receivers for the current source
+    std::vector<std::string>    get_rec_points(std::string); // return SrcRec object
 
-    CUSTOMREAL get_conv_tol(){return conv_tol;};
-    void set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
-    CUSTOMREAL get_max_iter(){return max_iter;};
+    CUSTOMREAL get_conv_tol()                    {return conv_tol;};
+    void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
+    CUSTOMREAL get_max_iter()                    {return max_iter;};
 
-    int get_stencil_order(){return stencil_order;};
+    int  get_stencil_order()                  {return stencil_order;};
     void set_stencil_order(int stencil_order_){stencil_order = stencil_order_;};
-    int get_stencil_type(){return stencil_type;};
-    int get_sweep_type()   {return sweep_type;};
+    int  get_stencil_type()                   {return stencil_type;};
+    int  get_sweep_type()                     {return sweep_type;};
 
     std::string get_init_model_path(){return init_model_path;};
     std::string get_model_1d_name()  {return model_1d_name;};
@@ -61,13 +62,14 @@ public:
     int get_run_mode()        {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
 
-    int get_type_dep_inv()         {return type_dep_inv;};
-    int get_type_lat_inv()         {return type_lat_inv;};
-    int get_type_lon_inv()         {return type_lon_inv;};
+    int get_type_dep_inv(){return type_dep_inv;};
+    int get_type_lat_inv(){return type_lat_inv;};
+    int get_type_lon_inv(){return type_lon_inv;};
+
     // type = 0:
-    int get_n_inv_r()         {return n_inv_r;};
-    int get_n_inv_t()         {return n_inv_t;};
-    int get_n_inv_p()         {return n_inv_p;};
+    int        get_n_inv_r()    {return n_inv_r;};
+    int        get_n_inv_t()    {return n_inv_t;};
+    int        get_n_inv_p()    {return n_inv_p;};
     CUSTOMREAL get_min_dep_inv(){return min_dep_inv;};
     CUSTOMREAL get_max_dep_inv(){return max_dep_inv;};
     CUSTOMREAL get_min_lat_inv(){return min_lat_inv*DEG2RAD;};
@@ -76,14 +78,14 @@ public:
     CUSTOMREAL get_max_lon_inv(){return max_lon_inv*DEG2RAD;};
 
     // type = 1:
-    int get_n_inv_r_flex()         {return n_inv_r_flex;};
-    int get_n_inv_t_flex()         {return n_inv_t_flex;};
-    int get_n_inv_p_flex()         {return n_inv_p_flex;};
-    CUSTOMREAL * get_dep_inv(){return dep_inv;};
-    CUSTOMREAL * get_lat_inv(){return lat_inv;};
-    CUSTOMREAL * get_lon_inv(){return lon_inv;};
+    int         get_n_inv_r_flex(){return n_inv_r_flex;};
+    int         get_n_inv_t_flex(){return n_inv_t_flex;};
+    int         get_n_inv_p_flex(){return n_inv_p_flex;};
+    CUSTOMREAL* get_dep_inv()     {return dep_inv;};
+    CUSTOMREAL* get_lat_inv()     {return lat_inv;};
+    CUSTOMREAL* get_lon_inv()     {return lon_inv;};
 
-    int get_max_iter_inv()    {return max_iter_inv;};
+    int  get_max_iter_inv() {return max_iter_inv;};
 
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
@@ -107,9 +109,9 @@ private:
     CUSTOMREAL max_lon; // maximum longitude in degree
 
     // source information
-    CUSTOMREAL src_dep;              // source depth in km
-    CUSTOMREAL src_lat;              // source latitude in degrees
-    CUSTOMREAL src_lon;              // source longitude in degrees
+    CUSTOMREAL  src_dep;              // source depth in km
+    CUSTOMREAL  src_lat;              // source latitude in degrees
+    CUSTOMREAL  src_lon;              // source longitude in degrees
     std::string src_rec_file;        // source receiver file
     std::string src_list_file;       // source list file
     std::string rec_list_file;       // source list file
@@ -151,37 +153,77 @@ private:
     int stencil_type  = 0; // stencil type  (0: non upwind; 1: upwind)
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
-    // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
-    std::map<std::string, SrcRec> rec_list;
-    std::map<std::string, CUSTOMREAL> station_correction;
-    std::map<std::string, CUSTOMREAL> station_correction_kernel;
-    CUSTOMREAL* station_correction_value;
-    int N_receiver = 0;
+public:
+    std::map<std::string, SrcRecInfo> src_list;
+    std::map<std::string, SrcRecInfo> rec_list;
 
-    // list for all of src point data
-    std::vector<SrcRec> src_points;
-    std::vector<SrcRec> src_points_back; // for backup purposes
-    std::vector<SrcRec> src_points_out;  // temporal storage for output
+    // functions for SrcRecInfo
+    void set_adjoint_source(std::string, CUSTOMREAL);
 
+    // new version for reading src rec data (by Chen Jing, 20230212)
+    auto get_src_list_nv_begin()                        {return src_list.begin();};
+    auto get_src_list_nv_end()                          {return src_list.end();};
+    SrcRecInfo get_src_list(std::string);
+
+    std::map<std::string, SrcRecInfo> src_list_back;     // for output purposes
+    std::map<std::string, SrcRecInfo> src_list_prepare;  // related to common receiver differential time, computed fist
+    std::map<std::string, SrcRecInfo> src_list_tele;    // source list for teleseismic
+    std::vector<std::string> src_name_list;                 // name list for output
+
+    auto get_rec_list_nv_begin()                        {return rec_list.begin();};
+    auto get_rec_list_nv_end()                          {return rec_list.end();};
+    SrcRecInfo get_rec_list(std::string);
+    std::map<std::string, SrcRecInfo> rec_list_back;    // for output purposes
+    std::map<std::string, SrcRecInfo> rec_list_tele;    // rec list for teleseismic
+
+    std::vector<DataInfo> data_info;
+    std::vector<DataInfo> tele_data_info;    // data list for teleseismic
+    std::vector<DataInfo> data_info_back;    // for backup purposes
+
+
+    // std::map<std::vector<std::string>,CUSTOMREAL> syn_time_list;    // (evname, stname) -> syn_time
+    std::map<std::string, std::map<std::string, CUSTOMREAL> > syn_time_list_sr;     // all used synthetic traveltime in forward modeling and inversion.  two level map, map1: source -> map2;  map 2: receiver -> time;
+    std::map<std::string, std::vector<DataInfo> >             data_info_smap;       // map source -> vector; vector: (related) Traveltime data
+    std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
+
+    // initialize_adjoint_source
+    void initialize_adjoint_source();
+
+    // the number of data
+    int N_abs_local_data    = 0;
+    int N_cr_dif_local_data = 0;
+    int N_cs_dif_local_data = 0;
+    int N_teleseismic_data  = 0;
+    // the number of the types of data
+    int N_data_type = 0;
+    std::map<std::string, int> data_type;     // element: "abs", "cs_dif", "cr_dif", "tele"
+private:
     // list for all of rec point data
-    std::vector< std::vector<SrcRec> > rec_points;
-    std::vector< std::vector<SrcRec> > rec_points_back; // for backup purposes
-    std::vector< std::vector<SrcRec> > rec_points_out;  // temporal storage for output
 
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
 
     bool swap_src_rec = false;     // whether the src/rec are swapped or not
 
+    // rearrange the data_info_nv to data_info_smap
+    void rearrange_data_info();
+
+    void generate_src_list_prepare();
+public:
+    // generate syn_time_list_nv based on data
+    void generate_syn_time_list();
+    void initialize_syn_time_list();
+    void reduce_syn_time_list();
+private:
     // tele seismic source management
     void separate_region_and_tele_src();               // check if the source is tele seismic or not
     void merge_region_and_tele_src();                  // merge tele seismic source to the region source
-    std::vector<SrcRec> tele_src_points;               // tele seismic source points
-    std::vector<std::vector<SrcRec> > tele_rec_points; // tele seismic receiver points
+    // std::vector<SrcRec> tele_src_points;               // tele seismic source points
+    // std::vector<std::vector<SrcRec> > tele_rec_points; // tele seismic receiver points
     bool i_first=false, i_last=false, j_first=false, j_last=false, k_first=false; // store info if this subdomain has outer boundary
 
 public:
-    void allocate_memory_tele_boundaries(int, int, int, int,
+    void allocate_memory_tele_boundaries(int, int, int, std::string,
         bool, bool, bool, bool, bool); // allocate memory for tele boundaries
 private:
     // check contradictions in input parameters
@@ -191,7 +233,20 @@ public:
     // prepare source list for this simulation group
     void prepare_src_list();
     // src points for this sim group
-    std::vector<int> src_ids_this_sim;
+    std::vector<int>         src_ids_this_sim;
+    std::vector<std::string> src_names_this_sim;
+
+    // traveltime of src should be prepared for this sim group (have common receivr differential traveltime)
+    std::vector<int>         src_ids_this_sim_prepare;
+    std::vector<std::string> src_names_this_sim_prepare;
+
+    // boundary of src should be computed for this sim group (teleseismic earthquake)
+    std::vector<int>         src_ids_this_sim_tele;
+    std::vector<std::string> src_names_this_sim_tele;
+
+    // (relocation) modify (swapped source) receiver's location and time
+    void modift_swapped_source_location();
+
     // write out src_rec_file
     void write_src_rec_file(int);
 
@@ -199,7 +254,6 @@ public:
     void write_station_correction_file(int);
 
     // station correction
-    // void station_correction_kernel();
     void station_correction_update( CUSTOMREAL );
 
 private:
