@@ -190,48 +190,4 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 }
 
 
-// std::vector<SrcRec> create_unique_rec_list(InputParams& IP) {
-
-//     // unique vector of SrcRec objects
-//     std::vector<SrcRec> unique_rec_list;
-
-//     // loop over all sources
-//     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
-//         // load the global id of this src
-//         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-
-//         // get receiver (swapped source) list for this source
-//         std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
-
-//         // loop over all receivers
-//         for (auto& rec : receivers) {
-//             // first element
-//             if (unique_rec_list.size() == 0){
-//                 rec.id_unique_list = 0;
-//                 unique_rec_list.push_back(rec);
-//             } else {
-//                 bool if_exists = false;
-//                 for (long unsigned int i_rec = 0; i_rec < unique_rec_list.size(); i_rec++) {
-//                     if (unique_rec_list[i_rec].id_src == rec.id_src) {
-//                         if_exists = true;
-//                         // store the element id on the unique list
-//                         rec.id_unique_list = i_rec;
-//                         break;
-//                     }
-//                 }
-
-//                 // add element to unique list if the same station name is not exist
-//                 if (!if_exists) {
-//                     rec.id_unique_list = unique_rec_list.size();
-//                     unique_rec_list.push_back(rec);
-//                 }
-//             }
-//         }
-
-//     }
-
-//     return unique_rec_list;
-
-// }
-
 #endif // MAIN_ROUTINES_EARTHQUAKE_RELOCATION_H

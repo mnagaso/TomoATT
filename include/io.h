@@ -127,7 +127,6 @@ public:
     void read_model(std::string&, const char*, CUSTOMREAL*, int, int, int);
     // read Travel time from file for earthquake relocation
     void read_T(Grid&);
-    void read_T_nv(Grid&);
 
     void read_data_ascii(Grid&, std::string&);
 

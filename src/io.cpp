@@ -1378,32 +1378,6 @@ void IO_utils::read_T(Grid& grid) {
     }
 }
 
-// read travel time data from file
-void IO_utils::read_T_nv(Grid& grid) {
-    if (subdom_main){
-        if (output_format == OUTPUT_FORMAT_HDF5) {
-            // read traveltime field from HDF5 file
-#ifdef USE_HDF5
-            h5_group_name_data = "src_" + std::to_string(id_sim_src);
-            std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
-            read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
-#else
-            std::cerr << "Error: HDF5 is not enabled." << std::endl;
-            exit(1);
-#endif
-        } else if (output_format == OUTPUT_FORMAT_ASCII) {
-            // read traveltime field from ASCII file
-            std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
-            std::string filename = create_fname_ascii_nv(dset_name);
-
-            read_data_ascii(grid, filename);
-        }
-
-        // set to T_loc array from grid.vis_data
-        grid.set_array_from_vis(grid.T_loc);
-    }
-}
-
 void IO_utils::read_data_ascii(Grid& grid, std::string& fname){
     // read data in ascii file
     if (myrank == 0 && if_verbose)
@@ -1455,23 +1429,25 @@ void IO_utils::read_data_h5(Grid& grid, CUSTOMREAL* arr, std::string h5_group_na
     // write true solution to h5 file
     if (myrank == 0 && if_verbose)
         std::cout << "--- read data " << h5_dset_name << " from h5 file " << h5_output_fname << " ---" << std::endl;
+    if (myrank == 0)
+        std::cout << "--- read data " << h5_dset_name << " from h5 file " << h5_output_fname << " ---" << std::endl;
 
     // open file collective
     h5_open_file_collective(h5_output_fname);
 
     // open group collective
-    h5_open_group_collective(h5_group_name);
+    // h5_open_group_collective(h5_group_name);
 
     // get offset
-    int dims_ngrid[1] = {grid.get_ngrid_total_vis()};
-    allreduce_i_single(dims_ngrid[0], nnodes_glob);
-    int offset_this[1] = {grid.get_offset_nnodes_vis()};
+    // int dims_ngrid[1] = {grid.get_ngrid_total_vis()};
+    // allreduce_i_single(dims_ngrid[0], nnodes_glob);
+    // int offset_this[1] = {grid.get_offset_nnodes_vis()};
 
-    // read data from h5 file
-    h5_read_array(h5_dset_name, 1, dims_ngrid, arr, offset_this, true);
+    // // read data from h5 file
+    // h5_read_array(h5_dset_name, 1, dims_ngrid, arr, offset_this, true);
 
     // close group
-    h5_close_group_collective();
+    // h5_close_group_collective();
     // close file
     h5_close_file_collective();
 

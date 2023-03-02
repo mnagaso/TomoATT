@@ -218,7 +218,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     // while creating this list, each receiver object stores the id of correspoinding receiver in this unique list
     // std::vector<SrcRec> unique_rec_list = create_unique_rec_list(IP);
 
-
+    synchronize_all_world();
+    
     // prepare output for iteration status
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
