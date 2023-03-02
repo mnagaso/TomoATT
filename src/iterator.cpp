@@ -146,7 +146,7 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
                 grid.initialize_fields(src, IP);
             } else {
                 // copy T_loc arrival time on domain's boundaries.
-                grid.initialize_fields_teleseismic(src, IP.get_src_point_nv(name_sim_src));
+                grid.initialize_fields_teleseismic(src, IP.get_src_point(name_sim_src));
             }
         }
     }
@@ -684,7 +684,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
     // initialize delta and Tadj_loc (here we use the array tau_old instead of delta for memory saving)
     if (subdom_main)
         // init_delta_and_Tadj(grid, IP);
-        init_delta_and_Tadj_nv(grid, IP);
+        init_delta_and_Tadj(grid, IP);
 
     if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
                << ", subdom_main:" << subdom_main << ", world_rank: " << world_rank << std::endl;
@@ -881,7 +881,7 @@ iter_end:
 
 // }
 
-void Iterator::init_delta_and_Tadj_nv(Grid& grid, InputParams& IP) {
+void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
     if(if_verbose) std::cout << "initializing delta and Tadj" << std::endl;
 
     for (int k = 0; k < nr; k++) {
@@ -898,7 +898,7 @@ void Iterator::init_delta_and_Tadj_nv(Grid& grid, InputParams& IP) {
     int DEBUG_REC_COUNT = 0;
 
     // loop all receivers
-    for (auto iter = IP.get_rec_list_nv_begin(); iter != IP.get_rec_list_nv_end(); iter++) {
+    for (auto iter = IP.get_rec_map_begin(); iter != IP.get_rec_map_end(); iter++) {
         // "iter->second" is the receiver, with the class SrcRecInfo
 
         CUSTOMREAL delta_lon = grid.get_delta_lon();

@@ -30,7 +30,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     bool first_src = true;
 
     if(myrank == 0)
-        std::cout << "size of src_list: " << IP.src_ids_this_sim.size() << std::endl;
+        std::cout << "size of src_map: " << IP.src_ids_this_sim.size() << std::endl;
 
     // prepare output for iteration status
     std::ofstream out_main;
@@ -45,7 +45,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
             out_main << std::setw(8) << std::right << "# iter,";
             std::string tmp = "obj(";
-            tmp.append(std::to_string(IP.data_info_back_nv.size()));
+            tmp.append(std::to_string(IP.data_info_back.size()));
             tmp.append("),");
             out_main << std::setw(20) << tmp;
             if (have_abs){
@@ -135,7 +135,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // skip for the  mode with sub-iteration
         if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
         } else {
-            // v_obj = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
             v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
             v_obj = v_obj_misfit[0];
         }
@@ -235,7 +234,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         recs.update_source_location(IP, grid);
 
         // calculate sum of objective function and gradient
-        for (auto iter = IP.rec_list.begin(); iter != IP.rec_list.end(); iter++) {
+        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
         }
@@ -245,18 +244,18 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
             // write objective function
             std::cout << "iteration: " << i_iter << " objective function: " << v_obj
                                                  << " v_obj_grad: " << v_obj_grad
-                                                 << " v_obj/n_src: " << v_obj/IP.rec_list.size()
+                                                 << " v_obj/n_src: " << v_obj/IP.rec_map.size()
                                                  << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl << std::endl;
         }
 
         // check convergence
         int count_loc = 0;
-        for (auto iter = IP.rec_list.begin(); iter != IP.rec_list.end(); iter++){
+        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
             if (iter->second.is_stop){
                 count_loc += 1;
             }
         }
-        if (count_loc == (int)IP.rec_list.size() || i_iter >= N_ITER_MAX_SRC_RELOC)
+        if (count_loc == (int)IP.rec_map.size() || i_iter >= N_ITER_MAX_SRC_RELOC)
             count_break += 1;
 
         if (count_break == 2)   // all earthquake location finished (location does not change)

@@ -73,8 +73,8 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // run forward simulation
         /////////////////////////
 
-        std::cout << "forward modeling start, name: " << name_sim_src << ", lat: " << IP.src_list_nv[name_sim_src].lat
-                  << ", lon: " << IP.src_list_nv[name_sim_src].lon << ", dep: " << IP.src_list_nv[name_sim_src].dep
+        std::cout << "forward modeling start, name: " << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                  << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                   << std::endl;
 
         It->run_iteration_forward(IP, grid, io, first_init);
@@ -90,11 +90,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 }
 
 
-// void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, std::vector<SrcRec>& unique_rec_list){
+// void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, std::vector<SrcRec>& unique_rec_map){
 
 //     // initialize source parameters
 //     Receiver recs; // here the source is swapped to receiver
-//     recs.init_vars_src_reloc(IP, unique_rec_list);
+//     recs.init_vars_src_reloc(IP, unique_rec_map);
 
 //     // iterate over all sources for calculating optimal origin time
 //     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
@@ -110,11 +110,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 //         recs.calculate_arrival_time(IP, grid);
 
 //         // calculate approximated orptimal origin time
-//         recs.calculate_optimal_origin_time(IP, unique_rec_list);
+//         recs.calculate_optimal_origin_time(IP, unique_rec_map);
 //     }
 
 //     // divide optimal origin time by summed weight
-//     recs.divide_optimal_origin_time_by_summed_weight(IP, unique_rec_list);
+//     recs.divide_optimal_origin_time_by_summed_weight(IP, unique_rec_map);
 
 //     // iterate over all sources for calculating gradient of objective function
 //     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
@@ -132,7 +132,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 //         recs.calculate_T_gradient(IP, grid);
 
 //         // calculate gradient of objective function
-//         recs.calculate_grad_obj_src_reloc(IP, unique_rec_list);
+//         recs.calculate_grad_obj_src_reloc(IP, unique_rec_map);
 
 //     }
 // }
@@ -141,7 +141,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
 
     Receiver recs; // here the source is swapped to receiver
-    // recs.init_vars_src_reloc(IP, unique_rec_list);
+    // recs.init_vars_src_reloc(IP, unique_rec_map);
 
     // initialize source parameters (obj, kernel, )
     recs.init_vars_src_reloc(IP);
@@ -164,7 +164,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         recs.store_arrival_time(IP, grid, name_sim_src);
 
         // calculate approximated orptimal origin time
-        // recs.calculate_optimal_origin_time(IP, unique_rec_list);
+        // recs.calculate_optimal_origin_time(IP, unique_rec_map);
         recs.calculate_optimal_origin_time(IP);
     }
 
@@ -175,7 +175,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     recs.calculate_obj_reloc(IP, i_iter);
 
     // print the location info
-    // for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+    // for(auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
     //     std::cout << "optimal_ortime is: " << iter->second.tau_opt << std::endl;
     // }
 
@@ -201,7 +201,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     }
 
     // sum grad_obj_src_reloc of all simulation groups
-    for(auto iter = IP.rec_list.begin(); iter != IP.rec_list.end(); iter++){
+    for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
         allreduce_cr_sim_single_inplace(iter->second.grad_chi_k);
         allreduce_cr_sim_single_inplace(iter->second.grad_chi_j);
         allreduce_cr_sim_single_inplace(iter->second.grad_chi_i);
@@ -210,10 +210,10 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 }
 
 
-// std::vector<SrcRec> create_unique_rec_list(InputParams& IP) {
+// std::vector<SrcRec> create_unique_rec_map(InputParams& IP) {
 
 //     // unique vector of SrcRec objects
-//     std::vector<SrcRec> unique_rec_list;
+//     std::vector<SrcRec> unique_rec_map;
 
 //     // loop over all sources
 //     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
@@ -226,13 +226,13 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 //         // loop over all receivers
 //         for (auto& rec : receivers) {
 //             // first element
-//             if (unique_rec_list.size() == 0){
+//             if (unique_rec_map.size() == 0){
 //                 rec.id_unique_list = 0;
-//                 unique_rec_list.push_back(rec);
+//                 unique_rec_map.push_back(rec);
 //             } else {
 //                 bool if_exists = false;
-//                 for (long unsigned int i_rec = 0; i_rec < unique_rec_list.size(); i_rec++) {
-//                     if (unique_rec_list[i_rec].id_src == rec.id_src) {
+//                 for (long unsigned int i_rec = 0; i_rec < unique_rec_map.size(); i_rec++) {
+//                     if (unique_rec_map[i_rec].id_src == rec.id_src) {
 //                         if_exists = true;
 //                         // store the element id on the unique list
 //                         rec.id_unique_list = i_rec;
@@ -242,15 +242,15 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
 //                 // add element to unique list if the same station name is not exist
 //                 if (!if_exists) {
-//                     rec.id_unique_list = unique_rec_list.size();
-//                     unique_rec_list.push_back(rec);
+//                     rec.id_unique_list = unique_rec_map.size();
+//                     unique_rec_map.push_back(rec);
 //                 }
 //             }
 //         }
 
 //     }
 
-//     return unique_rec_list;
+//     return unique_rec_map;
 
 // }
 

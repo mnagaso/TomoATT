@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
 
     std::vector<SrcRec> src_points;
     std::vector<std::vector<SrcRec>> rec_points;
-    std::map<std::string, SrcRec> dummy_rec_list;
+    std::map<std::string, SrcRec> dummy_rec_map;
     std::map<std::string, CUSTOMREAL> dummy_station_correction;
     std::map<std::string, CUSTOMREAL> dummy_station_correction_kernel;
 
@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
     parse_src_rec_file(input_file,
                        src_points,
                        rec_points,
-                       dummy_rec_list,
+                       dummy_rec_map,
                        dummy_station_correction,
                        dummy_station_correction_kernel);
 

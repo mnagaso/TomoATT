@@ -533,7 +533,7 @@ CUSTOMREAL interp2d(PlainGrid& pg, CUSTOMREAL t, CUSTOMREAL r) {
 
 void run_2d_solver(InputParams& IP, std::string name_src, Grid& grid, IO_utils& io) {
     // calculate 2d travel time field by only the first process of each simulation group
-    SrcRecInfo& src = IP.get_src_point_nv(name_src);
+    SrcRecInfo& src = IP.get_src_point(name_src);
 
     // initialize grid for all processes
     PlainGrid plain_grid(src,IP);

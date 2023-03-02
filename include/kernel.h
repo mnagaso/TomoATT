@@ -17,18 +17,15 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
         CUSTOMREAL dr      = grid.dr;
         CUSTOMREAL dt      = grid.dt;
         CUSTOMREAL dp      = grid.dp;
-        // CUSTOMREAL src_lon = IP.get_src_lon();
-        // CUSTOMREAL src_lat = IP.get_src_lat();
-        // CUSTOMREAL src_r   = IP.get_src_radius();
-        CUSTOMREAL src_lon = IP.get_src_lon_nv();
-        CUSTOMREAL src_lat = IP.get_src_lat_nv();
-        CUSTOMREAL src_r   = IP.get_src_radius_nv();
+        CUSTOMREAL src_lon = IP.get_src_lon();
+        CUSTOMREAL src_lat = IP.get_src_lat();
+        CUSTOMREAL src_r   = IP.get_src_radius();
 
 
-        // std::cout << ", id_sim: " << id_sim 
+        // std::cout << ", id_sim: " << id_sim
         //           << ", id_subdomain: " << id_subdomain
-        //           << ", id_sim_src: " << id_sim_src 
-        //           << ", subdom_main: " << subdom_main 
+        //           << ", id_sim_src: " << id_sim_src
+        //           << ", subdom_main: " << subdom_main
         //           << std::endl;
 
         CUSTOMREAL weight   = _1_CR;

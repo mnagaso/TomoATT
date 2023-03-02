@@ -40,12 +40,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // let syn_time_list[name_src][name_rec] = 0.0
     IP.initialize_syn_time_list();
 
-
-    // for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++){    //prepare synthetic traveltime for all earthquakes
-    //     id_sim_src   = IP.src_ids_this_sim[i_src];
-    //     name_sim_src = IP.src_names_this_sim[i_src];
-
-    for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim_prepare.size(); i_src++){    //prepare synthetic traveltime for all earthquakes
+    //prepare synthetic traveltime for all earthquakes
+    for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim_prepare.size(); i_src++){
         id_sim_src   = IP.src_ids_this_sim_prepare[i_src];
         name_sim_src = IP.src_names_this_sim_prepare[i_src];
 
@@ -66,7 +62,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         It->run_iteration_forward(IP, grid, io, first_init);
 
         Receiver recs;
-        recs.store_arrival_time(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_list_sr. When you need to use it later, you can just look it up.
+        recs.store_arrival_time(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
     }
 
     // wait for all processes to finish
@@ -79,8 +75,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
 
 
-    // check syn_time_list_sr
-    // for(auto iter1 = IP.syn_time_list_sr.begin(); iter1 != IP.syn_time_list_sr.end(); iter1++){
+    // check syn_time_map_sr
+    // for(auto iter1 = IP.syn_time_map_sr.begin(); iter1 != IP.syn_time_map_sr.end(); iter1++){
     //     for (auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
     //         std::cout << "id_sim: " << id_sim << ", src name: " << iter1->first << ", rec name: " << iter2->first
     //                   << ", syn time is: " << iter2->second
@@ -95,8 +91,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
-        // check src_list_id
-        // for(auto iter = IP.src_list_nv.begin(); iter != IP.src_list_nv.end(); iter++){
+        // check src_map_id
+        // for(auto iter = IP.src_map_nv.begin(); iter != IP.src_map_nv.end(); iter++){
         //     std::cout << "id_sim: " << id_sim << ", myrank: " << myrank << ", id_subdomain: " << id_subdomain << ", id_src:" << iter->second.id << std::endl;
         // }
 
@@ -124,7 +120,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         }
 
         // get is_teleseismic flag
-        // bool is_teleseismic = IP.get_src_point(id_sim_src).is_teleseismic;
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
         // (re) initialize source object and set to grid
@@ -182,7 +177,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // calculate the arrival times at each receivers
         Receiver recs;
-        // recs.calculate_arrival_time(IP, grid);
         recs.store_arrival_time(IP, grid, name_sim_src);
 
         /////////////////////////
@@ -209,7 +203,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         }
 
         // check adjoint source
-        // for (auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+        // for (auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
         //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
         // }
 

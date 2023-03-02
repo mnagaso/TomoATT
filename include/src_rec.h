@@ -37,12 +37,12 @@ public:
     int n_data = 0;
 
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
-    bool is_out_of_region = false;   // is the source or receiver in the region; false: in the refion; true: teleseismic
-    CUSTOMREAL* arr_times_bound_N;   // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E;   // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W;   // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S;   // arrival time of the receiver at the south boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_Bot; // arrival time of the receiver at the bottom boundary of the subdomain
+    bool        is_out_of_region    = false;   // is the source or receiver in the region; false: in the refion; true: teleseismic
+    CUSTOMREAL* arr_times_bound_N   = nullptr;   // arrival time of the receiver at the north boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_E   = nullptr;   // arrival time of the receiver at the east boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_W   = nullptr;   // arrival time of the receiver at the west boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_S   = nullptr;   // arrival time of the receiver at the south boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
     bool*       is_bound_src;        // true if the source is on the boundary surface
 
     // kernel
@@ -135,5 +135,45 @@ void parse_sta_correction_file(std::string&, \
 void do_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
                      std::map<std::string, SrcRecInfo> &, \
                      std::vector<DataInfo>             &);
+
+// tele seismic source management
+void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::vector<DataInfo>             &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::vector<DataInfo>             &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::vector<DataInfo>             &,
+                                           std::map<std::string, int>        &,
+                                           int                               &,
+                                           int                               &,
+                                           int                               &,
+                                           int                               &,
+                                           const CUSTOMREAL, const CUSTOMREAL,
+                                           const CUSTOMREAL, const CUSTOMREAL,
+                                           const CUSTOMREAL, const CUSTOMREAL);
+
+void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
+                               std::map<std::string, SrcRecInfo> &,
+                               std::vector<DataInfo>             &,
+                               std::map<std::string, SrcRecInfo> &,
+                               std::map<std::string, SrcRecInfo> &,
+                               std::vector<DataInfo>             &);
+
+// distribute srcrec data to all simulation groups
+void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, SrcRecInfo>&, \
+                             std::vector<DataInfo>&, \
+                             std::vector<int>&, \
+                             std::vector<std::string>&);
+
+void send_src_info_inter_sim(SrcRecInfo&, int);
+void recv_src_info_inter_sim(SrcRecInfo&, int);
+void send_rec_info_inter_sim(SrcRecInfo&, int);
+void recv_rec_info_inter_sim(SrcRecInfo&, int);
+void send_data_info_inter_sim(DataInfo&, int);
+void recv_data_info_inter_sim(DataInfo&, int);
 
 #endif //SRC_REC_H

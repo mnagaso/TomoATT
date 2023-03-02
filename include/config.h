@@ -181,16 +181,16 @@ inline bool if_verbose = false;
 inline int use_gpu = 0; // 0: no, 1: yes
 
 // weight of different typs of data
-CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
-CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
-CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
-CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
+inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
+inline CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
+inline CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
 // misfit balance
-int is_balance_data_weight = 0;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
-CUSTOMREAL total_abs_local_data_weight = 0.0;
-CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
-CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
-CUSTOMREAL total_teleseismic_data_weight = 0.0;
+inline int        is_balance_data_weight         = 0;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
+inline CUSTOMREAL total_abs_local_data_weight    = 0.0;
+inline CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
+inline CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
+inline CUSTOMREAL total_teleseismic_data_weight  = 0.0;
 
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
