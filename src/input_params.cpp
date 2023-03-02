@@ -223,6 +223,13 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion"]["step_length_decay"]) {
                 step_length_decay = config["inversion"]["step_length_decay"].as<CUSTOMREAL>();
             }
+
+            // max change for earthquake location
+            if (config["inversion"]["max_change_dep_lat_lon"]) {
+                max_change_dep = config["inversion"]["max_change_dep_lat_lon"][0].as<CUSTOMREAL>();
+                max_change_lat = config["inversion"]["max_change_dep_lat_lon"][1].as<CUSTOMREAL>();
+                max_change_lon = config["inversion"]["max_change_dep_lat_lon"][2].as<CUSTOMREAL>();
+            }
         }
 
         if (config["inv_strategy"]) {
@@ -454,6 +461,11 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(step_length_src_reloc, 0);
     broadcast_cr_single(step_length_decay, 0);
     broadcast_cr_single(regularization_weight, 0);
+
+    broadcast_cr_single(max_change_dep, 0);
+    broadcast_cr_single(max_change_lat, 0);
+    broadcast_cr_single(max_change_lon, 0);
+    
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_i_single(ndiv_i, 0);
     broadcast_i_single(ndiv_j, 0);
@@ -563,6 +575,7 @@ InputParams::InputParams(std::string& input_file){
 
     // broadcast the values to all processes
     stdout_by_main("read input file successfully.");
+
 }
 
 
@@ -790,6 +803,8 @@ void InputParams::parse_src_rec_file(){
 
             ndata_tmp = src_nv.n_data;
             src_name_list.push_back(src_name);
+
+            // std::cout << "src_name: " << src_name << std::endl;
         } else {    
 
             // read single receiver or differential traveltime data
@@ -861,7 +876,7 @@ void InputParams::parse_src_rec_file(){
                 data_info_nv.push_back(data_nv);
 
                 cc++;
-
+                // std::cout << "rec_name: " << rec_nv.name << std::endl;
             } else {
 
                 // // read differential traveltime
@@ -2124,9 +2139,16 @@ void InputParams::merge_region_and_tele_src(){
     }
 
 
-    // give new ev id (accourding to the name)
+    // give new src id (accourding to the name)
     int id_count = 0;
     for (auto iter = src_list_nv.begin(); iter != src_list_nv.end(); iter ++){
+        iter->second.id = id_count;
+        id_count += 1;
+    }
+
+    // give new rec id (accourding to the name)
+    id_count = 0;
+    for (auto iter = rec_list_nv.begin(); iter != rec_list_nv.end(); iter ++){
         iter->second.id = id_count;
         id_count += 1;
     }

@@ -73,7 +73,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // run forward simulation
         /////////////////////////
 
-        std::cout << "forward modeling start, name: " << name_sim_src << ", lat: " << IP.src_list_nv[name_sim_src].lat 
+        std::cout << "forward modeling start, name: " << name_sim_src << ", id: " << id_sim_src << ", lat: " << IP.src_list_nv[name_sim_src].lat 
                   << ", lon: " << IP.src_list_nv[name_sim_src].lon << ", dep: " << IP.src_list_nv[name_sim_src].dep
                   << std::endl; 
 
@@ -89,54 +89,6 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 
 }
 
-
-// void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, std::vector<SrcRec>& unique_rec_list){
-
-//     // initialize source parameters
-//     Receiver recs; // here the source is swapped to receiver
-//     recs.init_vars_src_reloc(IP, unique_rec_list);
-
-//     // iterate over all sources for calculating optimal origin time
-//     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
-
-//         // load the global id of this src
-//         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-//         // change target group to be read
-//         io.change_group_name_for_source();
-//         // load travel time field on grid.T_loc
-//         io.read_T(grid);
-
-//         // calculate travel time at the actual source location
-//         recs.calculate_arrival_time(IP, grid);
-
-//         // calculate approximated orptimal origin time
-//         recs.calculate_optimal_origin_time(IP, unique_rec_list);
-//     }
-
-//     // divide optimal origin time by summed weight
-//     recs.divide_optimal_origin_time_by_summed_weight(IP, unique_rec_list);
-
-//     // iterate over all sources for calculating gradient of objective function
-//     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
-
-//         // load the global id of this src
-//         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-
-//         // reset the file name to be read
-//         io.change_group_name_for_source();
-
-//         // load travel time field on grid.T_loc
-//         io.read_T(grid);
-
-//         // calculate gradient at the actual source location
-//         recs.calculate_T_gradient(IP, grid);
-
-//         // calculate gradient of objective function
-//         recs.calculate_grad_obj_src_reloc(IP, unique_rec_list);
-
-//     }
-// }
-
 void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, int i_iter){
 
     
@@ -144,10 +96,15 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // recs.init_vars_src_reloc(IP, unique_rec_list);
 
     // initialize source parameters (obj, kernel, )
+    if(id_sim == 0 && myrank == 0)
+        std::cout << "ckp1, init_vars_src_reloc ... " << std::endl;
     recs.init_vars_src_reloc(IP);
 
     // iterate over all sources for calculating optimal origin time
     // for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    if(id_sim == 0 && myrank == 0)
+        std::cout << "ckp2, compute optimal ortime step 1, load time field... " << std::endl;
+
     for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {    
 
         // load the global id of this src
@@ -155,24 +112,25 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         name_sim_src = IP.src_names_this_sim[i_src]; // local src name to global src id
         
         // change target group to be read
-        io.change_group_name_for_source_nv();
+        // io.change_group_name_for_source_nv();
+        io.change_group_name_for_source();       
         // load travel time field on grid.T_loc
         io.read_T(grid);
 
-        // calculate travel time at the actual source location
-        // recs.calculate_arrival_time(IP, grid);
-        recs.store_arrival_time(IP, grid, name_sim_src);
+        // // calculate travel time at the actual source location
+        // recs.store_arrival_time(IP, grid, name_sim_src);
 
-        // calculate approximated orptimal origin time
-        // recs.calculate_optimal_origin_time(IP, unique_rec_list);
-        recs.calculate_optimal_origin_time(IP);
+        // // calculate approximated orptimal origin time
+        // recs.calculate_optimal_origin_time(IP);
     }
     
-    // divide optimal origin time by summed weight
-    recs.divide_optimal_origin_time_by_summed_weight(IP);
+    if(id_sim == 0 && myrank == 0)
+        std::cout << "ckp3, compute optimal ortime step 2 ... " << std::endl;
+    // // divide optimal origin time by summed weight
+    // recs.divide_optimal_origin_time_by_summed_weight(IP);
 
-    // compute the objective function
-    recs.calculate_obj_reloc(IP, i_iter);
+    // // compute the objective function
+    // recs.calculate_obj_reloc(IP, i_iter);
 
     // print the location info
     // for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
@@ -180,33 +138,55 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // }
 
     // iterate over all sources for calculating gradient of objective function
-    // for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    if(id_sim == 0 && myrank == 0)
+        std::cout << "ckp4, compute gradient ... " << std::endl;
+
     for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
         // load the global id of this src
         id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
         name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
 
-        // reset the file name to be read
-        io.change_group_name_for_source();
+        // // reset the file name to be read
+        // io.change_group_name_for_source();
 
-        // load travel time field on grid.T_loc
-        io.read_T(grid);
+        // // load travel time field on grid.T_loc
+        // io.read_T(grid);
 
-        // calculate gradient at the actual source location
-        recs.calculate_T_gradient(IP, grid);
+        // // calculate gradient at the actual source location
+        // recs.calculate_T_gradient(IP, grid);
 
-        // calculate gradient of objective function
-        recs.calculate_grad_obj_src_reloc(IP);
+        // // calculate gradient of objective function
+        // recs.calculate_grad_obj_src_reloc(IP);
 
     }
 
     // sum grad_obj_src_reloc of all simulation groups
-    for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
-        allreduce_cr_sim_single_inplace(iter->second.grad_chi_k);
-        allreduce_cr_sim_single_inplace(iter->second.grad_chi_j);
-        allreduce_cr_sim_single_inplace(iter->second.grad_chi_i);
-    }
-    synchronize_all_world();
+    // for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+    //     allreduce_cr_sim_single_inplace(iter->second.grad_chi_k);
+    //     allreduce_cr_sim_single_inplace(iter->second.grad_chi_j);
+    //     allreduce_cr_sim_single_inplace(iter->second.grad_chi_i);
+    // }
+    // synchronize_all_world();
+
+    // if(id_sim == 0 && myrank == 0)
+    //     std::cout << "ckp5, reduce gradient from all sources ... " << std::endl;
+
+    // for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+    //     std::string name_rec = IP.name_for_reloc[i];
+    //     allreduce_cr_sim_single_inplace(IP.rec_list_nv[name_rec].grad_chi_k);
+    //     allreduce_cr_sim_single_inplace(IP.rec_list_nv[name_rec].grad_chi_j);
+    //     allreduce_cr_sim_single_inplace(IP.rec_list_nv[name_rec].grad_chi_i);
+    // }
+    // synchronize_all_world();
+
+    // if(id_sim == 0 && myrank == 0){
+    //     for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+    //         std::cout << "grad_chi_k: " << iter->second.grad_chi_k
+    //                   << ", grad_chi_j: " << iter->second.grad_chi_j
+    //                   << ", grad_chi_i: " << iter->second.grad_chi_i
+    //                   << std::endl;
+    //     }
+    // }
 }
 
 

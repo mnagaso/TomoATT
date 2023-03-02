@@ -209,12 +209,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 // run earthquake relocation mode
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
-    // this routine is not supporting simultaneous run
-    // if (n_sims > 1) {
-    //     std::cout << "Earthquake relocation mode is not supporting simultaneous run" << std::endl;
-    //     exit(1);
-    // }
-
     Receiver recs;
 
     // calculate traveltime for each receiver (swapped from source) and write in output file
@@ -223,6 +217,19 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     // create a unique receiver list among all sources
     // while creating this list, each receiver object stores the id of correspoinding receiver in this unique list
     // std::vector<SrcRec> unique_rec_list = create_unique_rec_list(IP);
+
+
+    // prepare output for iteration status
+    std::ofstream out_main;
+    if(myrank == 0 && id_sim ==0){
+        out_main.open(output_dir + "/objective_function_reloc.txt");
+        out_main << std::setw(8) << std::right << "# iter,";
+        out_main << std::setw(10) << std::right << "N_reloc,";
+        out_main << std::setw(10) << std::right << "N_located,";
+        out_main << std::setw(12) << std::right << "obj_weighted,";
+        // out_main << std::setw(12) << std::right << "obj_noweight,";
+        out_main << std::endl;
+    }
 
     // objective function and its gradient
     CUSTOMREAL v_obj = 0.0, v_obj_old = 0.0;
@@ -237,40 +244,32 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         v_obj = 0.0;
         v_obj_grad = 0.0;
 
+        // determine which earthquake should be located
+        IP.name_for_reloc.clear();
+        for(auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
+            if (!iter->second.is_stop)
+                IP.name_for_reloc.push_back(iter->first);
+        }
+
         // calculate gradient of objective function at sources
+        if(id_sim == 0 && myrank == 0)
+            std::cout << "calculating gradient ... " << std::endl;
         calculate_gradient_objective_function(IP, grid, io, i_iter);
 
-        // update source location
-        // for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++){
-        //     id_sim_src = IP.src_ids_this_sim[i_src];
-        //     recs.update_source_location(IP, grid, unique_rec_list);
-        // }
+
+        // updating source_location
+        // if(id_sim == 0 && myrank == 0)
+        //     std::cout << "updating source_location ..." << std::endl;
+        // recs.update_source_location(IP, grid);
 
 
 
-        recs.update_source_location(IP, grid);
-
-
-        // calculate sum of objective function and gradient
-        // for (auto& rec : unique_rec_list) {
-        //     v_obj      += rec.vobj_src_reloc;
-        //     v_obj_grad += rec.vobj_grad_norm_src_reloc;
-        // }
         for (auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
         }
 
-        // write objective functions
-        if(id_sim == 0 && myrank == 0){
-            // write objective function
-            std::cout << "iteration: " << i_iter << " objective function: " << v_obj 
-                                                 << " v_obj_grad: " << v_obj_grad 
-                                                 << " v_obj/n_src: " << v_obj/IP.rec_list_nv.size() 
-                                                 << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl << std::endl;
-        }
-
-
+        
         // check convergence
         int count_loc = 0;
         for (auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++){
@@ -286,6 +285,18 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // new iteration
         i_iter++;
+
+        // write objective functions
+        if(id_sim == 0 && myrank == 0){
+            // write objective function
+            std::cout << "iteration: " << i_iter << " objective function: " << v_obj 
+                                                 << " v_obj_grad: " << v_obj_grad 
+                                                 << " v_obj/n_src: " << v_obj/IP.rec_list_nv.size() 
+                                                 << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
+            std::cout << IP.rec_list_nv.size() << " earthquakes require location, " << count_loc << " of which have been relocated. " << std::endl;                                    
+            std::cout << std::endl;                             
+        }
+
     }
 
     // modify the receiver's location

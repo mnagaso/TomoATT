@@ -147,6 +147,9 @@ public:
     CUSTOMREAL DTj          = 0.0;
     CUSTOMREAL DTk          = 0.0;
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
+    CUSTOMREAL change_dep = 0.0;
+    CUSTOMREAL change_lat = 0.0;
+    CUSTOMREAL change_lon = 0.0;
 };
 
 class DataInfo {
@@ -389,6 +392,12 @@ public:
     // the number of the types of data
     int N_data_type = 0;
     std::map<std::string, int> data_type;     // element: "abs", "cs_dif", "cr_dif", "tele"
+
+    CUSTOMREAL max_change_dep = 10.0; 
+    CUSTOMREAL max_change_lat = 1.0; 
+    CUSTOMREAL max_change_lon = 1.0; 
+    // std::map<std::string,std::string> name_for_reloc;
+    std::vector<std::string> name_for_reloc;
 private:
     // rec_map.  rec_map: rec_name -> rec_id;  rec_map_reverse: rec_id -> rec_name
     // std::map<std::string, SrcRec> rec_list;
