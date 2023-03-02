@@ -888,8 +888,8 @@ void InputParams::prepare_src_map(){
         // generate data_info_smap,
         //          data_info_smap_reloc,
         //          syn_time_map_sr,
-        std::cout << "rearrange and analize data " << std::endl;
-        // copy/rearrange and analize "data_info" -> data_info_smap; data_info_smap_reloc
+        std::cout << "rearrange and analyse data " << std::endl;
+        // copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
         rearrange_data_info();
 
         // generate src_map_prepare based on data_info_smap
