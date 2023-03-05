@@ -33,14 +33,14 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         std::cout << "size of src_map: " << IP.src_ids_this_sim.size() << std::endl;
 
     // prepare output for iteration status
-    std::ofstream out_main;
+    std::ofstream out_main; // close() is not mandatory
     if(myrank == 0 && id_sim ==0){
         out_main.open(output_dir + "/objective_function.txt");
         if (optim_method == GRADIENT_DESCENT){
-            bool have_abs    =  IP.data_type.find("abs") != IP.data_type.end();
-            bool have_cs_dif =  IP.data_type.find("cs_dif") != IP.data_type.end();
-            bool have_cr_dif =  IP.data_type.find("cr_dif") != IP.data_type.end();
-            bool have_tele   =  IP.data_type.find("tele") != IP.data_type.end();
+            bool have_abs    = ( IP.data_type.find("abs")    != IP.data_type.end() );
+            bool have_cs_dif = ( IP.data_type.find("cs_dif") != IP.data_type.end() );
+            bool have_cr_dif = ( IP.data_type.find("cr_dif") != IP.data_type.end() );
+            bool have_tele   = ( IP.data_type.find("tele")   != IP.data_type.end() );
 
 
             out_main << std::setw(8) << std::right << "# iter,";
@@ -132,14 +132,12 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel for all sources
         line_search_mode = false;
-        // skip for the  mode with sub-iteration
+        // skip for the mode with sub-iteration
         if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
         } else {
             v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
             v_obj = v_obj_misfit[0];
         }
-
-
 
         // wait for all processes to finish
         synchronize_all_world();

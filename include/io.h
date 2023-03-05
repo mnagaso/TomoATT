@@ -45,6 +45,12 @@ public:
     // prepare grid for each inversion iteration
     void prepare_grid_inv_xdmf(int);
 
+    // set id_sim
+    void set_id_src(const int& id_src_){id_sim_src = id_src_;};
+    // set source name
+    void set_name_src(const std::string& name_src_){name_sim_src = name_src_;};
+
+
     //
     // write functions
     //
@@ -156,6 +162,11 @@ private:
     std::string h5_whole_name_y    = h5_file_and_group + "/" + h5_dset_name_node_coords_y;
     std::string h5_whole_name_z    = h5_file_and_group + "/" + h5_dset_name_node_coords_z;
     std::string h5_whole_name_proc = h5_file_and_group + "/" + h5_dset_name_procid;
+
+    // index of current simulation used for naming output files and datasets
+    int id_sim_src;
+    // name of current simulation used for naming output files and datasets
+    std::string name_sim_src;
 
     int nnodes_glob = 0;
     int nelms_glob  = 0;

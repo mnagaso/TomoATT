@@ -23,7 +23,7 @@
 
 class Iterator {
 public:
-    Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool, bool);
+    Iterator(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
     virtual ~Iterator();
     // regional source
     void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
@@ -32,7 +32,7 @@ public:
     // teleseismic source (teleseismic adjoint use the same function with reginal source)
     //void run_iteration_forward_teleseismic(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
 
-    void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
+    void initialize_arrays(InputParams&, Grid&, Source&, const std::string&); // initialize factors etc.
 
 protected:
     void assign_processes_for_levels(Grid&, InputParams&); // assign intra-node processes for each sweeping level

@@ -44,9 +44,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
 
         // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-        name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
-
+        const int         id_sim_src   = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
 
         // set group name to be used for output in h5
         io.change_group_name_for_source();
@@ -60,14 +62,14 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
             exit(1);
         }
 
-        Source src(IP, grid, is_teleseismic);
+        Source src(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         bool first_init = (i_src==0);
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
-        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+        select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
 
         /////////////////////////
         // run forward simulation
@@ -151,8 +153,12 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
 
         // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-        name_sim_src = IP.src_names_this_sim[i_src]; // local src name to global src id
+        const int         id_sim_src   = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string name_sim_src = IP.src_names_this_sim[i_src]; // local src name to global src id
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
+
 
         // change target group to be read
         io.change_group_name_for_source_nv();
@@ -183,8 +189,11 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
     for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
         // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-        name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
+        const int         id_sim_src   = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string name_sim_src = IP.src_names_this_sim[i_src]; // local src id to global src id
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
 
         // reset the file name to be read
         io.change_group_name_for_source();
@@ -196,7 +205,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         recs.calculate_T_gradient(IP, grid);
 
         // calculate gradient of objective function
-        recs.calculate_grad_obj_src_reloc(IP);
+        recs.calculate_grad_obj_src_reloc(IP, name_sim_src);
 
     }
 

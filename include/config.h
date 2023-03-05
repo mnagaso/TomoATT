@@ -139,10 +139,12 @@ inline int      ndiv_i           = 1; // number of divisions in x direction
 inline int      ndiv_j           = 1; // number of divisions in y direction
 inline int      ndiv_k           = 1; // number of divisions in z direction
 inline int      id_sim           = 0; // simultaneous run id  (not equal to src id)
-inline int      id_sim_src       = 0; // id of current target source
 inline int      id_subdomain     = 0; // subdomain id
 inline bool     subdom_main      = false; // true if this process is main process in subdomain
-inline std::string name_sim_src  = "unknown";   //name of current target source
+
+// MNMN stop using these global variable for avoiding misleadings during the sources' iteration loop
+//inline int      id_sim_src       = 0; // id of current target source
+//inline std::string name_sim_src  = "unknown";   //name of current target source
 
 // read input yaml file
 inline std::string input_file="input_params.yaml";

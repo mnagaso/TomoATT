@@ -5,9 +5,15 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
     bool if_teleseismic_event_exists=false;
 
     if (subdom_main) {
-        for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim_tele.size(); i_src++){
+        //for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++){
+            for(const std::string& name_sim_src : IP.src_names_this_sim){
+
+            // check if the source is teleseismic or not
+            if (IP.get_if_src_teleseismic(name_sim_src) == false)
+                continue;
+
             // int id_sim_src = IP.src_ids_this_sim[i_src];
-            std::string name_sim_src = IP.src_names_this_sim_tele[i_src];
+            //std::string name_sim_src = IP.src_names_this_sim_tele[i_src];
             // get source info
             SrcRecInfo& src = IP.get_src_point(name_sim_src);
 

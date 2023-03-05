@@ -1,6 +1,6 @@
 #include "iterator.h"
 
-Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
+Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, \
                    bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
          : is_second_run(is_second_run_in) {
     if(n_subprocs > 1) {
@@ -64,7 +64,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
     }
 
     // initialize factors etc.
-    initialize_arrays(IP, grid, src);
+    initialize_arrays(IP, grid, src, src_name);
 
 }
 
@@ -132,7 +132,7 @@ Iterator::~Iterator() {
 }
 
 
-void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
+void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src, const std::string& name_sim_src) {
     if(if_verbose && myrank == 0) std::cout << "(re) initializing arrays" << std::endl;
 
     // std::cout << "source lat: " << src.get_src_t()*RAD2DEG << ", source lon: " << src.get_src_p()*RAD2DEG << ", source dep: " << src.get_src_r() << std::endl;
@@ -898,8 +898,12 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
     int DEBUG_REC_COUNT = 0;
 
     // loop all receivers
+    // MNMN this loop checks all the receivers, even unrelated ones for this source. (rec_map is a unique map of all receivers)
     for (auto iter = IP.get_rec_map_begin(); iter != IP.get_rec_map_end(); iter++) {
+
         // "iter->second" is the receiver, with the class SrcRecInfo
+        if (iter->second.adjoint_source == 0)
+            continue;
 
         CUSTOMREAL delta_lon = grid.get_delta_lon();
         CUSTOMREAL delta_lat = grid.get_delta_lat();

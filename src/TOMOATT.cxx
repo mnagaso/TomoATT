@@ -62,29 +62,28 @@ int main(int argc, char *argv[])
     // assign source for each simultaneous run group
     IP.prepare_src_map();
 
-
-
+std::cout << "111" << std::endl;
     // initialize file IO object
     IO_utils io(IP); // create IO object for main and non-main process as well
-
+std::cout << "222" << std::endl;
     // initialize compute grids
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
-
+std::cout << "333" << std::endl;
     // output inversion grid file (by main process)
     grid.write_inversion_grid_file();
-
-
+std::cout << "444" << std::endl;
     // initialize inversion grids (by other process)
     grid.setup_inversion_grids(IP);
-
+std::cout << "555" << std::endl;
     if (subdom_main) {
         // output grid data (grid data is only output in the main simulation)
         io.write_grid(grid);
     }
-
+std::cout << "666" << std::endl;
     // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
     prepare_teleseismic_boundary_conditions(IP, grid, io);      // not ready for new version of src rec data
 
+std::cout << "777" << std::endl;
     synchronize_all_world();
 
     //

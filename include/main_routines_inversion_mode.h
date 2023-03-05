@@ -40,39 +40,40 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // let syn_time_list[name_src][name_rec] = 0.0
     IP.initialize_syn_time_list();
 
-    //prepare synthetic traveltime for all earthquakes
-    for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim_prepare.size(); i_src++){
-        id_sim_src   = IP.src_ids_this_sim_prepare[i_src];
-        name_sim_src = IP.src_names_this_sim_prepare[i_src];
-
-        if (myrank == 0)
-            std::cout << "source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
-
-        bool is_teleseismic = IP.get_src_point(name_sim_src).is_out_of_region;
-
-        Source src(IP, grid, is_teleseismic);
-
-        // initialize iterator object
-        bool first_init = (i_inv == 0 && i_src==0);
-
-        // initialize iterator object
-        std::unique_ptr<Iterator> It;
-
-        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
-        It->run_iteration_forward(IP, grid, io, first_init);
-
-        Receiver recs;
-        recs.store_arrival_time(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
-    }
-
-    // wait for all processes to finish
-    synchronize_all_world();
-    // all processors share the calculated synthetic traveltime
-    IP.reduce_syn_time_list();
-    synchronize_all_world();
-
-    //
-    std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
+//    //prepare synthetic traveltime for all earthquakes
+//    for(long unsigned int i_src = 0; i_src < IP.src_names_this_sim_prepare.size(); i_src++){
+//        id_sim_src   = IP.src_ids_this_sim_prepare[i_src];
+//        name_sim_src = IP.src_names_this_sim_prepare[i_src];
+//
+//        if (myrank == 0)
+//            std::cout << "source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
+//
+//        bool is_teleseismic = IP.get_src_point(name_sim_src).is_out_of_region;
+//
+//        Source src(IP, grid, is_teleseismic);
+//
+//        // initialize iterator object
+//        bool first_init = (i_inv == 0 && i_src==0);
+//
+//        // initialize iterator object
+//        std::unique_ptr<Iterator> It;
+//
+//        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+//        It->run_iteration_forward(IP, grid, io, first_init);
+//
+//        Receiver recs;
+//        recs.store_arrival_time(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
+//    }
+//
+//    // wait for all processes to finish
+//    synchronize_all_world();
+//
+//    // all processors share the calculated synthetic traveltime // MNMN this causes a dead lock when the number of sources are different among simultaneous runs
+//    IP.reduce_syn_time_list(); // is it necessary?
+////    synchronize_all_world(); // dead lock
+//
+//    //
+//    std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
 
 
     // check syn_time_map_sr
@@ -85,9 +86,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // }
 
 
-    ///////////////////////
-    // loop for each source
-    ///////////////////////
+    /////////////////////////
+    // run forward simulation
+    /////////////////////////
 
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
@@ -97,8 +98,11 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // }
 
         // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-        name_sim_src = IP.src_names_this_sim[i_src];
+        const int id_sim_src           = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string name_sim_src = IP.src_names_this_sim[i_src];
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
 
         if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
@@ -123,20 +127,16 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
         // (re) initialize source object and set to grid
-        Source src(IP, grid, is_teleseismic);
+        Source src(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
-
-        /////////////////////////
-        // run forward simulation
-        /////////////////////////
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
             It->run_iteration_forward(IP, grid, io, first_init);
         } else {
             // hybrid stencil mode
@@ -146,13 +146,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             std::unique_ptr<Iterator> It_pre;
             IP.set_stencil_order(1);
             IP.set_conv_tol(IP.get_conv_tol()*100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It_pre, false);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It_pre, false);
             It_pre->run_iteration_forward(IP, grid, io, first_init);
 
             // run 3rd order forward simulation
             IP.set_stencil_order(3);
             IP.set_conv_tol(IP.get_conv_tol()/100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, true);
             It->run_iteration_forward(IP, grid, io, first_init);
         }
 
@@ -179,43 +179,71 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         Receiver recs;
         recs.store_arrival_time(IP, grid, name_sim_src);
 
-        /////////////////////////
-        // run adjoint simulation
-        /////////////////////////
+    }
 
-        if (IP.get_run_mode()==DO_INVERSION){
-            // calculate adjoint source
-            std::vector<CUSTOMREAL> v_obj_misfit_event = recs.calculate_adjoint_source(IP);
-            for(int i = 0; i < (int)v_obj_misfit_event.size(); i++){
-                v_obj_misfit[i] += v_obj_misfit_event[i];
-            }
-            // run iteration for adjoint field calculation
-            It->run_iteration_adjoint(IP, grid, io);
+    // communicate between sim groups to get the arrival times for common receivers double sources
+    IP.communicate_travel_times();
 
-                        // calculate sensitivity kernel
-            calculate_sensitivity_kernel(grid, IP);
-
-            if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
-                // adjoint field will be output only at the end of subiteration
-                // output the result of adjoint simulation
-                io.write_adjoint_field(grid,i_inv);
-            }
-        }
-
-        // check adjoint source
-        // for (auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
-        //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
-        // }
-
-    } // end loop sources
-
-    // wait for all processes to finish
+    // synchronize all processes
     synchronize_all_world();
 
-    // allreduce sum_adj_src
-    for(int i = 0; i < (int)v_obj_misfit.size(); i++){
-        allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
-    }
+
+    /////////////////////////
+    // run adjoint simulation
+    /////////////////////////
+
+    if (IP.get_run_mode()==DO_INVERSION){
+
+        for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+
+            // load the global id of this src
+            const int id_sim_src           = IP.src_ids_this_sim[i_src]; // local src id to global src id
+            const std::string name_sim_src = IP.src_names_this_sim[i_src];
+            // set simu group id and source name for output files/dataset names
+            io.set_id_src(id_sim_src);
+            io.set_name_src(name_sim_src);
+
+            // initialize iterator object
+            std::unique_ptr<Iterator> It;
+            Receiver recs;
+
+                // calculate adjoint source
+                std::vector<CUSTOMREAL> v_obj_misfit_event = recs.calculate_adjoint_source(IP, name_sim_src);
+                for(int i = 0; i < (int)v_obj_misfit_event.size(); i++){
+                    v_obj_misfit[i] += v_obj_misfit_event[i];
+                }
+                // run iteration for adjoint field calculation
+                It->run_iteration_adjoint(IP, grid, io);
+
+                // calculate sensitivity kernel
+                calculate_sensitivity_kernel(grid, IP, name_sim_src);
+
+                if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
+                    // adjoint field will be output only at the end of subiteration
+                    // output the result of adjoint simulation
+                    io.write_adjoint_field(grid,i_inv);
+                }
+
+            // check adjoint source
+            // for (auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
+            //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
+            // }
+
+        } // end loop sources
+
+        // wait for all processes to finish
+        synchronize_all_world();
+
+        // allreduce sum_adj_src
+        for(int i = 0; i < (int)v_obj_misfit.size(); i++){
+            allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
+        }
+
+
+    } // end if run_mode == DO_INVERSION
+
+    // synchronize all processes
+    synchronize_all_world();
 
     // return current objective function value
     return v_obj_misfit;

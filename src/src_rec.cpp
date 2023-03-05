@@ -142,7 +142,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                 src_name = src.name;
 
                 ndata_tmp = src.n_data;
-                src_name_list.push_back(src_name);
+                src_name_list.push_back(src_name); // store order of sources in the file
 
                 // source with no receiver is allowed for solver_only model
                 if (ndata_tmp==0) {
@@ -269,11 +269,12 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
     } // end of while loop
 
-    // abort if number of src_points are less than n_sims
-    int n_src_points = src_map.size();
-    if (n_src_points < n_sims){
-        std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort." << std::endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
+    // indicate the number of sources and receivers, data_info
+    if (world_rank == 0){
+        std::cout << "\nReading src_rec_file finished." << std::endl;
+        std::cout << "number of sources: " << src_map.size() << std::endl;
+        std::cout << "number of receivers: " << rec_map.size() << std::endl;
+        std::cout << "number of data: " << data_info.size() << "\n" << std::endl;
     }
 
     // indicate elapsed time
@@ -436,6 +437,11 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     std::map<std::string, SrcRecInfo> tmp_src_rec_map = src_map;
     src_map = rec_map;
     rec_map = tmp_src_rec_map;
+
+    // MEMO: when swapped, src_map.n_data has no information (=0).
+    // this may cause an error when distrubuting data to processors.
+
+    // for each element of src_map, count the number of rec_map with the same value of
 
     for(int i = 0; i < (int)data_info.size(); i++){
         DataInfo tmp_data = data_info[i];
@@ -732,6 +738,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                              std::vector<int>& src_ids, \
                              std::vector<std::string>& src_names) {
 
+
     // reset the src_ids and src_names
     src_ids.clear();
     src_names.clear();
@@ -754,9 +761,9 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
     broadcast_i_single_inter_sim(n_src, 0); // id_sim=0&&subdom_main to id_sim=all&&subdom_main
     broadcast_i_single_sub(n_src, 0);       // id_sim=all&&subdom_main to id_sim=all&&all subprocesses
 
-
     // assign sources to each simulutaneous run group
     for (int i_src = 0; i_src < n_src; i_src++) {
+
         // id of simulutaneous run group to which the i_src-th source belongs
         int dst_id_sim = i_src % n_sims;
 
@@ -768,11 +775,15 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                 // send src_map[i_src] to the main process of dst_id_sim
                 send_src_info_inter_sim(src_map[id2key_src[i_src]], dst_id_sim);
 
+                // send rec_map.size() to the main process of dst_id_sim
+                int n_data = rec_map.size();
+                send_i_single_sim(&n_data, dst_id_sim);
+
                 // send rec_map[i_src] to the main process of dst_id_sim
                 for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                    if (iter->second.id == src_map[id2key_src[i_src]].id){
-                        send_rec_info_inter_sim(iter->second, dst_id_sim);
-                    }
+                    //if (iter->second.id == src_map[id2key_src[i_src]].id){
+                        send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
+                    //}
                 }
 
                 // send data_info[i_src] to the main process of dst_id_sim
@@ -799,9 +810,12 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     // add the received src_map to the src_map
                     src_map[tmp_SrcInfo.name] = tmp_SrcInfo;
 
+                    // recv rec_map.size() from the main process of dst_id_sim
+                    recv_i_single_sim(&tmp_SrcInfo.n_data, 0);
+
                     // receive rec_map from the main process of dst_id_sim
                     if (tmp_SrcInfo.n_data > 0){
-                        // receive rec_map and datainfo
+                        // receive rec_map
                         for (int i_data = 0; i_data < tmp_SrcInfo.n_data; i_data++){
                             // prepare SrcRecInfo object for receiving the contents
                             SrcRecInfo tmp_RecInfo;
@@ -809,6 +823,10 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                             recv_rec_info_inter_sim(tmp_RecInfo, 0);
                             // add the received rec_map to the rec_map
                             rec_map[tmp_RecInfo.name] = tmp_RecInfo;
+                        }
+
+                        // receive data_info from the main process of dst_id_sim
+                        for (int i_data = 0; i_data < tmp_SrcInfo.n_data; i_data++){
 
                             // prepare DataInfo object for receiving the contents
                             DataInfo tmp_DataInfo;
@@ -848,7 +866,6 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
 void send_src_info_inter_sim(SrcRecInfo &src, int dest){
 
     send_i_single_sim(&src.id, dest);
-    send_i_single_sim(&src.id, dest);
     send_i_single_sim(&src.year , dest);
     send_i_single_sim(&src.month, dest);
     send_i_single_sim(&src.day  , dest);
@@ -865,7 +882,7 @@ void send_src_info_inter_sim(SrcRecInfo &src, int dest){
 }
 
 void recv_src_info_inter_sim(SrcRecInfo &src, int orig){
-    recv_i_single_sim(&src.id, orig);
+
     recv_i_single_sim(&src.id, orig);
     recv_i_single_sim(&src.year , orig);
     recv_i_single_sim(&src.month, orig);
@@ -883,6 +900,7 @@ void recv_src_info_inter_sim(SrcRecInfo &src, int orig){
 
 
 void send_rec_info_inter_sim(SrcRecInfo &rec, int dest){
+
     send_i_single_sim(&rec.id, dest);
     send_str_sim(rec.name, dest);
     send_cr_single_sim(&rec.lon, dest);
@@ -892,6 +910,7 @@ void send_rec_info_inter_sim(SrcRecInfo &rec, int dest){
 
 
 void recv_rec_info_inter_sim(SrcRecInfo &rec, int orig){
+
     recv_i_single_sim(&rec.id, orig);
     recv_str_sim(rec.name, orig);
     recv_cr_single_sim(&rec.lon, orig);

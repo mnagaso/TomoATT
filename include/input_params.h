@@ -37,9 +37,9 @@ public:
     CUSTOMREAL get_min_lon(){return min_lon*DEG2RAD;};
     CUSTOMREAL get_max_lon(){return max_lon*DEG2RAD;};
 
-    CUSTOMREAL                  get_src_radius();
-    CUSTOMREAL                  get_src_lat();
-    CUSTOMREAL                  get_src_lon();
+    CUSTOMREAL                  get_src_radius(const std::string&);
+    CUSTOMREAL                  get_src_lat(   const std::string&);
+    CUSTOMREAL                  get_src_lon(   const std::string&);
     std::string                 get_src_rec_file()      {return src_rec_file;};
     bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
     bool                        get_if_src_teleseismic(std::string); // return true if the source is teleseismic
@@ -158,9 +158,9 @@ public:
     std::map<std::string, SrcRecInfo> src_map;
     std::map<std::string, SrcRecInfo> rec_map;
     std::map<std::string, SrcRecInfo> src_map_back;    // for output purposes
-    std::map<std::string, SrcRecInfo> src_map_prepare; // related to common receiver differential time, computed fist
+//    std::map<std::string, SrcRecInfo> src_map_prepare; // related to common receiver differential time, computed fist
     std::map<std::string, SrcRecInfo> src_map_tele;    // source list for teleseismic
-    std::vector<std::string>          src_name_list;    // name list for output
+    std::vector<std::string>          src_name_list;    // name list for output (store the order of src_map)
 
     std::map<std::string, SrcRecInfo> rec_map_back;    // for output purposes
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
@@ -169,22 +169,22 @@ public:
     std::vector<DataInfo> data_info_tele;    // data list for teleseismic
     std::vector<DataInfo> data_info_back;    // for backup purposes
 
-    // std::map<std::vector<std::string>,CUSTOMREAL> syn_time_list;    // (evname, stname) -> syn_time
+//    // std::map<std::vector<std::string>,CUSTOMREAL> syn_time_list;    // (evname, stname) -> syn_time
     std::map<std::string, std::map<std::string, CUSTOMREAL> > syn_time_map_sr;     // all used synthetic traveltime in forward modeling and inversion.  two level map, map1: source -> map2;  map 2: receiver -> time;
-    std::map<std::string, std::vector<DataInfo> >             data_info_smap;       // map source -> vector; vector: (related) Traveltime data
-    std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
+//    std::map<std::string, std::vector<DataInfo> >             data_info_smap;       // map source -> vector; vector: (related) Traveltime data
+//    std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
 
     // src id/name list for this sim group
     std::vector<int>         src_ids_this_sim;
     std::vector<std::string> src_names_this_sim;
 
-    // traveltime of src should be prepared for this sim group (have common receivr differential traveltime)
-    std::vector<int>         src_ids_this_sim_prepare;
-    std::vector<std::string> src_names_this_sim_prepare;
-
-    // boundary of src should be computed for this sim group (teleseismic earthquake)
-    std::vector<int>         src_ids_this_sim_tele;
-    std::vector<std::string> src_names_this_sim_tele;
+//    // traveltime of src should be prepared for this sim group (have common receivr differential traveltime)
+//    std::vector<int>         src_ids_this_sim_prepare;
+//    std::vector<std::string> src_names_this_sim_prepare;
+//
+//    // boundary of src should be computed for this sim group (teleseismic earthquake)
+//    std::vector<int>         src_ids_this_sim_tele;
+//    std::vector<std::string> src_names_this_sim_tele;
 
     // the number of data
     int N_abs_local_data    = 0;
@@ -203,23 +203,31 @@ public:
     void set_adjoint_source(std::string, CUSTOMREAL);
 
     // new version for reading src rec data (by Chen Jing, 20230212)
+    // MNMN: return reference (&) of the map otherwise it will be a copy and take a unnecessary memory and time
     auto get_src_map_begin()                        {return src_map.begin();};
     auto get_src_map_end()                          {return src_map.end();};
-    SrcRecInfo get_src_map(std::string);
+    SrcRecInfo& get_src_map(std::string);
 
     auto get_rec_map_begin()                        {return rec_map.begin();};
     auto get_rec_map_end()                          {return rec_map.end();};
-    SrcRecInfo get_rec_map(std::string);
+    SrcRecInfo& get_rec_map(std::string);
+
+    // share calculated synthetic traveltimes to another which requires that
+    void communicate_travel_times();
 
 private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
     // rearrange the data_info_nv to data_info_smap
-    void rearrange_data_info();
+    //void rearrange_data_info();
     // generate src_map_prepare_nv based on data_info_smap
-    void generate_src_map_prepare();
-    // generate syn_time_list_nv based on data
+    //void generate_src_map_prepare();
+
+    // generate/initialize synthetic time data map "syn_time_list" based on data
     void initialize_syn_time_map();
+    // distribute the synthetic time data to all "subdom_main" processes
+    void distribute_syn_time_map();
+
 public:
     void initialize_syn_time_list();
     void reduce_syn_time_list();

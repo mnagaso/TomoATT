@@ -11,12 +11,12 @@ public:
     ~Receiver();
 
     void calculate_arrival_time(InputParams&, Grid&);
-    void store_arrival_time(InputParams&, Grid&, std::string);       // only for common receiver differential traveltime
+    void store_arrival_time(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
 
     // adjoint source
-    std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&);
+    std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&, const std::string&);
     // teleseismic source
-    CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&);
+    CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&, const std::string&);
     // Gradient of traveltime
     void calculate_T_gradient(InputParams&, Grid&);
     // initialize variables for source relocation
@@ -26,7 +26,7 @@ public:
     // divide optimal origin time by summed weight
     void divide_optimal_origin_time_by_summed_weight(InputParams&);
     // Gradient of objective function
-    void calculate_grad_obj_src_reloc(InputParams&);
+    void calculate_grad_obj_src_reloc(InputParams&, const std::string&);
     // objective function
     void calculate_obj_reloc(InputParams&, int);
     // update source location

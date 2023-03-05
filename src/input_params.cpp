@@ -524,14 +524,14 @@ InputParams::~InputParams(){
     // clear all src, rec, data
     src_map.clear();
     src_map_back.clear();
-    src_map_prepare.clear();
+    //src_map_prepare.clear();
     src_map_tele.clear();
     rec_map.clear();
     rec_map_back.clear();
     data_info.clear();
     data_info_back.clear();
     syn_time_map_sr.clear();
-    data_info_smap.clear();
+    //data_info_smap.clear();
 }
 
 
@@ -689,7 +689,7 @@ void InputParams::write_params_to_file() {
 
 
 // return radious
-CUSTOMREAL InputParams::get_src_radius() {
+CUSTOMREAL InputParams::get_src_radius(const std::string& name_sim_src) {
     if (src_rec_file_exist)
         return depth2radius(get_src_point(name_sim_src).dep);
     else
@@ -697,7 +697,7 @@ CUSTOMREAL InputParams::get_src_radius() {
 }
 
 
-CUSTOMREAL InputParams::get_src_lat() {
+CUSTOMREAL InputParams::get_src_lat(const std::string& name_sim_src) {
     if (src_rec_file_exist)
         return get_src_point(name_sim_src).lat*DEG2RAD;
     else
@@ -705,7 +705,7 @@ CUSTOMREAL InputParams::get_src_lat() {
 }
 
 
-CUSTOMREAL InputParams::get_src_lon() {
+CUSTOMREAL InputParams::get_src_lon(const std::string& name_sim_src) {
     if (src_rec_file_exist)
         return get_src_point(name_sim_src).lon*DEG2RAD;
     else
@@ -804,8 +804,9 @@ void InputParams::prepare_src_map(){
                                       rec_map);
         }
 
-        src_map_back  = src_map;
-        rec_map_back  = rec_map;
+        // copy backups
+        src_map_back   = src_map;
+        rec_map_back   = rec_map;
         data_info_back = data_info;
 
         // check if src positions are within the domain or not (teleseismic source)
@@ -834,7 +835,7 @@ void InputParams::prepare_src_map(){
         // abort if number of src_points are less than n_sims
         int n_src_points = src_map.size();
         if (n_src_points < n_sims){
-            std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort." << std::endl;
+            std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort.1" << std::endl;
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
@@ -848,17 +849,27 @@ void InputParams::prepare_src_map(){
     // #TODO: not updated yet for new srcrec !!!
     if (src_rec_file_exist) {
         // # TODO: check if this can be placed
-        std::cout << std::endl;
-        std::cout << "source assign to processors" <<std::endl;
+
+        if (world_rank==0)
+            std::cout << "\nsource assign to processors\n" <<std::endl;
+
 
         // broadcast src_map,
         //           rec_map,
         //           data_info,
+        // outuput: src_ids_this_sim, src_names_this_sim includes all src ids/names
+        //          which are calculated this simultaneous run group
         distribute_src_rec_data(src_map,
                                 rec_map,
                                 data_info,
                                 src_ids_this_sim,
                                 src_names_this_sim);
+
+        std::cout << "initialize syn time map" << std::endl;
+        // generate syn_time_map_sr
+        initialize_syn_time_map();
+
+        synchronize_all_world();
 
         // broadcast src_map_tele,
         //           rec_map_tele,
@@ -885,20 +896,22 @@ void InputParams::prepare_src_map(){
         //src_ids_this_sim.insert(src_ids_this_sim.end(), src_ids_this_sim_prepare.begin(), src_ids_this_sim_prepare.end());
         //src_names_this_sim.insert(src_names_this_sim.end(), src_names_this_sim_prepare.begin(), src_names_this_sim_prepare.end());
 
+
+// Those data management scheme are not used anymore
+
         // generate data_info_smap,
         //          data_info_smap_reloc,
         //          syn_time_map_sr,
-        std::cout << "rearrange and analyse data " << std::endl;
-        // copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
-        rearrange_data_info();
-
-        // generate src_map_prepare based on data_info_smap
-        generate_src_map_prepare();
-
-        // generate syn_time_map_sr
-        initialize_syn_time_map();
-
-
+//        std::cout << "rearrange data " << std::endl;
+//        // copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
+//        rearrange_data_info();
+//
+//        std::cout << "generate src_map_prepare" << std::endl;
+//        // generate src_map_prepare based on data_info_smap
+//        generate_src_map_prepare();
+//
+        // distribute syn_time_map_sr
+//        distribute_syn_time_map_sr();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -979,49 +992,50 @@ void InputParams::prepare_src_map(){
 
 ////////////////////////////////////////////////////////////////
 
-
-    }
+        std::cout << "end parse src_rec file" << std::endl;
+    } // end of if src_rec_file_exists
 }
 
 
-void InputParams::rearrange_data_info(){
-    for(int i = 0; i < (int)data_info.size(); i++){
-        DataInfo data = data_info[i];
+// copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
+// dividing the data group by source name
+//void InputParams::rearrange_data_info(){
+//    for(int i = 0; i < (int)data_info.size(); i++){
+//        DataInfo data = data_info[i];
+//
+//        // add absolute traveltime
+//        if(data.is_src_rec){
+//            data_info_smap[data.name_src].push_back(data);
+//            data_info_smap_reloc[data.name_src].push_back(data);
+//
+//        // add common source differential traveltime
+//        } else if (data.is_rec_pair){
+//            data_info_smap[data.name_src_single].push_back(data);
+//
+//        // add common receiver differential traveltime
+//        } else if (data.is_src_pair){
+//            data_info_smap[data.name_src_pair[0]].push_back(data);
+//            data_info_smap[data.name_src_pair[1]].push_back(data);
+//        }
+//    }
+//}
 
-        // add absolute traveltime
-        if(data.is_src_rec){
-            data_info_smap[data.name_src].push_back(data);
-            data_info_smap_reloc[data.name_src].push_back(data);
 
-        // add common source differential traveltime
-        } else if (data.is_rec_pair){
-            data_info_smap[data.name_src_single].push_back(data);
-
-        // add common receiver differential traveltime
-        } else if (data.is_src_pair){
-            data_info_smap[data.name_src_pair[0]].push_back(data);
-            data_info_smap[data.name_src_pair[1]].push_back(data);
-        }
-    }
-}
-
-
-// # TODO: src_map_prepare is not clear
-void InputParams::generate_src_map_prepare(){
-    for(auto iter = data_info_smap.begin(); iter != data_info_smap.end(); iter++){
-
-        for (const DataInfo& data : iter->second){
-            // if this source has common source differential traveltime data
-            if (data.is_src_pair){
-                // add this source and turn to the next source
-                src_map_prepare[iter->first] = src_map[iter->first];
-                break;
-            }
-        }
-
-    }
-}
-
+//// # TODO: src_map_prepare is not clear
+//void InputParams::generate_src_map_prepare(){
+//    for(auto iter = data_info_smap.begin(); iter != data_info_smap.end(); iter++){
+//
+//        for (const DataInfo& data : iter->second){
+//            // if this source has common source differential traveltime data
+//            if (data.is_src_pair){
+//                // add this source and turn to the next source
+//                src_map_prepare[iter->first] = src_map[iter->first];
+//                break;
+//            }
+//        }
+//
+//    }
+//}
 
 void InputParams::initialize_syn_time_map(){
     for(int i = 0; i < (int)data_info.size(); i++){
@@ -1044,6 +1058,14 @@ void InputParams::initialize_syn_time_map(){
     }
 }
 
+
+void InputParams::distribute_syn_time_map(){
+
+
+
+
+}
+
 void InputParams::initialize_syn_time_list(){
     for(auto iter1 = syn_time_map_sr.begin(); iter1 != syn_time_map_sr.end(); iter1++){
         for(auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
@@ -1051,6 +1073,7 @@ void InputParams::initialize_syn_time_list(){
         }
     }
 }
+
 void InputParams::reduce_syn_time_list(){
     for(auto iter1 = syn_time_map_sr.begin(); iter1 != syn_time_map_sr.end(); iter1++){
         for(auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
@@ -1064,6 +1087,7 @@ void InputParams::initialize_adjoint_source(){
         iter->second.adjoint_source = 0;
     }
 }
+
 void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_source){
     if (rec_map.find(name_rec) != rec_map.end()){
         rec_map[name_rec].adjoint_source = adjoint_source;
@@ -1071,7 +1095,8 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
         std::cout << "error !!!, undefined receiver name when adding adjoint source: " << name_rec << std::endl;
     }
 }
-SrcRecInfo InputParams::get_src_map(std::string name_src){
+
+SrcRecInfo& InputParams::get_src_map(std::string name_src){
     if (src_map.find(name_src) != src_map.end()){
         return src_map[name_src];
     } else {
@@ -1079,7 +1104,8 @@ SrcRecInfo InputParams::get_src_map(std::string name_src){
         abort();
     }
 }
-SrcRecInfo InputParams::get_rec_map(std::string name_rec){
+
+SrcRecInfo& InputParams::get_rec_map(std::string name_rec){
     if (rec_map.find(name_rec) != rec_map.end()){
         return rec_map[name_rec];
     } else {
@@ -1087,7 +1113,6 @@ SrcRecInfo InputParams::get_rec_map(std::string name_rec){
         abort();
     }
 }
-
 
 void InputParams::gather_all_arrival_times_to_main(){
     // std::cout << "ckp0, id_sim: " << id_sim << ", myrank: " << myrank <<std::endl;
@@ -1188,10 +1213,10 @@ void InputParams::write_src_rec_file(int i_inv) {
         }
 
         int data_count = 0;
-        // for (auto iter = src_map_back_nv.begin(); iter != src_map_back_nv.end(); iter++){
         for (int i_src = 0; i_src < (int)src_name_list.size(); i_src++){
+
             if (world_rank == 0 && subdom_main && id_subdomain==0){    // main processor of subdomain && the first id of subdoumains
-                // if (iter == src_map_back_nv.begin())
+
                 if (i_src == 0)
                     ofs.open(src_rec_file_out);
                 else
@@ -1282,10 +1307,11 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                 ofs.close();
             }
-            // synchro
-            synchronize_all_world();
-        }
 
+            // synchro
+            //synchronize_all_world(); // dead lock here because src_name_list is not the same for all processors
+
+        } // end of for (int i_src = 0; i_src < (int)src_name_list.size(); i_src++)
 
         // only for source relocation, output relocated observational data for tomography
         if (run_mode == SRC_RELOCATION) {
@@ -1377,12 +1403,14 @@ void InputParams::write_src_rec_file(int i_inv) {
                     ofs.close();
 
                 }
-                // synchro
-                synchronize_all_world();
             }
 
         } // end of run_mode == SRC_RELOCATION
     } // end of src_rec_file_exist
+
+    // synchro
+    synchronize_all_world();
+
 }
 
 
@@ -1478,11 +1506,12 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
         CUSTOMREAL max_kernel = 0.0;
 
         // step 3, calculate the kernel
-        for (auto& data : data_info_smap[name_sim_src]){     // loop all data related to this source
+        for (auto& data : data_info){     // loop all data related to this source
+
             if (data.is_src_rec){   // absolute traveltime
-                std::cout << "teleseismic data, absolute traveltime is not support now" << std::endl;
+                std::cout << "teleseismic data, absolute traveltime is not supported now" << std::endl;
             } else if (data.is_src_pair) {  // common receiver differential traveltime
-                std::cout << "teleseismic data, common receiver differential traveltime is not support now" << std::endl;
+                std::cout << "teleseismic data, common receiver differential traveltime is not supported now" << std::endl;
             } else if (data.is_rec_pair) {  // common source differential traveltime
                 std::string name_src = data.name_src_single;
                 std::string name_rec1 = data.name_rec_pair[0];
@@ -1522,3 +1551,17 @@ void InputParams::modift_swapped_source_location() {
     }
 }
 
+
+void InputParams::communicate_travel_times() {
+    // for common receiver double difference data, the source locates at the different simultaneous group.
+    // in this case this function is used to communicate the travel times between different simultaneous groups
+
+    if (subdom_main) {
+        // find the sources which are not calculated in this simultaneous group
+        // by comparing data_info and src_ids_this_sim
+
+        //
+
+    }
+
+}

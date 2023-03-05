@@ -9,20 +9,20 @@ Receiver::~Receiver() {
 }
 
 
-void Receiver::store_arrival_time(InputParams& IP, Grid& grid, std::string name_src) {
+void Receiver::store_arrival_time(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
         // get receiver positions from input parameters
         std::vector<std::string> name_receivers = IP.get_rec_points(name_sim_src);
 
         // calculate the travel time of the receiver by interpolation
         for(std::string name_rec: name_receivers) {
-            IP.syn_time_map_sr[name_src][name_rec] = interpolate_travel_time(grid, IP, name_src, name_rec);
+            IP.syn_time_map_sr[name_sim_src][name_rec] = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
         }
     }
 }
 
 
-std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
+std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name_sim_src) {
 
     CUSTOMREAL obj           = 0.0;
     CUSTOMREAL obj_abs       = 0.0;
@@ -45,21 +45,29 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
 
     if(subdom_main){
 
-        // loop all data related to this source
-        for (auto data : IP.data_info_smap[name_sim_src]){
+        // loop all data related to this source MNMN: use reference(auto&) to avoid copy
+        for (auto& data : IP.data_info){
 
+            //
             // absolute traveltime
+            //
             if (data.is_src_rec){
+
+                // skip if this data is not belongs to this simulation group
+                // (this happens only the first group, because the first group retains all data)
+                if (data.name_src != name_sim_src) continue;
+
                 std::string name_src      = data.name_src;
                 std::string name_rec      = data.name_rec;
                 CUSTOMREAL syn_time       = IP.syn_time_map_sr[name_src][data.name_rec];
                 CUSTOMREAL obs_time       = data.travel_time_obs;
                 CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
-                IP.set_adjoint_source(name_rec, adjoint_source);
+                IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
                 // contribute misfit
                 obj     += 1.0 * my_square(syn_time - obs_time)*data.weight;
                 misfit  += 1.0 * my_square(syn_time - obs_time);
+
                 if (IP.get_src_map(name_src).is_out_of_region || IP.get_rec_map(name_rec).is_out_of_region){
                     obj_tele        +=  1.0 * my_square(syn_time - obs_time)*data.weight;
                     misfit_tele     +=  1.0 * my_square(syn_time - obs_time);
@@ -68,19 +76,33 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
                     misfit_abs      +=  1.0 * my_square(syn_time - obs_time);
                 }
 
-            } else if (data.is_src_pair) {  // common receiver differential traveltime
+            //
+            // common receiver differential traveltime
+            //
+            } else if (data.is_src_pair) {
+
+
+
                 std::string name_src1 = data.name_src_pair[0];
                 std::string name_src2 = data.name_src_pair[1];
                 std::string name_rec  = data.name_rec_single;
+
+                // skip if this data is not belongs to this simulation group
+                // (this happens only the first group, because the first group retains all data)
+                if (name_sim_src != name_src1 && name_sim_src != name_src2) continue;
+
                 if (name_sim_src == name_src1){
-                    CUSTOMREAL syn_dif_time = IP.syn_time_map_sr[name_src1][name_rec] - IP.syn_time_map_sr[name_src2][name_rec];
-                    CUSTOMREAL obs_dif_time = data.cr_dif_travel_time_obs;
+
+                    CUSTOMREAL syn_dif_time   = IP.syn_time_map_sr[name_src1][name_rec] - IP.syn_time_map_sr[name_src2][name_rec];
+                    CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
                     CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+
                     IP.set_adjoint_source(name_rec, adjoint_source);
 
                     // contribute misfit
                     obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                     misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
                     if (IP.get_src_map(name_src1).is_out_of_region || \
                         IP.get_src_map(name_src2).is_out_of_region || \
                         IP.get_rec_map(name_rec).is_out_of_region){
@@ -92,14 +114,17 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
                     }
 
                 } else if (name_sim_src == name_src2) {
-                    CUSTOMREAL syn_dif_time = IP.syn_time_map_sr[name_src2][name_rec] - IP.syn_time_map_sr[name_src1][name_rec];
-                    CUSTOMREAL obs_dif_time = - data.cr_dif_travel_time_obs;
+
+                    CUSTOMREAL syn_dif_time   = IP.syn_time_map_sr[name_src2][name_rec] - IP.syn_time_map_sr[name_src1][name_rec];
+                    CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
                     CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+
                     IP.set_adjoint_source(name_rec, adjoint_source);
 
                     // contribute misfit
                     obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                     misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
                     if (IP.get_src_map(name_src1).is_out_of_region || \
                         IP.get_src_map(name_src2).is_out_of_region || \
                         IP.get_rec_map(name_rec).is_out_of_region){
@@ -111,24 +136,31 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
                     }
 
                 } else {
-                    std::cout << "error match of data in function: calculate_adjoint_source_nv() " << std::endl;
+                    std::cout << "error match of data in function: calculate_adjoint_source() " << std::endl;
                 }
 
-            } else if (data.is_rec_pair) {  // common source differential traveltime
-                std::string name_src = data.name_src_single;
+            //
+            // common source differential traveltime
+            //
+            } else if (data.is_rec_pair) {
+
+                std::string name_src  = data.name_src_single;
                 std::string name_rec1 = data.name_rec_pair[0];
-                std::string name_rec2  = data.name_rec_pair[1];
+                std::string name_rec2 = data.name_rec_pair[1];
+
                 CUSTOMREAL syn_dif_time = IP.syn_time_map_sr[name_src][name_rec1] - IP.syn_time_map_sr[name_src][name_rec2];
                 CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
                 CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
                 IP.set_adjoint_source(name_rec1, adjoint_source);
+
                 adjoint_source = IP.get_rec_map(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
                 IP.set_adjoint_source(name_rec2, adjoint_source);
 
                 // contribute misfit
                 obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                 misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
+
                 if (IP.get_src_map(name_src).is_out_of_region || \
                     IP.get_rec_map(name_rec1).is_out_of_region || \
                     IP.get_rec_map(name_rec2).is_out_of_region){
@@ -140,7 +172,6 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP) {
                 }
             }
             count += 1;
-
 
         }
     }
@@ -612,8 +643,11 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
     for (long unsigned int i_src = 0; i_src < IP.src_names_this_sim.size(); i_src++) {
         // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
-        name_sim_src = IP.src_names_this_sim[i_src]; // local src name to global src id
+        const int& id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string& name_sim_src = IP.src_names_this_sim[i_src]; // local src name to global src ida
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
 
         if (subdom_main) {
             // get list of receivers from input parameters
@@ -658,7 +692,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
 
 // calculate the gradient of the objective function
-void Receiver::calculate_grad_obj_src_reloc(InputParams& IP) {
+void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& name_sim_src) {
 
     if(subdom_main){
         // get list of receivers from input parameters
