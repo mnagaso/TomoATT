@@ -113,8 +113,6 @@ private:
     CUSTOMREAL  src_lat;                     // source latitude in degrees
     CUSTOMREAL  src_lon;                     // source longitude in degrees
     std::string src_rec_file;                // source receiver file
-    std::string src_map_file;               // source list file
-    std::string rec_map_file;               // source list file
     std::string src_rec_file_out;            // source receiver file to be output
     std::string sta_correction_file;         // station correction file to be input
     std::string station_correction_file_out; // station correction file to be output
@@ -155,28 +153,32 @@ private:
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
 public:
+    std::map<std::string, SrcRecInfo> src_map_all;     // map of all sources (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> src_map;
-    std::map<std::string, SrcRecInfo> rec_map;
-    std::map<std::string, SrcRecInfo> src_map_back;    // for output purposes
-//    std::map<std::string, SrcRecInfo> src_map_prepare; // related to common receiver differential time, computed fist
-    std::map<std::string, SrcRecInfo> src_map_tele;    // source list for teleseismic
+    std::map<std::string, SrcRecInfo> src_map_back;     // for output purposes
+    std::map<std::string, SrcRecInfo> src_map_comm_src; // map of sources with common source
+    std::map<std::string, SrcRecInfo> src_map_tele;     // source list for teleseismic
     std::vector<std::string>          src_name_list;    // name list for output (store the order of src_map)
 
+    std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
+    std::map<std::string, SrcRecInfo> rec_map;
     std::map<std::string, SrcRecInfo> rec_map_back;    // for output purposes
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
+    std::vector<DataInfo> data_info_all;     // data list for all data (full information is only stored by the main process)
     std::vector<DataInfo> data_info;
     std::vector<DataInfo> data_info_tele;    // data list for teleseismic
     std::vector<DataInfo> data_info_back;    // for backup purposes
 
 //    // std::map<std::vector<std::string>,CUSTOMREAL> syn_time_list;    // (evname, stname) -> syn_time
     std::map<std::string, std::map<std::string, CUSTOMREAL> > syn_time_map_sr;     // all used synthetic traveltime in forward modeling and inversion.  two level map, map1: source -> map2;  map 2: receiver -> time;
-//    std::map<std::string, std::vector<DataInfo> >             data_info_smap;       // map source -> vector; vector: (related) Traveltime data
-//    std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
+    std::map<std::string, std::vector<DataInfo> >             data_info_smap;       // map source -> vector; vector: (related) Traveltime data
+    std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
 
+    // we use src_map->second.id to index the following arrays
     // src id/name list for this sim group
-    std::vector<int>         src_ids_this_sim;
-    std::vector<std::string> src_names_this_sim;
+//    std::vector<int>         src_ids_this_sim;
+//    std::vector<std::string> src_names_this_sim;
 
 //    // traveltime of src should be prepared for this sim group (have common receivr differential traveltime)
 //    std::vector<int>         src_ids_this_sim_prepare;
@@ -218,10 +220,10 @@ public:
 private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
-    // rearrange the data_info_nv to data_info_smap
-    //void rearrange_data_info();
-    // generate src_map_prepare_nv based on data_info_smap
-    //void generate_src_map_prepare();
+    // create a source name based map of data info
+    void generate_map_of_data_info_by_src_name();
+    // geneerate a map of sources which include common source double difference data
+    void generate_src_map_with_common_source();
 
     // generate/initialize synthetic time data map "syn_time_list" based on data
     void initialize_syn_time_map();

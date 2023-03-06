@@ -124,8 +124,10 @@ public:
 void parse_src_rec_file(std::string&                      , \
                         std::map<std::string, SrcRecInfo>&, \
                         std::map<std::string, SrcRecInfo>&, \
-                        std::vector<DataInfo>&            , \
-                        std::vector<std::string>&);
+                        std::string&                      , \
+                        std::map<std::string, SrcRecInfo>&, \
+                        std::map<std::string, SrcRecInfo>&);
+
 
 // parse sta_correctoion_file
 void parse_sta_correction_file(std::string&, \

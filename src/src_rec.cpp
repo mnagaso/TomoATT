@@ -735,8 +735,9 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
 void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                              std::map<std::string, SrcRecInfo>& rec_map, \
                              std::vector<DataInfo>&             data_info,\
-                             std::vector<int>& src_ids, \
-                             std::vector<std::string>& src_names) {
+                             std::map<std::string, SrcRecInfo>& src_map_this_sim, \
+                             std::map<std::string, SrcRecInfo>& rec_map_this_sim, \
+                             std::vector<DataInfo>&             data_info_this_sim) {
 
 
     // reset the src_ids and src_names
@@ -769,8 +770,20 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
 
         if (id_sim==0){ // send
             if (dst_id_sim == id_sim){
-                src_ids.push_back(i_src);
-                src_names.push_back(src_map[id2key_src[i_src]].name);
+                // src
+                src_map_this_sim[id2key_src[i_src]] = src_map[id2key_src[i_src]];
+                // rec
+                for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
+                    if (iter->second.id == src_map[id2key_src[i_src]].id){
+                        rec_map_this_sim[iter->first] = iter->second;
+                    }
+                }
+                // data
+                for (int i_data = 0; i_data < (int)data_info.size(); i_data++){
+                    if (data_info[i_data].src_id == src_map[id2key_src[i_src]].id){
+                        data_info_this_sim.push_back(data_info[i_data]);
+                    }
+                }
             } else if (subdom_main) {
                 // send src_map[i_src] to the main process of dst_id_sim
                 send_src_info_inter_sim(src_map[id2key_src[i_src]], dst_id_sim);
@@ -781,9 +794,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
 
                 // send rec_map[i_src] to the main process of dst_id_sim
                 for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                    //if (iter->second.id == src_map[id2key_src[i_src]].id){
-                        send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
-                    //}
+                    send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
                 }
 
                 // send data_info[i_src] to the main process of dst_id_sim
@@ -808,7 +819,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     recv_src_info_inter_sim(tmp_SrcInfo, 0);
 
                     // add the received src_map to the src_map
-                    src_map[tmp_SrcInfo.name] = tmp_SrcInfo;
+                    src_map_this_sim[tmp_SrcInfo.name] = tmp_SrcInfo;
 
                     // recv rec_map.size() from the main process of dst_id_sim
                     recv_i_single_sim(&tmp_SrcInfo.n_data, 0);
@@ -822,7 +833,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                             // receive rec_map from the main process of dst_id_sim
                             recv_rec_info_inter_sim(tmp_RecInfo, 0);
                             // add the received rec_map to the rec_map
-                            rec_map[tmp_RecInfo.name] = tmp_RecInfo;
+                            rec_map_this_sim[tmp_RecInfo.name] = tmp_RecInfo;
                         }
 
                         // receive data_info from the main process of dst_id_sim
@@ -833,7 +844,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                             // receive data_info from the main process of dst_id_sim
                             recv_data_info_inter_sim(tmp_DataInfo, 0);
                             // add the received data_info to the data_info
-                            data_info.push_back(tmp_DataInfo);
+                            data_info_this_sim.push_back(tmp_DataInfo);
                         }
                     }
                }

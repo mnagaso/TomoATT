@@ -167,7 +167,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
         // calculate travel time at the actual source location
         // recs.calculate_arrival_time(IP, grid);
-        recs.store_arrival_time(IP, grid, name_sim_src);
+        recs.interpolate_and_store_arrival_times_on_rec_position(IP, grid, name_sim_src);
 
         // calculate approximated orptimal origin time
         // recs.calculate_optimal_origin_time(IP, unique_rec_map);
@@ -202,7 +202,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         io.read_T(grid);
 
         // calculate gradient at the actual source location
-        recs.calculate_T_gradient(IP, grid);
+        recs.calculate_T_gradient(IP, grid, name_sim_src);
 
         // calculate gradient of objective function
         recs.calculate_grad_obj_src_reloc(IP, name_sim_src);

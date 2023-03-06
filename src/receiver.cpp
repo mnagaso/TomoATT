@@ -9,7 +9,7 @@ Receiver::~Receiver() {
 }
 
 
-void Receiver::store_arrival_time(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
+void Receiver::interpolate_and_store_arrival_times_on_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
         // get receiver positions from input parameters
         std::vector<std::string> name_receivers = IP.get_rec_points(name_sim_src);
@@ -366,19 +366,16 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
     }
 }
 
-void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid){
+void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::string& name_sim_src){
 
     if(subdom_main){
-        // get list of receivers from input parameters
-        // std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
-
         // calculate gradient of travel time at each receiver (swapped source)
         for (int i = 0; i < (int)IP.data_info_smap_reloc[name_sim_src].size(); i++){
             std::string name_rec = IP.data_info_smap_reloc[name_sim_src][i].name_rec;
             calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec]);
         }
 
-        // for(auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
+        // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
         //     std::cout << "DTi (lon) is: " << iter->second.DTi << std::endl;
         //     std::cout << "DTj (lat) is: " << iter->second.DTj << std::endl;
         //     std::cout << "DTk (dep) is: " << iter->second.DTk << std::endl;

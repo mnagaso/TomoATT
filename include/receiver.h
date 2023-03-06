@@ -11,14 +11,14 @@ public:
     ~Receiver();
 
     void calculate_arrival_time(InputParams&, Grid&);
-    void store_arrival_time(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
+    void interpolate_and_store_arrival_times_on_rec_position(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
 
     // adjoint source
     std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&, const std::string&);
     // teleseismic source
     CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&, const std::string&);
     // Gradient of traveltime
-    void calculate_T_gradient(InputParams&, Grid&);
+    void calculate_T_gradient(InputParams&, Grid&, const std::string&);
     // initialize variables for source relocation
     void init_vars_src_reloc(InputParams&);
     // approximated optimal origin time

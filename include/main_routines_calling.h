@@ -23,17 +23,9 @@
 #include "lbfgs.h"
 
 
-// run forward-only or inversion mode
-inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils &io) {
-
-    // for check if the current source is the first source
-    bool first_src = true;
-
-    if(myrank == 0)
-        std::cout << "size of src_map: " << IP.src_ids_this_sim.size() << std::endl;
-
+// prepare header line of objective_funciton.txt
+inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
     // prepare output for iteration status
-    std::ofstream out_main; // close() is not mandatory
     if(myrank == 0 && id_sim ==0){
         out_main.open(output_dir + "/objective_function.txt");
         if (optim_method == GRADIENT_DESCENT){
@@ -95,6 +87,23 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                      << std::setw(16) << "diff_obj," << std::setw(16) << "v_obj_new," << std::setw(16) << "v_obj_old," << std::endl;
 
     }
+}
+
+
+//
+// run forward-only or inversion mode
+//
+inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils &io) {
+
+    // for check if the current source is the first source
+    bool first_src = true;
+
+    if(myrank == 0)
+        std::cout << "size of src_map: " << IP.src_ids_this_sim.size() << std::endl;
+
+    // prepare objective_function file
+    std::ofstream out_main; // close() is not mandatory
+    prepare_header_line(IP, out_main);
 
     if (subdom_main && id_sim==0 && IP.get_is_output_model_dat()==1) {
         io.write_concerning_parameters(grid, 0, IP);

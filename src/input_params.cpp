@@ -792,28 +792,28 @@ void InputParams::prepare_src_map(){
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
 
         parse_src_rec_file(src_rec_file, \
-                           src_map, \
-                           rec_map, \
-                           data_info, \
+                           src_map_all, \
+                           rec_map_all, \
+                           data_info_all, \
                            src_name_list);
 
         // read station correction file by all processes
         if (sta_correction_file_exist && id_sim==0 && subdom_main) {
             // store all src/rec info
             parse_sta_correction_file(sta_correction_file,
-                                      rec_map);
+                                      rec_map_all);
         }
 
         // copy backups
-        src_map_back   = src_map;
-        rec_map_back   = rec_map;
-        data_info_back = data_info;
+        src_map_back   = src_map_all;
+        rec_map_back   = rec_map_all;
+        data_info_back = data_info_all;
 
         // check if src positions are within the domain or not (teleseismic source)
         // detected teleseismic source is separated into tele_src_points and tele_rec_points
         std::cout << "separate regional and teleseismic src/rec points" << std::endl;
         separate_region_and_tele_src_rec_data(src_map_back, rec_map_back, data_info_back,
-                                              src_map,      rec_map,      data_info,
+                                              src_map_all,  rec_map_all,  data_info_all,
                                               src_map_tele, rec_map_tele, data_info_tele,
                                               data_type,
                                               N_abs_local_data,
@@ -825,11 +825,11 @@ void InputParams::prepare_src_map(){
         if (swap_src_rec) {
             // here only reginal events will be processed
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
-            do_swap_src_rec(src_map, rec_map, data_info);
+            do_swap_src_rec(src_map_all, rec_map_all, data_info_all);
         }
 
         // concatenate resional and teleseismic src/rec points
-        merge_region_and_tele_src(src_map, rec_map, data_info,
+        merge_region_and_tele_src(src_map_all, rec_map_all, data_info_all,
                                   src_map_tele, rec_map_tele, data_info_tele);
 
         // abort if number of src_points are less than n_sims
@@ -859,11 +859,13 @@ void InputParams::prepare_src_map(){
         //           data_info,
         // outuput: src_ids_this_sim, src_names_this_sim includes all src ids/names
         //          which are calculated this simultaneous run group
-        distribute_src_rec_data(src_map,
+        distribute_src_rec_data(src_map_all,
+                                rec_map_all,
+                                data_info_all,
+                                src_map,
                                 rec_map,
-                                data_info,
-                                src_ids_this_sim,
-                                src_names_this_sim);
+                                data_info);
+
 
         std::cout << "initialize syn time map" << std::endl;
         // generate syn_time_map_sr
@@ -902,9 +904,9 @@ void InputParams::prepare_src_map(){
         // generate data_info_smap,
         //          data_info_smap_reloc,
         //          syn_time_map_sr,
-//        std::cout << "rearrange data " << std::endl;
+        std::cout << "generate map of data_info by src name." << std::endl;
 //        // copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
-//        rearrange_data_info();
+        generate_map_of_data_info_by_src_name();
 //
 //        std::cout << "generate src_map_prepare" << std::endl;
 //        // generate src_map_prepare based on data_info_smap
@@ -999,26 +1001,45 @@ void InputParams::prepare_src_map(){
 
 // copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
 // dividing the data group by source name
-//void InputParams::rearrange_data_info(){
-//    for(int i = 0; i < (int)data_info.size(); i++){
-//        DataInfo data = data_info[i];
-//
-//        // add absolute traveltime
-//        if(data.is_src_rec){
-//            data_info_smap[data.name_src].push_back(data);
-//            data_info_smap_reloc[data.name_src].push_back(data);
-//
-//        // add common source differential traveltime
-//        } else if (data.is_rec_pair){
-//            data_info_smap[data.name_src_single].push_back(data);
-//
-//        // add common receiver differential traveltime
-//        } else if (data.is_src_pair){
-//            data_info_smap[data.name_src_pair[0]].push_back(data);
-//            data_info_smap[data.name_src_pair[1]].push_back(data);
-//        }
-//    }
-//}
+void InputParams::generate_map_of_data_info_by_src_name(){
+    for(int i = 0; i < (int)data_info.size(); i++){
+        DataInfo data = data_info[i];
+
+        // add absolute traveltime
+        if(data.is_src_rec){
+            data_info_smap[data.name_src].push_back(data);
+            data_info_smap_reloc[data.name_src].push_back(data);
+
+        // add common source differential traveltime
+        } else if (data.is_rec_pair){
+            data_info_smap[data.name_src_single].push_back(data);
+
+        // add common receiver differential traveltime
+        } else if (data.is_src_pair){
+            data_info_smap[data.name_src_pair[0]].push_back(data);
+            data_info_smap[data.name_src_pair[1]].push_back(data);
+        }
+    }
+}
+
+
+// # TODO: src_map_prepare is not clear
+void InputParams::generate_src_map_with_common_source(){
+    // for earthquake having common receiver differential traveltime, the synthetic traveltime should be computed first at each iteration
+    for(auto iter = data_info_smap.begin(); iter != data_info_smap.end(); iter++){
+
+        for (const DataInfo& data : iter->second){
+            // if this source has common source differential traveltime data
+            if (data.is_src_pair){
+                // add this source and turn to the next source
+                src_map_comm_src[iter->first] = src_map[iter->first];
+                break;
+            }
+        }
+
+    }
+}
+
 
 
 //// # TODO: src_map_prepare is not clear
