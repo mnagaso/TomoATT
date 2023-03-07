@@ -182,6 +182,9 @@ inline bool if_verbose = false;
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
 
+// total number of sources in the srcrec file
+inline int nsrc_total = 0;
+
 // weight of different typs of data
 inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
 inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0

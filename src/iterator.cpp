@@ -778,7 +778,7 @@ iter_end:
 //     }
 
 //     // set the contributions of stations from the each station
-//     std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src); // get receivers
+//     std::vector<SrcRec>& receivers = IP.get_rec_names(id_sim_src); // get receivers
 
 //     int DEBUG_REC_COUNT = 0;
 

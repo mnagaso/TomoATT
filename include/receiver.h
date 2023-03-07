@@ -11,7 +11,7 @@ public:
     ~Receiver();
 
     void calculate_arrival_time(InputParams&, Grid&);
-    void interpolate_and_store_arrival_times_on_rec_position(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
+    void interpolate_and_store_arrival_times_at_rec_position(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
 
     // adjoint source
     std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&, const std::string&);

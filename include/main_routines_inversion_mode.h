@@ -49,7 +49,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         It->run_iteration_forward(IP, grid, io, first_init);
 
         Receiver recs;
-        recs.interpolate_and_store_arrival_times_on_rec_position(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
+        recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
 
         i_src++;
     }
@@ -58,7 +58,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
     synchronize_all_world();
 
     // all processors share the calculated synthetic traveltime // MNMN this causes a dead lock when the number of sources are different among simultaneous runs
-    IP.reduce_syn_time_list(); // is it necessary?
+    //IP.reduce_syn_time_list(); // is it necessary?
 //    synchronize_all_world(); // dead lock
 
     //
@@ -95,9 +95,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // reinitialize factors
     grid.reinitialize_abcf();
 
-    ///////////////////////
+    ///////////////////////////////////////////////////////////////////////
     //  compute the synthetic common receiver differential traveltime first
-    ///////////////////////
+    ///////////////////////////////////////////////////////////////////////
 
     // let syn_time_list[name_src][name_rec] = 0.0
     IP.initialize_syn_time_list();
@@ -112,11 +112,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
     // iterate IP.src_map
     for (auto iter = IP.src_map.begin(); iter != IP.src_map.end(); iter++){
-
-        // check src_map_id
-        // for(auto iter = IP.src_map_nv.begin(); iter != IP.src_map_nv.end(); iter++){
-        //     std::cout << "id_sim: " << id_sim << ", myrank: " << myrank << ", id_subdomain: " << id_subdomain << ", id_src:" << iter->second.id << std::endl;
-        // }
 
         // load the global id of this src
         const int id_sim_src           = iter->second.id;
@@ -203,7 +198,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // calculate the arrival times at each receivers
         Receiver recs;
-        recs.interpolate_and_store_arrival_times_on_rec_position(IP, grid, name_sim_src);
+        recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
         /////////////////////////
         // run adjoint simulation

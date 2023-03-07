@@ -124,9 +124,8 @@ public:
 void parse_src_rec_file(std::string&                      , \
                         std::map<std::string, SrcRecInfo>&, \
                         std::map<std::string, SrcRecInfo>&, \
-                        std::string&                      , \
-                        std::map<std::string, SrcRecInfo>&, \
-                        std::map<std::string, SrcRecInfo>&);
+                        std::map<std::string, std::map<std::string,DataInfo>>&, \
+                        std::vector<std::string>&);
 
 
 // parse sta_correctoion_file
@@ -136,18 +135,18 @@ void parse_sta_correction_file(std::string&, \
 // swap the sources and receivers
 void do_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
                      std::map<std::string, SrcRecInfo> &, \
-                     std::vector<DataInfo>             &);
+                     std::map<std::string, std::map<std::string, DataInfo>> &);
 
 // tele seismic source management
 void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
                                            std::map<std::string, SrcRecInfo> &,
-                                           std::vector<DataInfo>             &,
+                                           std::map<std::string, std::map<std::string,DataInfo>>&,
                                            std::map<std::string, SrcRecInfo> &,
                                            std::map<std::string, SrcRecInfo> &,
-                                           std::vector<DataInfo>             &,
+                                           std::map<std::string, std::map<std::string,DataInfo>>&,
                                            std::map<std::string, SrcRecInfo> &,
                                            std::map<std::string, SrcRecInfo> &,
-                                           std::vector<DataInfo>             &,
+                                           std::map<std::string, std::map<std::string,DataInfo>>&,
                                            std::map<std::string, int>        &,
                                            int                               &,
                                            int                               &,
@@ -159,17 +158,18 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
 
 void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
-                               std::vector<DataInfo>             &,
+                               std::map<std::string, std::map<std::string,DataInfo>>&,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
-                               std::vector<DataInfo>             &);
+                               std::map<std::string, std::map<std::string,DataInfo>>&);
 
 // distribute srcrec data to all simulation groups
 void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
-                             std::vector<DataInfo>&, \
-                             std::vector<int>&, \
-                             std::vector<std::string>&);
+                             std::map<std::string, std::map<std::string,DataInfo>>&,
+                             std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, std::map<std::string,DataInfo>>&);
 
 void send_src_info_inter_sim(SrcRecInfo&, int);
 void recv_src_info_inter_sim(SrcRecInfo&, int);

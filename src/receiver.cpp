@@ -9,14 +9,14 @@ Receiver::~Receiver() {
 }
 
 
-void Receiver::interpolate_and_store_arrival_times_on_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
+void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
         // get receiver positions from input parameters
-        std::vector<std::string> name_receivers = IP.get_rec_points(name_sim_src);
+        std::vector<std::string> name_receivers = IP.get_rec_names(name_sim_src);
 
         // calculate the travel time of the receiver by interpolation
         for(std::string name_rec: name_receivers) {
-            IP.syn_time_map_sr[name_sim_src][name_rec] = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
+            IP.data_info_smap[name_sim_src][name_rec].travel_time = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
         }
     }
 }
@@ -607,7 +607,7 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec){
 void Receiver::calculate_optimal_origin_time(InputParams& IP){
     if (subdom_main) {
         // get list of receivers from input parameters
-        // std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
+        // std::vector<SrcRec>& receivers = IP.get_rec_names(id_sim_src);
         std::vector<DataInfo> data_info_tmp = IP.data_info_smap_reloc[name_sim_src];
 
         // calculate gradient of travel time at each receiver (swapped source)
@@ -693,7 +693,7 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
 
     if(subdom_main){
         // get list of receivers from input parameters
-        // std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
+        // std::vector<SrcRec>& receivers = IP.get_rec_names(id_sim_src);
 
         // get the source weight
         // CUSTOMREAL src_weight = IP.get_src_point(id_sim_src).weight;
@@ -733,7 +733,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
 
     if (subdom_main) {
         // get list of receivers from input parameters
-        // std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src);
+        // std::vector<SrcRec>& receivers = IP.get_rec_names(id_sim_src);
 
         for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
             CUSTOMREAL grad_dep_km = - iter->second.grad_chi_k;

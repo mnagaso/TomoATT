@@ -45,7 +45,7 @@ public:
     bool                        get_if_src_teleseismic(std::string); // return true if the source is teleseismic
     SrcRecInfo&                 get_src_point(std::string);  // return SrcRec object
     SrcRecInfo&                 get_rec_point(std::string);  // return receivers for the current source
-    std::vector<std::string>    get_rec_points(std::string); // return SrcRec object
+    std::vector<std::string>    get_rec_names(std::string); // return SrcRec object
 
     CUSTOMREAL get_conv_tol()                    {return conv_tol;};
     void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
@@ -165,15 +165,15 @@ public:
     std::map<std::string, SrcRecInfo> rec_map_back;    // for output purposes
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
-    std::vector<DataInfo> data_info_all;     // data list for all data (full information is only stored by the main process)
-    std::vector<DataInfo> data_info;
-    std::vector<DataInfo> data_info_tele;    // data list for teleseismic
-    std::vector<DataInfo> data_info_back;    // for backup purposes
+    std::map< std::string, std::map<std::string, DataInfo>> data_map_all;     // data list for all data (full information is only stored by the main process)
+    std::map< std::string, std::map<std::string, DataInfo>> data_map;
+    std::map< std::string, std::map<std::string, DataInfo>> data_map_back;    // for backup purposes
+    std::map< std::string, std::map<std::string, DataInfo>> data_map_tele;    // data list for teleseismic
 
 //    // std::map<std::vector<std::string>,CUSTOMREAL> syn_time_list;    // (evname, stname) -> syn_time
-    std::map<std::string, std::map<std::string, CUSTOMREAL> > syn_time_map_sr;     // all used synthetic traveltime in forward modeling and inversion.  two level map, map1: source -> map2;  map 2: receiver -> time;
-    std::map<std::string, std::vector<DataInfo> >             data_info_smap;       // map source -> vector; vector: (related) Traveltime data
-    std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
+    //std::map<std::string, std::map<std::string, CUSTOMREAL> > syn_time_map_sr;     // all used synthetic traveltime in forward modeling and inversion.  two level map, map1: source -> map2;  map 2: receiver -> time;
+    //std::map< std::string, std::map<std::string, DataInfo>>  data_info_smap;       // map source -> vector; vector: (related) Traveltime data
+    //std::map<std::string, std::vector<DataInfo> >             data_info_smap_reloc; // map source -> vector; vector: (related) Traveltime data
 
     // we use src_map->second.id to index the following arrays
     // src id/name list for this sim group
@@ -221,7 +221,7 @@ private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
     // create a source name based map of data info
-    void generate_map_of_data_info_by_src_name();
+    //void generate_map_of_data_info_by_src_name();
     // geneerate a map of sources which include common source double difference data
     void generate_src_map_with_common_source();
 

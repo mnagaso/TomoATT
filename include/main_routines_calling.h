@@ -37,7 +37,7 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
 
             out_main << std::setw(8) << std::right << "# iter,";
             std::string tmp = "obj(";
-            tmp.append(std::to_string(IP.data_info_back.size()));
+            tmp.append(std::to_string(IP.data_map_back.size()));
             tmp.append("),");
             out_main << std::setw(20) << tmp;
             if (have_abs){
@@ -99,7 +99,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     bool first_src = true;
 
     if(myrank == 0)
-        std::cout << "size of src_map: " << IP.src_ids_this_sim.size() << std::endl;
+        std::cout << "size of src_map: " << IP.src_map.size() << std::endl;
 
     // prepare objective_function file
     std::ofstream out_main; // close() is not mandatory

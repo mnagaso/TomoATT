@@ -8,6 +8,7 @@
 void parse_src_rec_file(std::string& src_rec_file, \
                         std::map<std::string, SrcRecInfo>& src_map, \
                         std::map<std::string, SrcRecInfo>& rec_map, \
+                        std::map<std::string, std::map<std::string, DataInfo>>& data_map, \
                         std::vector<DataInfo>& data_info, \
                         std::vector<std::string>& src_name_list){
 
@@ -189,7 +190,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.name_rec        = rec.name;
                     data.travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
 
-                    data_info.push_back(data);
+                    data_map[data.name_src][data.name_rec] = data;
                     cc++;
 
                 } else {
@@ -236,6 +237,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
                     data_info.push_back(data);
+                    data_map[data.name_src_single][data.name_rec_pair[0]] = data; // TODO: check if name_rec_pair[1] should be stored as well
+
                     cc++;
 
                 }
@@ -294,22 +297,24 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         << std::endl;
         }
 
-        for(int i = 0; i < (int)data_info.size(); i++){
-            if (data_info[i].is_src_rec){
-                std::cout   << "absolute traveltime: " << data_info[i].travel_time_obs
-                            << ", source name: "       << data_info[i].name_src
-                            << ", receiver name: "     << data_info[i].name_rec
-                            << std::endl;
-            }
-            if (data_info[i].is_rec_pair){
-                std::cout   << "common source differential traveltime: " << data_info[i].cs_dif_travel_time_obs
-                            << ", source name: "                         << data_info[i].name_src_single
-                            << ", receiver pair name: "                  << data_info[i].name_rec_pair[0]
-                            << ", "                                      << data_info[i].name_rec_pair[1]
-                            << std::endl;
+        for (auto iter = data_map.begin(); iter != data_map.end(); iter++){
+            for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
+
+                if (iter2->second.is_src_rec) {
+                    std::cout   << "source name: "     << iter2->second.name_src
+                                << ", receiver name: " << iter2->second.name_rec
+                                << ", traveltime: "    << iter2->second.travel_time_obs
+                                << std::endl;
+                } else if (iter2->second.is_rec_pair) {
+                    std::cout   << "source name: "          << iter2->second.name_src_single
+                                << ", receiver pair name: " << iter2->second.name_rec_pair[0]
+                                << ", "                     << iter2->second.name_rec_pair[1]
+                                << ", traveltime: "         << iter2->second.cs_dif_travel_time_obs
+                                << std::endl;
+                }
             }
         }
-        std::cout << data_info.size() << std::endl;
+
     }
 }
 
@@ -423,9 +428,211 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
 }
 
 
+void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>                     &src_map_back,
+                                           std::map<std::string, SrcRecInfo>                     &rec_map_back,
+                                           std::map<std::string, std::map<std::string,DataInfo>> &data_map_back,
+                                           std::map<std::string, SrcRecInfo>                     &src_map,
+                                           std::map<std::string, SrcRecInfo>                     &rec_map,
+                                           std::map<std::string, std::map<std::string,DataInfo>> &data_map,
+                                           std::map<std::string, SrcRecInfo>                     &src_map_tele,
+                                           std::map<std::string, SrcRecInfo>                     &rec_map_tele,
+                                           std::map<std::string, std::map<std::string,DataInfo>> &data_map_tele,
+                                           std::map<std::string, int> &data_type,
+                                           int                        &N_abs_local_data,
+                                           int                        &N_cr_dif_local_data,
+                                           int                        &N_cs_dif_local_data,
+                                           int                        &N_teleseismic_data,
+                                           const CUSTOMREAL min_lat, const CUSTOMREAL max_lat,
+                                           const CUSTOMREAL min_lon, const CUSTOMREAL max_lon,
+                                           const CUSTOMREAL min_dep, const CUSTOMREAL max_dep){
+    // check if the source is inside the simulation boundary
+
+    // initialize vectors for teleseismic events
+    rec_map_tele.clear();
+    src_map_tele.clear();
+    data_map_tele.clear();
+
+    // clear original src, rec, data
+    src_map.clear();
+    rec_map.clear();
+    data_map.clear();
+
+    // divide source list
+    //
+    // src_map_back ____> src_map
+    //              \___> src_map_tele (teleseismic events)
+    //
+    for(auto iter = src_map_back.begin(); iter != src_map_back.end(); iter++){
+        SrcRecInfo src = iter->second;
+        if (src.lat < min_lat || src.lat > max_lat \
+         || src.lon < min_lon || src.lon > max_lon \
+         || src.dep < min_dep || src.dep > max_dep){
+
+            // out of region (teleseismic events)
+            src.is_out_of_region       = true;
+            src_map_tele[iter->first] = src;
+        } else {
+            // within region (teleseismic events)
+            src.is_out_of_region  = false;
+            src_map[iter->first] = src;
+        }
+    }
+
+    // divide receiver and data list
+    //
+    // rec_map_back  ____> rec_map
+    //               \___> rec_map_tele
+    // data_map_back____> data_map
+    //              \___> data_map_tele
+    //
+    for (auto it_src = data_map_back.begin(); it_src != data_map_back.end(); it_src++){
+        std::string name_src = it_src->first;
+        for (auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+
+            DataInfo data = it_rec->second;
+
+            // absolute traveltime
+            if(data.is_src_rec){
+                std::string name_src = data.name_src;
+                std::string name_rec = data.name_rec;
+
+                // if name_src is out of region
+                if(src_map_tele.find(name_src) != src_map_tele.end()){
+                    total_teleseismic_data_weight += data.data_weight;
+                    data.weight                    = data.data_weight * teleseismic_weight;
+                    data_map_tele[name_src][name_rec] = data;
+                    rec_map_tele[name_rec]            = rec_map_back[name_rec];
+                    data_type["tele"]                 = 1;
+
+                // if name_src is in the region
+                } else {
+                    total_abs_local_data_weight += data.data_weight;
+                    data_map[name_src][name_rec] = data;
+                    rec_map[name_rec]            = rec_map_back[name_rec];
+                    data_type["abs"]             = 1;
+                }
+
+            // common receiver differential traveltime
+            } else if (data.is_src_pair){
+                std::string name_src1 = data.name_src_pair[0];
+                std::string name_src2 = data.name_src_pair[1];
+                std::string name_rec  = data.name_rec_single;
+
+                // if both sources are out of region
+                if(src_map_tele.find(name_src1) != src_map_tele.end() \
+                && src_map_tele.find(name_src2) != src_map_tele.end()){
+                    total_teleseismic_data_weight     += data.data_weight;
+                    data.weight                        = data.data_weight * teleseismic_weight;
+                    data_map_tele[name_src1][name_rec] = data;
+                    rec_map_tele[name_rec]             = rec_map_back[name_rec];
+                    data_type["tele"]                  = 1;
+
+                // if both sources is in the region
+                } else if (src_map.find(name_src1) != src_map.end() \
+                        && src_map.find(name_src2) != src_map.end() ) {
+                    total_cr_dif_local_data_weight += data.data_weight;
+                    data_map[name_src1][name_rec]   = data;
+                    rec_map[name_rec]               = rec_map_back[name_rec];
+                    data_type["cr_dif"]             = 1;
+
+                } else {
+                    std::cout << "ERROR data: common receiver differential time, but one teleseismic source, one local source";
+                    exit(1);
+                }
+
+            // common source differential traveltime
+            } else if (data.is_rec_pair){
+                std::string name_src  = data.name_src_single;
+                std::string name_rec1 = data.name_rec_pair[0];
+                std::string name_rec2 = data.name_rec_pair[1];
+
+                // if name_src is out of region
+                if(src_map_tele.find(name_src) != src_map_tele.end() ){
+                    total_teleseismic_data_weight     += data.data_weight;
+                    data.weight                        = data.data_weight * teleseismic_weight;
+                    data_map_tele[name_src][name_rec1] = data;
+                    rec_map_tele[name_rec1]            = rec_map_back[name_rec1];
+                    rec_map_tele[name_rec2]            = rec_map_back[name_rec2];
+                    data_type["tele"]                  = 1;
+
+                // if name_src is in the region
+                } else {
+                    total_cs_dif_local_data_weight += data.data_weight;
+                    data_map[name_src][name_rec1]   = data;
+                    rec_map[name_rec1]              = rec_map_back[name_rec1];
+                    rec_map[name_rec2]              = rec_map_back[name_rec2];
+                    data_type["cs_dif"]             = 1;
+                }
+            }
+        } // end it_rec
+    } // end it_src
+
+    //
+    // balance the data weight
+    //
+    if (is_balance_data_weight){
+        for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+            for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+            // absolute traveltime
+            if(it_rec->second.is_src_rec){
+                it_rec->second.weight = it_rec->second.weight / total_abs_local_data_weight;
+
+            // common receiver differential traveltime
+            } else if (it_rec->second.is_src_pair){
+                it_rec->second.weight = it_rec->second.weight / total_cr_dif_local_data_weight;
+
+            // common source differential traveltime
+            } else if (it_rec->second.is_rec_pair){
+                it_rec->second.weight = it_rec->second.weight / total_cs_dif_local_data_weight;
+            }
+        }
+
+        // teleseismic data
+        for(auto it_src = data_map_tele.begin(); it_src != data_map_tele.end(); it_src++){
+            for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+                it_rec->second.weight = it_rec->second.weight / total_teleseismic_data_weight;
+            }
+        }
+    }
+
+    //
+    // count the number of data
+    //
+    // local data
+    for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+        for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+            // absolute traveltime
+            if(it_rec->second.is_src_rec){
+                N_abs_local_data += 1;
+
+            // common receiver differential traveltime
+            } else if (it_rec->second.is_src_pair){
+                N_cr_dif_local_data += 1;
+
+            // common source differential traveltime
+            } else if (it_rec->second.is_rec_pair){
+                N_cs_dif_local_data += 1;
+            }
+        }
+    }
+
+    // teleseismic data
+    for(auto it_src = data_map_tele.begin(); it_src != data_map_tele.end(); it_src++){
+        for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+            N_teleseismic_data += 1;
+        }
+    }
+
+    // std::cout << "N_abs_local_data: " << N_abs_local_data << ", N_cr_dif_local_data" << N_cr_dif_local_data
+    //           << ", N_cs_dif_local_data: " << N_cs_dif_local_data << ", N_teleseismic_data: " << N_teleseismic_data
+    //           << std::endl
+    //           << std::endl;
+}
+
+
 void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                      std::map<std::string, SrcRecInfo> &rec_map, \
-                     std::vector<DataInfo>             &data_info) {
+                     std::map<std::string, std::map<std::string, DataInfo>> &data_map) {
 
     // swap src/rec points
     // at this moment, all the sources are divided into src_points (regional) and tele_src_points (teleseismic)
@@ -443,38 +650,41 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
 
     // for each element of src_map, count the number of rec_map with the same value of
 
-    for(int i = 0; i < (int)data_info.size(); i++){
-        DataInfo tmp_data = data_info[i];
+    for (auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+        for (auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
 
-        // absolute traveltime  ->  absolute traveltime
-        if (tmp_data.is_src_rec){
-            tmp_data.id_src   = data_info[i].id_rec;
-            tmp_data.name_src = data_info[i].name_rec;
-            tmp_data.id_rec   = data_info[i].id_src;
-            tmp_data.name_rec = data_info[i].name_src;
+            DataInfo tmp_data = it_rec->second;
 
-        // common source differential traveltime  ->  common receiver differential traveltime
-        } else if (tmp_data.is_rec_pair) {
-            tmp_data.is_rec_pair            = false;
-            tmp_data.is_src_pair            = true;
-            tmp_data.id_src_pair            = data_info[i].id_rec_pair;
-            tmp_data.name_src_pair          = data_info[i].name_rec_pair;
-            tmp_data.id_rec_single          = data_info[i].id_src_single;
-            tmp_data.name_rec_single        = data_info[i].name_src_single;
-            tmp_data.cr_dif_travel_time_obs = data_info[i].cs_dif_travel_time_obs;
+            // absolute traveltime  ->  absolute traveltime
+            if (tmp_data.is_src_rec){
+                tmp_data.id_src   = it_rec->second.id_rec;
+                tmp_data.name_src = it_rec->second.name_rec;
+                tmp_data.id_rec   = it_rec->second.id_src;
+                tmp_data.name_rec = it_rec->second.name_src;
 
-        // common receiver differential traveltime  ->  common source differential traveltime
-        } else if (tmp_data.is_src_pair) {
-            tmp_data.is_src_pair            = false;
-            tmp_data.is_rec_pair            = true;
-            tmp_data.id_rec_pair            = data_info[i].id_src_pair;
-            tmp_data.name_rec_pair          = data_info[i].name_src_pair;
-            tmp_data.id_src_single          = data_info[i].id_rec_single;
-            tmp_data.name_src_single        = data_info[i].name_rec_single;
-            tmp_data.cs_dif_travel_time_obs = data_info[i].cr_dif_travel_time_obs;
+            // common source differential traveltime  ->  common receiver differential traveltime
+            } else if (tmp_data.is_rec_pair) {
+                tmp_data.is_rec_pair            = false;
+                tmp_data.is_src_pair            = true;
+                tmp_data.id_src_pair            = it_rec->second.id_rec_pair;
+                tmp_data.name_src_pair          = it_rec->second.name_rec_pair;
+                tmp_data.id_rec_single          = it_rec->second.id_src_single;
+                tmp_data.name_rec_single        = it_rec->second.name_src_single;
+                tmp_data.cr_dif_travel_time_obs = it_rec->second.cs_dif_travel_time_obs;
+
+            // common receiver differential traveltime  ->  common source differential traveltime
+            } else if (tmp_data.is_src_pair) {
+                tmp_data.is_src_pair            = false;
+                tmp_data.is_rec_pair            = true;
+                tmp_data.id_rec_pair            = it_rec->second.id_src_pair;
+                tmp_data.name_rec_pair          = it_rec->second.name_src_pair;
+                tmp_data.id_src_single          = it_rec->second.id_rec_single;
+                tmp_data.name_src_single        = it_rec->second.name_rec_single;
+                tmp_data.cs_dif_travel_time_obs = it_rec->second.cr_dif_travel_time_obs;
+            }
+
+            it_rec->second = tmp_data;
         }
-
-        data_info[i] = tmp_data;
     }
 
     // swap total_data_weight
@@ -496,24 +706,27 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                         << std::endl;
         }
 
-        for(int i = 0; i < (int)data_info.size(); i++){
-            if (data_info[i].is_src_rec){
-                std::cout   << "absolute traveltime: " << data_info[i].travel_time_obs
-                            << ", source name: " << data_info[i].name_src
-                            << ", receiver name: " << data_info[i].name_rec
-                            << std::endl;
-            } else if (data_info[i].is_rec_pair){
-                std::cout   << "common source differential traveltime: " << data_info[i].cs_dif_travel_time_obs
-                            << ", source name: " << data_info[i].name_src_single
-                            << ", receiver pair name: " << data_info[i].name_rec_pair[0]
-                            << ", " << data_info[i].name_rec_pair[1]
-                            << std::endl;
-            } else if (data_info[i].is_src_pair){
-                std::cout   << "common receiver differential traveltime: " << data_info[i].cr_dif_travel_time_obs
-                            << ", source pair name: " << data_info[i].name_src_pair[0]
-                            << ", " << data_info[i].name_src_pair[1]
-                            << ", receiver name: " << data_info[i].name_rec_single
-                            << std::endl;
+        for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+            for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+
+                if (it_rec->second.is_src_rec){
+                    std::cout   << "absolute traveltime: " << it_rec->second.travel_time_obs
+                                << ", source name: "       << it_rec->second.name_src
+                                << ", receiver name: "     << it_rec->second.name_rec
+                                << std::endl;
+                } else if (it_rec->second.is_rec_pair){
+                    std::cout   << "common source differential traveltime: " << it_rec->second.cs_dif_travel_time_obs
+                                << ", source name: "                         << it_rec->second.name_src_single
+                                << ", receiver pair name: "                  << it_rec->second.name_rec_pair[0]
+                                << ", "                                      << it_rec->second.name_rec_pair[1]
+                                << std::endl;
+                } else if (it_rec->second.is_src_pair){
+                    std::cout   << "common receiver differential traveltime: " << it_rec->second.cr_dif_travel_time_obs
+                                << ", source pair name: "                      << it_rec->second.name_src_pair[0]
+                                << ", "                                        << it_rec->second.name_src_pair[1]
+                                << ", receiver name: "                         << it_rec->second.name_rec_single
+                                << std::endl;
+                }
             }
         }
         std::cout << data_info.size() << std::endl;
@@ -523,195 +736,15 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
 }
 
 
-void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &src_map_back,
-                                           std::map<std::string, SrcRecInfo> &rec_map_back,
-                                           std::vector<DataInfo>             &data_info_back,
-                                           std::map<std::string, SrcRecInfo> &src_map,
-                                           std::map<std::string, SrcRecInfo> &rec_map,
-                                           std::vector<DataInfo>             &data_info,
-                                           std::map<std::string, SrcRecInfo> &src_map_tele,
-                                           std::map<std::string, SrcRecInfo> &rec_map_tele,
-                                           std::vector<DataInfo>             &data_info_tele,
-                                           std::map<std::string, int>        &data_type,
-                                           int                               &N_abs_local_data,
-                                           int                               &N_cr_dif_local_data,
-                                           int                               &N_cs_dif_local_data,
-                                           int                               &N_teleseismic_data,
-                                           const CUSTOMREAL min_lat, const CUSTOMREAL max_lat,
-                                           const CUSTOMREAL min_lon, const CUSTOMREAL max_lon,
-                                           const CUSTOMREAL min_dep, const CUSTOMREAL max_dep){
-    // check if the source is inside the simulation boundary
-
-    // initialize vectors for teleseismic events
-    rec_map_tele.clear();
-    src_map_tele.clear();
-    data_info_tele.clear();
-
-    // clear original src, rec, data
-    src_map.clear();
-    rec_map.clear();
-    data_info.clear();
-
-    // firstly, divide source list
-    //
-    // src_map_back ____> src_map
-    //               \___> src_map_tele (teleseismic events)
-    //
-    for(auto iter = src_map_back.begin(); iter != src_map_back.end(); iter++){
-        SrcRecInfo src = iter->second;
-        if (src.lat < min_lat || src.lat > max_lat \
-         || src.lon < min_lon || src.lon > max_lon \
-         || src.dep < min_dep || src.dep > max_dep){
-
-            // out of region (teleseismic events)
-            src.is_out_of_region       = true;
-            src_map_tele[iter->first] = src;
-        } else {
-            // within region (teleseismic events)
-            src.is_out_of_region  = false;
-            src_map[iter->first] = src;
-        }
-    }
-
-    // second, for receiver and data list
-    //
-    // rec_map_back ____> rec_map
-    //               \___> rec_map_tele
-    // data_info_back____> data_info
-    //               \___> data_info_tele
-    //
-    for(int i = 0; i < (int)data_info_back.size(); i++){
-        DataInfo data = data_info_back[i];
-
-        // absolute traveltime
-        if(data.is_src_rec){
-            std::string name_src = data.name_src;
-            std::string name_rec = data.name_rec;
-
-            // if name_src is out of region
-            if(src_map_tele.find(name_src) != src_map_tele.end()){
-                total_teleseismic_data_weight += data.data_weight;
-                data.weight                    = data.data_weight * teleseismic_weight;
-                data_info_tele.push_back(data);
-                rec_map_tele[name_rec] = rec_map_back[name_rec];
-                data_type["tele"] = 1;
-
-            // if name_src is in the region
-            } else {
-                total_abs_local_data_weight += data.data_weight;
-                data_info.push_back(data);
-                rec_map[name_rec] = rec_map_back[name_rec];
-                data_type["abs"] = 1;
-            }
-
-        // common receiver differential traveltime
-        } else if (data.is_src_pair){
-            std::string name_src1 = data.name_src_pair[0];
-            std::string name_src2 = data.name_src_pair[1];
-            std::string name_rec  = data.name_rec_single;
-
-            // if both sources are out of region
-            if(src_map_tele.find(name_src1) != src_map_tele.end() \
-            && src_map_tele.find(name_src2) != src_map_tele.end()){
-                total_teleseismic_data_weight += data.data_weight;
-                data.weight                    = data.data_weight * teleseismic_weight;
-                data_info_tele.push_back(data);
-                rec_map_tele[name_rec] = rec_map_back[name_rec];
-                data_type["tele"] = 1;
-
-            // if both sources is in the region
-            } else if (src_map.find(name_src1) != src_map.end() \
-                    && src_map.find(name_src2) != src_map.end() ) {
-                total_cr_dif_local_data_weight += data.data_weight;
-                data_info.push_back(data);
-                rec_map[name_rec] = rec_map_back[name_rec];
-                data_type["cr_dif"] = 1;
-
-            } else {
-                std::cout << "ERROR data: common receiver differential time, but one teleseismic source, one local source";
-                exit(1);
-            }
-
-        // common source differential traveltime
-        } else if (data.is_rec_pair){
-            std::string name_src  = data.name_src_single;
-            std::string name_rec1 = data.name_rec_pair[0];
-            std::string name_rec2 = data.name_rec_pair[1];
-
-            // if name_src is out of region
-            if(src_map_tele.find(name_src) != src_map_tele.end() ){
-                total_teleseismic_data_weight += data.data_weight;
-                data.weight                    = data.data_weight * teleseismic_weight;
-                data_info_tele.push_back(data);
-                rec_map_tele[name_rec1] = rec_map_back[name_rec1];
-                rec_map_tele[name_rec2] = rec_map_back[name_rec2];
-                data_type["tele"]        = 1;
-
-            // if name_src is in the region
-            } else {
-                total_cs_dif_local_data_weight += data.data_weight;
-                data_info.push_back(data);
-                rec_map[name_rec1] = rec_map_back[name_rec1];
-                rec_map[name_rec2] = rec_map_back[name_rec2];
-                data_type["cs_dif"] = 1;
-            }
-        }
-    }
-
-    // third balance the data weight
-    if (is_balance_data_weight){
-        for(int i = 0; i < (int)data_info.size(); i++){
-             // absolute traveltime
-            if(data_info[i].is_src_rec){
-                data_info[i].weight = data_info[i].weight / total_abs_local_data_weight;
-
-            // common receiver differential traveltime
-            } else if (data_info[i].is_src_pair){
-                data_info[i].weight = data_info[i].weight / total_cr_dif_local_data_weight;
-
-            // common source differential traveltime
-            } else if (data_info[i].is_rec_pair){
-                data_info[i].weight = data_info[i].weight / total_cs_dif_local_data_weight;
-            }
-        }
-        for(int i = 0; i < (int)data_info_tele.size(); i++){
-            data_info_tele[i].weight = data_info_tele[i].weight / total_teleseismic_data_weight;
-        }
-    }
-
-    // count the number of data
-    for(int i = 0; i < (int)data_info.size(); i++){
-        // absolute traveltime
-        if(data_info[i].is_src_rec){
-            N_abs_local_data += 1;
-
-        // common receiver differential traveltime
-        } else if (data_info[i].is_src_pair){
-            N_cr_dif_local_data += 1;
-
-        // common source differential traveltime
-        } else if (data_info[i].is_rec_pair){
-            N_cs_dif_local_data += 1;
-        }
-    }
-    for(int i = 0; i < (int)data_info_tele.size(); i++){
-        N_teleseismic_data += 1;
-    }
-
-    // std::cout << "N_abs_local_data: " << N_abs_local_data << ", N_cr_dif_local_data" << N_cr_dif_local_data
-    //           << ", N_cs_dif_local_data: " << N_cs_dif_local_data << ", N_teleseismic_data: " << N_teleseismic_data
-    //           << std::endl
-    //           << std::endl;
-}
 
 
 // merge the teleseismic data lsit into the local data list
 void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
                                std::map<std::string, SrcRecInfo> &rec_map,
-                               std::vector<DataInfo>             &data_info,
+                               std::map<std::string, std::map<std::string, DataInfo>> &data_map,
                                std::map<std::string, SrcRecInfo> &src_map_tele,
                                std::map<std::string, SrcRecInfo> &rec_map_tele,
-                               std::vector<DataInfo>             &data_info_tele){
+                               std::map<std::string, std::map<std::string, DataInfo>> &data_map_tele){
     if(src_map_tele.size() > 0) {
         for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++)
             src_map[iter->first] = iter->second;
@@ -734,15 +767,10 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
 // distribute the source/receiver list and data list to all the processors
 void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                              std::map<std::string, SrcRecInfo>& rec_map, \
-                             std::vector<DataInfo>&             data_info,\
+                             std::map<std::string, std::map<std::string, DataInfo>>& data_map, \
                              std::map<std::string, SrcRecInfo>& src_map_this_sim, \
                              std::map<std::string, SrcRecInfo>& rec_map_this_sim, \
-                             std::vector<DataInfo>&             data_info_this_sim) {
-
-
-    // reset the src_ids and src_names
-    src_ids.clear();
-    src_names.clear();
+                             std::map<std::string, std::map<std::string, DataInfo>>& data_map_this_sim){
 
     // number of total sources
     int n_src = 0;
@@ -762,14 +790,17 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
     broadcast_i_single_inter_sim(n_src, 0); // id_sim=0&&subdom_main to id_sim=all&&subdom_main
     broadcast_i_single_sub(n_src, 0);       // id_sim=all&&subdom_main to id_sim=all&&all subprocesses
 
+    // store the total number of sources
+    nsrc_total = n_src;
+
     // assign sources to each simulutaneous run group
     for (int i_src = 0; i_src < n_src; i_src++) {
 
         // id of simulutaneous run group to which the i_src-th source belongs
         int dst_id_sim = i_src % n_sims;
 
-        if (id_sim==0){ // send
-            if (dst_id_sim == id_sim){
+        if (id_sim==0){ // sender
+            if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group
                 // src
                 src_map_this_sim[id2key_src[i_src]] = src_map[id2key_src[i_src]];
                 // rec
@@ -779,12 +810,12 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     }
                 }
                 // data
-                for (int i_data = 0; i_data < (int)data_info.size(); i_data++){
-                    if (data_info[i_data].src_id == src_map[id2key_src[i_src]].id){
-                        data_info_this_sim.push_back(data_info[i_data]);
-                    }
+                for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
+                    data_map_this_sim[it_src->first][it_rec->first] = it_rec->second;
                 }
-            } else if (subdom_main) {
+
+            } else if (subdom_main) { // this source belongs to another simulutaneous run group
+
                 // send src_map[i_src] to the main process of dst_id_sim
                 send_src_info_inter_sim(src_map[id2key_src[i_src]], dst_id_sim);
 
@@ -792,22 +823,24 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                 int n_data = rec_map.size();
                 send_i_single_sim(&n_data, dst_id_sim);
 
-                // send rec_map[i_src] to the main process of dst_id_sim
-                for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                    send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
-                }
+                if (n_data > 0){
+                    // send rec_map[i_src] to the main process of dst_id_sim
+                    for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
+                        send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
+                    }
 
-                // send data_info[i_src] to the main process of dst_id_sim
-                for (auto iter = data_info.begin(); iter != data_info.end(); iter++){
-                    if (iter->id_src == src_map[id2key_src[i_src]].id){
+                    // send data_map[src_name].size() to the main process of dst_id_sim
+                    send_i_single_sim(&(data_map[id2key_src[i_src]].size()), dst_id_sim);
+
+                    // send data_map[name_i_src] to the main process of dst_id_sim
+                    for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
                         send_data_info_inter_sim(*iter, dst_id_sim);
                     }
-                }
+                } // if (n_data > 0)
+
             }
         } else { // receive
             if (dst_id_sim == id_sim){
-                src_ids.push_back(i_src);
-                //src_names.push_back(src_map[i_src].name);
                 std::string tmp_srcname;
 
                 // receive src/rec_points from the main process of dst_id_sim
@@ -836,29 +869,27 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                             rec_map_this_sim[tmp_RecInfo.name] = tmp_RecInfo;
                         }
 
-                        // receive data_info from the main process of dst_id_sim
-                        for (int i_data = 0; i_data < tmp_SrcInfo.n_data; i_data++){
+                        int n_data_map = 0;
+                        recv_i_single_sim(&n_data_map, 0);
 
+                        // receive data_info from the main process of dst_id_sim
+                        for (int i_data = 0; i_data < n_data_map; i_data++){
                             // prepare DataInfo object for receiving the contents
                             DataInfo tmp_DataInfo;
                             // receive data_info from the main process of dst_id_sim
                             recv_data_info_inter_sim(tmp_DataInfo, 0);
                             // add the received data_info to the data_info
-                            data_info_this_sim.push_back(tmp_DataInfo);
+                            data_map_this_sim[tmp_DataInfo.src_name][tmp_DataInfo.rec_name] = tmp_DataInfo;
                         }
                     }
                }
-
-                // broadcast tmp_srcname from subdom_main to all subprocs
-                broadcast_str_sub(tmp_srcname, 0);
-                // add to src_names
-                src_names.push_back(tmp_srcname);
 
 
             } else {
                 // do nothing
             }
-        }
+
+        } // end of if (id_sim==0)
 
 
     } // end of for i_src
@@ -866,8 +897,8 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
     // check IP.src_ids_this_sim for this rank
     if (myrank==0 && if_verbose) {
         std::cout << id_sim << "assigned src id(name) : ";
-        for (int i = 0; i < (int)src_ids.size(); i++) {
-            std::cout << src_ids[i] << "(" << src_names[i] << ") ";
+        for (auto iter = src_map_this_sim.begin(); iter != src_map_this_sim.end(); iter++){
+            std::cout << iter->second.id << "(" << iter->second.name << ") ";
         }
         std::cout << std::endl;
     }
