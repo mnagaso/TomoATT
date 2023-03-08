@@ -387,6 +387,11 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(src_dep, 0);
     broadcast_cr_single(src_lat, 0);
     broadcast_cr_single(src_lon, 0);
+
+    broadcast_bool_single(src_rec_file_exist, 0);
+    broadcast_bool_single(sta_correction_file_exist, 0);
+
+    // This have to be done only after broadcast src_rec_file_exist
     if (src_rec_file_exist == false){
         SrcRecInfo src;
         src.id = 0;
@@ -409,8 +414,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_str(src_rec_file, 0);
     broadcast_str(sta_correction_file, 0);
     broadcast_str(output_dir, 0);
-    broadcast_bool_single(src_rec_file_exist, 0);
-    broadcast_bool_single(sta_correction_file_exist, 0);
     broadcast_str(init_model_path, 0);
     broadcast_i_single(run_mode, 0);
     broadcast_i_single(n_inversion_grid, 0);

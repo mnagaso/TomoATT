@@ -153,6 +153,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic, name_sim_src);
 
+        synchronize_all_world();
+
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
 

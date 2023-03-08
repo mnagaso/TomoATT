@@ -228,11 +228,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.weight      = data.weight * cs_dif_time_local_weight;
                     data.phase       = tokens[11];
 
-                    data.is_rec_pair      = true;
-                    data.id_src_single   = src_id;
-                    data.name_src_single = src_name;
-                    data.id_rec_pair   = {rec.id, rec2.id};
-                    data.name_rec_pair = {rec.name, rec2.name};
+                    data.is_rec_pair            = true;
+                    data.id_src_single          = src_id;
+                    data.name_src_single        = src_name;
+                    data.id_rec_pair            = {rec.id, rec2.id};
+                    data.name_rec_pair          = {rec.name, rec2.name};
                     data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
                     data_map[data.name_src_single][data.name_rec_pair[0]] = data; // TODO: check if name_rec_pair[1] should be stored as well
@@ -805,9 +805,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                 src_map_this_sim[id2key_src[i_src]] = src_map[id2key_src[i_src]];
                 // rec
                 for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                    if (iter->second.id == src_map[id2key_src[i_src]].id){
-                        rec_map_this_sim[iter->first] = iter->second;
-                    }
+                    rec_map_this_sim[iter->first] = iter->second;
                 }
                 // data
                 for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
