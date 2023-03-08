@@ -13,14 +13,25 @@ Grid::Grid(InputParams& IP, IO_utils& io) {
     }
 
     // allocate memory for shm arrays if necessary
-    if (n_subprocs > 1)
+    if (n_subprocs > 1){
         shm_memory_allocation();
+    }
 
     synchronize_all_world();
 
     // setup grid parameters
     if (subdom_main)
         setup_grid_params(IP, io);
+
+    // distribute some parameters for unmain processes of subdmains
+    //if (n_subprocs > 1) {
+    //    broadcast_i_single_sub(loc_I,0);
+    //    broadcast_i_single_sub(loc_J,0);
+    //    broadcast_i_single_sub(loc_K,0);
+    //    broadcast_cr_single_sub(dr,0);
+    //    broadcast_cr_single_sub(dt,0);
+    //    broadcast_cr_single_sub(dp,0);
+    //}
 
 }
 
@@ -1294,7 +1305,7 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
                     // std::cout << "source def " << std::endl;
                     // std::cout << "p_loc_1d (lon): " << p_loc_1d[i_lon]*RAD2DEG << ", id_i: " << i_lon << ", src_p: " << src_p*RAD2DEG << std::endl;
                     // std::cout << "t_loc_1d (lat): " << t_loc_1d[j_lat]*RAD2DEG << ", id_j: " << j_lat << ", src_t: " << src_t*RAD2DEG << std::endl;
-                    // std::cout << "r_loc_1d (r): " << r_loc_1d[k_r] << ", id_k: " << k_r << ", src_r: " << src_r << std::endl;         
+                    // std::cout << "r_loc_1d (r): " << r_loc_1d[k_r] << ", id_k: " << k_r << ", src_r: " << src_r << std::endl;
 
                     if (if_verbose) {
                         if ( (k_r == 0 && k_first()) || (k_r == loc_K-1 && k_last()) )
@@ -1320,9 +1331,9 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
         } // end loop j
     } // end loop k
 
-    // std::cout << "p_loc_1d (lon): " << p_loc_1d[25]*RAD2DEG << ", id_i: " << 25  
-    //           << "t_loc_1d (lat): " << t_loc_1d[29]*RAD2DEG << ", id_j: " << 29  
-    //           << "r_loc_1d (r): " << r_loc_1d[41] << ", id_k: " << 41 <<  std::endl;         
+    // std::cout << "p_loc_1d (lon): " << p_loc_1d[25]*RAD2DEG << ", id_i: " << 25
+    //           << "t_loc_1d (lat): " << t_loc_1d[29]*RAD2DEG << ", id_j: " << 29
+    //           << "r_loc_1d (r): " << r_loc_1d[41] << ", id_k: " << 41 <<  std::endl;
 
 
 
