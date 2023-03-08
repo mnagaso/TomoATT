@@ -23,6 +23,9 @@
 
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
 
+    if (IP.src_map_comm_src.size() == 0)
+        return;
+
     int i_src = 0;
 
     for (auto iter = IP.src_map_comm_src.begin(); iter != IP.src_map_comm_src.end(); iter++){
@@ -100,7 +103,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     ///////////////////////////////////////////////////////////////////////
 
     // let syn_time_list[name_src][name_rec] = 0.0
-    IP.initialize_syn_time_list();
+    //IP.initialize_syn_time();
 
     //prepare synthetic traveltime for all earthquakes
     pre_run_forward_only(IP, grid, io, i_inv);

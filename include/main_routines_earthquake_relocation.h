@@ -177,7 +177,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
         // calculate approximated orptimal origin time
         // recs.calculate_optimal_origin_time(IP, unique_rec_map);
-        recs.calculate_optimal_origin_time(IP);
+        recs.calculate_optimal_origin_time(IP, name_sim_src);
 
         i_src++;
     }

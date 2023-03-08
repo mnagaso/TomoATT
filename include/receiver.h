@@ -22,7 +22,7 @@ public:
     // initialize variables for source relocation
     void init_vars_src_reloc(InputParams&);
     // approximated optimal origin time
-    void calculate_optimal_origin_time(InputParams&);
+    void calculate_optimal_origin_time(InputParams&, const std::string&);
     // divide optimal origin time by summed weight
     void divide_optimal_origin_time_by_summed_weight(InputParams&);
     // Gradient of objective function

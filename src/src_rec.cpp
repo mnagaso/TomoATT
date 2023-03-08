@@ -9,7 +9,6 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         std::map<std::string, SrcRecInfo>& src_map, \
                         std::map<std::string, SrcRecInfo>& rec_map, \
                         std::map<std::string, std::map<std::string, DataInfo>>& data_map, \
-                        std::vector<DataInfo>& data_info, \
                         std::vector<std::string>& src_name_list){
 
     // start timer
@@ -38,7 +37,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
     int ndata_tmp = 0; // count the number of receivers or differential traveltime data for each source
     src_map.clear();
     rec_map.clear();
-    data_info.clear();
+    data_map.clear();
 
     std::string src_name;
     CUSTOMREAL src_weight = 1.0;
@@ -236,7 +235,6 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.name_rec_pair = {rec.name, rec2.name};
                     data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
-                    data_info.push_back(data);
                     data_map[data.name_src_single][data.name_rec_pair[0]] = data; // TODO: check if name_rec_pair[1] should be stored as well
 
                     cc++;
@@ -275,9 +273,9 @@ void parse_src_rec_file(std::string& src_rec_file, \
     // indicate the number of sources and receivers, data_info
     if (world_rank == 0){
         std::cout << "\nReading src_rec_file finished." << std::endl;
-        std::cout << "number of sources: " << src_map.size() << std::endl;
-        std::cout << "number of receivers: " << rec_map.size() << std::endl;
-        std::cout << "number of data: " << data_info.size() << "\n" << std::endl;
+        std::cout << "number of sources: "   << src_map.size()  << std::endl;
+        std::cout << "number of receivers: " << rec_map.size()  << std::endl;
+        std::cout << "number of data: "      << data_map.size() << "\n" << std::endl;
     }
 
     // indicate elapsed time
@@ -573,17 +571,18 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
     if (is_balance_data_weight){
         for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
             for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
-            // absolute traveltime
-            if(it_rec->second.is_src_rec){
-                it_rec->second.weight = it_rec->second.weight / total_abs_local_data_weight;
+                // absolute traveltime
+                if(it_rec->second.is_src_rec){
+                    it_rec->second.weight = it_rec->second.weight / total_abs_local_data_weight;
 
-            // common receiver differential traveltime
-            } else if (it_rec->second.is_src_pair){
-                it_rec->second.weight = it_rec->second.weight / total_cr_dif_local_data_weight;
+                // common receiver differential traveltime
+                } else if (it_rec->second.is_src_pair){
+                    it_rec->second.weight = it_rec->second.weight / total_cr_dif_local_data_weight;
 
-            // common source differential traveltime
-            } else if (it_rec->second.is_rec_pair){
-                it_rec->second.weight = it_rec->second.weight / total_cs_dif_local_data_weight;
+                // common source differential traveltime
+                } else if (it_rec->second.is_rec_pair){
+                    it_rec->second.weight = it_rec->second.weight / total_cs_dif_local_data_weight;
+                }
             }
         }
 
@@ -627,6 +626,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
     //           << ", N_cs_dif_local_data: " << N_cs_dif_local_data << ", N_teleseismic_data: " << N_teleseismic_data
     //           << std::endl
     //           << std::endl;
+
 }
 
 
@@ -729,7 +729,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                 }
             }
         }
-        std::cout << data_info.size() << std::endl;
+        std::cout << data_map.size() << std::endl;
     }
     // indicate elapsed time
     std::cout << "Total elapsed time for swapping src rec: " << timer.get_t() << " seconds.\n";
@@ -752,7 +752,7 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
         for (auto iter = rec_map_tele.begin(); iter != rec_map_tele.end(); iter++)
             rec_map[iter->first] = iter->second;
 
-        data_info.insert(data_info.end(), data_info_tele.begin(), data_info_tele.end());
+        data_map.insert(data_map_tele.begin(), data_map_tele.end());
     }
 
     // give new ev id (accourding to the name)
@@ -811,7 +811,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                 }
                 // data
                 for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
-                    data_map_this_sim[it_src->first][it_rec->first] = it_rec->second;
+                    data_map_this_sim[iter->second.name_src][iter->second.name_rec] = iter->second;
                 }
 
             } else if (subdom_main) { // this source belongs to another simulutaneous run group
@@ -830,11 +830,12 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     }
 
                     // send data_map[src_name].size() to the main process of dst_id_sim
-                    send_i_single_sim(&(data_map[id2key_src[i_src]].size()), dst_id_sim);
+                    int n_data = data_map[id2key_src[i_src]].size();
+                    send_i_single_sim(&n_data, dst_id_sim);
 
                     // send data_map[name_i_src] to the main process of dst_id_sim
                     for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
-                        send_data_info_inter_sim(*iter, dst_id_sim);
+                        send_data_info_inter_sim(iter->second, dst_id_sim);
                     }
                 } // if (n_data > 0)
 
@@ -879,7 +880,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                             // receive data_info from the main process of dst_id_sim
                             recv_data_info_inter_sim(tmp_DataInfo, 0);
                             // add the received data_info to the data_info
-                            data_map_this_sim[tmp_DataInfo.src_name][tmp_DataInfo.rec_name] = tmp_DataInfo;
+                            data_map_this_sim[tmp_DataInfo.name_src][tmp_DataInfo.name_rec] = tmp_DataInfo;
                         }
                     }
                }

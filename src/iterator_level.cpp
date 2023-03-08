@@ -550,7 +550,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             } // end of i_vec loop
 
             // mpi synchronization
-            synchronize_all_sub();
+            synchronize_all_sub(); // dead lock
 
         } // end of i_level loop
 

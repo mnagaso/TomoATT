@@ -621,7 +621,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 
         // broadcast the diff values
         broadcast_cr_single_sub(cur_diff_L1, 0);
-        broadcast_cr_single_sub(cur_diff_Linf, 0);
+        broadcast_cr_single_sub(cur_diff_Linf, 0); // dead lock
         if (if_test) {
             broadcast_cr_single_sub(cur_err_L1, 0);
             broadcast_cr_single_sub(cur_err_Linf, 0);
