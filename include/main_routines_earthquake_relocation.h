@@ -41,15 +41,13 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     // loop for each source
     ///////////////////////
 
-    int i_src = 0;
+    // iterate over sources
+    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-    for (auto iter = IP.src_map.begin(); iter != IP.src_map.end(); iter++){
+        const std::string name_sim_src = IP.src_id2name[i_src];
+        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
-        // load the global id of this src
-        const int id_sim_src           = iter->second.id;
-        const std::string name_sim_src = iter->first;
-
-       // set simu group id and source name for output files/dataset names
+        // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);
         io.set_name_src(name_sim_src);
 
@@ -89,10 +87,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
             // output T (result timetable)
             io.write_T(grid, 0);
         }
-
-        i_src++;
     }
-
 }
 
 
@@ -145,26 +140,21 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 
 void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, int i_iter){
 
-
     Receiver recs; // here the source is swapped to receiver
     // recs.init_vars_src_reloc(IP, unique_rec_map);
 
     // initialize source parameters (obj, kernel, )
     recs.init_vars_src_reloc(IP);
 
-    int i_src = 0;
+    // iterate over sources
+    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-    // iterate over all sources for calculating optimal origin time
-    for (auto iter = IP.src_map.begin(); iter != IP.src_map.end(); iter++){
-
-        // load the global id of this src
-        const int id_sim_src           = iter->second.id;
-        const std::string name_sim_src = iter->first;
+        const std::string name_sim_src = IP.src_id2name[i_src];
+        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);
         io.set_name_src(name_sim_src);
-
 
         // change target group to be read
         io.change_group_name_for_source_nv();
@@ -179,7 +169,6 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         // recs.calculate_optimal_origin_time(IP, unique_rec_map);
         recs.calculate_optimal_origin_time(IP, name_sim_src);
 
-        i_src++;
     }
 
     // divide optimal origin time by summed weight
@@ -188,13 +177,11 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // compute the objective function
     recs.calculate_obj_reloc(IP, i_iter);
 
+    // iterate over sources
+    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-    // iterate over all sources for calculating gradient of objective function
-    for (auto iter = IP.src_map.begin(); iter != IP.src_map.end(); iter++){
-
-        // load the global id of this src
-        const int id_sim_src           = iter->second.id;
-        const std::string name_sim_src = iter->first;
+        const std::string name_sim_src = IP.src_id2name[i_src];
+        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);

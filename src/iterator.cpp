@@ -3,6 +3,7 @@
 Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, \
                    bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
          : is_second_run(is_second_run_in) {
+
     if(n_subprocs > 1) {
 
         // share necessary values between subprocs
@@ -901,7 +902,7 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
 
     // loop all receivers
     // MNMN this loop checks all the receivers, even unrelated ones for this source. (rec_map is a unique map of all receivers)
-    for (auto iter = IP.get_rec_map_begin(); iter != IP.get_rec_map_end(); iter++) {
+    for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
 
         // "iter->second" is the receiver, with the class SrcRecInfo
         if (iter->second.adjoint_source == 0)

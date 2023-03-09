@@ -141,8 +141,8 @@ pp1deg = pp1 * 180.0/math.pi
 pp2deg = pp2 * 180.0/math.pi
 
 
-#n_srcs = [10,20,20]
-n_srcs = [1,1,1]
+n_srcs = [10,10,10]
+#n_srcs = [2,1,1]
 n_src = n_srcs[0]*n_srcs[1]*n_srcs[2]
 n_rec = [30 for x in range(n_src)]
 

@@ -52,14 +52,17 @@ inline void allgather_str(const std::string&, std::vector<std::string>&);
 inline void broadcast_bool_single(bool&, int);
 inline void broadcast_i_single(int&, int);
 inline void broadcast_i_single_inter_sim(int&, int);
+inline void broadcast_i_single_sub(int&, int);
+inline void broadcast_i_single_inter_and_intra_sim(int&, int);
 inline void broadcast_f_single(float&, int);
 inline void broadcast_cr(CUSTOMREAL* , int, int);
 inline void broadcast_cr_single(CUSTOMREAL&, int);
 inline void broadcast_cr_inter_sim(CUSTOMREAL*, int, int);
 inline void broadcast_str(std::string&, int);
+inline void broadcast_str_inter_sim(std::string&, int);
 inline void broadcast_str_sub(std::string&, int);
+inline void broadcast_str_inter_and_intra_sim(std::string&, int);
 inline void broadcast_bool_single_sub(bool&, int);
-inline void broadcast_i_single_sub(int&, int);
 inline void broadcast_cr_single_sub(CUSTOMREAL&, int);
 inline void broadcast_cr_sub(CUSTOMREAL*, int, int);
 inline void prepare_shm_array_cr(int, CUSTOMREAL*&, MPI_Win&);
@@ -602,6 +605,12 @@ inline void broadcast_i_single_inter_sim(int& value, int root){
     MPI_Bcast(&value, count, MPI_INT, root, inter_sim_comm);
 }
 
+inline void broadcast_i_single_inter_and_intra_sim(int& value, int root){
+    broadcast_i_single_inter_sim(value, root); // broadcast among simultaneous run group
+    broadcast_i_single(value, root);           // broadcast among subdomain group
+    broadcast_i_single_sub(value, root);       // broadcast within subdomain group
+}
+
 inline void broadcast_f_single(float& value, int root){ // !!!! FOR ONLY READ PARAMETER !!!!!
     int count = 1;
     MPI_Bcast(&value, count, MPI_FLOAT, root, inter_sub_comm);
@@ -668,6 +677,22 @@ inline void broadcast_str_sub(std::string& str, int root) {
     MPI_Bcast(buf, count+1, MPI_CHAR, root, sub_comm);
     str = buf;
     delete[] buf;
+}
+
+inline void broadcast_str_inter_sim(std::string& str, int root) {
+    int count = str.size();
+    MPI_Bcast(&count, 1, MPI_INT, root, inter_sim_comm);
+    char* buf = new char[count+1];
+    std::strcpy(buf, str.c_str());
+    MPI_Bcast(buf, count+1, MPI_CHAR, root, inter_sim_comm);
+    str = buf;
+    delete[] buf;
+}
+
+inline void broadcast_str_inter_and_intra_sim(std::string& str, int root) {
+    broadcast_str_inter_sim(str, root);
+    broadcast_str(str, root);
+    broadcast_str_sub(str, root);
 }
 
 inline void allgather_str(const std::string &str, std::vector<std::string> &result) {

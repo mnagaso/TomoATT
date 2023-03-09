@@ -166,10 +166,12 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
 // distribute srcrec data to all simulation groups
 void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
-                             std::map<std::string, std::map<std::string,DataInfo>>&,
+                             std::map<std::string, std::map<std::string,DataInfo>>&, \
+                             std::vector<std::string>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
-                             std::map<std::string, std::map<std::string,DataInfo>>&);
+                             std::map<std::string, std::map<std::string,DataInfo>>&, \
+                             std::vector<std::string>&);
 
 void send_src_info_inter_sim(SrcRecInfo&, int);
 void recv_src_info_inter_sim(SrcRecInfo&, int);

@@ -26,12 +26,10 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
     if (IP.src_map_comm_src.size() == 0)
         return;
 
-    int i_src = 0;
+    for (int i_src = 0; i_src < (int)IP.src_id2name_comm_src.size(); i_src++){
 
-    for (auto iter = IP.src_map_comm_src.begin(); iter != IP.src_map_comm_src.end(); iter++){
-
-        int         id_sim_src   = iter->second.id;
-        std::string name_sim_src = iter->second.name;
+        std::string name_sim_src = IP.src_id2name_comm_src[i_src];
+        int         id_sim_src   = IP.src_map_comm_src[name_sim_src].id; // global source id
 
         // check if this source is common receiver data
 
@@ -54,33 +52,12 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         Receiver recs;
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
 
-        i_src++;
     }
 
     // wait for all processes to finish
     synchronize_all_world();
 
-    // all processors share the calculated synthetic traveltime // MNMN this causes a dead lock when the number of sources are different among simultaneous runs
-    //IP.reduce_syn_time_list(); // is it necessary?
-//    synchronize_all_world(); // dead lock
-
-    //
     std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
-
-
-    // check syn_time_map_sr
-    // for(auto iter1 = IP.syn_time_map_sr.begin(); iter1 != IP.syn_time_map_sr.end(); iter1++){
-    //     for (auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
-    //         std::cout << "id_sim: " << id_sim << ", src name: " << iter1->first << ", rec name: " << iter2->first
-    //                   << ", syn time is: " << iter2->second
-    //                   << std::endl;
-    //     }
-    // }
-
-}
-
-
-inline void run_forward_and_adjoint(){
 
 }
 
@@ -102,23 +79,18 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  compute the synthetic common receiver differential traveltime first
     ///////////////////////////////////////////////////////////////////////
 
-    // let syn_time_list[name_src][name_rec] = 0.0
-    //IP.initialize_syn_time();
-
     //prepare synthetic traveltime for all earthquakes
     pre_run_forward_only(IP, grid, io, i_inv);
 
     //
     // loop over all sources
     //
-    int i_src = 0;
 
-    // iterate IP.src_map
-    for (auto iter = IP.src_map.begin(); iter != IP.src_map.end(); iter++){
+     // iterate over sources
+    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-        // load the global id of this src
-        const int id_sim_src           = iter->second.id;
-        const std::string name_sim_src = iter->first;
+        const std::string name_sim_src = IP.src_id2name[i_src];
+        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);
@@ -128,6 +100,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             std::cout << "source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
 
         // set group name to be used for output in h5
+        // TODO set id_sim_src and name_sim_src with this function
         io.change_group_name_for_source();
 
         // output initial field
@@ -153,7 +126,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic, name_sim_src);
 
-        synchronize_all_world();
+        // this should not be called here, for the case that the simultaneous run group has different number of sources
+        //synchronize_all_world();
+        // instead we use synchro function for processes within each simultaneous run group
+        //synchronize_all_sim(); // but it is not necessary
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
@@ -236,17 +212,18 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         } // end if run_mode == DO_INVERSION
 
         // wait for all processes to finish
-        synchronize_all_world();
-
-        // allreduce sum_adj_src
-        for(int i = 0; i < (int)v_obj_misfit.size(); i++){
-            allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
-        }
+        // this should not be called here, for the case that the simultaneous run group has different number of sources
+        //synchronize_all_world();
 
     } // end for i_src
 
     // synchronize all processes
-    synchronize_all_world();
+    synchronize_all_world(); // sim 0 1 sub stops here
+
+    // allreduce sum_adj_src
+    for(int i = 0; i < (int)v_obj_misfit.size(); i++){
+        allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
+    }
 
     // return current objective function value
     return v_obj_misfit;

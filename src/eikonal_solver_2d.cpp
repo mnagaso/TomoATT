@@ -5,10 +5,10 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
     bool if_teleseismic_event_exists=false;
 
     if (subdom_main) {
-        for (auto iter = IP.src_map.begin(); iter != IP.src_map.end(); iter++){
+        // iterate over all sources for calculating gradient of objective function
+        for (int i_src = 0; i_src < (int)IP.src_id2name_comm_src.size(); i_src++){
 
-            // load the global id of this src
-            const std::string name_sim_src = iter->first;
+            std::string name_sim_src = IP.src_id2name_comm_src[i_src];
 
             // check if the source is teleseismic or not
             if (IP.get_if_src_teleseismic(name_sim_src) == false)
@@ -29,6 +29,7 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
                 run_2d_solver(IP, name_sim_src, grid, io);
 
                 if_teleseismic_event_exists = true;
+
             }
         }
     }

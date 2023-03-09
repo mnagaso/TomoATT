@@ -768,27 +768,31 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
 void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                              std::map<std::string, SrcRecInfo>& rec_map, \
                              std::map<std::string, std::map<std::string, DataInfo>>& data_map, \
+                             std::vector<std::string> &src_name_list, \
                              std::map<std::string, SrcRecInfo>& src_map_this_sim, \
                              std::map<std::string, SrcRecInfo>& rec_map_this_sim, \
-                             std::map<std::string, std::map<std::string, DataInfo>>& data_map_this_sim){
+                             std::map<std::string, std::map<std::string, DataInfo>>& data_map_this_sim, \
+                             std::vector<std::string> &src_name_list_this_sim){
 
     // number of total sources
     int n_src = 0;
 
-    // get the number of sources
-    std::map<int, std::string> id2key_src;
     if (id_sim == 0 && subdom_main){
+        // number of total sources
         n_src = src_map.size();
-        int i_src = 0;
-        for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
-            id2key_src[i_src] = iter->first;
-            i_src += 1;
-        }
-    }
 
-    // broadcast the number of sources
-    broadcast_i_single_inter_sim(n_src, 0); // id_sim=0&&subdom_main to id_sim=all&&subdom_main
-    broadcast_i_single_sub(n_src, 0);       // id_sim=all&&subdom_main to id_sim=all&&all subprocesses
+        // recreate the src_name_list for swapping
+        src_name_list.clear();
+
+        // create id2key array for src names in src_map
+        for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
+            src_name_list.push_back(iter->first);
+        }
+   }
+
+
+    // broadcast the number of sources to all the processors
+    broadcast_i_single_inter_and_intra_sim(n_src, 0);
 
     // store the total number of sources
     nsrc_total = n_src;
@@ -799,48 +803,62 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
         // id of simulutaneous run group to which the i_src-th source belongs
         int dst_id_sim = i_src % n_sims;
 
+        // broadcast the source name
+        std::string src_name;
+        if (id_sim == 0 && subdom_main){
+            src_name = src_name_list[i_src];
+        }
+        broadcast_str_inter_and_intra_sim(src_name, 0);
+
         if (id_sim==0){ // sender
             if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group
-                // src
-                src_map_this_sim[id2key_src[i_src]] = src_map[id2key_src[i_src]];
-                // rec
-                for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                    rec_map_this_sim[iter->first] = iter->second;
-                }
-                // data
-                for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
-                    data_map_this_sim[iter->second.name_src][iter->second.name_rec] = iter->second;
-                }
 
-            } else if (subdom_main) { // this source belongs to another simulutaneous run group
-
-                // send src_map[i_src] to the main process of dst_id_sim
-                send_src_info_inter_sim(src_map[id2key_src[i_src]], dst_id_sim);
-
-                // send rec_map.size() to the main process of dst_id_sim
-                int n_data = rec_map.size();
-                send_i_single_sim(&n_data, dst_id_sim);
-
-                if (n_data > 0){
-                    // send rec_map[i_src] to the main process of dst_id_sim
+                if (subdom_main){
+                    // src
+                    src_map_this_sim[src_name] = src_map[src_name];
+                    // rec
                     for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                        send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
+                        rec_map_this_sim[iter->first] = iter->second;
                     }
+                    // data
+                    for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
+                        data_map_this_sim[iter->second.name_src][iter->second.name_rec] = iter->second;
+                    }
+                } // end if (subdom_main)
 
-                    // send data_map[src_name].size() to the main process of dst_id_sim
-                    int n_data = data_map[id2key_src[i_src]].size();
+                // add the source name to the source name list
+                src_name_list_this_sim.push_back(src_name);
+
+            } else { // this source belongs to another simulutaneous run group
+
+                if (subdom_main){
+                    // send src_map[i_src] to the main process of dst_id_sim
+                    send_src_info_inter_sim(src_map[src_name], dst_id_sim);
+
+                    // send rec_map.size() to the main process of dst_id_sim
+                    int n_data = rec_map.size();
                     send_i_single_sim(&n_data, dst_id_sim);
 
-                    // send data_map[name_i_src] to the main process of dst_id_sim
-                    for (auto iter = data_map[id2key_src[i_src]].begin(); iter != data_map[id2key_src[i_src]].end(); iter++){
-                        send_data_info_inter_sim(iter->second, dst_id_sim);
-                    }
-                } // if (n_data > 0)
+                    if (n_data > 0){
+                        // send rec_map[i_src] to the main process of dst_id_sim
+                        for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
+                            send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
+                        }
+
+                        // send data_map[src_name].size() to the main process of dst_id_sim
+                        int n_data = data_map[src_name].size();
+                        send_i_single_sim(&n_data, dst_id_sim);
+
+                        // send data_map[name_i_src] to the main process of dst_id_sim
+                        for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
+                            send_data_info_inter_sim(iter->second, dst_id_sim);
+                        }
+                    } // if (n_data > 0)
+                } // end if (subdom_main)
 
             }
         } else { // receive
             if (dst_id_sim == id_sim){
-                std::string tmp_srcname;
 
                 // receive src/rec_points from the main process of dst_id_sim
                 if(subdom_main){
@@ -881,8 +899,10 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                             data_map_this_sim[tmp_DataInfo.name_src][tmp_DataInfo.name_rec] = tmp_DataInfo;
                         }
                     }
-               }
+                }
 
+                // add the source name to the source name list
+                src_name_list_this_sim.push_back(src_name);
 
             } else {
                 // do nothing

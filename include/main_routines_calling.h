@@ -164,8 +164,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
                 model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
-
-
         }
 
         // output station correction file (only for teleseismic differential data)

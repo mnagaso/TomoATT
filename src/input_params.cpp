@@ -782,9 +782,12 @@ bool InputParams::get_if_src_teleseismic(std::string src_name) {
 
     if (subdom_main)
         if_src_teleseismic = get_src_point(src_name).is_out_of_region;
+    else
+        if_src_teleseismic = false; // need to be broadcasted from subdom_main later
 
+    // !! This should not be don here, but done clearly at the out of this function
     // broadcast to all processes within simultaneous run group
-    broadcast_bool_single_sub(if_src_teleseismic, 0);
+    //broadcast_bool_single_sub(if_src_teleseismic, 0);
 
     return if_src_teleseismic;
 }
@@ -815,9 +818,10 @@ void InputParams::prepare_src_map(){
         }
 
         // copy backups (KEEPED AS THE STATE BEFORE SWAPPING SRC AND REC)
-        src_map_back  = src_map_all;
-        rec_map_back  = rec_map_all;
-        data_map_back = data_map_all;
+        src_map_back     = src_map_all;
+        rec_map_back     = rec_map_all;
+        data_map_back    = data_map_all;
+        src_id2name_back = src_id2name_all;
 
         // check if src positions are within the domain or not (teleseismic source)
         // detected teleseismic source is separated into tele_src_points and tele_rec_points
@@ -867,171 +871,30 @@ void InputParams::prepare_src_map(){
         if (world_rank==0)
             std::cout << "\nsource assign to processors\n" <<std::endl;
 
-
-        // broadcast src_map,
-        //           rec_map,
-        //           data_info,
-        // output: src_ids_this_sim, src_names_this_sim includes all src ids/names
-        //          which are calculated this simultaneous run group
+        // divide and distribute the data below to each simultaneous run group:
+        //  src_map,
+        //  rec_map,
+        //  data_map,
+        //  src_id2name,
         distribute_src_rec_data(src_map_all,
                                 rec_map_all,
                                 data_map_all,
+                                src_id2name_all,
                                 src_map,
                                 rec_map,
-                                data_map);
+                                data_map,
+                                src_id2name);
 
+        // now src_id2name_all includes all src names of after swapping src and rec
+        //     src_id2name     includes only src names of this simultaneous run group
+        //     src_id2name_back includes only src names of this simultaneous run group before swapping src and rec
 
         synchronize_all_world();
 
-        // broadcast src_map_tele,
-        //           rec_map_tele,
-        //           data_info_tele,
-        //distribute_src_rec_data(src_map_tele,
-        //                        rec_map_tele,
-        //                        data_info_tele,
-        //                        src_ids_this_sim_tele,
-        //                        src_names_this_sim_tele);
-
-        // broadcast src_map_prepare,
-        //           rec_map_prepare,
-        //           data_info_prepare,
-        //distribute_src_rec_data(src_map_prepare,
-        //                        rec_map_prepare,
-        //                        data_info_prepare,
-        //                        src_ids_this_sim_prepare,
-        //                        src_names_this_sim_prepare);
-
-        // then finally src_ids_this_sim_tele, src_names_this_sim_tele should be concatenated to src_ids_this_sim, src_names_this_sim
-        // and src_ids_this_sim_prepare, src_names_this_sim_prepare should be concatenated to src_ids_this_sim, src_names_this_sim
-        //src_ids_this_sim.insert(src_ids_this_sim.end(), src_ids_this_sim_tele.begin(), src_ids_this_sim_tele.end());
-        //src_names_this_sim.insert(src_names_this_sim.end(), src_names_this_sim_tele.begin(), src_names_this_sim_tele.end());
-        //src_ids_this_sim.insert(src_ids_this_sim.end(), src_ids_this_sim_prepare.begin(), src_ids_this_sim_prepare.end());
-        //src_names_this_sim.insert(src_names_this_sim.end(), src_names_this_sim_prepare.begin(), src_names_this_sim_prepare.end());
-
-
-// Those data management scheme are not used anymore
-
-        // generate data_info_smap,
-        //          data_info_smap_reloc,
-        //          syn_time_map_sr,
-//        std::cout << "generate map of data_info by src name." << std::endl;
-//        // copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
-//        generate_map_of_data_info_by_src_name();
-//
-//        std::cout << "generate src_map_prepare" << std::endl;
-//        // generate src_map_prepare based on data_info_smap
-//        generate_src_map_prepare();
-//
-        // distribute syn_time_map_sr
-//        distribute_syn_time_map_sr();
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-//        /////////////////
-//        // for teleseismic earthquakes whose boundary condition should be prepared first
-//        /////////////////
-//        src_ids_this_sim_tele.clear();
-//        src_names_this_sim_tele.clear();
-//        // assign elements of src_points
-//        int i_src = 0;
-//        for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++){
-//            if (i_src % n_sims == id_sim){
-//                src_ids_this_sim_tele.push_back(iter->second.id);
-//                src_names_this_sim_tele.push_back(iter->second.name);
-//            }
-//            i_src++;
-//        }
-//
-//        // check IP.src_ids_this_sim for this rank
-//        if (myrank==0) {
-//            std::cout << id_sim << "(telesmies source boundary) assigned src id(name) : ";
-//            for (int i = 0; i < (int)src_ids_this_sim_tele.size(); i++) {
-//                std::cout << src_ids_this_sim_tele[i] << "(" << src_names_this_sim_tele[i] << ") ";
-//            }
-//            std::cout << std::endl;
-//        }
-//
-//        /////////////////
-//        // for earthquake having common receiver differential traveltime, the synthetic traveltime should be computed first at each iteration
-//        /////////////////
-//        src_ids_this_sim_prepare.clear();
-//        src_names_this_sim_prepare.clear();
-//        // assign elements of src_points
-//        i_src = 0;
-//        for (auto iter = src_map_prepare.begin(); iter != src_map_prepare.end(); iter++){
-//            if (i_src % n_sims == id_sim){
-//                src_ids_this_sim_prepare.push_back(iter->second.id);
-//                src_names_this_sim_prepare.push_back(iter->second.name);
-//            }
-//            i_src++;
-//        }
-//        // check IP.src_ids_this_sim for this rank
-//        if (myrank==0) {
-//            std::cout << id_sim << "(prepare synthetic time) assigned src id(name) : ";
-//            for (int i = 0; i < (int)src_ids_this_sim_prepare.size(); i++) {
-//                std::cout << src_ids_this_sim_prepare[i] << "(" << src_names_this_sim_prepare[i] << ") ";
-//            }
-//            std::cout << std::endl;
-//        }
-//
-//
-//        /////////////////
-//        // for earthquake that will be looped in each iteraion
-//        /////////////////
-//        src_ids_this_sim.clear();
-//        src_names_this_sim.clear();
-//        // assign elements of src_points
-//        i_src = 0;
-//        for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
-//            if (i_src % n_sims == id_sim){
-//                src_ids_this_sim.push_back(iter->second.id);
-//                src_names_this_sim.push_back(iter->second.name);
-//            }
-//            i_src++;
-//        }
-//        // check IP.src_ids_this_sim for this rank
-//        if (myrank==0) {
-//            std::cout << id_sim << " assigned src id(name) : ";
-//            for (int i = 0; i < (int)src_ids_this_sim.size(); i++) {
-//                std::cout << src_ids_this_sim[i] << "(" << src_names_this_sim[i] << ") ";
-//            }
-//            std::cout << std::endl;
-//        }
-//
-//
-//        std::cout << std::endl;
-
-////////////////////////////////////////////////////////////////
 
         std::cout << "end parse src_rec file" << std::endl;
     } // end of if src_rec_file_exists
 }
-
-
-// copy/rearrange and analyse "data_info" -> data_info_smap; data_info_smap_reloc
-// dividing the data group by source name
-//void InputParams::generate_map_of_data_info_by_src_name(){
-//    for(int i = 0; i < (int)data_info.size(); i++){
-//        DataInfo data = data_info[i];
-//
-//        // add absolute traveltime
-//        if(data.is_src_rec){
-//            data_info_smap[data.name_src][data.name_rec] = data;
-//
-//        // add common source differential traveltime
-//        } else if (data.is_rec_pair){
-//            data_info_smap[data.name_src_single][data.name_rec_pair[0]] = data;
-//            data_info_smap[data.name_src_single][data.name_rec_pair[1]] = data;
-//
-//        // add common receiver differential traveltime
-//        } else if (data.is_src_pair){
-//            data_info_smap[data.name_src_pair[0]][data.name_rec_single] = data;
-//            data_info_smap[data.name_src_pair[1]][data.name_rec_single] = data;
-//
-//        }
-//    }
-//}
 
 
 void InputParams::generate_src_map_with_common_source(){
@@ -1041,29 +904,14 @@ void InputParams::generate_src_map_with_common_source(){
             if (iter2->second.is_src_pair){
                 // add this source and turn to the next source
                 src_map_comm_src[iter->first] = src_map[iter->first];
+                // add this source to the list of sources that will be looped in each iteration
+                src_id2name_comm_src.push_back(iter->first);
                 break;
             }
         }
     }
 }
 
-
-
-//// # TODO: src_map_prepare is not clear
-//void InputParams::generate_src_map_prepare(){
-//    for(auto iter = data_info_smap.begin(); iter != data_info_smap.end(); iter++){
-//
-//        for (const DataInfo& data : iter->second){
-//            // if this source has common source differential traveltime data
-//            if (data.is_src_pair){
-//                // add this source and turn to the next source
-//                src_map_prepare[iter->first] = src_map[iter->first];
-//                break;
-//            }
-//        }
-//
-//    }
-//}
 
 void InputParams::initialize_syn_time_map(){
 
@@ -1089,23 +937,6 @@ void InputParams::initialize_syn_time_map(){
     }
 }
 
-
-//void InputParams::initialize_syn_time_list(){
-//    for(auto iter1 = syn_time_map_sr.begin(); iter1 != syn_time_map_sr.end(); iter1++){
-//        for(auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
-//            iter2->second = 0.0;
-//        }
-//    }
-//}
-
-//void InputParams::reduce_syn_time_list(){
-//    for(auto iter1 = syn_time_map_sr.begin(); iter1 != syn_time_map_sr.end(); iter1++){
-//        for(auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); iter2++){
-//            allreduce_cr_sim_single_inplace(iter2->second);
-//        }
-//    }
-//}
-
 void InputParams::initialize_adjoint_source(){
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
         iter->second.adjoint_source = 0;
@@ -1124,7 +955,7 @@ SrcRecInfo& InputParams::get_src_map(std::string name_src){
     if (src_map.find(name_src) != src_map.end()){
         return src_map[name_src];
     } else {
-        std::cout << "error !!!, undefined source name when get src " << name_src << " in src_map_nv: " << std::endl;
+        std::cout << "error !!!, undefined source name when get src " << name_src << " in src_map: " << std::endl;
         abort();
     }
 }
@@ -1133,7 +964,7 @@ SrcRecInfo& InputParams::get_rec_map(std::string name_rec){
     if (rec_map.find(name_rec) != rec_map.end()){
         return rec_map[name_rec];
     } else {
-        std::cout << "error !!!, undefined receiver name when get rec " << name_rec << " in rec_map_nv: " << std::endl;
+        std::cout << "error !!!, undefined receiver name when get rec " << name_rec << " in rec_map: " << std::endl;
         abort();
     }
 }
@@ -1268,9 +1099,9 @@ void InputParams::write_src_rec_file(int i_inv) {
             // open file
             ofs.open(src_rec_file_out);
 
-            for (int i_src = 0; i_src < (int)src_id2name_all.size(); i_src++){
+            for (int i_src = 0; i_src < (int)src_id2name_back.size(); i_src++){
 
-                std::string name_src = src_id2name_all[i_src];
+                std::string name_src = src_id2name_back[i_src];
                 SrcRecInfo  src      = src_map_back[name_src];
 
                 // format should be the same as input src_rec_file
@@ -1394,7 +1225,15 @@ void InputParams::write_src_rec_file(int i_inv) {
                         // data line
                         for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
 
-                            DataInfo& data = data_map_all[name_src][iter->first];
+                            std::string name_rec = iter->first;
+
+                            DataInfo data;
+
+                            if (swap_src_rec) // reverse swap src and rec
+                                data = data_map_all[name_rec][name_src];
+                            else // do not swap
+                                data = data_map_all[name_src][name_rec];
+
                             if (data.is_src_rec){       // absolute traveltime data
                                 std::string name_rec = data.name_rec;
                                 SrcRecInfo rec = rec_map_back[name_rec];

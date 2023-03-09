@@ -438,7 +438,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             } // end ijk
 
             // mpi synchronization
-            synchronize_all_sub();
+            synchronize_all_sub(); // sim 0 and 1 main stops here
 
         } // end loop i_level
 
