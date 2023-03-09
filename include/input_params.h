@@ -138,7 +138,7 @@ private:
     CUSTOMREAL min_lon_inv=-99999; // minimum longitude
     CUSTOMREAL max_lon_inv=-99999; // maximum longitude
     // type = 1: flexible inversion grid
-    CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;   // flexibly designed inversion grid
+    CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;            // flexibly designed inversion grid
     int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1; // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
@@ -153,8 +153,8 @@ private:
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
 public:
-    std::map<std::string, SrcRecInfo> src_map_all;     // map of all sources (full information is only stored by the main process)
-    std::map<std::string, SrcRecInfo> src_map;
+    std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
+    std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> src_map_comm_src;     // map of sources with common source
     std::map<std::string, SrcRecInfo> src_map_tele;         // source list for teleseismic
     std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
@@ -163,18 +163,17 @@ public:
     std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
 
     std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
-    std::map<std::string, SrcRecInfo> rec_map;
+    std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
     std::map< std::string, std::map<std::string, DataInfo>> data_map_all;     // data list for all data (full information is only stored by the main process)
-    std::map< std::string, std::map<std::string, DataInfo>> data_map;
+    std::map< std::string, std::map<std::string, DataInfo>> data_map;         // data list for this simultaneous group
     std::map< std::string, std::map<std::string, DataInfo>> data_map_tele;    // data list for teleseismic
 
-    // TODO: remove the following backup maps
-    std::map<std::string, SrcRecInfo> src_map_back;     // for output purposes
-    std::map<std::string, SrcRecInfo> rec_map_back;    // for output purposes
-    // TODO: this map is only necessary
-    std::map< std::string, std::map<std::string, DataInfo>> data_map_back;    // for backup purposes
+    // backups used when outputing the data
+    std::map<std::string, SrcRecInfo>                      src_map_back;
+    std::map<std::string, SrcRecInfo>                      rec_map_back;
+    std::map<std::string, std::map<std::string, DataInfo>> data_map_back;
 
     // the number of data
     int N_abs_local_data    = 0;
@@ -197,9 +196,6 @@ public:
     SrcRecInfo& get_src_map(std::string);
     SrcRecInfo& get_rec_map(std::string);
 
-    // share calculated synthetic traveltimes to another which requires that
-    void communicate_travel_times();
-
 private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
@@ -210,8 +206,6 @@ private:
 
     // generate/initialize synthetic time data map "syn_time_list" based on data
     void initialize_syn_time_map();
-    // distribute the synthetic time data to all "subdom_main" processes
-    void distribute_syn_time_map();
 
 public:
     //void initialize_syn_time_list();

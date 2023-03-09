@@ -1431,8 +1431,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
 
     // step 5, broadcast the station correction all all procesors
     for (auto iter = rec_map.begin(); iter!=rec_map.end(); iter++){
-        broadcast_cr_single_inter_sim(iter->second.sta_correct,0);
-        broadcast_cr_single_sub(iter->second.sta_correct,0);
+        broadcast_cr_single_inter_and_intra_sim(iter->second.sta_correct,0);
     }
 
 }

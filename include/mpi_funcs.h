@@ -65,6 +65,7 @@ inline void broadcast_str_inter_and_intra_sim(std::string&, int);
 inline void broadcast_bool_single_sub(bool&, int);
 inline void broadcast_cr_single_sub(CUSTOMREAL&, int);
 inline void broadcast_cr_sub(CUSTOMREAL*, int, int);
+inline void broadcast_cr_single_inter_and_intra_sim(CUSTOMREAL&, int);
 inline void prepare_shm_array_cr(int, CUSTOMREAL*&, MPI_Win&);
 inline void prepare_shm_array_bool(int, bool*&, MPI_Win&);
 
@@ -633,6 +634,12 @@ inline void broadcast_cr_inter_sim(CUSTOMREAL* buf, int count, int root){
 inline void broadcast_cr_single_inter_sim(CUSTOMREAL& buf, int root){
     int count = 1;
     MPI_Bcast(&buf, count, MPI_CR, root, inter_sim_comm);
+}
+
+inline void broadcast_cr_single_inter_and_intra_sim(CUSTOMREAL& buf, int root){
+    broadcast_cr_single_inter_sim(buf, root); // broadcast among simultaneous run group
+    broadcast_cr_single(buf, root);           // broadcast among subdomain group
+    broadcast_cr_single_sub(buf, root);       // broadcast within subdomain group
 }
 
 inline void broadcast_bool_single_sub(bool& value, int root){
