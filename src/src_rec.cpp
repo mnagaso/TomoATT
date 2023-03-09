@@ -645,8 +645,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     src_map = rec_map;
     rec_map = tmp_src_rec_map;
 
-    // MEMO: when swapped, src_map.n_data has no information (=0).
-    // this may cause an error when distrubuting data to processors.
+    std::map<std::string, std::map<std::string, DataInfo>> tmp_data_map = data_map;
 
     // for each element of src_map, count the number of rec_map with the same value of
 
@@ -683,9 +682,13 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                 tmp_data.cs_dif_travel_time_obs = it_rec->second.cr_dif_travel_time_obs;
             }
 
-            it_rec->second = tmp_data;
+            //it_rec->second = tmp_data;
+            tmp_data_map[tmp_data.name_src][tmp_data.name_rec] = tmp_data;
         }
     }
+
+    // replace data_map with swapped data map
+    data_map = tmp_data_map;
 
     // swap total_data_weight
     CUSTOMREAL tmp = total_cr_dif_local_data_weight;

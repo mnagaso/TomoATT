@@ -976,16 +976,20 @@ void InputParams::gather_all_arrival_times_to_main(){
 
     for (int id_src = 0; id_src < nsrc_total; id_src++){
 
-
         // id of simulation group for this source
         int id_sim_group = id_src % n_sims;
+
+        // broadcast source name
+        std::string name_src;
+        if (subdom_main && id_subdomain==0 && id_sim==0){
+            name_src = src_id2name_all[id_src];
+        }
+        broadcast_str_inter_and_intra_sim(name_src, 0);
 
         if (subdom_main && id_subdomain==0){
 
             if (id_sim_group==0) {
                 if (id_sim == 0) {
-                    // src name (stored in src_id12name_all at id_sim == 0)
-                    std::string name_src = src_id2name_all[id_src];
 
                     // copy arrival time to data_info_back
                     for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
@@ -998,14 +1002,9 @@ void InputParams::gather_all_arrival_times_to_main(){
                 if (id_sim == 0) {
                     // receive
 
-                    // src name (stored in src_id12name_all at id_sim == 0)
-                    std::string name_src = src_id2name_all[id_src];
-
-                    // send name_src to be received
-                    send_str_sim(name_src, id_sim_group);
-
                     // number of receivers
-                    int nrec = data_map_all[name_src].size();
+                    int nrec;
+                    recv_i_single_sim(&nrec, id_sim_group);
 
                     // loop over receivers
                     for (int id_rec = 0; id_rec < nrec; id_rec++){
@@ -1018,22 +1017,21 @@ void InputParams::gather_all_arrival_times_to_main(){
                 } else {
                     // send
 
-                    // receive name_src to be sent
-                    std::string name_src;
-                    recv_str_sim(name_src, id_sim_group);
+                    // send number of receivers
+                    int nrec = data_map[name_src].size();
+                    send_i_single_sim(&nrec, 0);
 
                     for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
                         // send name of receiver
-                        send_str_sim(iter->first, id_sim_group);
+                        send_str_sim(iter->first, 0);
                         // then send travel time
-                        send_cr_single_sim(&(iter->second.travel_time), id_sim_group);
+                        send_cr_single_sim(&(iter->second.travel_time), 0);
                     }
                 }
             }
 
         } // end if (subdom_main && id_subdomain==0)
 
-        id_src++;
     } // end for  id_src
 
 }
@@ -1448,17 +1446,3 @@ void InputParams::modift_swapped_source_location() {
     }
 }
 
-
-void InputParams::communicate_travel_times() {
-    // for common receiver double difference data, the source locates at the different simultaneous group.
-    // in this case this function is used to communicate the travel times between different simultaneous groups
-
-    if (subdom_main) {
-        // find the sources which are not calculated in this simultaneous group
-        // by comparing data_info and src_ids_this_sim
-
-        //
-
-    }
-
-}
