@@ -32,6 +32,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     if(myrank == 0)
         std::cout << "size of src_list: " << IP.src_ids_this_sim.size() << std::endl;
 
+Timer timer("--- preapre_header_line");
     // prepare output for iteration status
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
@@ -47,13 +48,18 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                      << std::setw(16) << "diff_obj," << std::setw(16) << "v_obj_new," << std::setw(16) << "v_obj_old," << std::endl;
 
     }
+timer.stop_timer();
 
     if (subdom_main && id_sim==0 && IP.get_is_output_model_dat()==1) {
+Timer timer2("--- write_concerning_parameters");
         io.write_concerning_parameters(grid, 0, IP);
+timer2.stop_timer();
     }
 
+Timer timer3 ("--- write_station_correction_file");
     // output station correction file (only for teleseismic differential data)
     IP.write_station_correction_file(0);
+timer3.stop_timer();
 
     synchronize_all_world();
 
@@ -75,8 +81,10 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         old_v_obj = v_obj;
 
+Timer timer4("--- prepare_grid_inv_xdmf");
         // prepare inverstion iteration group in xdmf file
         io.prepare_grid_inv_xdmf(i_inv);
+timer4.stop_timer();
 
         ///////////////////////////////////////////////////////
         // run (forward and adjoint) simulation for each source
@@ -87,18 +95,22 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // skip for the  mode with sub-iteration
         if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
         } else {
+Timer timer5("--- run_simulation_one_step");
             // v_obj = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
             v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
             v_obj = v_obj_misfit[0];
             v_misfit = v_obj_misfit[1];
+timer5.stop_timer();
         }
 
         // wait for all processes to finish
         synchronize_all_world();
 
+Timer timer6("--- write_src_rec_file");
         // output src rec file with the result arrival times
         if (IP.get_is_output_in_process() || i_inv == IP.get_max_iter_inv() - 1)
             IP.write_src_rec_file(i_inv);
+timer6.stop_timer();
 
         ///////////////
         // model update
@@ -114,9 +126,12 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         }
 
+Timer timer7("--- write_station_correction_file 2");
         // output station correction file (only for teleseismic differential data)
         IP.write_station_correction_file(i_inv + 1);
+timer7.stop_timer();
 
+Timer timer8("--- write model file");
         // output updated model
         if (subdom_main && id_sim==0) {
             //io.change_xdmf_obj(0); // change xmf file for next src
@@ -144,17 +159,22 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 io.write_concerning_parameters(grid, i_inv + 1, IP);
 
         }
+timer8.stop_timer();
 
+Timer timer9("--- write xdmf file");
         // writeout temporary xdmf file
         io.update_xdmf_file();
+timer9.stop_timer();
 
         // wait for all processes to finish
         synchronize_all_world();
 
     } // end loop inverse
 
+Timer timer10("--- finalize_data_output_file");
     // close xdmf file
     io.finalize_data_output_file();
+timer10.stop_timer();
 
 }
 

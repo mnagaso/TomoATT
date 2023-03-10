@@ -39,6 +39,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // loop for each source
     ///////////////////////
 
+    Timer timer( "--- --- run_simulation_one_step", false);
+    Timer timer2("--- --- get_if_src_teleseismic", false);
+    Timer timer3("--- --- src", false);
+    Timer timer4("--- --- run_iteration_forward", false);
+    Timer timer5("--- --- calculate_arrival_time", false);
+
+
     for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
 
         // load the global id of this src
@@ -47,8 +54,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
 
+timer.start_timer();
         // set group name to be used for output in h5
         io.change_group_name_for_source();
+timer.tmp_stop_timer();
 
         // output initial field
         if(first_src && IP.get_is_output_source_field()) {
@@ -63,11 +72,15 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             first_src = false;
         }
 
+timer2.start_timer();
         // get is_teleseismic flag
         bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
+timer2.tmp_stop_timer();
 
+timer3.start_timer();
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic);
+timer3.tmp_stop_timer();
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
@@ -80,8 +93,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
+timer4.start_timer();
             select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
             It->run_iteration_forward(IP, grid, io, first_init);
+timer4.tmp_stop_timer();
         } else {
             // hybrid stencil mode
             std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
@@ -120,8 +135,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         }
 
         // calculate the arrival times at each receivers
+timer5.start_timer();
         Receiver recs;
         recs.calculate_arrival_time(IP, grid);
+timer5.tmp_stop_timer();
 
         /////////////////////////
         // run adjoint simulation
@@ -161,6 +178,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // return current objective function value
     v_obj_misfit[0] = v_obj;
     v_obj_misfit[1] = v_misfit;
+
+// fin timers
+timer.stop_timer_fin();
+timer2.stop_timer_fin();
+timer3.stop_timer_fin();
+timer4.stop_timer_fin();
+timer5.stop_timer_fin();
 
     return v_obj_misfit;
 }
