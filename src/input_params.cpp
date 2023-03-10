@@ -55,10 +55,6 @@ InputParams::InputParams(std::string& input_file){
         }
 
         if (config["model"]) {
-            // model type
-            if (config["model"]["init_model_type"]) {
-                init_model_type = config["model"]["init_model_type"].as<std::string>();
-            }
             // model file path
             if (config["model"]["init_model_path"]) {
                 init_model_path = config["model"]["init_model_path"].as<std::string>();
@@ -341,6 +337,10 @@ InputParams::InputParams(std::string& input_file){
             lat_inv = new CUSTOMREAL[n_inv_t_flex];
         if (!n_inv_p_flex_read)
             lon_inv = new CUSTOMREAL[n_inv_p_flex];
+
+        // write parameter file to output directory
+        write_params_to_file();
+
     }
 
     stdout_by_rank_zero("parameter file read done.");
@@ -380,7 +380,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_str(output_dir, 0);
     broadcast_bool_single(src_rec_file_exist, 0);
     broadcast_bool_single(sta_correction_file_exist, 0);
-    broadcast_str(init_model_type, 0);
     broadcast_str(init_model_path, 0);
     broadcast_i_single(run_mode, 0);
     broadcast_i_single(n_inversion_grid, 0);
@@ -491,6 +490,158 @@ InputParams::~InputParams(){
     rec_points_out.clear();
 }
 
+
+void InputParams::write_params_to_file() {
+    // write all the simulation parameters in another yaml file
+    std::string file_name = "params_log.yaml";
+    std::ofstream fout(file_name);
+    fout << "version: " << 2 << std::endl;
+
+    fout << std::endl;
+    fout << "domain:" << std::endl;
+    fout << "   min_max_dep: [" << min_dep << ", " << max_dep << "] # depth in km" << std::endl;
+    fout << "   min_max_lat: [" << min_lat << ", " << max_lat << "] # latitude in degree" << std::endl;
+    fout << "   min_max_lon: [" << min_lon << ", " << max_lon << "] # longitude in degree" << std::endl;
+    fout << "   n_rtp: [" << ngrid_k << ", " << ngrid_j << ", " << ngrid_i << "] # number of nodes in depth,latitude,longitude direction" << std::endl;
+
+    fout << std::endl;
+    fout << "source:" << std::endl;
+    fout << "   src_rec_file: " << src_rec_file     << " # source receiver file path" << std::endl;
+    fout << "   swap_src_rec: " << int(swap_src_rec) << " # swap source and receiver (1: yes, 0: no)" << std::endl;
+
+    fout << std::endl;
+    fout << "model:" << std::endl;
+    fout << "   init_model_path: " << init_model_path << " # path to initial model file " << std::endl;
+    // check if model_1d_name has any characters
+    if (model_1d_name.size() > 0)
+        fout << "   model_1d_name: " << model_1d_name;
+    else
+        fout << "#   model_1d_name: " << "dummy_model_1d_name";
+    fout << " # 1D model name used in teleseismic 2D solver (iasp91, ak135, user_defined is available), defined in include/1d_model.h" << std::endl;
+
+    fout << std::endl;
+    fout << "inversion:" << std::endl;
+    fout << "   run_mode: "           << run_mode << " # 0 for forward simulation only, 1 for inversion" << std::endl;
+    fout << "   output_dir: "         << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
+    fout << "   optim_method: "          << optim_method << " # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)" << std::endl;
+    fout << "   max_iterations_inv: "    << max_iter_inv << " # maximum number of inversion iterations" << std::endl;
+    fout << "   step_size: "             << step_size_init << " # initial step size for model update" << std::endl;
+    fout << "   step_size_sc: "          << step_size_init_sc << " # ..."  << std::endl;
+    fout << "   step_size_decay: "       << step_size_decay << " # ..." << std::endl;
+    fout << "   smooth_method: "         << smooth_method << " # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)" << std::endl;
+
+    fout << std::endl;
+    fout << "   # parameters for multiparametric inversion" << std::endl;
+    fout << "   n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
+    fout << "   n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
+    if (sta_correction_file_exist)
+        fout << "   sta_correction_file: " << sta_correction_file;
+    else
+        fout << "#   sta_correction_file: " << "dummy_sta_correction_file";
+    fout << " # station correction file path" << std::endl;
+    fout << "   type_dep_inv: " << type_dep_inv << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "   type_lat_inv: " << type_lat_inv << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "   type_lon_inv: " << type_lon_inv << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+
+    fout << std::endl;
+    fout << "   # parameters for uniform inversion grid" << std::endl;
+    fout << "   min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "]" << " # depth in km (Radius of the earth is defined in config.h/R_earth)"  << std::endl;
+    fout << "   min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "]" << " # latitude in degree"  << std::endl;
+    fout << "   min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "]" << " # longitude in degree" << std::endl;
+
+    fout << std::endl;
+    fout << "   # parameters for flexible inversion grid" << std::endl;
+    if (n_inv_r_flex_read) {
+        fout << "   n_inv_r_flex: " << n_inv_r_flex << std::endl;
+        fout << "   dep_inv: [";
+        for (int i = 0; i < n_inv_r_flex; i++){
+            fout << dep_inv[i];
+            if (i != n_inv_r_flex-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#   n_inv_r_flex: " << "3" << std::endl;
+        fout << "#   dep_inv: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_t_flex_read) {
+        fout << "   n_inv_t_flex: " << n_inv_t_flex << std::endl;
+        fout << "   lat_inv: [";
+        for (int i = 0; i < n_inv_t_flex; i++){
+            fout << lat_inv[i];
+            if (i != n_inv_t_flex-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#   n_inv_t_flex: " << "3" << std::endl;
+        fout << "#   lat_inv: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_p_flex_read) {
+        fout << "   n_inv_p_flex: " << n_inv_p_flex << std::endl;
+        fout << "   lon_inv: [";
+        for (int i = 0; i < n_inv_p_flex; i++){
+            fout << lon_inv[i];
+            if (i != n_inv_p_flex-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#   n_inv_p_flex: " << "3" << std::endl;
+        fout << "#   lon_inv: " << "[1, 1, 1]" << std::endl;
+    }
+
+    fout << std::endl;
+    fout << "   # parameters for halve-stepping or lbfg mode" << std::endl;
+    fout << "   max_sub_iterations: "    << max_sub_iterations << " # maximum number of each sub-iteration" << std::endl;
+    fout << "   l_smooth_rtp: ["         << smooth_lr << ", " << smooth_lt << ", " << smooth_lp << "] # smoothing coefficients for laplacian smoothing" << std::endl;
+    fout << "   regularization_weight: " << regularization_weight << " # weight value for regularization (lbfgs mode only)" << std::endl;
+
+    fout << std::endl;
+    fout << "inv_strategy: # flags for selecting the target parameters to be inversed" << std::endl;
+    fout << "   is_inv_slowness: "   << int(is_inv_slowness) << " # 1: slowness value will be calculated in inversion, 0: will not be calculated" << std::endl;
+    fout << "   is_inv_azi_ani: "    << int(is_inv_azi_ani)  << " # 1: azimuth anisotropy value will be calculated in inversion, 0: will not be calculated"<< std::endl;
+    fout << "   is_inv_rad_ani: "    << int(is_inv_rad_ani)  << " # flag for radial anisotropy (Not implemented yet)" << std::endl;
+    fout << "   kernel_taper: ["     << kernel_taper[0] << ", " << kernel_taper[1] << "]" << std::endl;
+    fout << "   is_sta_correction: " << int(is_sta_correction) << std::endl;
+
+    fout << std::endl;
+    fout << "parallel: # parameters for parallel computation" << std::endl;
+    fout << "   n_sims: "    << n_sims << " # number of simultanoues runs" << std::endl;
+    fout << "   ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction" << std::endl;
+    fout << "   nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization" << std::endl;
+    fout << "   use_gpu: "   << int(use_gpu) << " # 1 if use gpu (EXPERIMENTAL)" << std::endl;
+
+    fout << std::endl;
+    fout << "calculation:" << std::endl;
+    fout << "   convergence_tolerance: " << conv_tol << " # threshold value for checking the convergence for each forward/adjoint run"<< std::endl;
+    fout << "   max_iterations: " << max_iter << " # number of maximum iteration for each forward/adjoint run" << std::endl;
+    fout << "   stencil_order: " << stencil_order << " # order of stencil, 1 or 3" << std::endl;
+    fout << "   stencil_type: " << stencil_type << " # 0: , 1: first-order upwind scheme (only sweep_type 0 is supported) " << std::endl;
+    fout << "   sweep_type: " << sweep_type << " # 0: legacy, 1: cuthill-mckee with shm parallelization" << std::endl;
+    int ff_flag=0;
+    if (output_format == OUTPUT_FORMAT_HDF5) ff_flag = 0;
+    else if (output_format == OUTPUT_FORMAT_ASCII) ff_flag = 1;
+    else {
+        std::cout << "Error: output_format is not defined!" << std::endl;
+        exit(1);
+    }
+    fout << "   output_file_format: " << ff_flag << std::endl;
+
+    fout << std::endl;
+    fout << "output_setting:" << std::endl;
+    fout << "   is_output_source_field: " << int(is_output_source_field) << " # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_output_model_dat: "    << int(is_output_model_dat)    << " # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_verbose_output: "      << int(is_verbose_output)      << " # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0" << std::endl;
+    fout << "   is_output_final_model: "  << int(is_output_final_model)  << " # output merged final model or not.                                     1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_output_in_process: "   << int(is_output_in_process)   << " # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1" << std::endl;
+
+    //fout << std::endl;
+    //fout << "debug:" << std::endl;
+    //fout << "   debug_mode: " << int(if_test) << std::endl;
+
+
+}
 
 // return radious
 CUSTOMREAL InputParams::get_src_radius() {

@@ -107,7 +107,7 @@ public:
     void write_Keta_update(Grid&, int);
     // write all concerning parameters
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
-    void write_concerning_parameters(Grid&, int);
+    void write_concerning_parameters(Grid&, int, InputParams&);
 
     // 2d traveltime field for teleseismic source
     void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);
