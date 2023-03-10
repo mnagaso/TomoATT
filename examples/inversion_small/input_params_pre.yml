@@ -19,8 +19,8 @@ inversion :
 
 parallel :
   n_sims : 2         # number of simultaneous run
-  ndiv_rtp : [1,1,1] # number of subdomains
-  nproc_sub : 1      # number of subprocess used for each subdomain
+  ndiv_rtp : [1,1,2] # number of subdomains
+  nproc_sub : 2      # number of subprocess used for each subdomain
 
 calculation :
   convergence_tolerance : 1e-4
