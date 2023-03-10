@@ -160,7 +160,7 @@ lon_srcs=[]
 lat_srcs=[]
 
 # teleseismic events
-n_src_tele = 30
+n_src_tele = 4
 center_lon = (pp2deg+pp1deg)/2.0
 center_lat = (tt2deg+tt1deg)/2.0
 r_src = 50 # deg
@@ -207,6 +207,8 @@ for i_src in range(n_src):
     dep = dep_srcs[i_src]
     lon = lon_srcs[i_src]
     lat = lat_srcs[i_src]
+    # put independent name for each source
+    id_dummy = "src_"+str(i_src)
 
     src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
     lines.append(src)
@@ -218,8 +220,9 @@ for i_src in range(n_src):
         #elev_rec = random.uniform(0.0,-10.0) # elevation in m
         #lon_rec  = random.uniform(pp1deg,pp2deg)
         #lat_rec  = random.uniform(tt1deg,tt2deg)
+        st_name_dummy = "rec_"+str(rec_names[i_rec])
 
-        rec = [i_src, i_rec, st_name_dummy+"_"+str(i_rec), lat_recs[i_rec], lon_recs[i_rec], elev_recs[i_rec], phase_dummy, arriv_t_dummy]
+        rec = [i_src, i_rec, st_name_dummy, lat_recs[i_rec], lon_recs[i_rec], elev_recs[i_rec], phase_dummy, arriv_t_dummy]
         lines.append(rec)
 
         pos_rec.append([lon_recs[i_rec],lat_recs[i_rec],elev_recs[i_rec]])
