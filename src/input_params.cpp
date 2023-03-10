@@ -725,21 +725,26 @@ CUSTOMREAL InputParams::get_src_lon(const std::string& name_sim_src) {
 SrcRecInfo& InputParams::get_src_point(std::string name_src){
 
     if (subdom_main){
-        for (auto& src: src_map){
-            if (src.second.name == name_src)
-                return src.second;
-        }
+        // THIS LOOP MAKE THE SPEED 10x SLOWER
+        //for (auto& src: src_map){
+        //    if (src.second.name == name_src)
+        //        return src.second;
+        //}
 
-        // if not found, return error
-        std::cout << "Error: src name " << name_src << " not found!" << std::endl;
-        // assigned src id
-        std::cout << "Assigned src names to this simultanous run : ";
-        for (auto& src: src_map){
-            std::cout << src.second.name << " ";
-        }
-        std::cout << std::endl;
+        if (src_map.find(name_src) != src_map.end())
+            return src_map[name_src];
+        else {
+            // if not found, return error
+            std::cout << "Error: src name " << name_src << " not found!" << std::endl;
+            // assigned src id
+            std::cout << "Assigned src names to this simultanous run : ";
+            for (auto& src: src_map){
+                std::cout << src.second.name << " ";
+            }
+            std::cout << std::endl;
 
-        exit(1);
+            exit(1);
+        }
     } else {
         // return error because non-subdom_main process should not call this function
         std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
@@ -750,10 +755,22 @@ SrcRecInfo& InputParams::get_src_point(std::string name_src){
 
 SrcRecInfo& InputParams::get_rec_point(std::string name_rec) {
     if (subdom_main){
-        for (auto& rec: rec_map) {
-            if (rec.second.name == name_rec)
-                return rec.second;
+
+        // THIS LOOP MAKE THE SPEED 10x SLOWER
+        //for (auto& rec: rec_map) {
+        //    if (rec.second.name == name_rec)
+        //        return rec.second;
+        //}
+
+        // check if rec_map[name_rec] exists
+        if (rec_map.find(name_rec) != rec_map.end())
+            return rec_map[name_rec];
+        else {
+            // if not found, return error
+            std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
+            exit(1);
         }
+
 
         // if not found, return error
         std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
