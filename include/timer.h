@@ -8,7 +8,7 @@
 
 class Timer {
 public:
-    Timer(std::string& name){
+    Timer(std::string name){
         this->name = name;
         this->start_timer();
     };
@@ -28,8 +28,7 @@ public:
         end = std::clock();
 
         // print time
-        if (if_verbose)
-            std::cout << "Time for " << name << ": " << (double)(end - start) / CLOCKS_PER_SEC << " sec" << std::endl;
+        std::cout << "Time for " << name << ": " << (double)(end - start) / CLOCKS_PER_SEC << " sec" << std::endl;
     };
 
     double get_t_delta(){

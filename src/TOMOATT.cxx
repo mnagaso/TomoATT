@@ -19,6 +19,8 @@
 #include "cuda_initialize.cuh"
 #endif
 
+#include "timer.h"
+
 //#ifdef USE_BLAS
 //#include "cblas.h"
 //#endif
@@ -29,18 +31,24 @@ int main(int argc, char *argv[])
     // parse options
     parse_options(argc, argv);
 
+Timer timer("initialize_mpi");
     // initialize mpi
     initialize_mpi();
+timer.stop_timer();
 
     stdout_by_rank_zero("------------------------------------------------------");
     stdout_by_rank_zero("start TOMOATT forward or inversion calculation.");
     stdout_by_rank_zero("------------------------------------------------------");
 
+Timer timer2("read input file");
     // read input file
     InputParams IP(input_file);
+timer2.stop_timer();
 
+Timer timer3("create output directory");
     // create output directory
     create_output_dir(output_dir);
+timer3.stop_timer();
 
 #ifdef USE_CUDA
     // initialize cuda
@@ -53,37 +61,55 @@ int main(int argc, char *argv[])
         print_simd_type();
 #endif
 
+Timer timer4("check total number of mpi processes and ndiv");
     // check the number of mpi processes and ndiv setting is consistent
     check_total_nprocs_and_ndiv();
+timer4.stop_timer();
 
+Timer timer5("split mpi communicator");
     // split mpi communicator for simultaneous run, subdomain division and sweep parallelization
     split_mpi_comm();
+timer5.stop_timer();
 
+Timer timer6("prepare src list");
     // assign source for each simultaneous run group
     IP.prepare_src_list();
+timer6.stop_timer();
 
+Timer timer7("io");
     // initialize file IO object
     IO_utils io(IP); // create IO object for main and non-main process as well
+timer7.stop_timer();
 
+Timer timer8("grid");
     // initialize compute grids
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
+timer8.stop_timer();
 
+Timer timer9("write inversion grid file");
     // output inversion grid file (by main process)
     grid.write_inversion_grid_file();
+timer9.stop_timer();
 
+Timer timer10("setup inversion grids");
     // initialize inversion grids (by other process)
     grid.setup_inversion_grids(IP);
+timer10.stop_timer();
 
+Timer timer11("write grid file");
     if (subdom_main) {
         // output grid data (grid data is only output in the main simulation)
         io.write_grid(grid);
     }
+timer11.stop_timer();
+
 
     // preapre teleseismic boundary conditions (do nothing if no teleseismic source is defined)
     prepare_teleseismic_boundary_conditions(IP, grid, io);
 
     synchronize_all_world();
 
+Timer timer12("run forward only or inversion");
     //
     // run main calculation routines depending on specified mode
     //
@@ -98,11 +124,14 @@ int main(int argc, char *argv[])
         std::cerr << "Error: invalid run mode is specified." << std::endl;
         exit(1);
     }
+timer12.stop_timer();
 
+Timer timer13("output final model");
     // output final state of the model
     if (IP.get_is_output_final_model()) {
         io.write_final_model(grid, IP);
     }
+timer13.stop_timer();
 
 
     // finalize cuda
@@ -110,8 +139,10 @@ int main(int argc, char *argv[])
     if (use_gpu) finalize_cuda();
 #endif
 
+Timer timer14("finalize mpi");
     // finalize mpi
     finalize_mpi();
+timer14.stop_timer();
 
     stdout_by_rank_zero("------------------------------------------------------");
     stdout_by_rank_zero("end TOMOATT solver.");
