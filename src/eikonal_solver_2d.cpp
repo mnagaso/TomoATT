@@ -6,13 +6,9 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 
     if (subdom_main) {
         // iterate over all sources for calculating gradient of objective function
-        for (int i_src = 0; i_src < (int)IP.src_id2name_comm_src.size(); i_src++){
+        for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-            std::string name_sim_src = IP.src_id2name_comm_src[i_src];
-
-            // check if the source is teleseismic or not
-            if (IP.get_if_src_teleseismic(name_sim_src) == false)
-                continue;
+            std::string name_sim_src = IP.src_id2name[i_src];
 
             // get source info
             SrcRecInfo& src = IP.get_src_point(name_sim_src);

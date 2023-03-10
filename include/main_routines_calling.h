@@ -99,7 +99,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     bool first_src = true;
 
     if(myrank == 0)
-        std::cout << "size of src_map: " << IP.src_map.size() << std::endl;
+        std::cout << "id_sim: " << id_sim << ", size of src_map: " << IP.src_map.size() << std::endl;
 
     // prepare objective_function file
     std::ofstream out_main; // close() is not mandatory

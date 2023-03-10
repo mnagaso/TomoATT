@@ -470,7 +470,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
             src.is_out_of_region       = true;
             src_map_tele[iter->first] = src;
         } else {
-            // within region (teleseismic events)
+            // within region (local events)
             src.is_out_of_region  = false;
             src_map[iter->first] = src;
         }
@@ -942,6 +942,7 @@ void send_src_info_inter_sim(SrcRecInfo &src, int dest){
     send_cr_single_sim(&src.mag, dest);
     send_i_single_sim(&src.n_data, dest);
     send_str_sim(src.name, dest);
+    send_bool_single_sim(&src.is_out_of_region, dest);
 
 }
 
@@ -960,6 +961,7 @@ void recv_src_info_inter_sim(SrcRecInfo &src, int orig){
     recv_cr_single_sim(&src.mag, orig);
     recv_i_single_sim(&src.n_data, orig);
     recv_str_sim(src.name, orig);
+    recv_bool_single_sim(&src.is_out_of_region, orig);
 }
 
 

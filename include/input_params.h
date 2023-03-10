@@ -42,10 +42,10 @@ public:
     CUSTOMREAL                  get_src_lon(   const std::string&);
     std::string                 get_src_rec_file()      {return src_rec_file;};
     bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
-    bool                        get_if_src_teleseismic(std::string); // return true if the source is teleseismic
-    SrcRecInfo&                 get_src_point(std::string);  // return SrcRec object
-    SrcRecInfo&                 get_rec_point(std::string);  // return receivers for the current source
-    std::vector<std::string>    get_rec_names(std::string); // return SrcRec object
+    bool                        get_if_src_teleseismic(const std::string&); // return true if the source is teleseismic
+    SrcRecInfo&                 get_src_point(const std::string&);  // return SrcRec object
+    SrcRecInfo&                 get_rec_point(const std::string&);  // return receivers for the current source
+    std::vector<std::string>    get_rec_names(const std::string&); // return SrcRec object
 
     CUSTOMREAL get_conv_tol()                    {return conv_tol;};
     void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
@@ -99,6 +99,62 @@ public:
     bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
     bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
     CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
+
+    // prepare source list for this simulation group
+    void prepare_src_map();
+
+    // (relocation) modify (swapped source) receiver's location and time
+    void modift_swapped_source_location();
+
+    // write out src_rec_file
+    void write_src_rec_file(int);
+
+    // write out station_correction_file
+    void write_station_correction_file(int);
+
+    // station correction
+    void station_correction_update( CUSTOMREAL );
+
+    std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
+    std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
+    std::map<std::string, SrcRecInfo> src_map_comm_src;     // map of sources with common source
+    std::map<std::string, SrcRecInfo> src_map_tele;         // source list for teleseismic
+    std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
+    std::vector<std::string>          src_id2name_comm_src; // name list of sources with common source
+    std::vector<std::string>          src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
+    std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
+
+    std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
+    std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
+    std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
+
+    std::map< std::string, std::map<std::string, DataInfo>> data_map_all;     // data list for all data (full information is only stored by the main process)
+    std::map< std::string, std::map<std::string, DataInfo>> data_map;         // data list for this simultaneous group
+    std::map< std::string, std::map<std::string, DataInfo>> data_map_tele;    // data list for teleseismic
+
+    // backups used when outputing the data
+    std::map<std::string, SrcRecInfo>                      src_map_back;
+    std::map<std::string, SrcRecInfo>                      rec_map_back;
+    std::map<std::string, std::map<std::string, DataInfo>> data_map_back;
+
+    // the number of data
+    int N_abs_local_data    = 0;
+    int N_cr_dif_local_data = 0;
+    int N_cs_dif_local_data = 0;
+    int N_teleseismic_data  = 0;
+    // the number of the types of data
+    int N_data_type = 0;
+    std::map<std::string, int> data_type;     // element: "abs", "cs_dif", "cr_dif", "tele"
+
+    // initialize_adjoint_source
+    void initialize_adjoint_source();
+    // set adjoint source
+    void set_adjoint_source(std::string, CUSTOMREAL);
+
+    void allocate_memory_tele_boundaries(int, int, int, std::string,
+        bool, bool, bool, bool, bool); // allocate memory for tele boundaries
+
+
 private:
     // boundary information
     CUSTOMREAL min_dep; // minimum depth in km
@@ -152,93 +208,18 @@ private:
     int stencil_type  = 0; // stencil type  (0: non upwind; 1: upwind)
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
-public:
-    std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
-    std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
-    std::map<std::string, SrcRecInfo> src_map_comm_src;     // map of sources with common source
-    std::map<std::string, SrcRecInfo> src_map_tele;         // source list for teleseismic
-    std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
-    std::vector<std::string>          src_id2name_comm_src; // name list of sources with common source
-    std::vector<std::string>          src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
-    std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
-
-    std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
-    std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
-    std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
-
-    std::map< std::string, std::map<std::string, DataInfo>> data_map_all;     // data list for all data (full information is only stored by the main process)
-    std::map< std::string, std::map<std::string, DataInfo>> data_map;         // data list for this simultaneous group
-    std::map< std::string, std::map<std::string, DataInfo>> data_map_tele;    // data list for teleseismic
-
-    // backups used when outputing the data
-    std::map<std::string, SrcRecInfo>                      src_map_back;
-    std::map<std::string, SrcRecInfo>                      rec_map_back;
-    std::map<std::string, std::map<std::string, DataInfo>> data_map_back;
-
-    // the number of data
-    int N_abs_local_data    = 0;
-    int N_cr_dif_local_data = 0;
-    int N_cs_dif_local_data = 0;
-    int N_teleseismic_data  = 0;
-    // the number of the types of data
-    int N_data_type = 0;
-    std::map<std::string, int> data_type;     // element: "abs", "cs_dif", "cr_dif", "tele"
-
-    // functions for SrcRecInfo
-
-    // initialize_adjoint_source
-    void initialize_adjoint_source();
-    // set adjoint source
-    void set_adjoint_source(std::string, CUSTOMREAL);
-
-    // new version for reading src rec data (by Chen Jing, 20230212)
-    // MNMN: return reference (&) of the map otherwise it will be a copy and take a unnecessary memory and time
-    SrcRecInfo& get_src_map(std::string);
-    SrcRecInfo& get_rec_map(std::string);
-
-private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
-    // create a source name based map of data info
-    //void generate_map_of_data_info_by_src_name();
     // geneerate a map of sources which include common source double difference data
     void generate_src_map_with_common_source();
 
-    // generate/initialize synthetic time data map "syn_time_list" based on data
-    void initialize_syn_time_map();
-
-public:
-    //void initialize_syn_time_list();
-    //void reduce_syn_time_list();
-private:
     bool i_first=false, i_last=false, \
          j_first=false, j_last=false, \
          k_first=false; // store info if this subdomain has outer boundary
 
-public:
-    void allocate_memory_tele_boundaries(int, int, int, std::string,
-        bool, bool, bool, bool, bool); // allocate memory for tele boundaries
-private:
     // check contradictions in input parameters
     void check_contradictions();
 
-public:
-    // prepare source list for this simulation group
-    void prepare_src_map();
-
-    // (relocation) modify (swapped source) receiver's location and time
-    void modift_swapped_source_location();
-
-    // write out src_rec_file
-    void write_src_rec_file(int);
-
-    // write out station_correction_file
-    void write_station_correction_file(int);
-
-    // station correction
-    void station_correction_update( CUSTOMREAL );
-
-private:
     // output setting
     bool is_output_source_field = false; // output out_data_sim_X.h or not.
     bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.

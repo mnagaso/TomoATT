@@ -63,14 +63,14 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                 std::string name_rec      = data.name_rec;
                 CUSTOMREAL syn_time       = data.travel_time;
                 CUSTOMREAL obs_time       = data.travel_time_obs;
-                CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
+                CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
                 IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
                 // contribute misfit
                 obj     += 1.0 * my_square(syn_time - obs_time)*data.weight;
                 misfit  += 1.0 * my_square(syn_time - obs_time);
 
-                if (IP.get_src_map(name_src).is_out_of_region || IP.get_rec_map(name_rec).is_out_of_region){
+                if (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region){
                     obj_tele        +=  1.0 * my_square(syn_time - obs_time)*data.weight;
                     misfit_tele     +=  1.0 * my_square(syn_time - obs_time);
                 } else{
@@ -95,7 +95,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     CUSTOMREAL syn_dif_time   = IP.data_map[name_src1][name_rec].travel_time - IP.data_map[name_src2][name_rec].travel_time;
                     CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
-                    CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
 
                     IP.set_adjoint_source(name_rec, adjoint_source);
 
@@ -103,9 +103,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                     misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
-                    if (IP.get_src_map(name_src1).is_out_of_region || \
-                        IP.get_src_map(name_src2).is_out_of_region || \
-                        IP.get_rec_map(name_rec).is_out_of_region){
+                    if (IP.get_src_point(name_src1).is_out_of_region || \
+                        IP.get_src_point(name_src2).is_out_of_region || \
+                        IP.get_rec_point(name_rec).is_out_of_region){
                         obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);   // because a pair sf sources are counted twice, thus * 0.5
                     } else{
@@ -117,7 +117,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     CUSTOMREAL syn_dif_time   = IP.data_map[name_src2][name_rec].travel_time - IP.data_map[name_src1][name_rec].travel_time;
                     CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
-                    CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
 
                     IP.set_adjoint_source(name_rec, adjoint_source);
 
@@ -125,9 +125,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                     misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
-                    if (IP.get_src_map(name_src1).is_out_of_region || \
-                        IP.get_src_map(name_src2).is_out_of_region || \
-                        IP.get_rec_map(name_rec).is_out_of_region){
+                    if (IP.get_src_point(name_src1).is_out_of_region || \
+                        IP.get_src_point(name_src2).is_out_of_region || \
+                        IP.get_rec_point(name_rec).is_out_of_region){
                         obj_tele        +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         misfit_tele     +=  0.5 * my_square(syn_dif_time - obs_dif_time);
                     } else{
@@ -151,19 +151,19 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                 CUSTOMREAL syn_dif_time = IP.data_map[name_src][name_rec1].travel_time - IP.data_map[name_src][name_rec2].travel_time;
                 CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
-                CUSTOMREAL adjoint_source = IP.get_rec_map(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+                CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
                 IP.set_adjoint_source(name_rec1, adjoint_source);
 
-                adjoint_source = IP.get_rec_map(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
+                adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
                 IP.set_adjoint_source(name_rec2, adjoint_source);
 
                 // contribute misfit
                 obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                 misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
 
-                if (IP.get_src_map(name_src).is_out_of_region || \
-                    IP.get_rec_map(name_rec1).is_out_of_region || \
-                    IP.get_rec_map(name_rec2).is_out_of_region){
+                if (IP.get_src_point(name_src).is_out_of_region || \
+                    IP.get_rec_point(name_rec1).is_out_of_region || \
+                    IP.get_rec_point(name_rec2).is_out_of_region){
                     obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                     misfit_tele     += 1.0 * my_square(syn_dif_time - obs_dif_time);
                 } else{

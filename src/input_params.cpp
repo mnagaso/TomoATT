@@ -722,7 +722,7 @@ CUSTOMREAL InputParams::get_src_lon(const std::string& name_sim_src) {
 }
 
 
-SrcRecInfo& InputParams::get_src_point(std::string name_src){
+SrcRecInfo& InputParams::get_src_point(const std::string& name_src){
 
     if (subdom_main){
         // THIS LOOP MAKE THE SPEED 10x SLOWER
@@ -731,9 +731,9 @@ SrcRecInfo& InputParams::get_src_point(std::string name_src){
         //        return src.second;
         //}
 
-        if (src_map.find(name_src) != src_map.end())
+        //if (src_map.find(name_src) != src_map.end()) // THIS SHOULD ALSO BE AVOIDED
             return src_map[name_src];
-        else {
+        //else {
             // if not found, return error
             std::cout << "Error: src name " << name_src << " not found!" << std::endl;
             // assigned src id
@@ -744,7 +744,7 @@ SrcRecInfo& InputParams::get_src_point(std::string name_src){
             std::cout << std::endl;
 
             exit(1);
-        }
+        //}
     } else {
         // return error because non-subdom_main process should not call this function
         std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
@@ -753,7 +753,7 @@ SrcRecInfo& InputParams::get_src_point(std::string name_src){
 }
 
 
-SrcRecInfo& InputParams::get_rec_point(std::string name_rec) {
+SrcRecInfo& InputParams::get_rec_point(const std::string& name_rec) {
     if (subdom_main){
 
         // THIS LOOP MAKE THE SPEED 10x SLOWER
@@ -763,13 +763,13 @@ SrcRecInfo& InputParams::get_rec_point(std::string name_rec) {
         //}
 
         // check if rec_map[name_rec] exists
-        if (rec_map.find(name_rec) != rec_map.end())
+        //if (rec_map.find(name_rec) != rec_map.end()) // THIS SHOULD ALSO BE AVOIDED
             return rec_map[name_rec];
-        else {
-            // if not found, return error
-            std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
-            exit(1);
-        }
+        //else {
+        //    // if not found, return error
+        //    std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
+        //    exit(1);
+        //}
 
 
         // if not found, return error
@@ -783,7 +783,7 @@ SrcRecInfo& InputParams::get_rec_point(std::string name_rec) {
 }
 
 
-std::vector<std::string> InputParams::get_rec_names(std::string name_src){
+std::vector<std::string> InputParams::get_rec_names(const std::string& name_src){
     std::vector<std::string> rec_names;
 
     for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++) {
@@ -794,7 +794,7 @@ std::vector<std::string> InputParams::get_rec_names(std::string name_src){
 
 
 
-bool InputParams::get_if_src_teleseismic(std::string src_name) {
+bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
     bool if_src_teleseismic;
 
     if (subdom_main)
@@ -828,7 +828,7 @@ void InputParams::prepare_src_map(){
                            src_id2name_all);
 
         // read station correction file by all processes
-        if (sta_correction_file_exist && id_sim==0 && subdom_main) {
+        if (sta_correction_file_exist) {
             // store all src/rec info
             parse_sta_correction_file(sta_correction_file,
                                       rec_map_all);
@@ -874,7 +874,7 @@ void InputParams::prepare_src_map(){
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
-   } // end of if (src_rec_file_exist && id_sim==0 && subdom_main)
+    } // end of if (src_rec_file_exist && id_sim==0 && subdom_main)
 
     // wait
     synchronize_all_world();
@@ -902,14 +902,14 @@ void InputParams::prepare_src_map(){
                                 data_map,
                                 src_id2name);
 
-        // now src_id2name_all includes all src names of after swapping src and rec
-        //     src_id2name     includes only src names of this simultaneous run group
+        // now src_id2name_all  includes all src names of after swapping src and rec
+        //     src_id2name      includes only src names of this simultaneous run group
         //     src_id2name_back includes only src names of this simultaneous run group before swapping src and rec
 
         synchronize_all_world();
 
-
-        std::cout << "end parse src_rec file" << std::endl;
+        if (world_rank==0)
+            std::cout << "end parse src_rec file" << std::endl;
     } // end of if src_rec_file_exists
 }
 
@@ -930,29 +930,29 @@ void InputParams::generate_src_map_with_common_source(){
 }
 
 
-void InputParams::initialize_syn_time_map(){
-
-    for (auto iter_src = data_map.begin(); iter_src != data_map.end(); iter_src++){
-        for (auto iter_rec = iter_src->second.begin(); iter_rec != iter_src->second.end(); iter_rec++){
-            DataInfo& data = iter_rec->second;
-
-            // add absolute traveltime
-            if(data.is_src_rec){
-                data_map[data.name_src][data.name_rec].travel_time = 0.0;
-
-            // add common source differential traveltime
-            } else if (data.is_rec_pair){
-                data_map[data.name_src_single][data.name_rec_pair[0]].travel_time = 0.0;
-                data_map[data.name_src_single][data.name_rec_pair[1]].travel_time = 0.0;
-
-            // add common receiver differential traveltime
-            } else if (data.is_src_pair){
-                data_map[data.name_src_pair[0]][data.name_rec_single].travel_time = 0.0;
-                data_map[data.name_src_pair[1]][data.name_rec_single].travel_time = 0.0;
-            }
-        }
-    }
-}
+//void InputParams::initialize_syn_time_map(){
+//
+//    for (auto iter_src = data_map.begin(); iter_src != data_map.end(); iter_src++){
+//        for (auto iter_rec = iter_src->second.begin(); iter_rec != iter_src->second.end(); iter_rec++){
+//            DataInfo& data = iter_rec->second;
+//
+//            // add absolute traveltime
+//            if(data.is_src_rec){
+//                data_map[data.name_src][data.name_rec].travel_time = 0.0;
+//
+//            // add common source differential traveltime
+//            } else if (data.is_rec_pair){
+//                data_map[data.name_src_single][data.name_rec_pair[0]].travel_time = 0.0;
+//                data_map[data.name_src_single][data.name_rec_pair[1]].travel_time = 0.0;
+//
+//            // add common receiver differential traveltime
+//            } else if (data.is_src_pair){
+//                data_map[data.name_src_pair[0]][data.name_rec_single].travel_time = 0.0;
+//                data_map[data.name_src_pair[1]][data.name_rec_single].travel_time = 0.0;
+//            }
+//        }
+//    }
+//}
 
 void InputParams::initialize_adjoint_source(){
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
@@ -965,24 +965,6 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
         rec_map[name_rec].adjoint_source = adjoint_source;
     } else {
         std::cout << "error !!!, undefined receiver name when adding adjoint source: " << name_rec << std::endl;
-    }
-}
-
-SrcRecInfo& InputParams::get_src_map(std::string name_src){
-    if (src_map.find(name_src) != src_map.end()){
-        return src_map[name_src];
-    } else {
-        std::cout << "error !!!, undefined source name when get src " << name_src << " in src_map: " << std::endl;
-        abort();
-    }
-}
-
-SrcRecInfo& InputParams::get_rec_map(std::string name_rec){
-    if (rec_map.find(name_rec) != rec_map.end()){
-        return rec_map[name_rec];
-    } else {
-        std::cout << "error !!!, undefined receiver name when get rec " << name_rec << " in rec_map: " << std::endl;
-        abort();
     }
 }
 
