@@ -438,7 +438,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             } // end ijk
 
             // mpi synchronization
-            synchronize_all_sub(); // sim 0 and 1 main stops here
+            synchronize_all_sub();
 
         } // end loop i_level
 
@@ -499,7 +499,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             int* dump_ijp2k = vv_i__jp2k__.at(iswp).at(i_level);
             int* dump_ijm2k = vv_i__jm2k__.at(iswp).at(i_level);
             int* dump_ijkp2 = vv_i__j__kp2.at(iswp).at(i_level);
-            int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level);
+            int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level); /////////////////////////////////////
 
             // load data of all nodes in one level on temporal aligned array
             for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
@@ -1016,7 +1016,7 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
             } // end ijk
 
             // mpi synchronization
-            synchronize_all_sub();
+            synchronize_all_sub(); ///////////////////////////////////////
 
         } // end loop i_level
 

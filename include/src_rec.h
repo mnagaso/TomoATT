@@ -38,12 +38,12 @@ public:
 
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
     bool        is_out_of_region    = false;   // is the source or receiver in the region; false: in the refion; true: teleseismic
-    CUSTOMREAL* arr_times_bound_N   = nullptr;   // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E   = nullptr;   // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W   = nullptr;   // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S   = nullptr;   // arrival time of the receiver at the south boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_N   = nullptr; // arrival time of the receiver at the north boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_E   = nullptr; // arrival time of the receiver at the east boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_W   = nullptr; // arrival time of the receiver at the west boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_S   = nullptr; // arrival time of the receiver at the south boundary of the subdomain
     CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
-    bool*       is_bound_src;        // true if the source is on the boundary surface
+    bool*       is_bound_src;                  // true if the source is on the boundary surface
 
     // kernel
     CUSTOMREAL sta_correct = 0.0;

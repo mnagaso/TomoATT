@@ -93,7 +93,6 @@ void IO_utils::init_data_output_file() {
             if (id_subdomain == 0)
                 write_xdmf_file_grid();
 
-            //store_xdmf_obj();
             // create output file
             h5_create_file_by_group_main(h5_output_fname); // file for field data
         }

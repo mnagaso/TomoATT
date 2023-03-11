@@ -43,9 +43,9 @@ public:
     std::string                 get_src_rec_file()      {return src_rec_file;};
     bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
     bool                        get_if_src_teleseismic(const std::string&); // return true if the source is teleseismic
-    SrcRecInfo&                 get_src_point(const std::string&);  // return SrcRec object
-    SrcRecInfo&                 get_rec_point(const std::string&);  // return receivers for the current source
-    std::vector<std::string>    get_rec_names(const std::string&); // return SrcRec object
+    SrcRecInfo&                 get_src_point(const std::string&);          // return SrcRec object
+    SrcRecInfo&                 get_rec_point(const std::string&);          // return receivers for the current source
+    std::vector<std::string>    get_rec_names(const std::string&);          // return SrcRec object
 
     CUSTOMREAL get_conv_tol()                    {return conv_tol;};
     void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};

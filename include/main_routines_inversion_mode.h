@@ -126,11 +126,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic, name_sim_src);
 
-        // this should not be called here, for the case that the simultaneous run group has different number of sources
-        //synchronize_all_world();
-        // instead we use synchro function for processes within each simultaneous run group
-        //synchronize_all_sim(); // but it is not necessary
-
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
 
@@ -218,7 +213,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     } // end for i_src
 
     // synchronize all processes
-    synchronize_all_world(); // sim 0 1 sub stops here
+    synchronize_all_world();
 
     // allreduce sum_adj_src
     for(int i = 0; i < (int)v_obj_misfit.size(); i++){

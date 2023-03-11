@@ -45,13 +45,6 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
                     // distance between the source and grid point
-                    /*
-                    CUSTOMREAL dist = std::sqrt(my_square( grid.r_loc_1d[kkr]-src_r) \
-                                    + my_square( src_r*(grid.t_loc_1d[jjt]-src_lat)) \
-                                    + my_square( src_r*std::cos(src_lat)*(grid.p_loc_1d[iip]-src_lon)));
-
-                    if (dist >= r_kermel_mask) { // mask around the source
-                    */
 
                     // mask within one grid around the source
                     if (std::abs(grid.r_loc_1d[kkr]-src_r)   >= dr \

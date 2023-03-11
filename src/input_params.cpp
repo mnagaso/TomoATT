@@ -802,9 +802,8 @@ bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
     else
         if_src_teleseismic = false; // need to be broadcasted from subdom_main later
 
-    // !! This should not be don here, but done clearly at the out of this function
     // broadcast to all processes within simultaneous run group
-    //broadcast_bool_single_sub(if_src_teleseismic, 0);
+    broadcast_bool_single_sub(if_src_teleseismic, 0);
 
     return if_src_teleseismic;
 }
@@ -929,30 +928,6 @@ void InputParams::generate_src_map_with_common_source(){
     }
 }
 
-
-//void InputParams::initialize_syn_time_map(){
-//
-//    for (auto iter_src = data_map.begin(); iter_src != data_map.end(); iter_src++){
-//        for (auto iter_rec = iter_src->second.begin(); iter_rec != iter_src->second.end(); iter_rec++){
-//            DataInfo& data = iter_rec->second;
-//
-//            // add absolute traveltime
-//            if(data.is_src_rec){
-//                data_map[data.name_src][data.name_rec].travel_time = 0.0;
-//
-//            // add common source differential traveltime
-//            } else if (data.is_rec_pair){
-//                data_map[data.name_src_single][data.name_rec_pair[0]].travel_time = 0.0;
-//                data_map[data.name_src_single][data.name_rec_pair[1]].travel_time = 0.0;
-//
-//            // add common receiver differential traveltime
-//            } else if (data.is_src_pair){
-//                data_map[data.name_src_pair[0]][data.name_rec_single].travel_time = 0.0;
-//                data_map[data.name_src_pair[1]][data.name_rec_single].travel_time = 0.0;
-//            }
-//        }
-//    }
-//}
 
 void InputParams::initialize_adjoint_source(){
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){

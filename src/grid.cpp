@@ -23,16 +23,6 @@ Grid::Grid(InputParams& IP, IO_utils& io) {
     if (subdom_main)
         setup_grid_params(IP, io);
 
-    // distribute some parameters for unmain processes of subdmains
-    //if (n_subprocs > 1) {
-    //    broadcast_i_single_sub(loc_I,0);
-    //    broadcast_i_single_sub(loc_J,0);
-    //    broadcast_i_single_sub(loc_K,0);
-    //    broadcast_cr_single_sub(dr,0);
-    //    broadcast_cr_single_sub(dt,0);
-    //    broadcast_cr_single_sub(dp,0);
-    //}
-
 }
 
 Grid::~Grid() {
