@@ -988,7 +988,7 @@ void InputParams::gather_all_arrival_times_to_main(){
                         // then receive travel time
                         recv_cr_single_sim(&(data_map_all[name_src][name_rec].travel_time), id_sim_group);
                     }
-                } else {
+                } else if (id_sim == id_sim_group) {
                     // send
 
                     // send number of receivers
@@ -1001,6 +1001,8 @@ void InputParams::gather_all_arrival_times_to_main(){
                         // then send travel time
                         send_cr_single_sim(&(iter->second.travel_time), 0);
                     }
+                } else {
+                    // do nothing
                 }
             }
 
