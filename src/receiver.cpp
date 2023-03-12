@@ -734,12 +734,15 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 step_length = 0.5 * iter->second.vobj_src_reloc/my_square(norm_grad);
             }
 
-            // std::cout << "ckp2, id_sim" << id_sim
-            //         << ", src name: " << iter->first
-            //         << ", kernel k: " << iter->second.grad_chi_k
-            //         << ", kernel j: " << iter->second.grad_chi_j
-            //         << ", kernel i: " << iter->second.grad_chi_i
-            //         << std::endl;
+
+            // calculated grad are too small or even 0
+
+            //std::cout << "ckp2, id_sim" << id_sim
+            //        << ", src name: " << iter->first
+            //        << ", kernel k: " << iter->second.grad_chi_k
+            //        << ", kernel j: " << iter->second.grad_chi_j
+            //        << ", kernel i: " << iter->second.grad_chi_i
+            //        << std::endl;
 
             CUSTOMREAL update_max = -1.0;
             CUSTOMREAL update_dep = step_length * grad_dep_km;
@@ -758,6 +761,29 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
             iter->second.dep -= update_dep * downscale;
             iter->second.lat -= update_lat * downscale / (R_earth * DEG2RAD);
             iter->second.lon -= update_lon * downscale / (R_earth * DEG2RAD * cos(iter->second.lat * DEG2RAD));
+
+            // detect nan and inf then exit the program
+            if (std::isnan(iter->second.dep) || std::isinf(iter->second.dep) ||
+                std::isnan(iter->second.lat) || std::isinf(iter->second.lat) ||
+                std::isnan(iter->second.lon) || std::isinf(iter->second.lon)){
+                std::cout << "Error: nan or inf detected in source relocation!" << std::endl;
+                std::cout << "id_sim: " << id_sim
+                          << ", src name: " << iter->first
+                          << ", obj: " << iter->second.vobj_src_reloc
+                          << ", lat: " << iter->second.lat
+                          << ", lon: " << iter->second.lon
+                          << ", dep: " << iter->second.dep
+                          << ", ortime: " << iter->second.tau_opt
+                          << ", is_stop: " << iter->second.is_stop
+                          << ", grad_dep_km: " << grad_dep_km
+                          << ", grad_lat_km: " << grad_lat_km
+                          << ", grad_lon_km: " << grad_lon_km
+                          << ", vobj_src_reloc: " << iter->second.vobj_src_reloc
+                          << std::endl;
+
+                exit(1);
+            }
+
 
             if (norm_grad < TOL_SRC_RELOC || iter->second.step_length_max < TOL_STEP_SIZE){
                 iter->second.is_stop = true;
@@ -809,6 +835,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
             // check if the new receiver position is within the domain
             // if not then set the receiver position to the closest point on the domain
 
+            // grid size + 1% mergin to avoid the receiver position is exactly on the boundary
             CUSTOMREAL mergin_lon = 1.01 * grid.get_delta_lon();
             CUSTOMREAL mergin_lat = 1.01 * grid.get_delta_lat();
             CUSTOMREAL mergin_r   = 1.01 * grid.get_delta_r();
