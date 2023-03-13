@@ -34,7 +34,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         // check if this source is common receiver data
 
         if (myrank == 0)
-            std::cout << "source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
+            std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
 
         bool is_teleseismic = IP.get_src_point(name_sim_src).is_out_of_region;
 
@@ -97,11 +97,11 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         io.set_name_src(name_sim_src);
 
         if (myrank == 0)
-            std::cout << "source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
+            std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
 
         // set group name to be used for output in h5
         // TODO set id_sim_src and name_sim_src with this function
-        io.change_group_name_for_source_nv();
+        io.change_group_name_for_source();
 
         // output initial field
         if(first_src && IP.get_is_output_source_field()) {
@@ -200,7 +200,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             }
 
             // check adjoint source
-            // for (auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
+            // for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
             //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
             // }
 

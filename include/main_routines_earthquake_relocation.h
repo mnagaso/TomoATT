@@ -52,7 +52,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         io.set_name_src(name_sim_src);
 
         // set group name to be used for output in h5
-        io.change_group_name_for_source_nv();
+        io.change_group_name_for_source();
 
         // check if the source is teleseismic or not
         // because teleseismic source is not supported in this mode
@@ -156,7 +156,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         io.set_name_src(name_sim_src);
 
         // change target group to be read
-        io.change_group_name_for_source_nv();
+        io.change_group_name_for_source();
         // io.change_group_name_for_source();
 
         // load travel time field on grid.T_loc
@@ -187,10 +187,10 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         io.set_name_src(name_sim_src);
 
         // reset the file name to be read
-        io.change_group_name_for_source_nv();
+        io.change_group_name_for_source();
 
         // load travel time field on grid.T_loc
-        io.read_T_nv(grid);
+        io.read_T(grid);
 
         // calculate gradient at the actual source location
         recs.calculate_T_gradient(IP, grid, name_sim_src);

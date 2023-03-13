@@ -39,7 +39,7 @@ public:
 
     // change group name for source
     void change_group_name_for_source();
-    void change_group_name_for_source_nv();
+    // void change_group_name_for_source_nv();
     // change group name for model
     void change_group_name_for_model();
     // prepare grid for each inversion iteration
@@ -134,7 +134,7 @@ public:
     void read_model(std::string&, const char*, CUSTOMREAL*, int, int, int);
     // read Travel time from file for earthquake relocation
     void read_T(Grid&);
-    void read_T_nv(Grid&);
+    // void read_T_nv(Grid&);
 
     void read_data_ascii(Grid&, std::string&);
 
@@ -233,7 +233,7 @@ private:
 
     // utilities
     std::string create_fname_ascii(std::string&);
-    std::string create_fname_ascii_nv(std::string&);
+    // std::string create_fname_ascii_nv(std::string&);
     std::string create_fname_ascii_model(std::string&);
 
     // flag for data type
