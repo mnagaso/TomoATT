@@ -5,7 +5,7 @@
 #include "grid.h"
 #include "input_params.h"
 
-void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
+void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string& name_sim_src){
     // calculate sensitivity kernel
 
     // kernel calculation will be done only by the subdom_main
@@ -17,14 +17,15 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
         CUSTOMREAL dr      = grid.dr;
         CUSTOMREAL dt      = grid.dt;
         CUSTOMREAL dp      = grid.dp;
-        CUSTOMREAL src_lon = IP.get_src_lon();
-        CUSTOMREAL src_lat = IP.get_src_lat();
-        CUSTOMREAL src_r   = IP.get_src_radius();
+        CUSTOMREAL src_lon = IP.get_src_lon(   name_sim_src);
+        CUSTOMREAL src_lat = IP.get_src_lat(   name_sim_src);
+        CUSTOMREAL src_r   = IP.get_src_radius(name_sim_src);
 
-        // std::cout << ", id_sim: " << id_sim 
+
+        // std::cout << ", id_sim: " << id_sim
         //           << ", id_subdomain: " << id_subdomain
-        //           << ", id_sim_src: " << id_sim_src 
-        //           << ", subdom_main: " << subdom_main 
+        //           << ", id_sim_src: " << id_sim_src
+        //           << ", subdom_main: " << subdom_main
         //           << std::endl;
 
         CUSTOMREAL weight   = _1_CR;
@@ -44,13 +45,6 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP){
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
                     // distance between the source and grid point
-                    /*
-                    CUSTOMREAL dist = std::sqrt(my_square( grid.r_loc_1d[kkr]-src_r) \
-                                    + my_square( src_r*(grid.t_loc_1d[jjt]-src_lat)) \
-                                    + my_square( src_r*std::cos(src_lat)*(grid.p_loc_1d[iip]-src_lon)));
-
-                    if (dist >= r_kermel_mask) { // mask around the source
-                    */
 
                     // mask within one grid around the source
                     if (std::abs(grid.r_loc_1d[kkr]-src_r)   >= dr \

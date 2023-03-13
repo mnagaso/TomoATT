@@ -15,112 +15,169 @@
 #include "mpi_funcs.h"
 
 
-// strucutre for storing source or receiver information
-class SrcRec {
+// information of source or receiver
+class SrcRecInfo {
 public:
-    //
-    // default values, for the case of single source - receiver
-    //
-    int id_src = 0;
-    int id_rec = -9999;
-    int n_rec  = 0;
-    int n_data = 0;  // = n_rec + n_rec_pair
+    int id = -1;
+    std::string name = "unknown";
+    CUSTOMREAL dep; // stored as depth (km), so need to depth2radious function when using it in other part of the code
+    CUSTOMREAL lat; // stored in degree, but convarted to radian when passed through get_src_* function
+    CUSTOMREAL lon; // stored in degree, but convarted to radian when passed through get_src_* function
 
-    CUSTOMREAL dep = 0.0; // stored as depth (km), so need to depth2radious function when using it in other part of the code
-    CUSTOMREAL lat = 0.0; // stored in degree, but convarted to radian when passed through get_src_* function
-    CUSTOMREAL lon = 0.0; // stored in degree, but convarted to radian when passed through get_src_* function
+    int year             = -1;
+    int month            = -1;
+    int day              = -1;
+    int hour             = -1;
+    int min              = -1;
+    CUSTOMREAL sec       = -1.0;
+    CUSTOMREAL mag       = -1.0;
 
-    CUSTOMREAL arr_time     = 0.0; // calculated arrival time will be stored and updated during the simulation
-    CUSTOMREAL arr_time_ori = 0.0; // recorded/original arrival time (written in the input file)
-    CUSTOMREAL t_adj        = 0.0; // adjoint source time = calculated (arr_time) - recorded (arr_time_ori)
-    CUSTOMREAL weight       = 1.0; // weight
+    CUSTOMREAL adjoint_source = 0.0;
 
-    //
-    // another case of receiver pair (now only for teleseismicity/src-rec swap is not supported)
-    //
-    bool is_rec_pair = false;
-    int  n_rec_pair  = 0;
+    int n_data = 0;
 
-    std::vector<int>         id_rec_pair{ std::vector<int>(2)};
-    std::vector<CUSTOMREAL>  dep_pair{    std::vector<CUSTOMREAL>(2)};
-    std::vector<CUSTOMREAL>  lat_pair{    std::vector<CUSTOMREAL>(2)};
-    std::vector<CUSTOMREAL>  lon_pair{    std::vector<CUSTOMREAL>(2)};
-    std::vector<CUSTOMREAL>  ddt_adj_pair{std::vector<CUSTOMREAL>(2)}; // adjoint source time = [calculated (dif_arr_time) - recorded (dif_arr_time_ori)] * 1 (for 1) or * -1 (for 2)
-    std::vector<std::string> name_rec_pair = std::vector<std::string>(2);
-    std::vector<CUSTOMREAL>  station_correction_pair = {0.0, 0.0}; // station correction value (only use for teleseismic data)
-
-    CUSTOMREAL dif_arr_time     = 0.0; // calculated differential arrival time will be stored and updated during the simulation,  arr_time1 - arr_time2
-    CUSTOMREAL dif_arr_time_ori = 0.0; // recorded/original differential arrival time (written in the input file)
-
-
-    // common parameters for both cases
-
-    int year             = 9999;
-    int month            = 99;
-    int day              = 99;
-    int hour             = 99;
-    int min              = 99;
-    CUSTOMREAL sec       = 99;
-    CUSTOMREAL mag       = 99;
-    std::string name_src = "src_name_dummy";
-    std::string name_rec = "rec_name_dummy";
-    std::string phase    = "P";
-
-    // original ids of source/receiver before swapping
-    std::vector<int> id_srcs_ori;
-    // used for swapping case at writing process
-    int id_src_ori, id_rec_ori;
-
-    bool is_teleseismic = false;
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
-    CUSTOMREAL* arr_times_bound_N  = nullptr; // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E  = nullptr; // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W  = nullptr; // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S  = nullptr; // arrival time of the receiver at the south boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_Bot= nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
-    bool*       is_bound_src       = nullptr; // true if the source is on the boundary surface
+    bool        is_out_of_region    = false;   // is the source or receiver in the region; false: in the refion; true: teleseismic
+    CUSTOMREAL* arr_times_bound_N   = nullptr; // arrival time of the receiver at the north boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_E   = nullptr; // arrival time of the receiver at the east boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_W   = nullptr; // arrival time of the receiver at the west boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_S   = nullptr; // arrival time of the receiver at the south boundary of the subdomain
+    CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
+    bool*       is_bound_src;                  // true if the source is on the boundary surface
 
-    // params for source relocation
-    CUSTOMREAL DTk, DTj, DTi;                      // gradient of traveltime
-    CUSTOMREAL tau_opt;                            // optimal origin time
-    CUSTOMREAL sum_weight;                         // sum of weights of all sources
-    CUSTOMREAL grad_chi_k, grad_chi_j, grad_chi_i; // gradient of objective function
-    int        id_unique_list;                     // id of the source in the unique list
-    CUSTOMREAL vobj_src_reloc;                     // value of objective function
-    CUSTOMREAL vobj_grad_norm_src_reloc;           // norm of gradient of objective function
+    // kernel
+    CUSTOMREAL sta_correct = 0.0;
+    CUSTOMREAL sta_correct_kernel = 0.0;
+
+    // relocation
+    bool       is_stop      = false;
+    CUSTOMREAL tau_opt      = 0.0;
+    CUSTOMREAL grad_chi_i   = 0.0;
+    CUSTOMREAL grad_chi_j   = 0.0;
+    CUSTOMREAL grad_chi_k   = 0.0;
+    CUSTOMREAL sum_weight   = 0.0;
+    CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
+    CUSTOMREAL vobj_src_reloc           = 0.0;
+    CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
+    CUSTOMREAL DTi          = 0.0;
+    CUSTOMREAL DTj          = 0.0;
+    CUSTOMREAL DTk          = 0.0;
+    CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
+};
+
+class DataInfo {
+public:
+
+    CUSTOMREAL data_weight = 1.0;   // the weight in the src_rec file
+    CUSTOMREAL weight      = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+
+    std::string phase = "unknown";
+
+    bool is_src_rec = false; // absolute traveltime, single source - receiver
+
+    // source information
+    int         id_src   = -1;
+    std::string name_src = "unknown";
+
+    // receiver information
+    int         id_rec   = -1;
+    std::string name_rec = "unknown";
+
+    // traveltime
+    CUSTOMREAL travel_time     = -999.0;
+    CUSTOMREAL travel_time_obs = -999.0;
+
+    bool is_rec_pair = false;   // common source differential traveltime
+
+    // source infomation
+    int         id_src_single   = -1;
+    std::string name_src_single = "unknown";
+
+    // receiver pair infomation
+    std::vector<int>         id_rec_pair   = {-1,-1};
+    std::vector<std::string> name_rec_pair = {"unknown","unknown"};
+
+    // common source differential travel time
+    CUSTOMREAL cs_dif_travel_time     = -999.0;
+    CUSTOMREAL cs_dif_travel_time_obs = -999.0;
+
+    // source pair infomation
+    bool                     is_src_pair   = false;   // common receiver differential traveltime (for future)
+    std::vector<int>         id_src_pair   = {-1,-1};
+    std::vector<std::string> name_src_pair = {"unknown","unknown"};
+
+    // receiver infomation
+    int id_rec_single           = -1;
+    std::string name_rec_single = "unknown";
+
+    // common receiver differential travel time
+    CUSTOMREAL cr_dif_travel_time     = -999.0;
+    CUSTOMREAL cr_dif_travel_time_obs = -999.0;
 
 };
+
+
 
 // methods for managing SrcRec objects/lists
 
 // parse src_rec_file
 void parse_src_rec_file(std::string&                      , \
-                        std::vector<SrcRec>&              , \
-                        std::vector<std::vector<SrcRec>>& , \
-                        std::map<std::string, SrcRec>&    , \
-                        std::map<std::string, CUSTOMREAL>&, \
-                        std::map<std::string, CUSTOMREAL>&);
+                        std::map<std::string, SrcRecInfo>&, \
+                        std::map<std::string, SrcRecInfo>&, \
+                        std::map<std::string, std::map<std::string,DataInfo>>&, \
+                        std::vector<std::string>&);
+
 
 // parse sta_correctoion_file
 void parse_sta_correction_file(std::string&, \
-                               std::map<std::string, SrcRec>&, \
-                               std::map<std::string, CUSTOMREAL>&, \
-                               std::map<std::string, CUSTOMREAL>&);
-
+                               std::map<std::string, SrcRecInfo>&);
 
 // swap the sources and receivers
-void do_swap_src_rec(std::vector<SrcRec>& src_points,      std::vector<std::vector<SrcRec>>& rec_points, \
-                     std::vector<SrcRec>& src_points_back, std::vector<std::vector<SrcRec>>& rec_points_back);
+void do_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
+                     std::map<std::string, SrcRecInfo> &, \
+                     std::map<std::string, std::map<std::string, DataInfo>> &);
 
-// reverse the swapped src/rec
-void reverse_src_rec_points(std::vector<SrcRec>& src_points,      std::vector<std::vector<SrcRec>>& rec_points, \
-                            std::vector<SrcRec>& src_points_back, std::vector<std::vector<SrcRec>>& rec_points_back, \
-                            std::vector<SrcRec>& src_points_out,  std::vector<std::vector<SrcRec>>& rec_points_out, \
-                            const bool& swap_src_rec, const int& run_mode); // reverse the swapped src/rec
+// tele seismic source management
+void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, std::map<std::string,DataInfo>>&,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, std::map<std::string,DataInfo>>&,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, SrcRecInfo> &,
+                                           std::map<std::string, std::map<std::string,DataInfo>>&,
+                                           std::map<std::string, int>        &,
+                                           int                               &,
+                                           int                               &,
+                                           int                               &,
+                                           int                               &,
+                                           const CUSTOMREAL, const CUSTOMREAL,
+                                           const CUSTOMREAL, const CUSTOMREAL,
+                                           const CUSTOMREAL, const CUSTOMREAL);
 
-// writeout src_rec_file
-void writeout_src_rec_file(std::string&                      src_rec_file, \
-                           std::vector<SrcRec>&              src_points_out, \
-                           std::vector<std::vector<SrcRec>>& rec_points_out);
+void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
+                               std::map<std::string, SrcRecInfo> &,
+                               std::map<std::string, std::map<std::string,DataInfo>>&,
+                               std::map<std::string, SrcRecInfo> &,
+                               std::map<std::string, SrcRecInfo> &,
+                               std::map<std::string, std::map<std::string,DataInfo>>&);
+
+// distribute srcrec data to all simulation groups
+void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, std::map<std::string,DataInfo>>&, \
+                             std::vector<std::string>&, \
+                             std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, SrcRecInfo>&, \
+                             std::map<std::string, std::map<std::string,DataInfo>>&, \
+                             std::vector<std::string>&);
+
+void send_src_info_inter_sim(SrcRecInfo&, int);
+void recv_src_info_inter_sim(SrcRecInfo&, int);
+void send_rec_info_inter_sim(SrcRecInfo&, int);
+void recv_rec_info_inter_sim(SrcRecInfo&, int);
+void send_data_info_inter_sim(DataInfo&, int);
+void recv_data_info_inter_sim(DataInfo&, int);
 
 #endif //SRC_REC_H

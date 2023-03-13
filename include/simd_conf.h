@@ -20,7 +20,7 @@
 #include <immintrin.h>
 #elif USE_ARM_SVE
 #include <arm_sve.h>
-#endif // __
+#endif
 
 
 #if USE_AVX && !USE_AVX512

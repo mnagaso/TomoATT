@@ -5,8 +5,8 @@
 #endif
 
 
-Iterator_level::Iterator_level(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
-                : Iterator(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
+Iterator_level::Iterator_level(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                : Iterator(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
     // do nothing
 }
 
@@ -47,8 +47,8 @@ void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
 }
 
 
-Iterator_level_tele::Iterator_level_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
-                : Iterator(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
+Iterator_level_tele::Iterator_level_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                : Iterator(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
     // do nothing
 }
 
@@ -94,8 +94,8 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
 }
 
 
-Iterator_level_1st_order::Iterator_level_1st_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
-                         : Iterator_level(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
+Iterator_level_1st_order::Iterator_level_1st_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_level(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -397,8 +397,8 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 }
 
 
-Iterator_level_3rd_order::Iterator_level_3rd_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
-                         : Iterator_level(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
+Iterator_level_3rd_order::Iterator_level_3rd_order(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_level(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -499,7 +499,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             int* dump_ijp2k = vv_i__jp2k__.at(iswp).at(i_level);
             int* dump_ijm2k = vv_i__jm2k__.at(iswp).at(i_level);
             int* dump_ijkp2 = vv_i__j__kp2.at(iswp).at(i_level);
-            int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level);
+            int* dump_ijkm2 = vv_i__j__km2.at(iswp).at(i_level); /////////////////////////////////////
 
             // load data of all nodes in one level on temporal aligned array
             for (int _i_vec = 0; _i_vec < num_iter; _i_vec++) {
@@ -550,7 +550,7 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
             } // end of i_vec loop
 
             // mpi synchronization
-            synchronize_all_sub();
+            synchronize_all_sub(); // dead lock
 
         } // end of i_level loop
 
@@ -777,8 +777,8 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 //     }
 // }
 
-Iterator_level_1st_order_tele::Iterator_level_1st_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
-                         : Iterator_level_tele(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
+Iterator_level_1st_order_tele::Iterator_level_1st_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_level_tele(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -971,8 +971,8 @@ void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 }
 
 
-Iterator_level_3rd_order_tele::Iterator_level_3rd_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
-                         : Iterator_level_tele(IP, grid, src, io, first_init, is_teleseismic_in, is_second_run_in) {
+Iterator_level_3rd_order_tele::Iterator_level_3rd_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_level_tele(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
     // initialization is done in the base class
 }
 
@@ -1016,7 +1016,7 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
             } // end ijk
 
             // mpi synchronization
-            synchronize_all_sub();
+            synchronize_all_sub(); ///////////////////////////////////////
 
         } // end loop i_level
 

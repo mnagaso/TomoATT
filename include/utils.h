@@ -140,13 +140,9 @@ inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL
 inline void Epicentral_distance_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
                                        CUSTOMREAL lat2, CUSTOMREAL lon2, \
                                        CUSTOMREAL& dist) {
-    if (isZero(my_square((lat1-lat2)) \
-     &&      + my_square((lon1-lon2)))){
-        dist = _0_CR;
-    } else {
-        // calculate epicentral distance in radian
-        dist = std::abs(acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1)));
-    }
+
+    // calculate epicentral distance in radian
+    dist = std::abs(acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1)));
 }
 
 
