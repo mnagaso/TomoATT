@@ -101,7 +101,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // set group name to be used for output in h5
         // TODO set id_sim_src and name_sim_src with this function
-        io.change_group_name_for_source();
+        io.change_group_name_for_source_nv();
 
         // output initial field
         if(first_src && IP.get_is_output_source_field()) {

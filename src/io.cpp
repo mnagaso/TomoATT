@@ -1411,7 +1411,7 @@ void IO_utils::read_T_nv(Grid& grid) {
         if (output_format == OUTPUT_FORMAT_HDF5) {
             // read traveltime field from HDF5 file
 #ifdef USE_HDF5
-            h5_group_name_data = "src_" + std::to_string(id_sim_src);
+            h5_group_name_data = "src_" + name_sim_src;
             std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
             read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else

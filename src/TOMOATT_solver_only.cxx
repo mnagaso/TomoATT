@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
             std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
 
         // set group name to be used for output in h5
-        io.change_group_name_for_source();
+        io.change_group_name_for_source_nv();
 
         // get is_teleseismic flag
         bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
