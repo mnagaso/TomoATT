@@ -198,8 +198,8 @@ inline const std::string OUTPUT_DIR_2D      = "/2D_TRAVEL_TIME_FIELD/"; // outpu
 // earthquake relocation
 inline CUSTOMREAL step_length_src_reloc = 2.0;  // step length for source relocation
 inline CUSTOMREAL step_length_decay = 0.9;
-inline const int  N_ITER_MAX_SRC_RELOC  = 10001;   // max iteration for source location
-inline const CUSTOMREAL TOL_SRC_RELOC   = 1e-1; // threshold of the norm of gradient for stopping single earthquake location
+inline const int  N_ITER_MAX_SRC_RELOC  = 1001;   // max iteration for source location
+inline CUSTOMREAL TOL_SRC_RELOC   = 1e-1; // threshold of the norm of gradient for stopping single earthquake location
 inline const CUSTOMREAL TOL_STEP_SIZE   = 1e-2; // threshold of the max step size for stopping single earthquake location
 
 

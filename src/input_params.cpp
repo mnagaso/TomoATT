@@ -230,6 +230,9 @@ InputParams::InputParams(std::string& input_file){
                 max_change_lat = config["inversion"]["max_change_dep_lat_lon"][1].as<CUSTOMREAL>();
                 max_change_lon = config["inversion"]["max_change_dep_lat_lon"][2].as<CUSTOMREAL>();
             }
+            if (config["inversion"]["tol_gradient"]) {
+                TOL_SRC_RELOC = config["inversion"]["tol_gradient"].as<CUSTOMREAL>();
+            }
         }
 
         if (config["inv_strategy"]) {
@@ -465,7 +468,8 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(max_change_dep, 0);
     broadcast_cr_single(max_change_lat, 0);
     broadcast_cr_single(max_change_lon, 0);
-    
+    broadcast_cr_single(TOL_SRC_RELOC, 0);
+
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_i_single(ndiv_i, 0);
     broadcast_i_single(ndiv_j, 0);
@@ -1665,26 +1669,6 @@ void InputParams::write_station_correction_file(int i_inv){
 // }
 
 void InputParams::write_src_rec_file_nv(int i_inv) {
-
-    // check src and rec:
-    // for (int i_proc = 0; i_proc<=world_nprocs; i_proc++){
-    //     if (i_proc == world_rank){
-    //         std::cout << "check src info" << std::endl;
-    //         for(auto& src: src_points){
-    //             std::cout << "world_rank: "<< world_rank <<", src name: " << src.name_rec << ", lat: " << src.lat << ", lon:"
-    //                     << src.lon << ", dep:" << src.dep << std::endl;
-    //         }
-    //         std::cout << "check rec info" << std::endl;
-    //         for(auto& rec: rec_points){
-    //             for (auto &data: rec){
-    //                 std::cout << "world_rank: "<< world_rank <<", rec name: " << data.name_src << ", lat: " << data.lat << ", lon:"
-    //                     << data.lon << ", dep:" << data.dep << ", arrival time: " << data.arr_time << std::endl;
-    //             }
-    //         }
-    //     }
-    //     synchronize_all_world();
-    // }
-
 
     if (src_rec_file_exist){
 

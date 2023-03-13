@@ -225,9 +225,9 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     if(myrank == 0 && id_sim ==0){
         out_main.open(output_dir + "/objective_function_reloc.txt");
         out_main << std::setw(8) << std::right << "# iter,";
-        out_main << std::setw(10) << std::right << "N_reloc,";
-        out_main << std::setw(10) << std::right << "N_located,";
-        out_main << std::setw(12) << std::right << "obj_weighted,";
+        out_main << std::setw(16) << std::right << "N_reloc,";
+        out_main << std::setw(16) << std::right << "N_located,";
+        out_main << std::setw(16) << std::right << "obj_weighted,";
         // out_main << std::setw(12) << std::right << "obj_noweight,";
         out_main << std::endl;
     }
@@ -259,17 +259,18 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
 
         // updating source_location
-        // if(id_sim == 0 && myrank == 0)
-        //     std::cout << "updating source_location ..." << std::endl;
-        // recs.update_source_location(IP, grid);
+        if(id_sim == 0 && myrank == 0)
+            std::cout << "updating source_location ..." << std::endl;
+        recs.update_source_location(IP, grid);
 
 
 
         for (auto iter = IP.rec_list_nv.begin(); iter != IP.rec_list_nv.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
-            v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
         }
-
+        for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+            v_obj_grad += IP.rec_list_nv[IP.name_for_reloc[i]].vobj_grad_norm_src_reloc;
+        }
         
         // check convergence
         int count_loc = 0;
@@ -291,11 +292,26 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         if(id_sim == 0 && myrank == 0){
             // write objective function
             std::cout << "iteration: " << i_iter << " objective function: " << v_obj 
-                                                 << " v_obj_grad: " << v_obj_grad 
+                                                 << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size() 
                                                  << " v_obj/n_src: " << v_obj/IP.rec_list_nv.size() 
                                                  << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
             std::cout << IP.rec_list_nv.size() << " earthquakes require location, " << count_loc << " of which have been relocated. " << std::endl;                                    
-            std::cout << std::endl;                             
+            std::cout << std::endl;       
+            if (IP.rec_list_nv.size() - count_loc < 10){
+                std::cout << "names: ";
+                for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+                    std::cout << IP.name_for_reloc[i] << ", ";
+                }
+                std::cout << std::endl;
+            }                      
+        }
+
+        if (myrank==0 && id_sim==0) {
+            out_main << std::setw(8) << std::right << i_iter - 1;
+            out_main << std::setw(16) << std::right << (int)IP.rec_list_nv.size();
+            out_main << std::setw(16) << std::right << count_loc;
+            out_main << std::setw(16) << std::right << v_obj;
+            out_main << std::endl;
         }
 
     }
