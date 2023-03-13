@@ -8,8 +8,6 @@ domain :
   n_rtp : [55,55,55] # number of nodes
 
 source :
-  #src_dep_lat_lon : [5.0,40.0,24.0] # source depth in km, latitude, longitude in degree
-  #src_dep_lat_lon : [5750.6370,46.0,36.0] # source depth in km, latitude, longitude in degree
   src_rec_file : './src_rec_test_out_modified.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec : 1 # swap source and receiver
 
@@ -25,17 +23,15 @@ inversion :
   min_max_lat_inv : [30.0,50.0] # latitude in degree
   min_max_lon_inv : [15.0,40.0] # longitude in degree
 
-  #smooth_method : 1 # 0: multigrid parametrization, 1: laplacian smoothing with CG
-  #l_smooth_rtp : [0.9,0.9,0.9] # smoothing coefficients for each direction
-
   max_iterations_inv : 1 # maximum number of inversion iterations
   step_size : 0.01  # step size for inversion
 
+  step_length_src_reloc : 2.0
 
 parallel :
-  n_sims : 1 # number of simultaneous run
-  ndiv_rtp : [1,1,1] # number of subdomains
-  nproc_sub : 1     # number of subprocess used for each subdomain
+  n_sims : 2 # number of simultaneous run
+  ndiv_rtp : [1,2,1] # number of subdomains
+  nproc_sub : 2     # number of subprocess used for each subdomain
   use_gpu : 0
 
 calculation :

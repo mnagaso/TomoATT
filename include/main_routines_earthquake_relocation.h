@@ -205,7 +205,8 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         allreduce_cr_sim_single_inplace(iter->second.grad_chi_j);
         allreduce_cr_sim_single_inplace(iter->second.grad_chi_i);
     }
-    synchronize_all_world();
+
+    //synchronize_all_world(); // not necessary here because allreduce is already synchronizing communication
 }
 
 

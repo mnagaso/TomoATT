@@ -456,39 +456,24 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec){
         int j_rec_p1 = j_rec + 1;
         int k_rec_p1 = k_rec + 1;
 
-        // // exclude the points if they are out of the domain
-        // if (i_rec_p1 > loc_I-1
-        //  || j_rec_p1 > loc_J-1
-        //  || k_rec_p1 > loc_K-1) {
-        //     // exit(1) as the source is out of the domain
-        //     std::cout << "Error: the receiver is out of the domain" << std::endl;
-        //     std::cout << " id_rec: " << rec.id << " name: " << rec.name << " depth: " << rec.dep << " lat: " << rec.lat << " lon: " << rec.lon << std::endl;
-        //     std::cout << "lon min max rec: " << grid.get_lon_min_loc()*RAD2DEG << " " << grid.get_lon_max_loc()*RAD2DEG << " " << rec_lon*RAD2DEG << std::endl;
-        //     std::cout << "lat min max rec: " << grid.get_lat_min_loc()*RAD2DEG << " " << grid.get_lat_max_loc()*RAD2DEG << " " << rec_lat*RAD2DEG << std::endl;
-        //     std::cout << "r min max rec: " << radius2depth(grid.get_r_min_loc()) << " " << radius2depth(grid.get_r_max_loc()) << " " << radius2depth(rec_r) << std::endl;
-        //     std::cout << "i_rec: " << i_rec << " j_rec: " << j_rec << " k_rec: " << k_rec << std::endl;
-        //     std::cout << "i_rec_p1: " << i_rec_p1 << " j_rec_p1: " << j_rec_p1 << " k_rec_p1: " << k_rec_p1 << std::endl;
-        //     std::cout << "loc_I-1: " << loc_I-1 << " loc_J-1: " << loc_J-1 << " loc_K-1: " << loc_K-1 << std::endl;
-        //     //finalize_mpi();
-        //     exit(1);
-        // }
 
-        // exclude the points if they are adjancet to the domain boundary
-        if (i_rec_p1 > loc_I-2 || j_rec_p1 > loc_J-2 || k_rec_p1 > loc_K-2 || \
-            i_rec    < 1       || j_rec    < 1       || k_rec    < 1 ) {
-            // exit(1) as the source is out of the domain
-            std::cout << "Error: the location is close to the domain boundary" << std::endl;
-            std::cout << " id_rec: " << rec.id << " name: " << rec.name << " depth: " << rec.dep << " lat: " << rec.lat << " lon: " << rec.lon << std::endl;
-            std::cout << "lon min max rec: " << grid.get_lon_min_loc()*RAD2DEG << " " << grid.get_lon_max_loc()*RAD2DEG << " " << rec_lon*RAD2DEG << std::endl;
-            std::cout << "lat min max rec: " << grid.get_lat_min_loc()*RAD2DEG << " " << grid.get_lat_max_loc()*RAD2DEG << " " << rec_lat*RAD2DEG << std::endl;
-            std::cout << "r min max rec: " << radius2depth(grid.get_r_min_loc()) << " " << radius2depth(grid.get_r_max_loc()) << " " << radius2depth(rec_r) << std::endl;
-            std::cout << "i_rec: " << i_rec << " j_rec: " << j_rec << " k_rec: " << k_rec << std::endl;
-            std::cout << "i_rec_p1: " << i_rec_p1 << " j_rec_p1: " << j_rec_p1 << " k_rec_p1: " << k_rec_p1 << std::endl;
-            std::cout << "loc_I-1: " << loc_I-1 << " loc_J-1: " << loc_J-1 << " loc_K-1: " << loc_K-1 << std::endl;
-            //finalize_mpi();
-            exit(1);
-        }
-
+// TODO: MNMN : temporally comment out because this condition hits on the boundary of subdomains
+//        // exclude the points if they are adjancet to the domain boundary
+//        if (i_rec_p1 > loc_I-2 || j_rec_p1 > loc_J-2 || k_rec_p1 > loc_K-2 || \
+//            i_rec    < 1       || j_rec    < 1       || k_rec    < 1 ) {
+//            // exit(1) as the source is out of the domain
+//            std::cout << "Error: the location is too close to the domain boundary" << std::endl;
+//            std::cout << " id_rec: " << rec.id << " name: " << rec.name << " depth: " << rec.dep << " lat: " << rec.lat << " lon: " << rec.lon << std::endl;
+//            std::cout << "lon min max rec: " << grid.get_lon_min_loc()*RAD2DEG << " " << grid.get_lon_max_loc()*RAD2DEG << " " << rec_lon*RAD2DEG << std::endl;
+//            std::cout << "lat min max rec: " << grid.get_lat_min_loc()*RAD2DEG << " " << grid.get_lat_max_loc()*RAD2DEG << " " << rec_lat*RAD2DEG << std::endl;
+//            std::cout << "r min max rec: " << radius2depth(grid.get_r_min_loc()) << " " << radius2depth(grid.get_r_max_loc()) << " " << radius2depth(rec_r) << std::endl;
+//            std::cout << "i_rec: " << i_rec << " j_rec: " << j_rec << " k_rec: " << k_rec << std::endl;
+//            std::cout << "i_rec_p1: " << i_rec_p1 << " j_rec_p1: " << j_rec_p1 << " k_rec_p1: " << k_rec_p1 << std::endl;
+//            std::cout << "loc_I-1: " << loc_I-1 << " loc_J-1: " << loc_J-1 << " loc_K-1: " << loc_K-1 << std::endl;
+//            //finalize_mpi();
+//            exit(1);
+//        }
+//
         // CUSTOMREAL Ti, Tip, Tj, Tjp, Tk, Tkp;
         // Tk =      (_1_CR - e_lon) * (_1_CR - e_lat) * _1_CR         * grid.T_loc[I2V(i_rec,   j_rec,   k_rec)]
         //         +          e_lon  * (_1_CR - e_lat) * _1_CR         * grid.T_loc[I2V(i_rec_p1,j_rec,   k_rec)]
@@ -611,8 +596,8 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
         for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++) {
             std::string name_rec = iter->first;
             DataInfo&   data     = iter->second;
-            CUSTOMREAL weight = data.weight;
-            CUSTOMREAL misfit = data.travel_time_obs - IP.data_map[name_sim_src][name_rec].travel_time;
+            const CUSTOMREAL& weight = data.weight;
+            const CUSTOMREAL& misfit = data.travel_time_obs - data.travel_time;
             IP.rec_map[name_rec].tau_opt    += misfit * weight;
             IP.rec_map[name_rec].sum_weight += weight;
         }
@@ -630,7 +615,7 @@ void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
             // std::cout << "id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
         }
     }
-    synchronize_all_world();
+    //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 }
 
 void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
@@ -640,8 +625,8 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
         for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
             std::string name_rec = it_rec->first;
             DataInfo&   data     = it_rec->second;
-            CUSTOMREAL weight = data.weight;
-            CUSTOMREAL misfit = data.travel_time - IP.data_map[name_src][name_rec].travel_time_obs;
+            const CUSTOMREAL& weight = data.weight;
+            const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
 
             IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
         }
@@ -653,7 +638,8 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
             allreduce_cr_sim_single_inplace(iter->second.vobj_src_reloc);
         }
     }
-    synchronize_all_world();
+
+    //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 
     for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
         CUSTOMREAL obj = iter->second.vobj_src_reloc;
@@ -682,21 +668,18 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
         // CUSTOMREAL src_weight = IP.get_src_point(id_sim_src).weight;
 
         // calculate gradient of travel time at each receiver (swapped source)
-        for (auto it_src = IP.data_map.begin(); it_src != IP.data_map.end(); it_src++){
-            std::string name_src = it_src->first;
-            for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++){
-                std::string name_rec = it_rec->first;
-                DataInfo&   data     = it_rec->second;
-                CUSTOMREAL weight = data.weight;
-                CUSTOMREAL misfit = data.travel_time - IP.data_map[name_src][name_rec].travel_time_obs;
-                IP.rec_map[name_rec].grad_chi_k += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTk * weight;
-                IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTj * weight;
-                IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTi * weight;
+        for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); it_rec++){
+            std::string name_rec = it_rec->first;
+            DataInfo&   data     = it_rec->second;
+            const CUSTOMREAL& weight = data.weight;
+            const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
+            IP.rec_map[name_rec].grad_chi_k += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTk * weight;
+            IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTj * weight;
+            IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTi * weight;
 
-                // std::cout << "misfit: " << misfit << "tau_opt: " << IP.rec_map_nv[name_rec].tau_opt << std::endl;
-                // std::cout << "DTk, DTj, DTi = " << IP.rec_map_nv[name_rec].DTk << ", " << IP.rec_map_nv[name_rec].DTj
-                //           << ", " << IP.rec_map_nv[name_rec].DTi <<std::endl;
-            }
+            // std::cout << "misfit: " << misfit << "tau_opt: " << IP.rec_map_nv[name_rec].tau_opt << std::endl;
+            // std::cout << "DTk, DTj, DTi = " << IP.rec_map_nv[name_rec].DTk << ", " << IP.rec_map_nv[name_rec].DTj
+            //           << ", " << IP.rec_map_nv[name_rec].DTi <<std::endl;
         }
 
         // for(auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
@@ -728,12 +711,31 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
             CUSTOMREAL grad_lon_km = iter->second.grad_chi_i/(R_earth * cos(iter->second.lat * DEG2RAD));
             CUSTOMREAL norm_grad   = std::sqrt(my_square(grad_dep_km) + my_square(grad_lat_km) + my_square(grad_lon_km));
             CUSTOMREAL step_length;
-            if (iter->second.is_stop){
+            if (iter->second.is_stop || isZero(norm_grad)){
                 step_length = 0;
             } else {
-                step_length = 0.5 * iter->second.vobj_src_reloc/my_square(norm_grad);
+                step_length = 0.5 * iter->second.vobj_src_reloc/my_square(norm_grad); // becomes infinity if norm_grad is zero
             }
 
+            // make 0 if step_length is nan or inf
+//            if (std::isnan(step_length) || std::isinf(step_length)){
+//                step_length = 0;
+//            }
+
+//            // check if step_length is nan
+//            if (std::isnan(step_length) || std::isinf(step_length)){
+//                std::cout << "step_length is nan, id_sim: " << id_sim << ", name: " << iter->first << std::endl;
+//                std::cout << "grad_dep_km: " << grad_dep_km << ", grad_lat_km: " << grad_lat_km << ", grad_lon_km: " << grad_lon_km << std::endl;
+//                std::cout << "norm_grad: " << norm_grad << ", vobj_src_reloc: " << iter->second.vobj_src_reloc << std::endl;
+//                std::cout << "grad_chi_k: " << iter->second.grad_chi_k << ", grad_chi_j: " << iter->second.grad_chi_j << ", grad_chi_i: " << iter->second.grad_chi_i << std::endl;
+//                std::cout << "lat: " << iter->second.lat << ", lon: " << iter->second.lon << ", dep: " << iter->second.dep << std::endl;
+//                std::cout << "DTk: " << iter->second.DTk << ", DTj: " << iter->second.DTj << ", DTi: " << iter->second.DTi << std::endl;
+//                std::cout << "tau_opt: " << iter->second.tau_opt << std::endl;
+//                std::cout << "is_stop: " << iter->second.is_stop << std::endl;
+//                std::cout << "vobj_src_reloc: " << iter->second.vobj_src_reloc << std::endl;
+//                std::cout << "step_length: " << step_length << std::endl;
+//            }
+//
 
             // calculated grad are too small or even 0
 

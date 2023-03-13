@@ -260,6 +260,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
                 count_loc += 1;
             }
         }
+
         if (count_loc == (int)IP.rec_map.size() || i_iter >= N_ITER_MAX_SRC_RELOC)
             count_break += 1;
 
@@ -278,6 +279,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
     // close xdmf file
     io.finalize_data_output_file();
+
 
 }
 

@@ -1049,9 +1049,8 @@ void InputParams::write_src_rec_file(int i_inv) {
 
         std::ofstream ofs;
 
-        // gather all arrival time info to the main process
-        if (n_sims > 1)
-            gather_all_arrival_times_to_main();
+        // gather all arrival time info to the main process (need to call even n_sim=1)
+        gather_all_arrival_times_to_main();
 
         // write only by the main processor of subdomain && the first id of subdoumains
         if (world_rank == 0 && subdom_main && id_subdomain==0){
@@ -1100,6 +1099,8 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                     DataInfo data;
 
+                    //
+                    // CALCULATED DATA IS STORED IN data_map_all
                     if (swap_src_rec) // reverse swap src and rec
                         data = data_map_all[name_rec][name_src];
                     else // do not swap
@@ -1355,9 +1356,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
     // station correction kernel is generated in the main process and sent the value to all other processors
 
     // step 1, gather all arrival time info to the main process
-    if (n_sims > 1){
-        gather_all_arrival_times_to_main();
-    }
+    gather_all_arrival_times_to_main();
 
     // do it in the main processor
     if (id_sim == 0){

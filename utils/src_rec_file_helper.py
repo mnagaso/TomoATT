@@ -302,7 +302,7 @@ def write_src_rec_file(df_events, df_recs, fpath, no_epi_dist=True):
                                                                                         df_events['dep'].iloc[i],
                                                                                         df_events['mag'].iloc[i],
                                                                                         nrecs,
-                                                                                        df_events['id_src'].iloc[i]))
+                                                                                        df_events['id_event'].iloc[i]))
 
         # write receivers
         for j in range(len(recs_this_ev)):

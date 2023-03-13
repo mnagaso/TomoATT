@@ -12,7 +12,7 @@ df_ev_true,_ = read_src_rec_file(fpath_true, no_epi_dist=True)
 fpath_mod = "./src_rec_test_out_modified.dat"
 df_ev_mod,_ = read_src_rec_file(fpath_mod, no_epi_dist=True)
 
-fpath_res = "./OUTPUT_FILES/src_rec_file_src_reloc.dat"
+fpath_res = "./OUTPUT_FILES/src_rec_file_src_reloc_syn.dat"
 df_ev_res,_ = read_src_rec_file(fpath_res, no_epi_dist=True)
 
 # %%
