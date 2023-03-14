@@ -88,10 +88,16 @@ int main(int argc, char *argv[])
     // loop for each source
     ///////////////////////
 
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    // iterate over sources
+    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-        // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string name_sim_src = IP.src_id2name[i_src];
+        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
+
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
+
 
         if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
@@ -100,10 +106,10 @@ int main(int argc, char *argv[])
         io.change_group_name_for_source();
 
         // get is_teleseismic flag
-        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
+        bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
         // (re) initialize source object and set to grid
-        Source src(IP, grid, is_teleseismic);
+        Source src(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         bool first_init = (i_src==0);
@@ -115,7 +121,7 @@ int main(int argc, char *argv[])
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
-        select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+        select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
         It->run_iteration_forward(IP, grid, io, first_init);
 
         // output the result of forward simulation
@@ -146,6 +152,7 @@ int main(int argc, char *argv[])
     i_inv = 1;
 
     // swap the src-receiver pair for kirchhoff migration
+    // TODO: not implemented yet
     IP.prepare_src_list_for_backward_run();
 
     // prepare output directory for backward run
@@ -168,19 +175,24 @@ int main(int argc, char *argv[])
     /////////////////////////////////
     // loop for each (swapped/backward) source
     /////////////////////////////////
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    // iterate over sources
+    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-        // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        const std::string name_sim_src = IP.src_id2name[i_src];
+        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
-        if (myrank == 0)
+        // set simu group id and source name for output files/dataset names
+        io_back.set_id_src(id_sim_src);
+        io_back.set_name_src(name_sim_src);
+
+       if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", backward modeling starting..." << std::endl;
 
         // set group name to be used for output in h5
         io_back.change_group_name_for_source();
 
         // get is_teleseismic flag
-        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
+        bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
         // abort if teleseismic source is used for backward simulation
         if (is_teleseismic){
@@ -190,7 +202,7 @@ int main(int argc, char *argv[])
         }
 
         // (re) initialize source object and set to grid
-        Source src(IP, grid, is_teleseismic);
+        Source src(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         bool first_init = (i_src==0);
@@ -202,7 +214,7 @@ int main(int argc, char *argv[])
         // initialize iterator object
         std::unique_ptr<Iterator> It_back;
 
-        select_iterator(IP, grid, src, io_back, first_init, is_teleseismic, It_back, false);
+        select_iterator(IP, grid, src, io_back, name_sim_src, first_init, is_teleseismic, It_back, false);
         It_back->run_iteration_forward(IP, grid, io_back, first_init);
 
         // output the result of backward simulation
