@@ -4,26 +4,28 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
-    // TODO: currently this routine is run in only serial.
-    // it can be work in parallel with simultaneous run,
     if (subdom_main) {
-        for (long unsigned int i = 0; i < IP.src_ids_this_sim.size(); i++) {
-            int src_id = IP.src_ids_this_sim[i];
+        // iterate over all sources for calculating gradient of objective function
+        for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+
+            std::string name_sim_src = IP.src_id2name[i_src];
+
             // get source info
-            SrcRec& src = IP.get_src_point(src_id);
+            SrcRecInfo& src = IP.get_src_point(name_sim_src);
 
             // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-            if (src.is_teleseismic){
+            if (src.is_out_of_region){
 
                 // allocate memory for teleseismic boundary source condition
-                IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, src_id, \
+                IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, name_sim_src, \
                     grid.i_first(), grid.i_last(), grid.j_first(), grid.j_last(), grid.k_first());
 
                 // calculate 2d travel time field (or read pre-computed file)
                 // the interpolate the 2d field onto the 3d grid boundaries
-                run_2d_solver(IP, src_id, grid, io);
+                run_2d_solver(IP, name_sim_src, grid, io);
 
                 if_teleseismic_event_exists = true;
+
             }
         }
     }
@@ -35,7 +37,8 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 }
 
 
-PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
+
+PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
 
     stdout_by_main("PlainGrid initialization start.");
 
@@ -223,7 +226,7 @@ void PlainGrid::deallocate_arrays(){
 
 PlainGrid::~PlainGrid() {
     deallocate_arrays();
-};
+}
 
 
 void PlainGrid::select_1d_model(std::string model_1d_name){
@@ -531,12 +534,12 @@ CUSTOMREAL interp2d(PlainGrid& pg, CUSTOMREAL t, CUSTOMREAL r) {
 }
 
 
-void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
+void run_2d_solver(InputParams& IP, std::string name_src, Grid& grid, IO_utils& io) {
     // calculate 2d travel time field by only the first process of each simulation group
-    SrcRec& src = IP.get_src_point(src_id);
+    SrcRecInfo& src = IP.get_src_point(name_src);
 
     // initialize grid for all processes
-    PlainGrid plain_grid(src, IP);
+    PlainGrid plain_grid(src,IP);
 
     // check if pre-calculated 2d travel time field exists
     bool pre_calculated = false;

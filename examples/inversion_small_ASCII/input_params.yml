@@ -30,8 +30,8 @@ inversion :
   max_sub_iterations : 100 # maximum number of sub-iterations
 
 parallel :
-  n_sims : 1         # number of simultaneous run
-  ndiv_rtp : [1,2,2] # number of subdomains
+  n_sims : 2         # number of simultaneous run
+  ndiv_rtp : [1,1,2] # number of subdomains
   nproc_sub : 2      # number of subprocess used for each subdomain
 
 calculation :

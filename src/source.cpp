@@ -1,6 +1,6 @@
 #include "source.h"
 
-Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic) {
+Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src) {
 
     if (is_teleseismic) return;
 
@@ -13,9 +13,9 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic) {
         delta_r   = grid.get_delta_r();
 
         // set source position
-        src_lon = IP.get_src_lon();    // in radian
-        src_lat = IP.get_src_lat();    // in radian
-        src_r   = IP.get_src_radius(); // radious
+        src_lon = IP.get_src_lon(   name_sim_src); // in radian
+        src_lat = IP.get_src_lat(   name_sim_src); // in radian
+        src_r   = IP.get_src_radius(name_sim_src); // radious
 
         // descretize source position (LOCAL ID)
         i_src_loc = std::floor((src_lon - grid.get_lon_min_loc()) / grid.get_delta_lon());
