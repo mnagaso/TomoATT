@@ -72,6 +72,9 @@ if(HDF5_FOUND)
   endif()
 endif()
 
+# precision setting (uncomment for single precision. default is double precision.)
+#add_definitions(-DSINGLE_PRECISION)
+
 # use SIMD
 add_definitions(-DUSE_SIMD)
 
