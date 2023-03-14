@@ -39,10 +39,17 @@ public:
 
     // change group name for source
     void change_group_name_for_source();
+    void change_group_name_for_source_nv();
     // change group name for model
     void change_group_name_for_model();
     // prepare grid for each inversion iteration
     void prepare_grid_inv_xdmf(int);
+
+    // set id_sim
+    void set_id_src(const int& id_src_){id_sim_src = id_src_;};
+    // set source name
+    void set_name_src(const std::string& name_src_){name_sim_src = name_src_;};
+
 
     //
     // write functions
@@ -127,6 +134,7 @@ public:
     void read_model(std::string&, const char*, CUSTOMREAL*, int, int, int);
     // read Travel time from file for earthquake relocation
     void read_T(Grid&);
+    void read_T_nv(Grid&);
 
     void read_data_ascii(Grid&, std::string&);
 
@@ -155,6 +163,11 @@ private:
     std::string h5_whole_name_z    = h5_file_and_group + "/" + h5_dset_name_node_coords_z;
     std::string h5_whole_name_proc = h5_file_and_group + "/" + h5_dset_name_procid;
 
+    // index of current simulation used for naming output files and datasets
+    int id_sim_src;
+    // name of current simulation used for naming output files and datasets
+    std::string name_sim_src;
+
     int nnodes_glob = 0;
     int nelms_glob  = 0;
 
@@ -174,14 +187,6 @@ private:
     void write_xdmf_file();
     void finalize_xdmf_file();
     void insert_data_xdmf(std::string&, std::string&, std::string&);
-    // vectors for storing tinyxml2 objects
-//    std::vector<tinyxml2::XMLDocument*> doc_vec;
-//    std::vector<tinyxml2::XMLNode*>     xdmf_vec;
-//    std::vector<tinyxml2::XMLNode*>     domain_vec;
-//    std::vector<tinyxml2::XMLNode*>     grid_vec;
-//    std::vector<std::string>            fname_vec;
-//    std::vector<std::string>            xmfname_vec;
-    void store_xdmf_obj();
 
 #ifdef USE_HDF5
     // h5 variables
@@ -228,6 +233,7 @@ private:
 
     // utilities
     std::string create_fname_ascii(std::string&);
+    std::string create_fname_ascii_nv(std::string&);
     std::string create_fname_ascii_model(std::string&);
 
     // flag for data type

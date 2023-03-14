@@ -56,6 +56,13 @@ void IO_utils::change_group_name_for_source() {
 #endif
 }
 
+void IO_utils::change_group_name_for_source_nv() {
+#ifdef USE_HDF5
+    // change group name for source
+    h5_group_name_data = "src_" + name_sim_src;
+#endif
+}
+
 void IO_utils::change_group_name_for_model(){
 #ifdef USE_HDF5
     // change group name for model
@@ -86,7 +93,6 @@ void IO_utils::init_data_output_file() {
             if (id_subdomain == 0)
                 write_xdmf_file_grid();
 
-            //store_xdmf_obj();
             // create output file
             h5_create_file_by_group_main(h5_output_fname); // file for field data
         }
@@ -677,6 +683,11 @@ std::string IO_utils::create_fname_ascii(std::string& dset_name){
     return fname;
 }
 
+std::string IO_utils::create_fname_ascii_nv(std::string& dset_name){
+    std::string fname = output_dir + "/" + dset_name \
+    + "_src_" + name_sim_src + ".dat";
+    return fname;
+}
 
 std::string IO_utils::create_fname_ascii_model(std::string& dset_name){
     std::string fname = output_dir + "/" + dset_name + ".dat";
@@ -753,8 +764,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " ";
-                    // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
+                    << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " ";
                     if (IP.get_run_mode() == 1) {
                         fout << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
                         // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
@@ -782,7 +793,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                 Ks = get_grid_data(grid.get_Ks());
                 Ks_update = get_grid_data(grid.get_Ks_update());
             }
-            // std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
+            std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
 
             for (int k = 0; k < loc_K_vis; k++){
                 for (int j = 0; j < loc_J_vis; j++){
@@ -794,8 +805,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " ";
-                            // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
+                            << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " ";
 
                             if (IP.get_run_mode() == 1) {
                                 fout << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
@@ -1394,6 +1405,31 @@ void IO_utils::read_T(Grid& grid) {
     }
 }
 
+// read travel time data from file
+void IO_utils::read_T_nv(Grid& grid) {
+    if (subdom_main){
+        if (output_format == OUTPUT_FORMAT_HDF5) {
+            // read traveltime field from HDF5 file
+#ifdef USE_HDF5
+            h5_group_name_data = "src_" + std::to_string(id_sim_src);
+            std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
+            read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
+#else
+            std::cerr << "Error: HDF5 is not enabled." << std::endl;
+            exit(1);
+#endif
+        } else if (output_format == OUTPUT_FORMAT_ASCII) {
+            // read traveltime field from ASCII file
+            std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
+            std::string filename = create_fname_ascii_nv(dset_name);
+
+            read_data_ascii(grid, filename);
+        }
+
+        // set to T_loc array from grid.vis_data
+        grid.set_array_from_vis(grid.T_loc);
+    }
+}
 
 void IO_utils::read_data_ascii(Grid& grid, std::string& fname){
     // read data in ascii file

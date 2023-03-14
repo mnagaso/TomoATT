@@ -24,7 +24,7 @@
 
 // do model update by gradient descent
 inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
-                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, CUSTOMREAL& v_misfit_inout, bool& first_src, std::ofstream& out_main) {
+                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, std::vector<CUSTOMREAL>& v_misfit_inout, bool& first_src, std::ofstream& out_main) {
 
     // change stepsize
     if (i_inv > 0 && v_obj_inout < old_v_obj) {
@@ -37,11 +37,52 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         step_size_init_sc = std::max((CUSTOMREAL)0.00001, step_size_init_sc*step_size_decay);
     }
     // output objective function
-    if (myrank==0 && id_sim==0) out_main << std::setw(5) << i_inv \
-                                  << "," << std::setw(15) << v_obj_inout \
-                                  << "," << std::setw(15) << v_misfit_inout \
-                                  << "," << std::setw(15) << step_size_init << std::endl;
-
+    if (myrank==0 && id_sim==0) {
+        out_main << std::setw(5) << i_inv;
+        out_main << "," << std::setw(19) << v_misfit_inout[0];
+        if( IP.data_type.find("abs") != IP.data_type.end())
+            out_main << "," << std::setw(19) << v_misfit_inout[1];
+        if( IP.data_type.find("cs_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[3];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[2];
+        }
+        if( IP.data_type.find("cr_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[2];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[3];
+        }
+        if( IP.data_type.find("tele") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[4];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[4];
+        }
+        out_main << "," << std::setw(19) << v_misfit_inout[5];
+        if( IP.data_type.find("abs") != IP.data_type.end())
+            out_main << "," << std::setw(19) << v_misfit_inout[6];
+        if( IP.data_type.find("cs_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[8];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[7];
+        }
+        if( IP.data_type.find("cr_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[7];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[8];
+        }
+        if( IP.data_type.find("tele") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[9];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[9];
+        }
+        out_main << std::setw(19) << step_size_init << std::endl;
+    }
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
 

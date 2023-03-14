@@ -20,7 +20,7 @@
 #include <immintrin.h>
 #elif USE_ARM_SVE
 #include <arm_sve.h>
-#endif // __
+#endif
 
 
 #ifdef SINGLE_PRECISION

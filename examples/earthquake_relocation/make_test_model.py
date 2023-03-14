@@ -79,12 +79,11 @@ for ir in range(n_rtp[2]):
             else:
                 psi = 0.0
 
-            eta_true[ir,it,ip]  = 0.0 #ani_p*abs(sigma)*math.sin(2.0*psi)
-            xi_true[ir,it,ip]   = 0.0 #ani_p*abs(sigma)*math.cos(2.0*psi)
-            zeta_true[ir,it,ip] = 0.0 #gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
+            eta_true[ir,it,ip] = ani_p*abs(sigma)*math.sin(2.0*psi)
+            xi_true[ir,it,ip]  = ani_p*abs(sigma)*math.cos(2.0*psi)
+            zeta_true[ir,it,ip] = gamma*math.sqrt(eta_true[ir,it,ip]**2 + xi_true[ir,it,ip]**2)
             fun_true[ir,it,ip] = fun_init[ir,it,ip]/(1.0+sigma*slow_p)
             vel_true[ir,it,ip] = 1.0/fun_true[ir,it,ip]
-
 
 
 r_earth = R_earth #6378.1370
@@ -189,6 +188,7 @@ for i_src in range(n_src):
     lon = pp1deg + tmp_ilon*(pp2deg-pp1deg)/nij_src
     lat = tt1deg + tmp_ilat*(tt2deg-tt1deg)/nij_src
 
+    id_dummy = "src_" + str(i_src)
 
     src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
     lines.append(src)
@@ -201,7 +201,9 @@ for i_src in range(n_src):
         #lon_rec  = random.uniform(pp1deg,pp2deg)
         #lat_rec  = random.uniform(tt1deg,tt2deg)
 
-        rec = [i_src, i_rec, st_name_dummy+"_"+str(i_rec), lat_recs[i_rec], lon_recs[i_rec], elev_recs[i_rec], phase_dummy, arriv_t_dummy]
+        rec_name_tmp = rec_names[i_rec]
+
+        rec = [i_src, i_rec, rec_name_tmp, lat_recs[i_rec], lon_recs[i_rec], elev_recs[i_rec], phase_dummy, arriv_t_dummy]
         lines.append(rec)
 
         pos_rec.append([lon_recs[i_rec],lat_recs[i_rec],elev_recs[i_rec]])
