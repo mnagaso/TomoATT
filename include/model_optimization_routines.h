@@ -29,12 +29,12 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // change stepsize
     if (i_inv > 0 && v_obj_inout < old_v_obj) {
         // step_size_init = std::min(0.01, step_size_init*1.03);
-        step_size_init = std::min(1.0, step_size_init);
-        step_size_init_sc = std::min(1.0, step_size_init_sc);
+        step_size_init    = std::min((CUSTOMREAL)1.0, step_size_init);
+        step_size_init_sc = std::min((CUSTOMREAL)1.0, step_size_init_sc);
     } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
         // step_size_init = std::max(0.00001, step_size_init*0.97);
-        step_size_init = std::max(0.00001, step_size_init*step_size_decay);
-        step_size_init_sc = std::max(0.00001, step_size_init_sc*step_size_decay);
+        step_size_init    = std::max((CUSTOMREAL)0.00001, step_size_init*step_size_decay);
+        step_size_init_sc = std::max((CUSTOMREAL)0.00001, step_size_init_sc*step_size_decay);
     }
     // output objective function
     if (myrank==0 && id_sim==0) {

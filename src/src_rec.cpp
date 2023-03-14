@@ -135,6 +135,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     src_weight = 1.0; // default weight
 
                 // new source detected by its name
+                // TODO: add error check for duplicated source name (but different event info)
                 if (src_map.find(src.name) == src_map.end())
                     src_map[src.name] = src;
 

@@ -326,6 +326,8 @@ InputParams::InputParams(std::string& input_file){
                 is_output_final_model = config["output_setting"]["is_output_final_model"].as<int>();
             if (config["output_setting"]["is_output_in_process"])
                 is_output_in_process = config["output_setting"]["is_output_in_process"].as<int>();
+            if (config["output_setting"]["is_single_precision_output"])
+                is_single_precision_output = config["output_setting"]["is_single_precision_output"].as<int>();
         }
 
         if (config["debug"]) {
@@ -483,6 +485,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(is_verbose_output, 0);
     broadcast_bool_single(is_output_final_model, 0);
     broadcast_bool_single(is_output_in_process, 0);
+    broadcast_bool_single(is_single_precision_output, 0);
     broadcast_bool_single(is_inv_slowness, 0);
     broadcast_bool_single(is_inv_azi_ani, 0);
     broadcast_bool_single(is_inv_rad_ani, 0);
@@ -683,11 +686,12 @@ void InputParams::write_params_to_file() {
 
     fout << std::endl;
     fout << "output_setting:" << std::endl;
-    fout << "   is_output_source_field: " << int(is_output_source_field) << " # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_output_model_dat: "    << int(is_output_model_dat)    << " # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_verbose_output: "      << int(is_verbose_output)      << " # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0" << std::endl;
-    fout << "   is_output_final_model: "  << int(is_output_final_model)  << " # output merged final model or not.                                     1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_output_in_process: "   << int(is_output_in_process)   << " # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_output_source_field:     " << int(is_output_source_field)         << " # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_output_model_dat:        " << int(is_output_model_dat)            << " # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_verbose_output:          " << int(is_verbose_output)              << " # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0" << std::endl;
+    fout << "   is_output_final_model:      " << int(is_output_final_model)          << " # output merged final model or not.                                     1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_output_in_process:       " << int(is_output_in_process)           << " # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1" << std::endl;
+    fout << "   is_single_precision_output: " << int(is_single_precision_output)     << " # output results in single precision or not.                            1 for yes; 0 for no;  default: 0" << std::endl;
 
     //fout << std::endl;
     //fout << "debug:" << std::endl;

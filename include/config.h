@@ -8,10 +8,13 @@
 #include <limits>
 
 // custom floating point accuracy
-//#define CUSTOMREAL float
-//#define MPI_CR MPI_FLOAT
+#ifdef SINGLE_PRECISION
+#define CUSTOMREAL float
+#define MPI_CR MPI_FLOAT
+#else
 #define CUSTOMREAL double
 #define MPI_CR MPI_DOUBLE
+#endif
 
 
 #define MPI_DUMMY_TAG 1000
