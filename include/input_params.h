@@ -100,6 +100,8 @@ public:
     bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
     CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
 
+    bool get_is_single_precision_output() {return is_single_precision_output;};
+
     // prepare source list for this simulation group
     void prepare_src_map();
 
@@ -234,6 +236,9 @@ private:
 
     CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
     bool is_sta_correction = false; // apply station correction or not.
+
+    // single precision (float) output mode
+    bool is_single_precision_output = false;
 
 };
 
