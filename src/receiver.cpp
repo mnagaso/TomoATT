@@ -677,26 +677,10 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
             IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTj * weight;
             IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTi * weight;
 
-            // std::cout << "misfit: " << misfit << "tau_opt: " << IP.rec_map_nv[name_rec].tau_opt << std::endl;
-            // std::cout << "DTk, DTj, DTi = " << IP.rec_map_nv[name_rec].DTk << ", " << IP.rec_map_nv[name_rec].DTj
-            //           << ", " << IP.rec_map_nv[name_rec].DTi <<std::endl;
         }
 
-        // for(auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
-            // std::cout << "grad_chi_i (lon,rad) is: " << iter->second.grad_chi_i << std::endl;
-            // std::cout << "grad_chi_j (lat,rad) is: " << iter->second.grad_chi_j << std::endl;
-            // std::cout << "grad_chi_k (radius,km) is: " << iter->second.grad_chi_k << std::endl << std::endl;
-        // }
     }
 
-    // for(auto iter = IP.rec_map_nv.begin(); iter != IP.rec_map_nv.end(); iter++){
-    //     std::cout << "ckp1, id_sim" << id_sim
-    //     << ", src name: " << iter->first
-    //     << ", kernel k: " << iter->second.grad_chi_k
-    //     << ", kernel j: " << iter->second.grad_chi_j
-    //     << ", kernel i: " << iter->second.grad_chi_i
-    //     << std::endl;
-    // }
 }
 
 void Receiver::update_source_location(InputParams& IP, Grid& grid) {
@@ -790,26 +774,6 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
             if (norm_grad < TOL_SRC_RELOC || iter->second.step_length_max < TOL_STEP_SIZE){
                 iter->second.is_stop = true;
             }
-
-            // if(id_sim == 0 && myrank == 0 && iter->first == "s1"){
-            //     std::cout << "id_sim: " << id_sim
-            //           << ", src name: " << iter->first
-            //           << ", obj: " << iter->second.vobj_src_reloc
-            //           << ", lat: " << iter->second.lat
-            //           << ", lon: " << iter->second.lon
-            //           << ", dep: " << iter->second.dep
-            //           << ", ortime: " << iter->second.tau_opt
-            //           << ", is_stop: " << iter->second.is_stop
-            //           << std::endl;
-            //     std::cout << "time, r1-s1: " << IP.syn_time_map_sr["r1"]["s1"]
-            //               << ", src_lat: " << IP.rec_map_nv["s1"].lat
-            //               << ", src_lon: " << IP.rec_map_nv["s1"].lon
-            //               << ", src_dep: " << IP.rec_map_nv["s1"].dep
-            //               << ", rec_lat: " << IP.src_map_nv["r1"].lat
-            //               << ", rec_lon: " << IP.src_map_nv["r1"].lon
-            //               << ", rec_dep: " << IP.src_map_nv["r1"].dep
-            //               << std::endl;
-            // }
 
             // std::cout << "update_dep: " << update_dep
             //           << ", update_lat: " << update_lat
