@@ -130,14 +130,18 @@ public:
     std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
+    std::vector<std::string> name_for_reloc;    // name list of receivers (swarpped sources) for location
+
     std::map< std::string, std::map<std::string, DataInfo>> data_map_all;     // data list for all data (full information is only stored by the main process)
     std::map< std::string, std::map<std::string, DataInfo>> data_map;         // data list for this simultaneous group
     std::map< std::string, std::map<std::string, DataInfo>> data_map_tele;    // data list for teleseismic
-
+    
     // backups used when outputing the data
     std::map<std::string, SrcRecInfo>                      src_map_back;
     std::map<std::string, SrcRecInfo>                      rec_map_back;
     std::map<std::string, std::map<std::string, DataInfo>> data_map_back;
+
+    
 
     // the number of data
     int N_abs_local_data    = 0;

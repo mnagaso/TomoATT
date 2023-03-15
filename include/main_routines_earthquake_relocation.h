@@ -76,7 +76,8 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // run forward simulation
         /////////////////////////
 
-        std::cout << "forward modeling start, name: " << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+        std::cout << "calculateing source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: " 
+                  << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                   << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                   << std::endl;
 
