@@ -121,27 +121,30 @@ public:
     std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> src_map_comm_src;     // map of sources with common source
     std::map<std::string, SrcRecInfo> src_map_tele;         // source list for teleseismic
-    std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
-    std::vector<std::string>          src_id2name_comm_src; // name list of sources with common source
-    std::vector<std::string>          src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
-    std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
 
     std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
+    // datainfo maps with key <id_src, rec_name>
+    std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map_all;     // data list for all data (full information is only stored by the main process)
+    std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map;         // data list for this simultaneous group
+    std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map_tele;    // data list for teleseismic
+
     std::vector<std::string> name_for_reloc;    // name list of receivers (swarpped sources) for location
 
-    std::map< std::string, std::map<std::string, DataInfo>> data_map_all;     // data list for all data (full information is only stored by the main process)
-    std::map< std::string, std::map<std::string, DataInfo>> data_map;         // data list for this simultaneous group
-    std::map< std::string, std::map<std::string, DataInfo>> data_map_tele;    // data list for teleseismic
-    
-    // backups used when outputing the data
-    std::map<std::string, SrcRecInfo>                      src_map_back;
-    std::map<std::string, SrcRecInfo>                      rec_map_back;
-    std::map<std::string, std::map<std::string, DataInfo>> data_map_back;
+    // src id <-> src name relations
+    std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
+    std::vector<std::string>          src_id2name_comm_src; // name list of sources with common source
+    std::vector<std::string>          src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
+    std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
 
-    
+    // backups used when outputing the data
+    std::map<std::string, SrcRecInfo>                                   src_map_back;
+    std::map<std::string, SrcRecInfo>                                   rec_map_back;
+    std::map<std::string, std::map<std::string, std::vector<DataInfo>>> data_map_back;
+
+
 
     // the number of data
     int N_abs_local_data    = 0;
@@ -246,6 +249,23 @@ private:
 
 };
 
+
+// some utils
+
+inline DataInfo& get_data_rec_pair(std::vector<DataInfo>& v){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_rec_pair)
+            return *it;
+    }
+
+    // error if no rec pair is found
+    std::cerr << "Error: no rec pair is found in get_data_rec_pair" << std::endl;
+    exit(1);
+
+    // return the first element in the vector as a dummy
+    return v[0];
+}
 
 
 #endif
