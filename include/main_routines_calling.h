@@ -219,6 +219,19 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
 
+
+    // prepare output for iteration status
+    std::ofstream out_main;
+    if(myrank == 0 && id_sim ==0){
+        out_main.open(output_dir + "/objective_function_reloc.txt");
+        out_main << std::setw(8) << std::right << "# iter,";
+        out_main << std::setw(16) << std::right << "N_reloc,";
+        out_main << std::setw(16) << std::right << "N_located,";
+        out_main << std::setw(16) << std::right << "obj_weighted,";
+        // out_main << std::setw(12) << std::right << "obj_noweight,";
+        out_main << std::endl;
+    }
+
     // objective function and its gradient
     CUSTOMREAL v_obj = 0.0, v_obj_old = 0.0;
     CUSTOMREAL v_obj_grad = 0.0;
@@ -232,6 +245,13 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         v_obj = 0.0;
         v_obj_grad = 0.0;
 
+        // determine which earthquake should be located
+        IP.name_for_reloc.clear();
+        for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+            if (!iter->second.is_stop)
+                IP.name_for_reloc.push_back(iter->first);
+        }
+
         // calculate gradient of objective function at sources
         calculate_gradient_objective_function(IP, grid, io, i_iter);
 
@@ -242,15 +262,6 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
-        }
-
-        // write objective functions
-        if(id_sim == 0 && myrank == 0){
-            // write objective function
-            std::cout << "iteration: " << i_iter << " objective function: " << v_obj
-                                                 << " v_obj_grad: " << v_obj_grad
-                                                 << " v_obj/n_src: " << v_obj/IP.rec_map.size()
-                                                 << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl << std::endl;
         }
 
         // check convergence
@@ -269,6 +280,36 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // new iteration
         i_iter++;
+
+
+        // output location information
+        if(id_sim == 0 && myrank == 0){
+            // write objective function
+            std::cout << "iteration: " << i_iter << " objective function: " << v_obj 
+                                                 << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size() 
+                                                 << " v_obj/n_src: " << v_obj/IP.rec_map.size() 
+                                                 << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
+            std::cout << IP.rec_map.size() << " earthquakes require location, " << count_loc << " of which have been relocated. " << std::endl;                                    
+        
+            // the last 10 sources under location  
+            if (IP.rec_map.size() - count_loc < 10){
+                std::cout << "Source under location. names: ";
+                for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+                    std::cout << IP.name_for_reloc[i] << ", ";
+                }
+                std::cout << std::endl;
+            }            
+            std::cout << std::endl;          
+        }
+
+        // write objective functions
+        if (myrank==0 && id_sim==0) {
+            out_main << std::setw(8) << std::right << i_iter - 1;
+            out_main << std::setw(16) << std::right << (int)IP.rec_map.size();
+            out_main << std::setw(16) << std::right << count_loc;
+            out_main << std::setw(16) << std::right << v_obj;
+            out_main << std::endl;
+        }
     }
 
     // modify the receiver's location
