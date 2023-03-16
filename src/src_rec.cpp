@@ -190,7 +190,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.name_rec        = rec.name;
                     data.travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
 
-                    data_map[data.name_src][data.name_rec] = data;
+                    data_map[data.name_src][data.name_rec].push_back(data);
                     cc++;
 
                 } else {
@@ -298,20 +298,21 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
         for (auto iter = data_map.begin(); iter != data_map.end(); iter++){
             for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
-
-                if (iter2->second.is_src_rec) {
-                    std::cout   << "source name: "     << iter2->second.name_src
-                                << ", receiver name: " << iter2->second.name_rec
-                                << ", traveltime: "    << iter2->second.travel_time_obs
-                                << std::endl;
-                } else if (iter2->second.is_rec_pair) {
-                    std::cout   << "source name: "          << iter2->second.name_src_single
-                                << ", receiver pair name: " << iter2->second.name_rec_pair[0]
-                                << ", "                     << iter2->second.name_rec_pair[1]
-                                << ", traveltime: "         << iter2->second.cs_dif_travel_time_obs
-                                << std::endl;
+                for (const auto& data : iter2->second) {
+                    if (data.is_src_rec) {
+                        std::cout   << "source name: "     << data.name_src
+                                    << ", receiver name: " << data.name_rec
+                                    << ", traveltime: "    << data.travel_time_obs
+                                    << std::endl;
+                    } else if (data.is_rec_pair) {
+                        std::cout   << "source name: "          << data.name_src_single
+                                    << ", receiver pair name: " << data.name_rec_pair[0]
+                                    << ", "                     << data.name_rec_pair[1]
+                                    << ", traveltime: "         << data.cs_dif_travel_time_obs
+                                    << std::endl;
+                    }
                 }
-            }
+           }
         }
 
     }
@@ -524,7 +525,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                     && src_map_tele.find(name_src2) != src_map_tele.end()){
                         total_teleseismic_data_weight     += data.data_weight;
                         data.weight                        = data.data_weight * teleseismic_weight;
-                        data_map_tele[name_src1][name_rec] = data;
+                        data_map_tele[name_src1][name_rec].push_back(data);
                         rec_map_tele[name_rec]             = rec_map_back[name_rec];
                         data_type["tele"]                  = 1;
 
@@ -855,23 +856,24 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     send_src_info_inter_sim(src_map[src_name], dst_id_sim);
 
                     // send src_map[src_name].n_data to the main process of dst_id_sim
-                    int n_data = src_map[src_name].n_data;
-                    send_i_single_sim(&n_data, dst_id_sim);
+                    int n_data_src = src_map[src_name].n_data;
+                    send_i_single_sim(&n_data_src, dst_id_sim);
 
-                    if (n_data > 0){
+                    if (n_data_src > 0){
                         // send rec_map[i_src] to the main process of dst_id_sim
                         for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
                             send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
                         }
 
                         // send data_map[src_name].size() to the main process of dst_id_sim
-                        int n_data = data_map[src_name].size();
-                        send_i_single_sim(&n_data, dst_id_sim);
+                        int n_rec = data_map[src_name].size();
+                        send_i_single_sim(&n_rec, dst_id_sim);
 
                         // send data_map[name_i_src] to the main process of dst_id_sim
                         for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
                             // send data_map[name_i_src].size() to the main process of dst_id_sim
-                            send_i_single_sim(&iter->second.size(), dst_id_sim);
+                            int n_data = iter->second.size();
+                            send_i_single_sim(&n_data, dst_id_sim);
                             // send data
                             for (auto& data : iter->second)
                                 send_data_info_inter_sim(data, dst_id_sim);
@@ -891,11 +893,11 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     // receive src_map from the main process of dst_id_sim
                     recv_src_info_inter_sim(tmp_SrcInfo, 0);
 
-                    // add the received src_map to the src_map
-                    src_map_this_sim[tmp_SrcInfo.name] = tmp_SrcInfo;
-
                     // recv rec_map.size() from the main process of dst_id_sim
                     recv_i_single_sim(&tmp_SrcInfo.n_data, 0);
+
+                    // add the received src_map to the src_map
+                    src_map_this_sim[tmp_SrcInfo.name] = tmp_SrcInfo;
 
                     // receive rec_map from the main process of dst_id_sim
                     if (tmp_SrcInfo.n_data > 0){

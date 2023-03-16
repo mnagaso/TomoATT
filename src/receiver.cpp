@@ -16,7 +16,8 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
 
         // calculate the travel time of the receiver by interpolation
         for(std::string name_rec: name_receivers) {
-            IP.data_map[name_sim_src][name_rec].travel_time = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
+            for (auto& data : IP.data_map[name_sim_src][name_rec])
+                data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
         }
     }
 }
@@ -41,140 +42,140 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
     // rec.adjoint_source = 0
     IP.initialize_adjoint_source();
 
-    int count = 0;
-
     if(subdom_main){
 
         // loop all data related to this source MNMN: use reference(auto&) to avoid copy
         for (auto it_src = IP.data_map[name_sim_src].begin(); it_src != IP.data_map[name_sim_src].end(); ++it_src) {
-            // reference to the target data
-            DataInfo& data = it_src->second;
+            for (auto& data: it_src->second){
 
-            //
-            // absolute traveltime
-            //
-            if (data.is_src_rec){
+                //
+                // absolute traveltime
+                //
+                if (data.is_src_rec){
 
-                // skip if this data is not belongs to this simulation group
-                // (this happens only the first group, because the first group retains all data)
-                if (data.name_src != name_sim_src) continue;
+                    // skip if this data is not belongs to this simulation group
+                    // (this happens only the first group, because the first group retains all data)
+                    if (data.name_src != name_sim_src) continue;
 
-                std::string name_src      = data.name_src;
-                std::string name_rec      = data.name_rec;
-                CUSTOMREAL syn_time       = data.travel_time;
-                CUSTOMREAL obs_time       = data.travel_time_obs;
-                CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
-                IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
-
-                // contribute misfit
-                obj     += 1.0 * my_square(syn_time - obs_time)*data.weight;
-                misfit  += 1.0 * my_square(syn_time - obs_time);
-
-                if (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region){
-                    obj_tele        +=  1.0 * my_square(syn_time - obs_time)*data.weight;
-                    misfit_tele     +=  1.0 * my_square(syn_time - obs_time);
-                } else{
-                    obj_abs         +=  1.0 * my_square(syn_time - obs_time)*data.weight;
-                    misfit_abs      +=  1.0 * my_square(syn_time - obs_time);
-                }
-
-            //
-            // common receiver differential traveltime
-            //
-            } else if (data.is_src_pair) {
-
-                std::string name_src1 = data.name_src_pair[0];
-                std::string name_src2 = data.name_src_pair[1];
-                std::string name_rec  = data.name_rec_single;
-
-                // skip if this data is not belongs to this simulation group
-                // (this happens only the first group, because the first group retains all data)
-                if (name_sim_src != name_src1 && name_sim_src != name_src2) continue;
-
-                if (name_sim_src == name_src1){
-
-                    CUSTOMREAL syn_dif_time   = IP.data_map[name_src1][name_rec].travel_time - IP.data_map[name_src2][name_rec].travel_time;
-                    CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
-                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
-
-                    IP.set_adjoint_source(name_rec, adjoint_source);
+                    std::string name_src      = data.name_src;
+                    std::string name_rec      = data.name_rec;
+                    CUSTOMREAL syn_time       = data.travel_time;
+                    CUSTOMREAL obs_time       = data.travel_time_obs;
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
+                    IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
                     // contribute misfit
-                    obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                    obj     += 1.0 * my_square(syn_time - obs_time)*data.weight;
+                    misfit  += 1.0 * my_square(syn_time - obs_time);
 
-                    if (IP.get_src_point(name_src1).is_out_of_region || \
-                        IP.get_src_point(name_src2).is_out_of_region || \
-                        IP.get_rec_point(name_rec).is_out_of_region){
-                        obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);   // because a pair sf sources are counted twice, thus * 0.5
+                    if (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region){
+                        obj_tele        +=  1.0 * my_square(syn_time - obs_time)*data.weight;
+                        misfit_tele     +=  1.0 * my_square(syn_time - obs_time);
                     } else{
-                        obj_cr_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_cr_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                        obj_abs         +=  1.0 * my_square(syn_time - obs_time)*data.weight;
+                        misfit_abs      +=  1.0 * my_square(syn_time - obs_time);
                     }
 
-                } else if (name_sim_src == name_src2) {
+                //
+                // common receiver differential traveltime
+                //
+                } else if (data.is_src_pair) {
 
-                    CUSTOMREAL syn_dif_time   = IP.data_map[name_src2][name_rec].travel_time - IP.data_map[name_src1][name_rec].travel_time;
-                    CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
-                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+                    std::string name_src1 = data.name_src_pair[0];
+                    std::string name_src2 = data.name_src_pair[1];
+                    std::string name_rec  = data.name_rec_single;
 
-                    IP.set_adjoint_source(name_rec, adjoint_source);
+                    // skip if this data is not belongs to this simulation group
+                    // (this happens only the first group, because the first group retains all data)
+                    if (name_sim_src != name_src1 && name_sim_src != name_src2) continue;
+
+                    if (name_sim_src == name_src1){
+
+                        CUSTOMREAL syn_dif_time   = get_data_src_pair(IP.data_map[name_src1][name_rec]).travel_time \
+                                                  - get_data_src_pair(IP.data_map[name_src2][name_rec]).travel_time;
+                        CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
+                        CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+
+                        IP.set_adjoint_source(name_rec, adjoint_source);
+
+                        // contribute misfit
+                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        if (IP.get_src_point(name_src1).is_out_of_region || \
+                            IP.get_src_point(name_src2).is_out_of_region || \
+                            IP.get_rec_point(name_rec).is_out_of_region){
+                            obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                            misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);   // because a pair sf sources are counted twice, thus * 0.5
+                        } else{
+                            obj_cr_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                            misfit_cr_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                        }
+
+                    } else if (name_sim_src == name_src2) {
+
+                        CUSTOMREAL syn_dif_time   = get_data_src_pair(IP.data_map[name_src2][name_rec]).travel_time \
+                                                  - get_data_src_pair(IP.data_map[name_src1][name_rec]).travel_time;
+                        CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
+                        CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+
+                        IP.set_adjoint_source(name_rec, adjoint_source);
+
+                        // contribute misfit
+                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        if (IP.get_src_point(name_src1).is_out_of_region || \
+                            IP.get_src_point(name_src2).is_out_of_region || \
+                            IP.get_rec_point(name_rec).is_out_of_region){
+                            obj_tele        +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                            misfit_tele     +=  0.5 * my_square(syn_dif_time - obs_dif_time);
+                        } else{
+                            obj_cr_dif      +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                            misfit_cr_dif   +=  0.5 * my_square(syn_dif_time - obs_dif_time);
+                        }
+
+                    } else {
+                        std::cout << "error match of data in function: calculate_adjoint_source() " << std::endl;
+                    }
+
+                //
+                // common source differential traveltime
+                //
+                } else if (data.is_rec_pair) {
+
+                    std::string name_src  = data.name_src_single;
+                    std::string name_rec1 = data.name_rec_pair[0];
+                    std::string name_rec2 = data.name_rec_pair[1];
+
+                    CUSTOMREAL syn_dif_time = get_data_rec_pair(IP.data_map[name_src][name_rec1]).travel_time \
+                                            - get_data_rec_pair(IP.data_map[name_src][name_rec2]).travel_time;
+                    CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
+
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+                    IP.set_adjoint_source(name_rec1, adjoint_source);
+
+                    adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
+                    IP.set_adjoint_source(name_rec2, adjoint_source);
 
                     // contribute misfit
-                    obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                    obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                    misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
 
-                    if (IP.get_src_point(name_src1).is_out_of_region || \
-                        IP.get_src_point(name_src2).is_out_of_region || \
-                        IP.get_rec_point(name_rec).is_out_of_region){
-                        obj_tele        +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_tele     +=  0.5 * my_square(syn_dif_time - obs_dif_time);
+                    if (IP.get_src_point(name_src).is_out_of_region || \
+                        IP.get_rec_point(name_rec1).is_out_of_region || \
+                        IP.get_rec_point(name_rec2).is_out_of_region){
+                        obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_tele     += 1.0 * my_square(syn_dif_time - obs_dif_time);
                     } else{
-                        obj_cr_dif      +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_cr_dif   +=  0.5 * my_square(syn_dif_time - obs_dif_time);
+                        obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_cs_dif   += 1.0 * my_square(syn_dif_time - obs_dif_time);
                     }
-
-                } else {
-                    std::cout << "error match of data in function: calculate_adjoint_source() " << std::endl;
                 }
 
-            //
-            // common source differential traveltime
-            //
-            } else if (data.is_rec_pair) {
-
-                std::string name_src  = data.name_src_single;
-                std::string name_rec1 = data.name_rec_pair[0];
-                std::string name_rec2 = data.name_rec_pair[1];
-
-                CUSTOMREAL syn_dif_time = IP.data_map[name_src][name_rec1].travel_time - IP.data_map[name_src][name_rec2].travel_time;
-                CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
-
-                CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
-                IP.set_adjoint_source(name_rec1, adjoint_source);
-
-                adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
-                IP.set_adjoint_source(name_rec2, adjoint_source);
-
-                // contribute misfit
-                obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
-
-                if (IP.get_src_point(name_src).is_out_of_region || \
-                    IP.get_rec_point(name_rec1).is_out_of_region || \
-                    IP.get_rec_point(name_rec2).is_out_of_region){
-                    obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit_tele     += 1.0 * my_square(syn_dif_time - obs_dif_time);
-                } else{
-                    obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit_cs_dif   += 1.0 * my_square(syn_dif_time - obs_dif_time);
-                }
-            }
-            count += 1;
-
-        }
-    }
+            } // end of loop over data
+        } // end loop receivers
+    } // end subdomain
 
 
     // share the calculated objective function value to other processes
@@ -595,11 +596,12 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++) {
             std::string name_rec = iter->first;
-            DataInfo&   data     = iter->second;
-            const CUSTOMREAL& weight = data.weight;
-            const CUSTOMREAL& misfit = data.travel_time_obs - data.travel_time;
-            IP.rec_map[name_rec].tau_opt    += misfit * weight;
-            IP.rec_map[name_rec].sum_weight += weight;
+            for (const auto& data: iter->second) {
+                const CUSTOMREAL& weight = data.weight;
+                const CUSTOMREAL& misfit = data.travel_time_obs - data.travel_time;
+                IP.rec_map[name_rec].tau_opt    += misfit * weight;
+                IP.rec_map[name_rec].sum_weight += weight;
+            }
         }
 
     }
@@ -624,11 +626,11 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
         std::string name_src = it_src->first;
         for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
             std::string name_rec = it_rec->first;
-            DataInfo&   data     = it_rec->second;
-            const CUSTOMREAL& weight = data.weight;
-            const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
-
-            IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+            for (const auto& data: it_rec->second){
+                const CUSTOMREAL& weight = data.weight;
+                const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
+                IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+            }
         }
     }
 
@@ -670,13 +672,13 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); it_rec++){
             std::string name_rec = it_rec->first;
-            DataInfo&   data     = it_rec->second;
-            const CUSTOMREAL& weight = data.weight;
-            const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
-            IP.rec_map[name_rec].grad_chi_k += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTk * weight;
-            IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTj * weight;
-            IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTi * weight;
-
+            for (const auto& data: it_rec->second){
+                const CUSTOMREAL& weight = data.weight;
+                const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
+                IP.rec_map[name_rec].grad_chi_k += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTk * weight;
+                IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTj * weight;
+                IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTi * weight;
+            }
         }
 
     }
