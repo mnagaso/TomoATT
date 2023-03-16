@@ -704,6 +704,11 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     // replace data_map with swapped data map
     data_map = tmp_data_map;
 
+    // set n_data (number of receivers for each source)
+    for (auto it_src = src_map.begin(); it_src != src_map.end(); it_src++){
+        it_src->second.n_data = data_map[it_src->second.name].size();
+    }
+
     // swap total_data_weight
     CUSTOMREAL tmp = total_cr_dif_local_data_weight;
     total_cr_dif_local_data_weight = total_cs_dif_local_data_weight;
@@ -842,7 +847,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     // data
                     for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
                         for (auto& data : iter->second)
-                            data_map_this_sim[iter->first][src_name].push_back(data);
+                            data_map_this_sim[src_name][iter->first].push_back(data);
                     }
                 } // end if (subdom_main)
 

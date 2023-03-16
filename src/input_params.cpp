@@ -1087,7 +1087,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                 SrcRecInfo  src      = src_map_back[name_src];
 
                 // format should be the same as input src_rec_file
-                // source line :  id_src yearm month day hour min sec lat lon dep_km mag num_recs id_event
+                // source line :  id_src year month day hour min sec lat lon dep_km mag num_recs id_event
                 ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
                     << src.year << " " << src.month << " " << src.day << " "
                     << src.hour << " " << src.min   << " "
