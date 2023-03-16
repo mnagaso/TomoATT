@@ -15,7 +15,7 @@ model :
 
 inversion :
   run_mode : 1 # 0 for forward simulation only, 1 for inversion
-  optim_method : 1 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs"
+  optim_method : 0 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs"
   n_inversion_grid : 5  # number of inversion grid sets
   n_inv_dep_lat_lon : [11,10,10] # number of the base inversion grid points
   #min_max_dep_inv : [-29.0, 301.0] # depth in km with R = 6371.0
@@ -27,9 +27,9 @@ inversion :
 
 
 parallel :
-  n_sims : 1         # number of simultaneous run
-  ndiv_rtp : [1,2,4] # number of subdomains
-  nproc_sub : 1      # number of subprocess used for each subdomain
+  n_sims : 2         # number of simultaneous run
+  ndiv_rtp : [1,1,2] # number of subdomains
+  nproc_sub : 2      # number of subprocess used for each subdomain
 
 calculation :
   convergence_tolerance : 1e-3
