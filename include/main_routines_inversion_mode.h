@@ -59,6 +59,11 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
     std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
 
+    // gather all the traveltime to the main process and distribute to all processes
+    // for calculating the synthetic common receiver differential traveltime
+    IP.gather_traveltimes_and_calc_syn_diff();
+
+
 }
 
 
@@ -79,7 +84,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  compute the synthetic common receiver differential traveltime first
     ///////////////////////////////////////////////////////////////////////
 
-    //prepare synthetic traveltime for all earthquakes
+    // prepare synthetic traveltime for all earthquakes
     pre_run_forward_only(IP, grid, io, i_inv);
 
     //

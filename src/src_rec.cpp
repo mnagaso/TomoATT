@@ -113,19 +113,19 @@ void parse_src_rec_file(std::string& src_rec_file, \
             if (cc == 0){
                 SrcRecInfo src;
 
-                src.id         = std::stoi(tokens[0]);
-                src.year       = std::stoi(tokens[1]);
-                src.month      = std::stoi(tokens[2]);
-                src.day        = std::stoi(tokens[3]);
-                src.hour       = std::stoi(tokens[4]);
-                src.min        = std::stoi(tokens[5]);
-                src.sec        = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
-                src.lat        = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
-                src.lon        = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-                src.dep        = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
-                src.mag        = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
-                src.n_data     = std::stoi(tokens[11]);
-                src.name       = tokens[12];
+                src.id     = std::stoi(tokens[0]);
+                src.year   = std::stoi(tokens[1]);
+                src.month  = std::stoi(tokens[2]);
+                src.day    = std::stoi(tokens[3]);
+                src.hour   = std::stoi(tokens[4]);
+                src.min    = std::stoi(tokens[5]);
+                src.sec    = static_cast<CUSTOMREAL>(std::stod(tokens[6]));
+                src.lat    = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // in degree
+                src.lon    = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                src.dep    = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // source in km
+                src.mag    = static_cast<CUSTOMREAL>(std::stod(tokens[10]));
+                src.n_data = std::stoi(tokens[11]);
+                src.name   = tokens[12];
                 cc++;
 
                 // check if tokens[13] exists, then read weight
@@ -162,11 +162,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     SrcRecInfo rec;
 
-                    rec.id       = std::stoi(tokens[1]);
-                    rec.name     = tokens[2];
-                    rec.lat      = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
-                    rec.lon      = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
-                    rec.dep      = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+                    rec.id   = std::stoi(tokens[1]);
+                    rec.name = tokens[2];
+                    rec.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                    rec.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                    rec.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
 
                     // new receiver detected by its name
                     if(rec_map.find(rec.name) == rec_map.end())
@@ -199,9 +199,9 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     SrcRecInfo rec;
                     rec.id   = std::stoi(tokens[1]);
                     rec.name = tokens[2];
-                    rec.lat = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
-                    rec.lon = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
-                    rec.dep = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
+                    rec.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[3])); // in degree
+                    rec.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[4])); // in degree
+                    rec.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[5])/1000.0); // convert elevation in meter to depth in km
 
                     // new receiver detected by its name
                     if(rec_map.find(rec.name) == rec_map.end())
@@ -210,9 +210,9 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     SrcRecInfo rec2;
                     rec2.id   = std::stoi(tokens[6]);
                     rec2.name = tokens[7];
-                    rec2.lat = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-                    rec2.lon = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
-                    rec2.dep = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
+                    rec2.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                    rec2.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                    rec2.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
 
                     // new receiver detected by its name
                     if(rec_map.find(rec2.name) == rec_map.end())
@@ -236,8 +236,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.name_rec_pair          = {rec.name, rec2.name};
                     data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
-                    data_map[data.name_src_single][data.name_rec_pair[0]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
-                    //data_map[data.name_src_single][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
+                    data_map[data.name_src_single][data.name_rec_pair[0]].push_back(data);
+                    data_map[data.name_src_single][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
 
                     cc++;
                 }
@@ -674,6 +674,8 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.id_rec   = data.id_src;
                     tmp_data.name_rec = data.name_src;
 
+                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
+
                 // common source differential traveltime  ->  common receiver differential traveltime
                 } else if (tmp_data.is_rec_pair) {
                     tmp_data.is_rec_pair            = false;
@@ -684,6 +686,9 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.name_rec_single        = data.name_src_single;
                     tmp_data.cr_dif_travel_time_obs = data.cs_dif_travel_time_obs;
 
+                    tmp_data_map[tmp_data.name_src_pair[0]][tmp_data.name_rec_single].push_back(tmp_data);
+                    tmp_data_map[tmp_data.name_src_pair[1]][tmp_data.name_rec_single].push_back(tmp_data);
+
                 // common receiver differential traveltime  ->  common source differential traveltime
                 } else if (tmp_data.is_src_pair) {
                     tmp_data.is_src_pair            = false;
@@ -693,11 +698,12 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.id_src_single          = data.id_rec_single;
                     tmp_data.name_src_single        = data.name_rec_single;
                     tmp_data.cs_dif_travel_time_obs = data.cr_dif_travel_time_obs;
+
+                    tmp_data_map[tmp_data.name_src_single][tmp_data.name_rec_pair[0]].push_back(tmp_data);
+                    tmp_data_map[tmp_data.name_src_single][tmp_data.name_rec_pair[1]].push_back(tmp_data);
                 }
 
-                //it_rec->second = tmp_data;
-                tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
-            }
+           }
         }
     }
 
@@ -825,7 +831,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
     for (int i_src = 0; i_src < n_src; i_src++) {
 
         // id of simulutaneous run group to which the i_src-th source belongs
-        int dst_id_sim = i_src % n_sims;
+        int dst_id_sim = select_id_sim_for_src(i_src, n_sims);
 
         // broadcast the source name
         std::string src_name;
@@ -835,17 +841,16 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
         broadcast_str_inter_and_intra_sim(src_name, 0);
 
         if (id_sim==0){ // sender
+
             if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group
 
                 if (subdom_main){
                     // src
                     src_map_this_sim[src_name] = src_map[src_name];
-                    // rec
-                    for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                        rec_map_this_sim[iter->first] = iter->second;
-                    }
                     // data
                     for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
+                        // rec by data
+                        rec_map_this_sim[iter->first] = rec_map[iter->first];
                         for (auto& data : iter->second)
                             data_map_this_sim[src_name][iter->first].push_back(data);
                     }
@@ -855,27 +860,22 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                 src_name_list_this_sim.push_back(src_name);
 
             } else { // this source belongs to another simulutaneous run group
-
                 if (subdom_main){
-                    // send src_map[i_src] to the main process of dst_id_sim
+                    // send src
                     send_src_info_inter_sim(src_map[src_name], dst_id_sim);
 
-                    // send src_map[src_name].n_data to the main process of dst_id_sim
-                    int n_data_src = src_map[src_name].n_data;
-                    send_i_single_sim(&n_data_src, dst_id_sim);
+                    // send number of receivers belonging to src
+                    int n_rec = data_map[src_name].size();
+                    send_i_single_sim(&n_rec, dst_id_sim);
 
-                    if (n_data_src > 0){
-                        // send rec_map[i_src] to the main process of dst_id_sim
-                        for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-                            send_rec_info_inter_sim(iter->second, dst_id_sim); // send all the receivers info
-                        }
-
-                        // send data_map[src_name].size() to the main process of dst_id_sim
-                        int n_rec = data_map[src_name].size();
-                        send_i_single_sim(&n_rec, dst_id_sim);
+                    if (n_rec > 0){
 
                         // send data_map[name_i_src] to the main process of dst_id_sim
                         for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
+
+                            // send rec_map[name_i_rec] to the main process of dst_id_sim
+                            send_rec_info_inter_sim(rec_map[iter->first], dst_id_sim);
+
                             // send data_map[name_i_src].size() to the main process of dst_id_sim
                             int n_data = iter->second.size();
                             send_i_single_sim(&n_data, dst_id_sim);
@@ -895,46 +895,38 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
                     // prepare SrcRecInfo object for receiving the contents
                     SrcRecInfo tmp_SrcInfo;
 
-                    // receive src_map from the main process of dst_id_sim
+                    // receive src
                     recv_src_info_inter_sim(tmp_SrcInfo, 0);
-
-                    // recv rec_map.size() from the main process of dst_id_sim
-                    recv_i_single_sim(&tmp_SrcInfo.n_data, 0);
 
                     // add the received src_map to the src_map
                     src_map_this_sim[tmp_SrcInfo.name] = tmp_SrcInfo;
 
-                    // receive rec_map from the main process of dst_id_sim
-                    if (tmp_SrcInfo.n_data > 0){
-                        // receive rec_map
-                        for (int i_data = 0; i_data < tmp_SrcInfo.n_data; i_data++){
-                            // prepare SrcRecInfo object for receiving the contents
-                            SrcRecInfo tmp_RecInfo;
-                            // receive rec_map from the main process of dst_id_sim
-                            recv_rec_info_inter_sim(tmp_RecInfo, 0);
-                            // add the received rec_map to the rec_map
-                            rec_map_this_sim[tmp_RecInfo.name] = tmp_RecInfo;
+                    // recv number of receivers belonging to src
+                    int n_rec = 0;
+                    recv_i_single_sim(&n_rec, 0);
+
+                    // receive data_info from the main process of dst_id_sim
+                    for (int i_srcrec = 0; i_srcrec < n_rec; i_srcrec++){
+
+                        // recv data_map[name_i_src].size() from the main process of dst_id_sim
+                        SrcRecInfo tmp_RecInfo;
+                        recv_rec_info_inter_sim(tmp_RecInfo, 0);
+
+                        rec_map_this_sim[tmp_RecInfo.name] = tmp_RecInfo;
+
+                        int n_data = 0;
+                        recv_i_single_sim(&n_data, 0);
+
+                        for (int i_data = 0; i_data < n_data; i_data++){
+                            // prepare DataInfo object for receiving the contents
+                            DataInfo tmp_DataInfo;
+                            // receive data_info from the main process of dst_id_sim
+                            recv_data_info_inter_sim(tmp_DataInfo, 0);
+                            // add the received data_info to the data_info
+                            data_map_this_sim[tmp_DataInfo.name_src][tmp_DataInfo.name_rec].push_back(tmp_DataInfo);
                         }
 
-                        int n_srcrec_map = 0;
-                        recv_i_single_sim(&n_srcrec_map, 0);
-
-                        // receive data_info from the main process of dst_id_sim
-                        for (int i_srcrec = 0; i_srcrec < n_srcrec_map; i_srcrec++){
-                            int n_data_srcrec = 0;
-                            recv_i_single_sim(&n_data_srcrec, 0);
-
-                            for (int i_data = 0; i_data < n_data_srcrec; i_data++){
-                                // prepare DataInfo object for receiving the contents
-                                DataInfo tmp_DataInfo;
-                                // receive data_info from the main process of dst_id_sim
-                                recv_data_info_inter_sim(tmp_DataInfo, 0);
-                                // add the received data_info to the data_info
-                                data_map_this_sim[tmp_DataInfo.name_src][tmp_DataInfo.name_rec].push_back(tmp_DataInfo);
-                            }
-
-                        } // end of for i_srcrec
-                    } // end of if (n_data > 0)
+                    } // end of for i_srcrec
                 } // end of if(subdom_main)
 
                 // add the source name to the source name list

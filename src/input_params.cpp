@@ -909,6 +909,9 @@ void InputParams::prepare_src_map(){
         //     src_id2name      includes only src names of this simultaneous run group
         //     src_id2name_back includes only src names of this simultaneous run group before swapping src and rec
 
+        // create source list for common source double difference traveltime
+        generate_src_map_with_common_source(data_map, src_map_comm_src, src_id2name_comm_src);
+
         synchronize_all_world();
 
         if (world_rank==0)
@@ -917,23 +920,25 @@ void InputParams::prepare_src_map(){
 }
 
 
-void InputParams::generate_src_map_with_common_source(){
+// generate a list of events which involve common source double difference traveltime
+void InputParams::generate_src_map_with_common_source(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map_tmp,
+                                                      std::map<std::string, SrcRecInfo>& src_map_comm_src_tmp,
+                                                      std::vector<std::string>& src_id2name_comm_src_tmp){
     // for earthquake having common receiver differential traveltime, the synthetic traveltime should be computed first at each iteration
-    for(auto iter = data_map.begin(); iter != data_map.end(); iter++){
+    for(auto iter = data_map_tmp.begin(); iter != data_map_tmp.end(); iter++){
         for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
             for (auto& data: iter2->second){
                 if (data.is_src_pair){
                     // add this source and turn to the next source
-                    src_map_comm_src[iter->first] = src_map[iter->first];
+                    src_map_comm_src_tmp[iter->first] = src_map[iter->first];
                     // add this source to the list of sources that will be looped in each iteration
-                    src_id2name_comm_src.push_back(iter->first);
+                    src_id2name_comm_src_tmp.push_back(iter->first);
                     break;
                 }
             }
         }
     }
 }
-
 
 void InputParams::initialize_adjoint_source(){
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
@@ -957,7 +962,7 @@ void InputParams::gather_all_arrival_times_to_main(){
     for (int id_src = 0; id_src < nsrc_total; id_src++){
 
         // id of simulation group for this source
-        int id_sim_group = id_src % n_sims;
+        int id_sim_group = select_id_sim_for_src(id_src, n_sims);
 
         // broadcast source name
         std::string name_src;
@@ -1020,6 +1025,42 @@ void InputParams::gather_all_arrival_times_to_main(){
     } // end for  id_src
 
 }
+
+// gather traveltimes and calculate differences of synthetic data
+void InputParams::gather_traveltimes_and_calc_syn_diff(){
+    // gather all synthetic traveltimes to main simultaneous run group
+    gather_all_arrival_times_to_main();
+
+    // if id_sim == 0, wait for the mpi request for sending traveltimes to other simultaneous run groups
+    if (subdom_main && id_subdomain==0 && id_sim==0){
+        while (true) {
+        }
+    }
+    // if id_sim != 0, make a request to send traveltimes to main simultaneous run group
+    if (subdom_main && id_subdomain==0 && id_sim!=0){
+        // iterate over src_map_comm_src, then make a request to send traveltimes to main simultaneous run group
+        for (auto iter = src_map_comm_src.begin(); iter != src_map_comm_src.end(); iter++){
+            // iterate over receivers and check if is_src_pair is true
+            for (auto iter2 = data_map[iter->first].begin(); iter2 != data_map[iter->first].end(); iter2++){
+                for (auto& data: iter2->second){
+                    if (data.is_src_pair){
+
+                        // for the first rec
+
+                        // send a request to main simultaneous run group to send traveltimes
+                        // then receive traveltimes with data_map
+
+                        // for the second rec
+
+                    }
+                }
+            }
+        }
+   }
+
+
+}
+
 
 
 void InputParams::write_station_correction_file(int i_inv){

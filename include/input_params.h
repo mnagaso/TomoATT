@@ -163,6 +163,8 @@ public:
     void allocate_memory_tele_boundaries(int, int, int, std::string,
         bool, bool, bool, bool, bool); // allocate memory for tele boundaries
 
+    // gather traveltimes and calculate differences of synthetic data
+    void gather_traveltimes_and_calc_syn_diff();
 
 private:
     // boundary information
@@ -220,7 +222,9 @@ private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
     // geneerate a map of sources which include common source double difference data
-    void generate_src_map_with_common_source();
+    void generate_src_map_with_common_source(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>&,
+                                             std::map<std::string, SrcRecInfo>&,
+                                             std::vector<std::string>&);
 
     bool i_first=false, i_last=false, \
          j_first=false, j_last=false, \
