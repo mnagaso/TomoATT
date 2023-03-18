@@ -912,6 +912,9 @@ void InputParams::prepare_src_map(){
         // create source list for common source double difference traveltime
         generate_src_map_with_common_source(data_map, src_map_comm_src, src_id2name_comm_src);
 
+        // prepare source list for teleseismic source
+        prepare_src_map_for_2d_solver(src_map_tele, src_id2name_2d, src_map_2d);
+
         synchronize_all_world();
 
         if (world_rank==0)

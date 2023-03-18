@@ -60,7 +60,7 @@ private:
 };
 
 void prepare_teleseismic_boundary_conditions(InputParams&, Grid&, IO_utils&);
-void run_2d_solver(InputParams&, std::string, Grid&, IO_utils&);
+void run_2d_solver(InputParams&, std::string, Grid&, IO_utils&, bool);
 void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
 
 

@@ -120,6 +120,7 @@ public:
     std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> src_map_comm_src;     // map of sources with common source
+    std::map<std::string, SrcRecInfo> src_map_2d;           // map of sources assigned for 2d solver
     std::map<std::string, SrcRecInfo> src_map_tele;         // source list for teleseismic
 
     std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
@@ -136,6 +137,7 @@ public:
     // src id <-> src name relations
     std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
     std::vector<std::string>          src_id2name_comm_src; // name list of sources with common source
+    std::vector<std::string>          src_id2name_2d;       // name list of sources assigned for 2d solver.
     std::vector<std::string>          src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
     std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
 

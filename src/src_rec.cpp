@@ -952,6 +952,89 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>& src_map, \
 
 }
 
+
+void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map_tele, \
+                                   std::vector<std::string>& src_id2name_2d, \
+                                   std::map<std::string, SrcRecInfo>& src_map_2d) {
+    // src_map_tele: map of teleseismic src objects, (only the main process has the information.)
+    // src_id2name_2d: list of src name assigned to this simultaneous run group
+    // src_map_2d: src map assigned to this simultaneous run group
+
+    std::map<std::string, SrcRecInfo> tmp_src_map_unique;
+    std::vector<std::string> tmp_src_name_list_unique;
+
+    // at first, make a depth-unique source list in the main process from src_map_tele
+    if (id_sim==0 && subdom_main) {
+
+        for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++){
+            std::string tmp_name = iter->second.name;
+
+            // check if there is no element in tmp_src_map_unique with the same iter->second.depth
+            bool if_unique = true;
+            for (auto iter2 = tmp_src_map_unique.begin(); iter2 != tmp_src_map_unique.end(); iter2++){
+                if (iter2->second.dep == iter->second.dep){
+                    if_unique = false;
+                    break;
+                }
+            }
+
+            if (if_unique) {
+                tmp_src_map_unique[tmp_name] = iter->second;
+                tmp_src_name_list_unique.push_back(tmp_name);
+            }
+        }
+    }
+
+    // broadcast the number of unique sources to all processes
+    int n_src_unique = 0;
+    if (id_sim==0 && subdom_main) n_src_unique = tmp_src_map_unique.size();
+    MPI_Bcast(&n_src_unique, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    if (subdom_main){
+        // iterate over all the unique sources
+        for (int i_src_unique = 0; i_src_unique < n_src_unique; i_src_unique++){
+            int dst_id_sim = select_id_sim_for_src(i_src_unique, n_sims);
+
+            if (id_sim==0){
+                if (dst_id_sim==id_sim){
+                    // store
+                    src_map_2d[tmp_src_name_list_unique[i_src_unique]] = tmp_src_map_unique[tmp_src_name_list_unique[i_src_unique]];
+                    src_id2name_2d.push_back(tmp_src_name_list_unique[i_src_unique]);
+                } else {
+                    // send to dst_id_sim
+                    send_src_info_inter_sim(tmp_src_map_unique[tmp_src_name_list_unique[i_src_unique]], dst_id_sim);
+                }
+            } else {
+                if (dst_id_sim==id_sim){
+                    // receive from 0
+                    SrcRecInfo tmp_src;
+                    recv_src_info_inter_sim(tmp_src, 0);
+                    src_map_2d[tmp_src.name] = tmp_src;
+                    src_id2name_2d.push_back(tmp_src.name);
+                } else {
+                    // do nothing
+                }
+            }
+        }
+   } // end of if (subdom_main)
+
+    // print the number of sources ssigned to this simultaneous run group
+    for (int i_sim=0; i_sim < n_sims; i_sim++){
+        if (id_sim==i_sim && subdom_main && id_subdomain==0){
+            std::cout << "id_sim = " << id_sim << " : " << src_map_2d.size() << " 2d-sources assigned." << std::endl;
+        }
+        synchronize_all_world();
+    }
+
+}
+
+
+//
+// Belows are the function for send/receiving SrcRecInfo, DataInfo object
+// so when you add the member in those class, it will be necessary to modify
+// the functions below for sharing the new member.
+//
+
 void send_src_info_inter_sim(SrcRecInfo &src, int dest){
 
     send_i_single_sim(&src.id, dest);

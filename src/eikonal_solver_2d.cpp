@@ -4,9 +4,43 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
+    // 2D travel time fields vary only by the depth of the source.
+    // So here we make another src_id2name list for dropping the sources
+    // that have the same depth, in onder to reduce the number of 2D eikonal solver runs.
+
+    // so we use
+    // - src_id2name_2d
+    // - src_map_2d
+    // for 2D eikonal solver runs
+
+    //
+    // pre calculation of 2d travel time fields
+    //
     if (subdom_main) {
-        // iterate over all sources for calculating gradient of objective function
-        for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+
+       for (int i_src = 0; i_src < (int)IP.src_id2name_2d.size(); i_src++){
+
+            std::string name_sim_src = IP.src_id2name_2d[i_src];
+
+            // get source info
+            SrcRecInfo& src = IP.src_map_2d[name_sim_src];
+
+            // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
+            if (src.is_out_of_region){
+                // calculate 2d travel time field (or read pre-computed file)
+                // without loading the boundary source values
+                run_2d_solver(IP, name_sim_src, grid, io, true);
+            }
+        }
+    }
+
+    synchronize_all_world();
+
+    //
+    // load travel times on the boundary
+    //
+    if (subdom_main) {
+       for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
             std::string name_sim_src = IP.src_id2name[i_src];
 
@@ -22,7 +56,7 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 
                 // calculate 2d travel time field (or read pre-computed file)
                 // the interpolate the 2d field onto the 3d grid boundaries
-                run_2d_solver(IP, name_sim_src, grid, io);
+                run_2d_solver(IP, name_sim_src, grid, io, false);
 
                 if_teleseismic_event_exists = true;
 
@@ -534,7 +568,7 @@ CUSTOMREAL interp2d(PlainGrid& pg, CUSTOMREAL t, CUSTOMREAL r) {
 }
 
 
-void run_2d_solver(InputParams& IP, std::string name_src, Grid& grid, IO_utils& io) {
+void run_2d_solver(InputParams& IP, std::string name_src, Grid& grid, IO_utils& io, bool no_load) {
     // calculate 2d travel time field by only the first process of each simulation group
     SrcRecInfo& src = IP.get_src_point(name_src);
 
@@ -574,13 +608,13 @@ void run_2d_solver(InputParams& IP, std::string name_src, Grid& grid, IO_utils& 
             io.read_2d_travel_time_field(fname_2d_src, plain_grid.T_2d, plain_grid.nt_2d, plain_grid.nr_2d);
 
             std::cout << "2d travel time field has been read from file: " << fname_2d_src << std::endl;
-
         } else { // if not, calculate and store it
             // run iteration
             std::cout << "start run iteration myrank: " << myrank << std::endl;
             plain_grid.run_iteration(IP);
         }
     }
+
 
     // share T_2d, r_2d and t_2d to all processes
     broadcast_cr(plain_grid.T_2d, plain_grid.nr_2d*plain_grid.nt_2d, 0);
@@ -589,56 +623,61 @@ void run_2d_solver(InputParams& IP, std::string name_src, Grid& grid, IO_utils& 
 
     // interpolate results on the boundaries and store SrcRec object
 
-    CUSTOMREAL tmp_dist;
+    // load 2d travel time field from file to all processes
+    if (!no_load){
 
-    for (int l = 0; l < N_LAYER_SRC_BOUND; l++){
-        for (int k = 0; k < loc_K; k++) {
+        CUSTOMREAL tmp_dist;
+
+        for (int l = 0; l < N_LAYER_SRC_BOUND; l++){
+            for (int k = 0; k < loc_K; k++) {
+                for (int i = 0; i < loc_I; i++) {
+                    // North boundary
+                    if (grid.j_last()){
+                        Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(loc_J-1-l), grid.get_lon_by_index(i), tmp_dist);
+                        src.arr_times_bound_N[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    }
+                    // South boundary
+                    if (grid.j_first()){
+                        Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(l), grid.get_lon_by_index(i), tmp_dist);
+                        src.arr_times_bound_S[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    }
+                }
+            }
+
+            for (int k = 0; k < loc_K; k++) {
+                for (int j = 0; j < loc_J; j++) {
+                    // East boundary
+                    if (grid.i_last()){
+                        Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(loc_I-1-l), tmp_dist);
+                        src.arr_times_bound_E[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    }
+                    // West boundary
+                    if (grid.i_first()){
+                        Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(l), tmp_dist);
+                        src.arr_times_bound_W[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    }
+                }
+            }
+
             for (int i = 0; i < loc_I; i++) {
-                // North boundary
-                if (grid.j_last()){
-                    Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(loc_J-1-l), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_N[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
-                }
-                // South boundary
-                if (grid.j_first()){
-                    Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(l), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_S[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                for (int j = 0; j < loc_J; j++) {
+                    // Bottom boundary
+                    if (grid.k_first()){
+                        Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(i), tmp_dist);
+                        src.arr_times_bound_Bot[IJ2V(i,j,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
+                    }
                 }
             }
         }
 
-        for (int k = 0; k < loc_K; k++) {
-            for (int j = 0; j < loc_J; j++) {
-                // East boundary
-                if (grid.i_last()){
-                    Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(loc_I-1-l), tmp_dist);
-                    src.arr_times_bound_E[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
-                }
-                // West boundary
-                if (grid.i_first()){
-                    Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(l), tmp_dist);
-                    src.arr_times_bound_W[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
-                }
-            }
-        }
+        // copy boundary source flags into the source object
+        src.is_bound_src[0] = plain_grid.activated_boundaries[0];
+        src.is_bound_src[1] = plain_grid.activated_boundaries[1];
+        src.is_bound_src[2] = plain_grid.activated_boundaries[2];
+        src.is_bound_src[3] = plain_grid.activated_boundaries[3];
+        src.is_bound_src[4] = plain_grid.activated_boundaries[4];
 
-        for (int i = 0; i < loc_I; i++) {
-            for (int j = 0; j < loc_J; j++) {
-                // Bottom boundary
-                if (grid.k_first()){
-                    Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_Bot[IJ2V(i,j,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
-                }
-            }
-        }
     }
-
-    // copy boundary source flags into the source object
-    src.is_bound_src[0] = plain_grid.activated_boundaries[0];
-    src.is_bound_src[1] = plain_grid.activated_boundaries[1];
-    src.is_bound_src[2] = plain_grid.activated_boundaries[2];
-    src.is_bound_src[3] = plain_grid.activated_boundaries[3];
-    src.is_bound_src[4] = plain_grid.activated_boundaries[4];
 
     // write out calculated 2D travel time field
     if (!pre_calculated && myrank == 0)
