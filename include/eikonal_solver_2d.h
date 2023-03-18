@@ -60,9 +60,9 @@ private:
 };
 
 void prepare_teleseismic_boundary_conditions(InputParams&, Grid&, IO_utils&);
-void run_2d_solver(InputParams&, std::string, Grid&, IO_utils&, bool);
+void run_2d_solver(InputParams&, SrcRecInfo&, IO_utils&);
 void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
-
-
+void load_2d_traveltime(InputParams&, SrcRecInfo&, Grid&, IO_utils&);
+std::string get_2d_tt_filename(const std::string&, SrcRecInfo&);
 
 #endif // EIKONAL_SOLVER_2D_H
