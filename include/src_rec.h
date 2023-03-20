@@ -87,13 +87,12 @@ public:
     CUSTOMREAL travel_time     = -999.0;
     CUSTOMREAL travel_time_obs = -999.0;
 
-    bool is_rec_pair = false;   // common source differential traveltime
-
     // source infomation
     int         id_src_single   = -1;
     std::string name_src_single = "unknown";
 
     // receiver pair infomation
+    bool is_rec_pair                       = false;   // common source differential traveltime
     std::vector<int>         id_rec_pair   = {-1,-1};
     std::vector<std::string> name_rec_pair = {"unknown","unknown"};
 

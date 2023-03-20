@@ -127,7 +127,7 @@ public:
     std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
-    // datainfo maps with key <id_src, rec_name>
+    // datainfo-vector maps <src_name, rec_name>
     std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map_all;     // data list for all data (full information is only stored by the main process)
     std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map;         // data list for this simultaneous group
     std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map_tele;    // data list for teleseismic
@@ -288,6 +288,21 @@ inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
 
     // return the first element in the vector as a dummy
     return v[0];
+}
+
+
+inline bool get_if_any_src_pair(std::vector<DataInfo>& v){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_src_pair)
+            return true;
+    }
+
+    // or maybe this will be enough
+    //return v.size() > 1;
+
+    // return false if no rec pair is found
+    return false;
 }
 
 

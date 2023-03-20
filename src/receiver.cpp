@@ -95,8 +95,6 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     if (name_sim_src == name_src1){
 
-                        //CUSTOMREAL syn_dif_time   = get_data_src_pair(IP.data_map[name_src1][name_rec]).travel_time \
-                        //                          - get_data_src_pair(IP.data_map[name_src2][name_rec]).travel_time;
                         CUSTOMREAL syn_dif_time   = data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
                         CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
@@ -119,8 +117,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     } else if (name_sim_src == name_src2) {
 
-                        CUSTOMREAL syn_dif_time   = get_data_src_pair(IP.data_map[name_src2][name_rec]).travel_time \
-                                                  - get_data_src_pair(IP.data_map[name_src1][name_rec]).travel_time;
+                        CUSTOMREAL syn_dif_time   = - data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
                         CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
 

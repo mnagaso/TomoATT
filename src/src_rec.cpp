@@ -686,6 +686,13 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.name_rec_single        = data.name_src_single;
                     tmp_data.cr_dif_travel_time_obs = data.cs_dif_travel_time_obs;
 
+                    //tmp_data.name_rec = tmp_data.name_src_single;
+                    //tmp_data.id_rec   = tmp_data.id_src_single;
+
+                    tmp_data.id_rec_pair            = {-1, -1};
+                    tmp_data.name_rec_pair          = {"unknown", "unknown"};
+                    tmp_data.id_src_single          = -1;
+
                     tmp_data_map[tmp_data.name_src_pair[0]][tmp_data.name_rec_single].push_back(tmp_data);
                     tmp_data_map[tmp_data.name_src_pair[1]][tmp_data.name_rec_single].push_back(tmp_data);
 
@@ -699,6 +706,10 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.name_src_single        = data.name_rec_single;
                     tmp_data.cs_dif_travel_time_obs = data.cr_dif_travel_time_obs;
 
+                    tmp_data.id_src_pair            = {-1, -1};
+                    tmp_data.name_src_pair          = {"unknown", "unknown"};
+                    tmp_data.id_rec_single          = -1;
+
                     tmp_data_map[tmp_data.name_src_single][tmp_data.name_rec_pair[0]].push_back(tmp_data);
                     tmp_data_map[tmp_data.name_src_single][tmp_data.name_rec_pair[1]].push_back(tmp_data);
                 }
@@ -708,6 +719,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     }
 
     // replace data_map with swapped data map
+    // TODO tmp_data_map has strange elements here
     data_map = tmp_data_map;
 
     // set n_data (number of receivers for each source)

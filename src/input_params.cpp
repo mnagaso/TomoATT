@@ -935,7 +935,10 @@ void InputParams::generate_src_map_with_common_source(std::map<std::string, std:
                     // add this source and turn to the next source
                     src_map_comm_src_tmp[iter->first] = src_map[iter->first];
                     // add this source to the list of sources that will be looped in each iteration
-                    src_id2name_comm_src_tmp.push_back(iter->first);
+                    // if the source is not in the list, the synthetic traveltime will not be computed
+                    if (std::find(src_id2name_comm_src_tmp.begin(), src_id2name_comm_src_tmp.end(), iter->first) == src_id2name_comm_src_tmp.end())
+                        src_id2name_comm_src_tmp.push_back(iter->first);
+
                     break;
                 }
             }
@@ -981,6 +984,7 @@ void InputParams::gather_all_arrival_times_to_main(){
                     // copy arrival time to data_info_back
                     for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
                         for(int i_data = 0; i_data < (int)iter->second.size(); i_data++){
+                            // store travel time in all datainfo element of each src-rec pair
                             data_map_all[name_src][iter->first].at(i_data).travel_time = iter->second.at(i_data).travel_time;
                         }
                     }
@@ -999,7 +1003,7 @@ void InputParams::gather_all_arrival_times_to_main(){
                     for (int id_rec = 0; id_rec < nrec; id_rec++){
                         // receive name of receiver
                         std::string name_rec;
-                        recv_str_sim(name_rec, id_sim_group);
+                        recv_str_sim(name_rec, id_sim_group); ///////
                         // then receive travel time
                         for (auto& data: data_map_all[name_src][name_rec])
                             recv_cr_single_sim(&(data.travel_time), id_sim_group);
@@ -1034,33 +1038,86 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
     // gather all synthetic traveltimes to main simultaneous run group
     gather_all_arrival_times_to_main();
 
-    // if id_sim == 0, wait for the mpi request for sending traveltimes to other simultaneous run groups
+    synchronize_all_world();
+
     if (subdom_main && id_subdomain==0 && id_sim==0){
-        while (true) {
+        int n_total_src_pair = 0;
+
+        // calculate differences of synthetic data
+        for (auto iter = data_map_all.begin(); iter != data_map_all.end(); iter++){
+            for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
+                for (auto& data: iter2->second){
+                    if (data.is_src_pair){
+                        data.cr_dif_travel_time = data_map_all[data.name_src_pair[0]][data.name_rec_single].at(0).travel_time \
+                                                - data_map_all[data.name_src_pair[1]][data.name_rec_single].at(0).travel_time;
+
+                        n_total_src_pair++;
+                    }
+                }
+            }
+        }
+
+        // number of src-rec pairs which have src_pair and calculated on different processes
+        int n_src_pair_in_proc = 0; // number of src-rec pairs which have src_pair and calculated on the same simulation group
+        int n_src_pair_out_proc = 0; // number of src-rec pairs which have src_pair and calculated on the different simulation groups
+
+        // count the n_src_pair_in_proc
+        for (auto iter = data_map.begin(); iter != data_map.end(); iter++){
+            for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
+                for (auto& data: iter2->second){
+                    if (data.is_src_pair){
+                        n_src_pair_in_proc++;
+                    }
+                }
+            }
+        }
+
+        // count the n_src_pair_out_proc
+        n_src_pair_out_proc = n_total_src_pair - n_src_pair_in_proc;
+
+        int n_req = 0; // number of requests received
+
+        // if id_sim == 0, wait for the request from each sim group for sending gathered traveltimes
+        while (n_req < n_src_pair_out_proc) {
+            // get process id of sender
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, 0, inter_sim_comm, &status);
+
+            // get a requested src/rec name
+            std::string name_src, name_rec;
+            recv_str_sim(name_src, status.MPI_SOURCE);
+            recv_str_sim(name_rec, status.MPI_SOURCE);
+
+            // send back a differential travel time to the sender
+            CUSTOMREAL dif_travel_time = get_data_src_pair(data_map_all[name_src][name_rec]).cr_dif_travel_time;
+            send_cr_single_sim(&dif_travel_time, status.MPI_SOURCE);
+
+            n_req++;
         }
     }
+
     // if id_sim != 0, make a request to send traveltimes to main simultaneous run group
     if (subdom_main && id_subdomain==0 && id_sim!=0){
         // iterate over src_map_comm_src, then make a request to send traveltimes to main simultaneous run group
         for (auto iter = src_map_comm_src.begin(); iter != src_map_comm_src.end(); iter++){
             // iterate over receivers and check if is_src_pair is true
             for (auto iter2 = data_map[iter->first].begin(); iter2 != data_map[iter->first].end(); iter2++){
-                for (auto& data: iter2->second){
-                    if (data.is_src_pair){
+                // if this data_map includes a src/rec pair, then send a request to main simultaneous run group
+                    if (get_if_any_src_pair(iter2->second)){
+                        // send src name
+                        send_str_sim(iter->first, 0);
+                        // send rec name
+                        send_str_sim(iter2->first, 0);
 
-                        // for the first rec
+                        // receive a differencial travel time from main simultaneous run group
+                        recv_cr_single_sim(&(get_data_src_pair(iter2->second).cr_dif_travel_time), 0);
 
-                        // send a request to main simultaneous run group to send traveltimes
-                        // then receive traveltimes with data_map
-
-                        // for the second rec
-
-                    }
                 }
             }
         }
    }
 
+   synchronize_all_world();
 
 }
 
