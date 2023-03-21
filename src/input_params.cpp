@@ -944,6 +944,41 @@ void InputParams::generate_src_map_with_common_source(std::map<std::string, std:
             }
         }
     }
+
+    // at this line, only subdom_main process of each simultaneous run group has src_map_comm_src_tmp
+    // and src_id2name_comm_src_tmp
+    // the following lines are to broadcast src_map_comm_src_tmp and src_id2name_comm_src_tmp to all processes
+    // of each simultaneous run group
+    //if (id_sim != 0 || !subdom_main)
+    //    src_id2name_comm_src_tmp.clear();
+    // broadcast the size of src_id2name_comm_src_tmp
+    int n_src_id2name_comm_src_tmp = src_id2name_comm_src_tmp.size();
+    broadcast_i_single_sub(n_src_id2name_comm_src_tmp, 0); // inter-sim
+
+    for (int i = 0; i < n_src_id2name_comm_src_tmp; i++){
+        // broadcast the source name
+        std::string src_name;
+        if (subdom_main){
+            src_name = src_id2name_comm_src_tmp[i];
+        }
+
+        broadcast_str_sub(src_name, 0);
+
+        if (!subdom_main)
+            src_id2name_comm_src_tmp.push_back(src_name);
+
+    }
+
+    // check if this sim group has common source double difference traveltime
+    if (src_map_comm_src_tmp.size() > 0){
+        src_pair_exists = true;
+    }
+
+    // flag if any src_pair exists
+    allreduce_bool_inplace_inter_sim(&src_pair_exists, 1); // inter-sim
+    allreduce_bool_inplace(&src_pair_exists, 1); // intra-sim
+    allreduce_bool_inplace_sub(&src_pair_exists, 1); // intra-subdom
+
 }
 
 void InputParams::initialize_adjoint_source(){
@@ -979,7 +1014,7 @@ void InputParams::gather_all_arrival_times_to_main(){
 
         if (subdom_main && id_subdomain==0){
 
-            if (id_sim_group==0) {
+            if (id_sim_group==0) { // the simultaneous run group == 0 is the main simultaneous run group
                 if (id_sim == 0) {
                     // copy arrival time to data_info_back
                     for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
@@ -991,10 +1026,10 @@ void InputParams::gather_all_arrival_times_to_main(){
                 } else {
                     // do nothing
                 }
-            } else {
-                if (id_sim == 0) {
-                    // receive
+            } else { // this source is calculated in the other simultaneous run group than the main
 
+                // the main group receives the arrival time from the other simultaneous run group
+                if (id_sim == 0) {
                     // number of receivers
                     int nrec;
                     recv_i_single_sim(&nrec, id_sim_group);
@@ -1004,13 +1039,26 @@ void InputParams::gather_all_arrival_times_to_main(){
                         // receive name of receiver
                         std::string name_rec;
                         recv_str_sim(name_rec, id_sim_group); ///////
+
+                        // receive number of data
+                        int ndata;
+                        recv_i_single_sim(&ndata, id_sim_group);
+
+                        // exit if the number of data is not the same with data_map_all
+                        if (ndata != (int)data_map_all[name_src][name_rec].size()){
+                            std::cout << "ERROR: the number of data calculated sub simultaneous group is not the same with data_map_all" << std::endl;
+                            std::cout << "name_src = " << name_src << ", name_rec = " << name_rec << std::endl;
+                            std::cout << "ndata = " << ndata << ", data_map_all[name_src][name_rec].size() = " << data_map_all[name_src][name_rec].size() << std::endl;
+                            exit(1);   // for rec_3 src_0, ndata = 1   data_map_all[][].size() = 3
+                        }
+
                         // then receive travel time
                         for (auto& data: data_map_all[name_src][name_rec])
                             recv_cr_single_sim(&(data.travel_time), id_sim_group);
                     }
-                } else if (id_sim == id_sim_group) {
-                    // send
 
+                // the non-main simultaneous run group sends the arrival time to the main group
+                } else if (id_sim == id_sim_group) {
                     // send number of receivers
                     int nrec = data_map[name_src].size();
                     send_i_single_sim(&nrec, 0);
@@ -1018,6 +1066,11 @@ void InputParams::gather_all_arrival_times_to_main(){
                     for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
                         // send name of receiver
                         send_str_sim(iter->first, 0);
+
+                        // send number of data
+                        int ndata = iter->second.size();
+                        send_i_single_sim(&ndata, 0);
+
                         // then send travel time
                         for (auto& data: iter->second)
                             send_cr_single_sim(&(data.travel_time), 0);
@@ -1035,89 +1088,109 @@ void InputParams::gather_all_arrival_times_to_main(){
 
 // gather traveltimes and calculate differences of synthetic data
 void InputParams::gather_traveltimes_and_calc_syn_diff(){
+
     // gather all synthetic traveltimes to main simultaneous run group
     gather_all_arrival_times_to_main();
 
     synchronize_all_world();
 
-    if (subdom_main && id_subdomain==0 && id_sim==0){
-        int n_total_src_pair = 0;
+    if(subdom_main) {
 
-        // calculate differences of synthetic data
-        for (auto iter = data_map_all.begin(); iter != data_map_all.end(); iter++){
-            for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
-                for (auto& data: iter2->second){
-                    if (data.is_src_pair){
-                        data.cr_dif_travel_time = data_map_all[data.name_src_pair[0]][data.name_rec_single].at(0).travel_time \
-                                                - data_map_all[data.name_src_pair[1]][data.name_rec_single].at(0).travel_time;
+        int mpi_tag_send=9999;
+        int mpi_tag_end=9998;
 
-                        n_total_src_pair++;
+        // main process calculates differences of synthetic data and send them to other processes
+        if (id_subdomain==0 && id_sim==0){
+            int n_total_src_pair = 0;
+
+            // calculate differences of synthetic data
+            for (auto iter = data_map_all.begin(); iter != data_map_all.end(); iter++){
+                for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
+                    for (auto& data: iter2->second){
+                        if (data.is_src_pair){
+                            data.cr_dif_travel_time = data_map_all[data.name_src_pair[0]][data.name_rec].at(0).travel_time \
+                                                    - data_map_all[data.name_src_pair[1]][data.name_rec].at(0).travel_time;
+
+                            n_total_src_pair++;
+                        }
                     }
                 }
             }
-        }
 
-        // number of src-rec pairs which have src_pair and calculated on different processes
-        int n_src_pair_in_proc = 0; // number of src-rec pairs which have src_pair and calculated on the same simulation group
-        int n_src_pair_out_proc = 0; // number of src-rec pairs which have src_pair and calculated on the different simulation groups
+            // send differences of synthetic data to other processes
+            for (int id_src = 0; id_src < nsrc_total; id_src++){
 
-        // count the n_src_pair_in_proc
-        for (auto iter = data_map.begin(); iter != data_map.end(); iter++){
-            for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
-                for (auto& data: iter2->second){
-                    if (data.is_src_pair){
-                        n_src_pair_in_proc++;
+                // id of simulation group for this source
+                int id_sim_group = select_id_sim_for_src(id_src, n_sims);
+
+                // skip the main simultaneous run group
+                if (id_sim_group == 0) continue;
+
+                std::string name_src = src_id2name_all[id_src];
+
+                // iterate over receivers
+                for (auto iter = data_map_all[name_src].begin(); iter != data_map_all[name_src].end(); iter++){
+                    std::string name_rec = iter->first;
+
+                    // iterate over data
+                    for (auto& data: iter->second){
+                        if (data.is_src_pair){
+                            // send signal with dummy int
+                            int dummy = 0;
+                            MPI_Send(&dummy, 1, MPI_INT, id_sim_group, mpi_tag_send, inter_sim_comm);
+
+                            // send src_name
+                            send_str_sim(name_src, id_sim_group);
+                            // send rec_name
+                            send_str_sim(name_rec, id_sim_group);
+                            // send travel time difference
+                            send_cr_single_sim(&(data.cr_dif_travel_time), id_sim_group);
+                        }
                     }
                 }
+            } // end for id_src
+
+            // send end signal (start from 1 because 0 is main process)
+            for (int id_sim = 1; id_sim < n_sims; id_sim++){
+                // send dummy integer
+                int dummy = 0;
+                MPI_Send(&dummy, 1, MPI_INT, id_sim, mpi_tag_end, inter_sim_comm);
             }
-        }
 
-        // count the n_src_pair_out_proc
-        n_src_pair_out_proc = n_total_src_pair - n_src_pair_in_proc;
+        // un-main process receives differences of synthetic data from main process
+        } else if (id_subdomain==0 && id_sim!=0) {
+            while (true) {
 
-        int n_req = 0; // number of requests received
+                // wait with mpi probe
+                MPI_Status status;
+                MPI_Probe(0, MPI_ANY_TAG, inter_sim_comm, &status); //////////////
 
-        // if id_sim == 0, wait for the request from each sim group for sending gathered traveltimes
-        while (n_req < n_src_pair_out_proc) {
-            // get process id of sender
-            MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, 0, inter_sim_comm, &status);
+                // receive signal with dummy int
+                int dummy = 0;
+                MPI_Recv(&dummy, 1, MPI_INT, 0, MPI_ANY_TAG, inter_sim_comm, &status);
 
-            // get a requested src/rec name
-            std::string name_src, name_rec;
-            recv_str_sim(name_src, status.MPI_SOURCE);
-            recv_str_sim(name_rec, status.MPI_SOURCE);
+                // if this signal is for sending data
+                if (status.MPI_TAG == mpi_tag_send) {
 
-            // send back a differential travel time to the sender
-            CUSTOMREAL dif_travel_time = get_data_src_pair(data_map_all[name_src][name_rec]).cr_dif_travel_time;
-            send_cr_single_sim(&dif_travel_time, status.MPI_SOURCE);
+                    std::string name_src, name_rec;
 
-            n_req++;
+                    // receive src_name
+                    recv_str_sim(name_src, 0);
+                    // receive rec_name
+                    recv_str_sim(name_rec, 0);
+                    // receive travel time difference
+                    recv_cr_single_sim(&(get_data_src_pair(data_map[name_src][name_rec]).cr_dif_travel_time), 0);
+
+                // if this signal is for terminating the wait loop
+                } else if (status.MPI_TAG == mpi_tag_end) {
+                    break;
+                }
+
+            }
         }
     }
 
-    // if id_sim != 0, make a request to send traveltimes to main simultaneous run group
-    if (subdom_main && id_subdomain==0 && id_sim!=0){
-        // iterate over src_map_comm_src, then make a request to send traveltimes to main simultaneous run group
-        for (auto iter = src_map_comm_src.begin(); iter != src_map_comm_src.end(); iter++){
-            // iterate over receivers and check if is_src_pair is true
-            for (auto iter2 = data_map[iter->first].begin(); iter2 != data_map[iter->first].end(); iter2++){
-                // if this data_map includes a src/rec pair, then send a request to main simultaneous run group
-                    if (get_if_any_src_pair(iter2->second)){
-                        // send src name
-                        send_str_sim(iter->first, 0);
-                        // send rec name
-                        send_str_sim(iter2->first, 0);
-
-                        // receive a differencial travel time from main simultaneous run group
-                        recv_cr_single_sim(&(get_data_src_pair(iter2->second).cr_dif_travel_time), 0);
-
-                }
-            }
-        }
-   }
-
-   synchronize_all_world();
+   synchronize_all_world(); /////////////////
 
 }
 
@@ -1499,7 +1572,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
 
                     // common source differential traveltime
                     } else if (data.is_rec_pair) {
-                        std::string name_src   = data.name_src_single;
+                        std::string name_src   = data.name_src;
                         std::string name_rec1  = data.name_rec_pair[0];
                         std::string name_rec2  = data.name_rec_pair[1];
 

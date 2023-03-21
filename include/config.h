@@ -193,6 +193,9 @@ inline int use_gpu = 0; // 0: no, 1: yes
 // total number of sources in the srcrec file
 inline int nsrc_total = 0;
 
+// flag if common receiver double difference data is used
+inline bool src_pair_exists = false;
+
 // weight of different typs of data
 inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
 inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0

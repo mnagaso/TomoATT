@@ -43,7 +43,9 @@ inline void recv_str_sim(std::string&, int);
 inline void allreduce_i_single(int&, int&);
 inline void allreduce_cr_single(CUSTOMREAL&, CUSTOMREAL&);
 inline void allreduce_i_inplace(int*, int);
+inline void allreduce_bool_inplace_inter_sim(bool*, int);
 inline void allreduce_bool_inplace(bool*, int);
+inline void allreduce_bool_inplace_sub(bool*, int);
 inline void allreduce_cr_inplace(CUSTOMREAL*, int);
 inline void allreduce_cr_sim(CUSTOMREAL*, int, CUSTOMREAL*);
 inline void allreduce_cr_sim_inplace(CUSTOMREAL*, int);
@@ -548,6 +550,19 @@ inline void allreduce_bool_inplace_inter_sim(bool* loc_buf, int count){
     // return true if any of the processes return true
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CXX_BOOL, MPI_LOR, inter_sim_comm);
 }
+
+
+inline void allreduce_bool_inplace(bool* loc_buf, int count){
+    // return true if any of the processes return true
+    MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CXX_BOOL, MPI_LOR, inter_sub_comm);
+}
+
+
+inline void allreduce_bool_inplace_sub(bool* loc_buf, int count){
+    // return true if any of the processes return true
+    MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CXX_BOOL, MPI_LOR, sub_comm);
+}
+
 
 inline void allreduce_i_inplace(int* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_INT, MPI_SUM, inter_sub_comm);
