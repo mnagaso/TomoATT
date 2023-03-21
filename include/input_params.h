@@ -291,6 +291,14 @@ inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
 }
 
 
+inline void set_cr_dif_to_src_pair(std::vector<DataInfo>& v, CUSTOMREAL cr_dif){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_src_pair)
+            it->cr_dif_travel_time = cr_dif;
+    }
+}
+
 inline bool get_if_any_src_pair(std::vector<DataInfo>& v){
     // return the first element in the vector with is_rec_pair = true
     for (auto it = v.begin(); it != v.end(); it++){

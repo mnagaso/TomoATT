@@ -102,8 +102,19 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
                         // contribute misfit
-                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        //obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        // exit if d_obj is too large
+                        if (d_obj > 100){
+                            std::cout << "d_obj = " << d_obj << std::endl;
+                            std::cout << "syn_dif_time = " << syn_dif_time << std::endl;
+                            std::cout << "obs_dif_time = " << obs_dif_time << std::endl;
+                            std::cout << "data.weight = " << data.weight << std::endl;
+                            exit(1);
+                        }
 
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
@@ -124,8 +135,20 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
                         // contribute misfit
-                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        //obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        // exit if d_obj is too large
+                        if (d_obj > 100){
+                            std::cout << "d_obj = " << d_obj << std::endl;
+                            std::cout << "syn_dif_time = " << syn_dif_time << std::endl;
+                            std::cout << "obs_dif_time = " << obs_dif_time << std::endl;
+                            std::cout << "data.weight = " << data.weight << std::endl;
+                            exit(1);
+                        }
+
 
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
