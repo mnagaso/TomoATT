@@ -16,8 +16,9 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
 
         // calculate the travel time of the receiver by interpolation
         for(std::string name_rec: name_receivers) {
+            CUSTOMREAL traveltime = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
             for (auto& data : IP.data_map[name_sim_src][name_rec])
-                data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
+                data.travel_time = traveltime;
         }
     }
 }
