@@ -160,14 +160,16 @@ lon_srcs=[]
 lat_srcs=[]
 
 # teleseismic events
-n_src_tele = 4
+n_src_tele = 30
 center_lon = (pp2deg+pp1deg)/2.0
 center_lat = (tt2deg+tt1deg)/2.0
 r_src = 50 # deg
 d_r = 360.0/n_src_tele
+src_deps = [20, 100, 200]
 
 for i in range(n_src_tele):
-    dep = random.uniform(10, 400)
+    #dep = random.uniform(10, 400)
+    dep = src_deps[i%3]
     lon = math.cos(d_r*i/180.0*math.pi)*r_src + center_lon
     lat = math.sin(d_r*i/180.0*math.pi)*r_src + center_lat
     dep_srcs.append(dep)

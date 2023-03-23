@@ -87,13 +87,12 @@ public:
     CUSTOMREAL travel_time     = -999.0;
     CUSTOMREAL travel_time_obs = -999.0;
 
-    bool is_rec_pair = false;   // common source differential traveltime
-
     // source infomation
-    int         id_src_single   = -1;
-    std::string name_src_single = "unknown";
+    //int         id_src_single   = -1; // use id_src instead
+    //std::string name_src_single = "unknown"; // use name_src instead
 
     // receiver pair infomation
+    bool is_rec_pair                       = false;   // common source differential traveltime
     std::vector<int>         id_rec_pair   = {-1,-1};
     std::vector<std::string> name_rec_pair = {"unknown","unknown"};
 
@@ -107,8 +106,8 @@ public:
     std::vector<std::string> name_src_pair = {"unknown","unknown"};
 
     // receiver infomation
-    int id_rec_single           = -1;
-    std::string name_rec_single = "unknown";
+    //int id_rec_single           = -1;  // use id_rec instead
+    //std::string name_rec_single = "unknown"; // use name_rec instead
 
     // common receiver differential travel time
     CUSTOMREAL cr_dif_travel_time     = -999.0;
@@ -172,6 +171,10 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&, \
                              std::vector<std::string>&);
+
+void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>&, \
+                                   std::vector<std::string>&, \
+                                   std::map<std::string, SrcRecInfo>&);
 
 void send_src_info_inter_sim(SrcRecInfo&, int);
 void recv_src_info_inter_sim(SrcRecInfo&, int);
