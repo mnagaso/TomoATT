@@ -23,9 +23,6 @@
 
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
 
-    if (IP.src_map_comm_src.size() == 0)
-        return;
-
     for (int i_src = 0; i_src < (int)IP.src_id2name_comm_src.size(); i_src++){
 
         std::string name_sim_src = IP.src_id2name_comm_src[i_src];
@@ -36,7 +33,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         if (myrank == 0)
             std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
 
-        bool is_teleseismic = IP.get_src_point(name_sim_src).is_out_of_region;
+        bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
         Source src(IP, grid, is_teleseismic, name_sim_src);
 
@@ -59,6 +56,11 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
     std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
 
+    // gather all the traveltime to the main process and distribute to all processes
+    // for calculating the synthetic common receiver differential traveltime
+    IP.gather_traveltimes_and_calc_syn_diff();
+
+
 }
 
 
@@ -79,8 +81,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  compute the synthetic common receiver differential traveltime first
     ///////////////////////////////////////////////////////////////////////
 
-    //prepare synthetic traveltime for all earthquakes
-    pre_run_forward_only(IP, grid, io, i_inv);
+    // prepare synthetic traveltime for all earthquakes
+    if (src_pair_exists)
+        pre_run_forward_only(IP, grid, io, i_inv);
 
     //
     // loop over all sources

@@ -149,6 +149,11 @@ inline bool     subdom_main      = false; // true if this process is main proces
 //inline int      id_sim_src       = 0; // id of current target source
 //inline std::string name_sim_src  = "unknown";   //name of current target source
 
+// rule to distribute source to simultaneous group
+inline int select_id_sim_for_src(const int& i_src, const int& n_sims){
+    return i_src % n_sims;
+}
+
 // read input yaml file
 inline std::string input_file="input_params.yaml";
 // output directory name
@@ -187,6 +192,9 @@ inline int use_gpu = 0; // 0: no, 1: yes
 
 // total number of sources in the srcrec file
 inline int nsrc_total = 0;
+
+// flag if common receiver double difference data is used
+inline bool src_pair_exists = false;
 
 // weight of different typs of data
 inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0

@@ -606,20 +606,21 @@ void IO_utils::write_2d_travel_time_field(CUSTOMREAL* T, CUSTOMREAL* r, CUSTOMRE
             auto str = std::to_string(src_dep);
             std::string fname = output_dir + "/" + OUTPUT_DIR_2D + "/2d_travel_time_field_dep_" +str.substr(0,str.find(".")+4)+".h5";
             // create and open h5 file
-            //plist_id_2d = H5Pcreate(H5P_FILE_ACCESS);
             file_id_2d  = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+            // force to use CUSTOMREAL type for 2D fields
+            int dtype = check_data_type(T[0]);
 
             // create dataset and write
             int dims_T[2] = {nr, nt};
             std::string str_dset = "T";
-            h5_create_and_write_dataset_2d(str_dset, 2, dims_T, custom_real_flag, T);
+            h5_create_and_write_dataset_2d(str_dset, 2, dims_T, dtype, T);
             str_dset = "r";
-            h5_create_and_write_dataset_2d(str_dset, 1, &nr, custom_real_flag, r);
+            h5_create_and_write_dataset_2d(str_dset, 1, &nr, dtype, r);
             str_dset = "t";
-            h5_create_and_write_dataset_2d(str_dset, 1, &nt, custom_real_flag, t);
+            h5_create_and_write_dataset_2d(str_dset, 1, &nt, dtype, t);
 
             // close h5 file
-            //H5Pclose(plist_id_2d);
             H5Fclose(file_id_2d);
 #else
             std::cout << "ERROR: HDF5 is not enabled" << std::endl;

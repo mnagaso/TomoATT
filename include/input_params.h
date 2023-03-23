@@ -120,13 +120,14 @@ public:
     std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> src_map_comm_src;     // map of sources with common source
+    std::map<std::string, SrcRecInfo> src_map_2d;           // map of sources assigned for 2d solver
     std::map<std::string, SrcRecInfo> src_map_tele;         // source list for teleseismic
 
     std::map<std::string, SrcRecInfo> rec_map_all;     // map of all receivers (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> rec_map;         // map of receivers belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> rec_map_tele;    // rec list for teleseismic
 
-    // datainfo maps with key <id_src, rec_name>
+    // datainfo-vector maps <src_name, rec_name>
     std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map_all;     // data list for all data (full information is only stored by the main process)
     std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map;         // data list for this simultaneous group
     std::map< std::string, std::map<std::string, std::vector<DataInfo>>> data_map_tele;    // data list for teleseismic
@@ -136,6 +137,7 @@ public:
     // src id <-> src name relations
     std::vector<std::string>          src_id2name;          // name list of sources belonging to this simultaneous group
     std::vector<std::string>          src_id2name_comm_src; // name list of sources with common source
+    std::vector<std::string>          src_id2name_2d;       // name list of sources assigned for 2d solver.
     std::vector<std::string>          src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
     std::vector<std::string>          src_id2name_back;     // back up of name list of all sources (this will not be swapped)
 
@@ -163,6 +165,8 @@ public:
     void allocate_memory_tele_boundaries(int, int, int, std::string,
         bool, bool, bool, bool, bool); // allocate memory for tele boundaries
 
+    // gather traveltimes and calculate differences of synthetic data
+    void gather_traveltimes_and_calc_syn_diff();
 
 private:
     // boundary information
@@ -220,7 +224,9 @@ private:
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
     // geneerate a map of sources which include common source double difference data
-    void generate_src_map_with_common_source();
+    void generate_src_map_with_common_source(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>&,
+                                             std::map<std::string, SrcRecInfo>&,
+                                             std::vector<std::string>&);
 
     bool i_first=false, i_last=false, \
          j_first=false, j_last=false, \
@@ -282,6 +288,29 @@ inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
 
     // return the first element in the vector as a dummy
     return v[0];
+}
+
+
+inline void set_cr_dif_to_src_pair(std::vector<DataInfo>& v, CUSTOMREAL cr_dif){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_src_pair)
+            it->cr_dif_travel_time = cr_dif;
+    }
+}
+
+inline bool get_if_any_src_pair(std::vector<DataInfo>& v){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_src_pair)
+            return true;
+    }
+
+    // or maybe this will be enough
+    //return v.size() > 1;
+
+    // return false if no rec pair is found
+    return false;
 }
 
 

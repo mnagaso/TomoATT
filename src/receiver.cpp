@@ -12,14 +12,17 @@ Receiver::~Receiver() {
 void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
         // get receiver positions from input parameters
-        std::vector<std::string> name_receivers = IP.get_rec_names(name_sim_src);
+        //std::vector<std::string> name_receivers = IP.get_rec_names(name_sim_src);
 
         // calculate the travel time of the receiver by interpolation
-        for(std::string name_rec: name_receivers) {
-            CUSTOMREAL traveltime = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
-            for (auto& data : IP.data_map[name_sim_src][name_rec])
-                data.travel_time = traveltime;
+        for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
+            CUSTOMREAL travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
+            for (auto& data: it_rec->second){
+                // store travel time on single receiver and double receivers
+                data.travel_time = travel_time;
+            }
         }
+
     }
 }
 
@@ -84,7 +87,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     std::string name_src1 = data.name_src_pair[0];
                     std::string name_src2 = data.name_src_pair[1];
-                    std::string name_rec  = data.name_rec_single;
+                    std::string name_rec  = data.name_rec;
 
                     // skip if this data is not belongs to this simulation group
                     // (this happens only the first group, because the first group retains all data)
@@ -92,16 +95,26 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     if (name_sim_src == name_src1){
 
-                        CUSTOMREAL syn_dif_time   = get_data_src_pair(IP.data_map[name_src1][name_rec]).travel_time \
-                                                  - get_data_src_pair(IP.data_map[name_src2][name_rec]).travel_time;
+                        CUSTOMREAL syn_dif_time   = data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
                         CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
 
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
                         // contribute misfit
-                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        //obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        // exit if d_obj is too large
+                        if (d_obj > 100){
+                            std::cout << "d_obj = " << d_obj << std::endl;
+                            std::cout << "syn_dif_time = " << syn_dif_time << std::endl;
+                            std::cout << "obs_dif_time = " << obs_dif_time << std::endl;
+                            std::cout << "data.weight = " << data.weight << std::endl;
+                            exit(1);
+                        }
 
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
@@ -115,16 +128,27 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     } else if (name_sim_src == name_src2) {
 
-                        CUSTOMREAL syn_dif_time   = get_data_src_pair(IP.data_map[name_src2][name_rec]).travel_time \
-                                                  - get_data_src_pair(IP.data_map[name_src1][name_rec]).travel_time;
+                        CUSTOMREAL syn_dif_time   = - data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
                         CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
 
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
                         // contribute misfit
-                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        //obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        // exit if d_obj is too large
+                        if (d_obj > 100){
+                            std::cout << "d_obj = " << d_obj << std::endl;
+                            std::cout << "syn_dif_time = " << syn_dif_time << std::endl;
+                            std::cout << "obs_dif_time = " << obs_dif_time << std::endl;
+                            std::cout << "data.weight = " << data.weight << std::endl;
+                            exit(1);
+                        }
+
 
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
@@ -145,7 +169,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                 //
                 } else if (data.is_rec_pair) {
 
-                    std::string name_src  = data.name_src_single;
+                    std::string name_src  = data.name_src;
                     std::string name_rec1 = data.name_rec_pair[0];
                     std::string name_rec2 = data.name_rec_pair[1];
 
