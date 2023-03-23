@@ -386,7 +386,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
                 if (data.is_src_rec){
                     SrcRecInfo  rec      = rec_map[name_rec];
 
-                    CUSTOMREAL  travel_time = data.travel_time;
+                    CUSTOMREAL  travel_time = data.travel_time_obs; // write the observed travel time
 
                     // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
                     ofs << std::setw(7) << std::right << std::setfill(' ') << i_src << " "
