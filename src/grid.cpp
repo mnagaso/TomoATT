@@ -940,12 +940,16 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
         std::string f_model_path = IP.get_init_model_path();
         io.read_model(f_model_path,"xi",   xi_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
+        //io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
         if(if_test) {
             // solver test
             io.read_model(f_model_path, "u", u_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
         }
+
+        // set zeta = 0 (optimization for zeta is not implemented yet)
+        memset(zeta_loc, 0, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
+
     }
 
     // broadcast

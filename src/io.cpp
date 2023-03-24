@@ -1208,6 +1208,10 @@ void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
             dset_name = "xi";
             inverse_field = false;
             write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.xi_loc, inverse_field);
+            //dset_name = "zeta";
+            //inverse_field = false;
+            //write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.zeta_loc, inverse_field);
+
 
 #else
             std::cout << "ERROR: HDF5 is not enabled" << std::endl;
