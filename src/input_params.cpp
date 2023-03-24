@@ -233,6 +233,19 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion"]["tol_gradient"]) {
                 TOL_SRC_RELOC = config["inversion"]["tol_gradient"].as<CUSTOMREAL>();
             }
+
+            if (config["inversion"]["is_ortime_local_search"]) {
+                is_ortime_local_search = config["inversion"]["is_ortime_local_search"].as<int>();
+            }
+            if (config["inversion"]["ref_ortime_change"]) {
+                ref_ortime_change = config["inversion"]["ref_ortime_change"].as<CUSTOMREAL>();
+            }
+            if (config["inversion"]["max_change_ortime"]) {
+                max_change_ortime = config["inversion"]["max_change_ortime"].as<CUSTOMREAL>();
+            }
+            if (config["inversion"]["step_length_ortime_rescale"]) {
+                step_length_ortime_rescale = config["inversion"]["step_length_ortime_rescale"].as<CUSTOMREAL>();
+            }
         }
 
         if (config["inv_strategy"]) {
@@ -469,7 +482,11 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(max_change_lat, 0);
     broadcast_cr_single(max_change_lon, 0);
     broadcast_cr_single(TOL_SRC_RELOC, 0);
-
+    broadcast_i_single(is_ortime_local_search, 0);
+    broadcast_cr_single(ref_ortime_change, 0);
+    broadcast_cr_single(max_change_ortime, 0);
+    broadcast_cr_single(step_length_ortime_rescale, 0);
+    
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_i_single(ndiv_i, 0);
     broadcast_i_single(ndiv_j, 0);

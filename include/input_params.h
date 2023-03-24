@@ -136,6 +136,9 @@ public:
     // relocation
     bool       is_stop      = false;
     CUSTOMREAL tau_opt      = 0.0;
+    CUSTOMREAL grad_tau     = 0.0;
+    CUSTOMREAL change_ortime = 0.0;
+
     CUSTOMREAL grad_chi_i   = 0.0;
     CUSTOMREAL grad_chi_j   = 0.0;
     CUSTOMREAL grad_chi_k   = 0.0;
@@ -396,6 +399,11 @@ public:
     CUSTOMREAL max_change_dep = 10.0; 
     CUSTOMREAL max_change_lat = 1.0; 
     CUSTOMREAL max_change_lon = 1.0; 
+    int is_ortime_local_search = 0;
+    CUSTOMREAL ref_ortime_change = 5.0;
+    CUSTOMREAL max_change_ortime = 0.5;
+    CUSTOMREAL step_length_ortime_rescale = 0.1;
+    
     // std::map<std::string,std::string> name_for_reloc;
     std::vector<std::string> name_for_reloc;
 private:

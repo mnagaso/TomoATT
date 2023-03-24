@@ -524,7 +524,11 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
         // initialize the kernel of unrelocated source
         for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
             std::string name_rec = IP.name_for_reloc[i];
-            IP.rec_list_nv[name_rec].tau_opt                    = _0_CR;
+            if (IP.is_ortime_local_search == 0) // origin time global search
+                IP.rec_list_nv[name_rec].tau_opt                    = _0_CR;
+            else    // origin time local search
+                IP.rec_list_nv[name_rec].grad_tau                   = _0_CR;
+
             IP.rec_list_nv[name_rec].grad_chi_i                 = _0_CR;
             IP.rec_list_nv[name_rec].grad_chi_j                 = _0_CR;
             IP.rec_list_nv[name_rec].grad_chi_k                 = _0_CR;
@@ -800,8 +804,16 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP){
             if (! IP.rec_list_nv[name_rec].is_stop){
                 CUSTOMREAL weight = data_info_tmp[i].weight;
                 CUSTOMREAL misfit = data_info_tmp[i].travel_time_obs - IP.syn_time_list_sr[name_sim_src][name_rec];
-                IP.rec_list_nv[name_rec].tau_opt += misfit * weight;
-                IP.rec_list_nv[name_rec].sum_weight += weight;  
+
+                
+                if (IP.is_ortime_local_search == 0){    // global search
+                    IP.rec_list_nv[name_rec].tau_opt += misfit * weight;
+                    IP.rec_list_nv[name_rec].sum_weight += weight;
+                } else {    // local search
+                    IP.rec_list_nv[name_rec].grad_tau += weight * 
+                        (IP.syn_time_list_sr[name_sim_src][name_rec] + IP.rec_list_nv[name_rec].tau_opt - data_info_tmp[i].travel_time_obs);
+                }
+                  
             }
         }
 
@@ -931,7 +943,24 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                     grad_lon_km = 0.0;
                 else
                     grad_lon_km = IP.rec_list_nv[name_rec].grad_chi_i/(R_earth * cos(IP.rec_list_nv[name_rec].lat * DEG2RAD));
-                CUSTOMREAL norm_grad   = std::sqrt(my_square(grad_dep_km) + my_square(grad_lat_km) + my_square(grad_lon_km));
+                
+                CUSTOMREAL norm_grad;
+                CUSTOMREAL grad_ortime = 0.0;
+                if (IP.is_ortime_local_search == 0){
+                    norm_grad   = std::sqrt(my_square(grad_dep_km) + my_square(grad_lat_km) + my_square(grad_lon_km));
+                } else {
+                    if (abs(IP.max_change_ortime - abs(IP.rec_list_nv[name_rec].change_ortime)) < 0.001)
+                        grad_ortime = 0.0;
+                    else
+                        grad_ortime = IP.rec_list_nv[name_rec].grad_tau/IP.ref_ortime_change;
+                    
+                    norm_grad   = std::sqrt(my_square(grad_dep_km) + my_square(grad_lat_km) + my_square(grad_lon_km) + my_square(grad_ortime));
+                } 
+
+                if (norm_grad < TOL_SRC_RELOC){
+                    IP.rec_list_nv[name_rec].is_stop = true;
+                    continue;
+                }
 
 
                 CUSTOMREAL step_length;
@@ -946,6 +975,13 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 update_max = std::max(update_max,abs(update_lat));
                 CUSTOMREAL update_lon = step_length * grad_lon_km;
                 update_max = std::max(update_max,abs(update_lon));
+                
+                CUSTOMREAL update_ortime = 0.0;
+                if (IP.is_ortime_local_search == 1){
+                    update_ortime = step_length * grad_ortime * IP.step_length_ortime_rescale;
+                    update_max = std::max(update_max,abs(update_ortime));
+                }
+
 
                 CUSTOMREAL downscale = 1.0;
                 if (update_max > IP.rec_list_nv[name_rec].step_length_max){
@@ -958,6 +994,9 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 update_lat = - update_lat * downscale / R_earth * RAD2DEG;
                 update_lon = - update_lon * downscale / (R_earth * cos(IP.rec_list_nv[name_rec].lat * DEG2RAD)) * RAD2DEG;
 
+                if (IP.is_ortime_local_search == 1){
+                    update_ortime = - update_ortime * downscale * IP.step_length_ortime_rescale;
+                }
 
                 // limit the update for dep, lat, lon
                 if (abs(IP.rec_list_nv[name_rec].change_dep + update_dep) > IP.max_change_dep){
@@ -980,6 +1019,15 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                         update_lon = - IP.max_change_lon - IP.rec_list_nv[name_rec].change_lon;
                 } 
 
+                if (IP.is_ortime_local_search == 1){
+                    if (abs(IP.rec_list_nv[name_rec].change_ortime + update_ortime) > IP.max_change_ortime){
+                        if (IP.rec_list_nv[name_rec].change_ortime + update_ortime > 0)
+                            update_ortime = IP.max_change_ortime - IP.rec_list_nv[name_rec].change_ortime;
+                        else 
+                            update_ortime = - IP.max_change_ortime - IP.rec_list_nv[name_rec].change_ortime;
+                    } 
+                }
+
                 // earthquake should be below the surface
                 if (IP.rec_list_nv[name_rec].dep + update_dep < 0){
                     update_dep = - IP.rec_list_nv[name_rec].dep;
@@ -993,27 +1041,35 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 IP.rec_list_nv[name_rec].change_lat += update_lat;
                 IP.rec_list_nv[name_rec].change_lon += update_lon;
 
-                if (norm_grad < TOL_SRC_RELOC || IP.rec_list_nv[name_rec].step_length_max < TOL_STEP_SIZE){
+                if (IP.is_ortime_local_search == 1){
+                    IP.rec_list_nv[name_rec].tau_opt += update_ortime;
+                    IP.rec_list_nv[name_rec].change_ortime += update_ortime;
+                }
+
+                if (IP.rec_list_nv[name_rec].step_length_max < TOL_STEP_SIZE){
                     IP.rec_list_nv[name_rec].is_stop = true;
                 }
 
-                // if(id_sim == 0 && myrank == 0){
-                //     std::cout << ", change_dep: " << IP.rec_list_nv[name_rec].change_dep
-                //               << ", change_lat: " << IP.rec_list_nv[name_rec].change_lat
-                //               << ", change_lon: " << IP.rec_list_nv[name_rec].change_lon
-                //               << std::endl;
+                if(id_sim == 0 && myrank == 0 && (name_rec == "1753590" || std::isnan(IP.rec_list_nv[name_rec].tau_opt))){
+                    std::cout << "name_rec: " << name_rec << ", change_dep: " << IP.rec_list_nv[name_rec].change_dep
+                              << ", change_lat: " << IP.rec_list_nv[name_rec].change_lat
+                              << ", change_lon: " << IP.rec_list_nv[name_rec].change_lon
+                              << ", change_ortime: " << IP.rec_list_nv[name_rec].change_ortime
+                              << std::endl;
 
-                //     std::cout << "kernel k(dep,km): " << grad_dep_km
-                //           << ", kernel i(lat,km): " << grad_lat_km
-                //           << ", kernel j(lon,km): " << grad_lon_km
-                //           << std::endl; 
+                    std::cout << "kernel k(dep,km): " << grad_dep_km
+                          << ", kernel i(lat,km): " << grad_lat_km
+                          << ", kernel j(lon,km): " << grad_lon_km
+                          << ", kernel time ref: " << grad_ortime
+                          << std::endl; 
 
-                //     std::cout << "update dep (km): " << update_dep
-                //           << ", update lat (km): " << update_lat * DEG2RAD * R_earth 
-                //           << ", update lon (km): " << update_lon * DEG2RAD * R_earth * cos(IP.rec_list_nv[name_rec].lat * DEG2RAD)
-                //           << std::endl; 
-                //     std::cout << "norm_grad: " << norm_grad << std::endl;     
-                // }
+                    std::cout << "update dep (km): " << update_dep
+                          << ", update lat (km): " << update_lat * DEG2RAD * R_earth 
+                          << ", update lon (km): " << update_lon * DEG2RAD * R_earth * cos(IP.rec_list_nv[name_rec].lat * DEG2RAD)
+                          << ", update ortime " << update_ortime
+                          << std::endl; 
+                    std::cout << "norm_grad: " << norm_grad << std::endl;     
+                }
 
             
 

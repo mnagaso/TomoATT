@@ -127,8 +127,16 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     // if(id_sim == 0 && myrank == 0)
     //     std::cout << "ckp3, compute optimal ortime step 2 ... " << std::endl;
     // divide optimal origin time by summed weight
-    recs.divide_optimal_origin_time_by_summed_weight(IP);
-
+    if (IP.is_ortime_local_search == 0) {
+        recs.divide_optimal_origin_time_by_summed_weight(IP);
+    } else {
+        for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+            std::string name_rec = IP.name_for_reloc[i];
+            allreduce_cr_sim_single_inplace(IP.rec_list_nv[name_rec].grad_tau);
+        }
+        synchronize_all_world();
+    }
+        
     // compute the objective function
     recs.calculate_obj_reloc(IP, i_iter);
 

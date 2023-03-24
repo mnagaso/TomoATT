@@ -317,7 +317,8 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
             if (depth < taper[0]) {     // weight = 0;
                 weight = _0_CR;
             } else if (depth < taper[1]) {
-                weight = (_1_CR - std::cos(PI*(depth - taper[0])/(taper[1] - taper[0]))) / _2_CR;
+                // weight = (_1_CR - std::cos(PI*(depth - taper[0])/(taper[1] - taper[0]))) / _2_CR;
+                weight = (depth - taper[0])/(taper[1] - taper[0]);
             } else {
                 weight = _1_CR;
             }
