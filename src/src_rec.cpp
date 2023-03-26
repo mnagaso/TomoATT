@@ -226,7 +226,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         rec_weight = 1.0; // default weight
 
                     data.data_weight = src_weight * rec_weight;
-                    data.weight      = data.weight * cs_dif_time_local_weight;
+                    data.weight      = data.data_weight * cs_dif_time_local_weight;
                     data.phase       = tokens[11];
 
                     data.is_rec_pair            = true;
