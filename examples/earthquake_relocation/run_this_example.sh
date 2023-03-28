@@ -12,4 +12,4 @@ python modify_source_location.py
 mpirun --oversubscribe -np 8 ../../build/bin/TOMOATT -i input_params.yml
 
 # result can be indicated in check_relocate_sourece.py/ipynb
-python check_relocated_sourece.py
+python check_relocated_source.py
