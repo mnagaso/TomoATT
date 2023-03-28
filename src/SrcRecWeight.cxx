@@ -200,7 +200,8 @@ int find_good_ncond(std::vector<CUSTOMREAL>& condition_numbers){
 
 void normalize_weight(std::map<std::string, SrcRecInfo>& src_or_rec, std::vector<std::string>& id2name){
 
-    // scale weight values to be the total sum becomes 1.0*number of elements
+    // scale weight values to be \sum_{i}^{S} w_i = S
+
     int n_elm = src_or_rec.size();
     CUSTOMREAL w_sum = 0.0;
     #pragma omp parallel for default(none) reduction(+:w_sum) shared(src_or_rec, id2name, n_elm)
@@ -217,35 +218,48 @@ void normalize_weight(std::map<std::string, SrcRecInfo>& src_or_rec, std::vector
 
 
 void normalize_weight_data(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map, \
+                           std::map<std::string, SrcRecInfo>& src_map, \
                            std::map<std::string, SrcRecInfo>& rec_map, \
                            std::vector<std::string>&          src_id2name, \
                            std::vector<std::string>&          rec_id2name){
 
-    // normalize weight in each event (sum of weight in each event becomes 1.0*number of data tracks in the event)
+    // normalize weight in each event (sum of weight*n_data becomes 1.0*number of data tracks in the event)
     int n_src = src_id2name.size();
     int n_rec = rec_id2name.size();
 
-    #pragma omp parallel for default(none) shared(data_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
+//
+// this way cancel the geographical weight on the receiver side
+//
+//    #pragma omp parallel for default(none) shared(data_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
+//    for (int i = 0; i < n_src; i++) {
+//        CUSTOMREAL w_sum_tmp = 0.0;
+//        int n_data=0;
+//        for (int j = 0; j < n_rec; j++) {
+//            int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
+//            if (v_data_size > 0) {
+//                CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
+//                w_sum_tmp += data_on_rec*v_data_size;
+//                n_data    +=v_data_size;
+//            }
+//        }
+//
+//        // normalize for receivers
+//        for (int j = 0; j < n_rec; j++) {
+//            for(auto &data : data_map[src_id2name[i]][rec_id2name[j]]){
+//                CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
+//                data.weight = data_on_rec/w_sum_tmp*n_data;
+//            }
+//        }
+//   }
+
+    #pragma omp parallel for default(none) shared(data_map, src_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
     for (int i = 0; i < n_src; i++) {
-        CUSTOMREAL w_sum_tmp = 0.0;
-        int n_data=0;
         for (int j = 0; j < n_rec; j++) {
             int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
-            if (v_data_size > 0) {
-                for (int k = 0; k < v_data_size; k++) {
-                    CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
-                    w_sum_tmp += data_on_rec;
-                    n_data++;
-                }
+            for (int k = 0; k < v_data_size; k++) {
+                data_map[src_id2name[i]][rec_id2name[j]][k].data_weight = src_map[src_id2name[i]].sum_weight*rec_map[rec_id2name[j]].sum_weight;
             }
         }
-        for (int j = 0; j < n_rec; j++) {
-            for(auto &data : data_map[src_id2name[i]][rec_id2name[j]]){
-                CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
-                data.weight = data_on_rec/w_sum_tmp*n_data;
-            }
-        }
-
     }
 }
 
@@ -336,7 +350,7 @@ void calculate_src_rec_weight(std::map<std::string, SrcRecInfo>                 
 
     // normalize the receiver weight
     // (the receiver weight is normalized for each source)
-    normalize_weight_data(data_map, rec_map, src_id2name, rec_id2name);
+    normalize_weight_data(data_map, src_map, rec_map, src_id2name, rec_id2name);
 
     // end
 }
@@ -371,7 +385,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
             << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.mag << " "
             << std::setw(5) << std::right << std::setfill(' ') << src.n_data << " "
             << src.name << " "
-            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << src.sum_weight
+            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0 //src.sum_weight
             << std::endl;
 
         // data line
@@ -386,7 +400,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
                 if (data.is_src_rec){
                     SrcRecInfo  rec      = rec_map[name_rec];
 
-                    CUSTOMREAL  travel_time = data.travel_time;
+                    CUSTOMREAL  travel_time = data.travel_time_obs; // write the observed travel time
 
                     // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
                     ofs << std::setw(7) << std::right << std::setfill(' ') << i_src << " "
@@ -397,7 +411,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
                         << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
                         << data.phase << " "
                         << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time << " "
-                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.weight
+                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
                         << std::endl;
 
                 }else {
