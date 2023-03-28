@@ -285,21 +285,21 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         // output location information
         if(id_sim == 0 && myrank == 0){
             // write objective function
-            std::cout << "iteration: " << i_iter << " objective function: " << v_obj 
-                                                 << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size() 
-                                                 << " v_obj/n_src: " << v_obj/IP.rec_map.size() 
+            std::cout << "iteration: " << i_iter << " objective function: " << v_obj
+                                                 << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
+                                                 << " v_obj/n_src: " << v_obj/IP.rec_map.size()
                                                  << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
-            std::cout << IP.rec_map.size() << " earthquakes require location, " << count_loc << " of which have been relocated. " << std::endl;                                    
-        
-            // the last 10 sources under location  
+            std::cout << IP.rec_map.size() << " earthquakes require location, " << count_loc << " of which have been relocated. " << std::endl;
+
+            // the last 10 sources under location
             if (IP.rec_map.size() - count_loc < 10){
                 std::cout << "Source under location. names: ";
                 for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
                     std::cout << IP.name_for_reloc[i] << ", ";
                 }
                 std::cout << std::endl;
-            }            
-            std::cout << std::endl;          
+            }
+            std::cout << std::endl;
         }
 
         // write objective functions
