@@ -76,7 +76,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // run forward simulation
         /////////////////////////
 
-        std::cout << "calculateing source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: " 
+        std::cout << "calculateing source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
                   << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                   << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                   << std::endl;
@@ -128,14 +128,12 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         recs.divide_optimal_origin_time_by_summed_weight(IP);
     } else {
         // sum grad_tau of all simulation groups
-        for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            allreduce_cr_sim_single_inplace(iter->second.grad_tau);
-        }
+        IP.allreduce_rec_map_grad_tau();
     }
     // compute the objective function
     recs.calculate_obj_reloc(IP, i_iter);
 
-    
+
 
     // iterate over sources
     for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
@@ -161,11 +159,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     }
 
     // sum grad_chi_k of all simulation groups
-    for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-        allreduce_cr_sim_single_inplace(iter->second.grad_chi_k);
-        allreduce_cr_sim_single_inplace(iter->second.grad_chi_j);
-        allreduce_cr_sim_single_inplace(iter->second.grad_chi_i);
-    }
+    IP.allreduce_rec_map_grad_chi_ijk();
 
     //synchronize_all_world(); // not necessary here because allreduce is already synchronizing communication
 }
