@@ -55,6 +55,7 @@ public:
     CUSTOMREAL grad_chi_i   = 0.0;
     CUSTOMREAL grad_chi_j   = 0.0;
     CUSTOMREAL grad_chi_k   = 0.0;
+    CUSTOMREAL grad_tau     = 0.0;
     CUSTOMREAL sum_weight   = 0.0;
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
@@ -63,6 +64,10 @@ public:
     CUSTOMREAL DTj          = 0.0;
     CUSTOMREAL DTk          = 0.0;
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
+    CUSTOMREAL change_dep = 0.0;
+    CUSTOMREAL change_lat = 0.0;
+    CUSTOMREAL change_lon = 0.0;
+    CUSTOMREAL change_tau = 0.0;
 };
 
 class DataInfo {
