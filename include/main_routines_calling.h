@@ -219,6 +219,14 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
 
+    synchronize_all_world();
+
+    std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", Nrec: " << IP.rec_map.size() << std::endl;
+    for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+        std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", name: " << iter->first << std::endl;
+    }
+
+    synchronize_all_world();
 
     // prepare output for iteration status
     std::ofstream out_main;

@@ -161,9 +161,6 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion"]["step_size_decay"]) {
                 step_size_decay = config["inversion"]["step_size_decay"].as<CUSTOMREAL>();
             }
-            if (config["inversion"]["step_length_src_reloc"]) {
-                step_length_src_reloc = config["inversion"]["step_length_src_reloc"].as<CUSTOMREAL>();
-            }
 
 
             // smoothing method
@@ -220,9 +217,48 @@ InputParams::InputParams(std::string& input_file){
                 is_balance_data_weight = config["inversion"]["is_balance_data_weight"].as<int>();
             }
 
+
+
+            // ----- for relocation ----
+
+            // step size of relocation
+            if (config["inversion"]["step_length_src_reloc"]) {
+                step_length_src_reloc = config["inversion"]["step_length_src_reloc"].as<CUSTOMREAL>();
+            }
+            // step size decay of relocation
             if (config["inversion"]["step_length_decay"]) {
                 step_length_decay = config["inversion"]["step_length_decay"].as<CUSTOMREAL>();
             }
+
+            // max change for earthquake location
+            if (config["inversion"]["max_change_dep_lat_lon"]) {
+                max_change_dep = config["inversion"]["max_change_dep_lat_lon"][0].as<CUSTOMREAL>();
+                max_change_lat = config["inversion"]["max_change_dep_lat_lon"][1].as<CUSTOMREAL>();
+                max_change_lon = config["inversion"]["max_change_dep_lat_lon"][2].as<CUSTOMREAL>();
+            }
+
+            // norm(grad) threshold of stopping relocation
+            if (config["inversion"]["tol_gradient"]) {
+                TOL_SRC_RELOC = config["inversion"]["tol_gradient"].as<CUSTOMREAL>();
+            }
+
+            // local search scheme for relocation
+            if (config["inversion"]["is_ortime_local_search"]) {
+                is_ortime_local_search = config["inversion"]["is_ortime_local_search"].as<int>();
+            }
+            // kernel =   K_t/ref_ortime_change (only for is_ortime_local_search : 1)
+            if (config["inversion"]["ref_ortime_change"]) {
+                ref_ortime_change = config["inversion"]["ref_ortime_change"].as<CUSTOMREAL>();
+            }
+            // the change of ortime do not exceed max_change (only for is_ortime_local_search : 1)  
+            if (config["inversion"]["max_change_ortime"]) {
+                max_change_ortime = config["inversion"]["max_change_ortime"].as<CUSTOMREAL>();
+            }
+            // step size of ortime is :  step_length_src_reloc * step_length_ortime_rescale  
+            if (config["inversion"]["step_length_ortime_rescale"]) {
+                step_length_ortime_rescale = config["inversion"]["step_length_ortime_rescale"].as<CUSTOMREAL>();
+            }
+
         }
 
         if (config["inv_strategy"]) {
@@ -451,6 +487,15 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(cr_dif_time_local_weight, 0);
     broadcast_cr_single(teleseismic_weight, 0);
     broadcast_i_single(is_balance_data_weight, 0);
+
+    broadcast_cr_single(max_change_dep, 0);
+    broadcast_cr_single(max_change_lat, 0);
+    broadcast_cr_single(max_change_lon, 0);
+    broadcast_cr_single(TOL_SRC_RELOC, 0);
+    broadcast_i_single(is_ortime_local_search, 0);
+    broadcast_cr_single(ref_ortime_change, 0);
+    broadcast_cr_single(max_change_ortime, 0);
+    broadcast_cr_single(step_length_ortime_rescale, 0);
 
     broadcast_i_single(smooth_method, 0);
     broadcast_cr_single(smooth_lr, 0);
