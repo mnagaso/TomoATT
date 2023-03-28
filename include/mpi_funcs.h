@@ -43,6 +43,7 @@ inline void recv_str_sim(std::string&, int);
 inline void allreduce_i_single(int&, int&);
 inline void allreduce_cr_single(CUSTOMREAL&, CUSTOMREAL&);
 inline void allreduce_i_inplace(int*, int);
+inline void allreduce_i_sim_sigle_inplace(int&);
 inline void allreduce_bool_inplace_inter_sim(bool*, int);
 inline void allreduce_bool_inplace(bool*, int);
 inline void allreduce_bool_inplace_sub(bool*, int);
@@ -538,6 +539,11 @@ inline void irecv_cr(CUSTOMREAL* buf, int count, int source, MPI_Request& reques
 inline void allreduce_i_single(int& value, int& result){
     int count = 1;
     MPI_Allreduce(&value, &result, count, MPI_INT, MPI_SUM, inter_sub_comm);
+}
+
+inline void allreduce_i_sim_single_inplace(int& value){
+    int count = 1;
+    MPI_Allreduce(MPI_IN_PLACE, &value, count, MPI_INT, MPI_SUM, inter_sim_comm);
 }
 
 inline void allreduce_cr_single(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){

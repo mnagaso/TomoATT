@@ -1624,3 +1624,134 @@ void InputParams::modift_swapped_source_location() {
     }
 }
 
+
+template <typename T>
+void InputParams::allreduce_rec_map_var(std::string& name_rec, T& var){
+
+    T tmp_var = (T)0;
+    if (subdom_main){
+        // allreduce sum the variable var of rec_map[name_rec] to all
+        // some process has rec_map[name_rec], some process does not have it
+
+        // step 1, gather all the variable var
+        if (rec_map.find(name_rec) != rec_map.end()){
+            tmp_var = var;
+        } else {
+            tmp_var = (T)0;
+        }
+
+        // allreduce the variable var to the main process
+        // if T is CUSTOMREAL
+        if (std::is_same<T, CUSTOMREAL>::value){
+            CUSTOMREAL v = tmp_var; // for compiler warning
+            allreduce_cr_sim_single_inplace(v);
+            tmp_var = v; // for compiler warning
+        // if T is int
+        } else if (std::is_same<T, int>::value){
+            int v = tmp_var; // for compiler warning
+            allreduce_i_sim_single_inplace(v);
+            tmp_var = v; // for compiler warning
+        } else {
+            //error
+            std::cout << "error in allreduce_rec_map_var" << std::endl;
+            exit(1);
+        }
+    }
+
+    // assign the value to the variable var
+    var = tmp_var;
+
+}
+
+
+//
+// communication for unevenly distributed receiver map
+//
+void InputParams::allreduce_rec_map_tau_opt(){
+    if(subdom_main){
+        // send total number of rec_map_all.size() to all processors
+        int n_rec_all;
+        std::vector<std::string> name_rec_all;
+        if (id_sim == 0){
+            n_rec_all = rec_map_all.size();
+            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                name_rec_all.push_back(iter->first);
+            }
+        }
+
+        // broadcast n_rec_all to all processors
+        broadcast_i_single_inter_sim(n_rec_all,0);
+
+        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
+            // broadcast name_rec_all[i_rec] to all processors
+            std::string name_rec;
+            if (id_sim == 0)
+                name_rec = name_rec_all[i_rec];
+
+            broadcast_str_inter_sim(name_rec,0);
+
+            // allreduce the tau_opt of rec_map_all[name_rec] to all processors
+            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].tau_opt);
+        }
+    }
+}
+
+
+void InputParams::allreduce_rec_map_sum_weight(){
+    if(subdom_main){
+        // send total number of rec_map_all.size() to all processors
+        int n_rec_all;
+        std::vector<std::string> name_rec_all;
+        if (id_sim == 0){
+            n_rec_all = rec_map_all.size();
+            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                name_rec_all.push_back(iter->first);
+            }
+        }
+
+        // broadcast n_rec_all to all processors
+        broadcast_i_single_inter_sim(n_rec_all,0);
+
+        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
+            // broadcast name_rec_all[i_rec] to all processors
+            std::string name_rec;
+            if (id_sim == 0)
+                name_rec = name_rec_all[i_rec];
+
+            broadcast_str_inter_sim(name_rec,0);
+
+            // allreduce the sum_weight of rec_map_all[name_rec] to all processors
+            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].sum_weight);
+        }
+    }
+}
+
+
+void InputParams::allreduce_rec_map_vobj_src_reloc(){
+    if(subdom_main){
+        // send total number of rec_map_all.size() to all processors
+        int n_rec_all;
+        std::vector<std::string> name_rec_all;
+        if (id_sim == 0){
+            n_rec_all = rec_map_all.size();
+            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                name_rec_all.push_back(iter->first);
+            }
+        }
+
+        // broadcast n_rec_all to all processors
+        broadcast_i_single_inter_sim(n_rec_all,0);
+
+        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
+            // broadcast name_rec_all[i_rec] to all processors
+            std::string name_rec;
+            if (id_sim == 0)
+                name_rec = name_rec_all[i_rec];
+
+            broadcast_str_inter_sim(name_rec,0);
+
+            // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
+            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].vobj_src_reloc);
+        }
+    }
+}

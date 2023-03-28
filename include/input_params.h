@@ -168,6 +168,14 @@ public:
     // gather traveltimes and calculate differences of synthetic data
     void gather_traveltimes_and_calc_syn_diff();
 
+    // reduce necessary data in rec_map
+    template <typename T>
+    void allreduce_rec_map_var(std::string&, T&);
+
+    void allreduce_rec_map_tau_opt();
+    void allreduce_rec_map_sum_weight();
+    void allreduce_rec_map_vobj_src_reloc();
+
 private:
     // boundary information
     CUSTOMREAL min_dep; // minimum depth in km

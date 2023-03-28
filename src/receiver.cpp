@@ -635,9 +635,10 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
 void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
     if (subdom_main) {
 
+        IP.allreduce_rec_map_tau_opt();
+        IP.allreduce_rec_map_sum_weight();
+
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
-            allreduce_cr_sim_single_inplace(iter->second.tau_opt);
-            allreduce_cr_sim_single_inplace(iter->second.sum_weight);
             iter->second.tau_opt /= iter->second.sum_weight;
             // std::cout << "id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
         }
@@ -661,9 +662,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
     // sum the obj from all sources (swapped receivers)
     if (subdom_main) {
-        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            allreduce_cr_sim_single_inplace(iter->second.vobj_src_reloc);
-        }
+        IP.allreduce_rec_map_vobj_src_reloc();
     }
 
     //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
