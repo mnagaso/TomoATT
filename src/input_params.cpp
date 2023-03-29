@@ -1394,14 +1394,10 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 name_rec2 = data.name_src_pair[1];
 
                                 cs_dif_travel_time = data.cr_dif_travel_time;
-                                //cs_dif_travel_time = get_data_src_pair(data_map_all[name_rec1][name_src]).travel_time \
-                                                   - get_data_src_pair(data_map_all[name_rec2][name_src]).travel_time;
                             } else { // do not swap
                                 name_rec1 = data.name_rec_pair[0];
                                 name_rec2 = data.name_rec_pair[1];
                                 cs_dif_travel_time = data.cs_dif_travel_time;
-                                //cs_dif_travel_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
-                                                   - get_data_rec_pair(data_map_all[name_src][name_rec2]).travel_time;
                             }
 
                             SrcRecInfo& rec1 = rec_map_back[name_rec1];
@@ -1732,6 +1728,22 @@ void InputParams::allreduce_rec_map_var(std::string& name_rec, T& var){
 
     // assign the value to the variable var
     var = tmp_var;
+
+    // broadcast the variable var to all subdomains
+    if (std::is_same<T, CUSTOMREAL>::value){
+        CUSTOMREAL v = var; // for compiler warning
+        broadcast_cr_single(v,0);
+        var = v; // for compiler warning
+    // if T is int
+    } else if (std::is_same<T, int>::value){
+        int v = var; // for compiler warning
+        broadcast_i_single(v,0);
+        var = v; // for compiler warning
+    } else {
+        //error
+        std::cout << "error in allreduce_rec_map_var" << std::endl;
+        exit(1);
+    }
 
 }
 

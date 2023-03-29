@@ -415,6 +415,10 @@ void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::stri
         for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
 
             std::string name_rec = iter->first;
+
+            // broadcast is_stop
+            broadcast_bool_single(IP.rec_map[name_rec].is_stop, 0);
+
             if(!IP.rec_map[name_rec].is_stop){
                 calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec]);
             }
