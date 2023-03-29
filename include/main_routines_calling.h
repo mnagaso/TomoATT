@@ -233,16 +233,16 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     }
 
     // objective function and its gradient
-    CUSTOMREAL v_obj = 0.0, v_obj_old = 0.0;
+    CUSTOMREAL v_obj      = 0.0;
+    CUSTOMREAL v_obj_old  = 0.0;
     CUSTOMREAL v_obj_grad = 0.0;
-    int i_iter = 0;
+    int        i_iter     = 0;
 
     // iterate
-    int count_break = 0;
     while (true) {
 
-        v_obj_old = v_obj;
-        v_obj = 0.0;
+        v_obj_old  = v_obj;
+        v_obj      = 0.0;
         v_obj_grad = 0.0;
 
         // determine which earthquake should be located
@@ -266,16 +266,20 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // check convergence
         int count_loc = 0;
-        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            if (iter->second.is_stop){
-                count_loc += 1;
-            }
+        bool finished = false;
+
+        if (subdom_main && id_subdomain==0) {
+
+            if (IP.name_for_reloc.size() == 0 || i_iter >= N_ITER_MAX_SRC_RELOC)
+                finished = true;
+
+            allreduce_bool_single_inplace_sim(finished); //LAND
         }
 
-        if (count_loc == (int)IP.rec_map.size() || i_iter >= N_ITER_MAX_SRC_RELOC)
-            count_break += 1;
+        // check if all processes have finished
+        broadcast_bool_inter_and_intra_sim(finished, 0);
 
-        if (count_break == 2)   // all earthquake location finished (location does not change)
+        if (finished)
             break;
 
         // new iteration
@@ -284,12 +288,14 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // output location information
         if(id_sim == 0 && myrank == 0){
+            int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
+
             // write objective function
             std::cout << "iteration: " << i_iter << " objective function: " << v_obj
                                                  << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
                                                  << " v_obj/n_src: " << v_obj/IP.rec_map.size()
                                                  << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
-            std::cout << IP.rec_map.size() << " earthquakes require location, " << count_loc << " of which have been relocated. " << std::endl;
+            std::cout << IP.rec_map.size() << " earthquakes require location, " << n_relocated << " of which have been relocated. " << std::endl;
 
             // the last 10 sources under location
             if (IP.rec_map.size() - count_loc < 10){
@@ -312,12 +318,11 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         }
     }
 
+
     // modify the receiver's location
     IP.modift_swapped_source_location();
-
     // write out new src_rec_file
     IP.write_src_rec_file(0);
-
     // close xdmf file
     io.finalize_data_output_file();
 

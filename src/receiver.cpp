@@ -648,7 +648,7 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
                         IP.rec_map[name_rec].tau_opt    += misfit * weight;
                         IP.rec_map[name_rec].sum_weight += weight;
                     } else {
-                        IP.rec_map[name_rec].grad_tau += weight * 
+                        IP.rec_map[name_rec].grad_tau += weight *
                             (data.travel_time + IP.rec_map[name_rec].tau_opt - data.travel_time_obs);
                     }
                 }
@@ -660,9 +660,11 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
 
 void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
     if (subdom_main) {
+
+        IP.allreduce_rec_map_tau_opt();
+        IP.allreduce_rec_map_sum_weight();
+
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
-            allreduce_cr_sim_single_inplace(iter->second.tau_opt);
-            allreduce_cr_sim_single_inplace(iter->second.sum_weight);
             iter->second.tau_opt /= iter->second.sum_weight;
             // std::cout << "id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
         }
@@ -687,9 +689,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
     // sum the obj from all sources (swapped receivers)
     if (subdom_main) {
-        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            allreduce_cr_sim_single_inplace(iter->second.vobj_src_reloc);
-        }
+        IP.allreduce_rec_map_vobj_src_reloc();
     }
 
 
@@ -747,7 +747,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
         // std::vector<SrcRec>& receivers = IP.get_rec_names(id_sim_src);
 
         // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-        for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){    
+        for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){
             std::string name_rec = IP.name_for_reloc[i];
             if (IP.rec_map[name_rec].is_stop){
                 // do nothing
@@ -776,9 +776,9 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                     if (abs(max_change_ortime - abs(IP.rec_map[name_rec].change_tau)) < 0.001)
                         grad_ortime = 0.0;
                     else
-                        grad_ortime = IP.rec_map[name_rec].grad_tau/ref_ortime_change;          
+                        grad_ortime = IP.rec_map[name_rec].grad_tau/ref_ortime_change;
                     norm_grad   = std::sqrt(my_square(grad_dep_km) + my_square(grad_lat_km) + my_square(grad_lon_km) + my_square(grad_ortime));
-                } 
+                }
 
                 // if norm is smaller than a threshold, stop update
                 if (norm_grad < TOL_SRC_RELOC){
@@ -833,30 +833,30 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 if (abs(IP.rec_map[name_rec].change_dep + update_dep) > max_change_dep){
                     if (IP.rec_map[name_rec].change_dep + update_dep > 0)
                         update_dep = max_change_dep - IP.rec_map[name_rec].change_dep;
-                    else 
+                    else
                         update_dep = - max_change_dep - IP.rec_map[name_rec].change_dep;
-                    
-                } 
+
+                }
                 if (abs(IP.rec_map[name_rec].change_lat + update_lat) > max_change_lat){
                     if (IP.rec_map[name_rec].change_dep + update_dep > 0)
                         update_lat = max_change_lat - IP.rec_map[name_rec].change_lat;
-                    else 
+                    else
                         update_lat = - max_change_lat - IP.rec_map[name_rec].change_lat;
-                } 
+                }
                 if (abs(IP.rec_map[name_rec].change_lon + update_lon) > max_change_lon){
                     if (IP.rec_map[name_rec].change_dep + update_dep > 0)
                         update_lon = max_change_lon - IP.rec_map[name_rec].change_lon;
-                    else 
+                    else
                         update_lon = - max_change_lon - IP.rec_map[name_rec].change_lon;
-                } 
+                }
 
                 if (is_ortime_local_search == 1){
                     if (abs(IP.rec_map[name_rec].change_tau + update_ortime) > max_change_ortime){
                         if (IP.rec_map[name_rec].change_tau + update_ortime > 0)
                             update_ortime = max_change_ortime - IP.rec_map[name_rec].change_tau;
-                        else 
+                        else
                             update_ortime = - max_change_ortime - IP.rec_map[name_rec].change_tau;
-                    } 
+                    }
                 }
 
                 // earthquake should be below the surface
@@ -883,7 +883,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 if (IP.rec_map[name_rec].step_length_max < TOL_STEP_SIZE){
                     IP.rec_map[name_rec].is_stop = true;
                 }
-                
+
 
                 // detect nan and inf then exit the program
                 if (std::isnan(IP.rec_map[name_rec].dep) || std::isinf(IP.rec_map[name_rec].dep) ||
@@ -908,7 +908,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 }
 
 
-                
+
 
 
                 // check if the new receiver position is within the domain
