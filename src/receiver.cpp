@@ -749,9 +749,11 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
         // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
         for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){
             std::string name_rec = IP.name_for_reloc[i];
-            if (IP.rec_map[name_rec].is_stop){
-                // do nothing
-            } else {
+
+            // MNMN: this if statement is not necessary because nome_for_reloc is already filtered
+            //if (IP.rec_map[name_rec].is_stop){
+            //    // do nothing
+            //} else {
                 CUSTOMREAL grad_dep_km = 0.0;
                 if (abs(max_change_dep - abs(IP.rec_map[name_rec].change_dep)) < 0.001 || abs(IP.rec_map[name_rec].dep) < 0.001)
                     grad_dep_km = 0.0;
@@ -931,7 +933,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                     IP.rec_map[name_rec].dep = IP.get_min_dep() + mergin_r;
                 if (IP.rec_map[name_rec].dep > IP.get_max_dep())
                     IP.rec_map[name_rec].dep = IP.get_max_dep() - mergin_r;
-            }
+            //}
         }
     }
 }

@@ -1701,7 +1701,7 @@ template <typename T>
 void InputParams::allreduce_rec_map_var(std::string& name_rec, T& var){
 
     T tmp_var = (T)0;
-    if (subdom_main){
+    if (subdom_main && id_subdomain == 0){
         // allreduce sum the variable var of rec_map[name_rec] to all
         // some process has rec_map[name_rec], some process does not have it
 
@@ -1763,7 +1763,7 @@ void InputParams::allreduce_rec_map_tau_opt(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the tau_opt of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].tau_opt);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].tau_opt);
         }
     }
 }
@@ -1793,7 +1793,7 @@ void InputParams::allreduce_rec_map_sum_weight(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the sum_weight of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].sum_weight);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].sum_weight);
         }
     }
 }
@@ -1823,7 +1823,7 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].vobj_src_reloc);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].vobj_src_reloc);
         }
     }
 }
@@ -1853,7 +1853,7 @@ void InputParams::allreduce_rec_map_grad_tau(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the grad_tau of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_tau);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].grad_tau);
         }
     }
 }
@@ -1883,9 +1883,9 @@ void InputParams::allreduce_rec_map_grad_chi_ijk(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the grad_chi_ijk of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_chi_i);
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_chi_j);
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_chi_k);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].grad_chi_i);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].grad_chi_j);
+            allreduce_rec_map_var(name_rec,rec_map[name_rec].grad_chi_k);
         }
     }
 }
