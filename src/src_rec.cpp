@@ -241,7 +241,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
                     data_map[data.name_src][data.name_rec_pair[0]].push_back(data);
-                    data_map[data.name_src][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
+                    //data_map[data.name_src][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
 
                     cc++;
                 }

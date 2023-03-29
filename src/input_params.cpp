@@ -1134,6 +1134,8 @@ void InputParams::gather_all_arrival_times_to_main(){
 // gather traveltimes and calculate differences of synthetic data
 void InputParams::gather_traveltimes_and_calc_syn_diff(){
 
+    if (!src_pair_exists) return; // nothing to share
+
     // gather all synthetic traveltimes to main simultaneous run group
     gather_all_arrival_times_to_main();
 
@@ -1339,17 +1341,30 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                     //
                     // CALCULATED DATA IS STORED IN data_map_all
-                    if (swap_src_rec) // reverse swap src and rec
-                        v_data = data_map_all[name_rec][name_src];
-                    else // do not swap
-                        v_data = data_map_all[name_src][name_rec];
+                    //if (swap_src_rec) // reverse swap src and rec
+                    //    v_data = data_map_all[name_rec][name_src];
+                    //else // do not swap
+                    //    v_data = data_map_all[name_src][name_rec];
 
-                    for (const auto& data : v_data){
+                    v_data = data_map_back[name_src][name_rec];
+
+                    for (const auto& data_ori : v_data){
+
+                        // data type flag
+                        bool src_rec_data  = data_ori.is_src_rec;
+                        bool src_pair_data = data_ori.is_src_pair;
+                        bool rec_pair_data = data_ori.is_rec_pair;
+
+                        DataInfo& data = const_cast<DataInfo&>(data_ori); // dummy copy
 
                         // absolute traveltime data
-                        if (data.is_src_rec){
-                            SrcRecInfo  rec      = rec_map_back[name_rec];
+                        if (src_rec_data){
+                            if (get_is_srcrec_swap()) // reverse swap src and rec
+                                data = get_data_src_rec(data_map_all[name_rec][name_src]);
+                            else // do not swap
+                                data = get_data_src_rec(data_map_all[name_src][name_rec]);
 
+                            SrcRecInfo  rec      = rec_map_back[name_rec];
                             CUSTOMREAL  travel_time = data.travel_time;
 
                             // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
@@ -1365,20 +1380,32 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::endl;
 
                         // common source differential traveltime
-                        } else if (data.is_rec_pair){
-
-                            std::string name_rec1 = data.name_rec_pair[0];
-                            SrcRecInfo  rec1      = rec_map_back[name_rec1];
-                            std::string name_rec2 = data.name_rec_pair[1];
-                            SrcRecInfo  rec2      = rec_map_back[name_rec2];
-                            CUSTOMREAL cs_dif_travel_time;
-
-                            if (get_is_srcrec_swap()) // do reverse swap
-                                cs_dif_travel_time = get_data_rec_pair(data_map_all[name_rec1][name_src]).travel_time \
-                                                   - get_data_rec_pair(data_map_all[name_rec2][name_src]).travel_time;
+                        } else if (rec_pair_data){
+                            if (get_is_srcrec_swap()) // reverse swap src and rec
+                                data = get_data_src_pair(data_map_all[name_rec][name_src]);
                             else // do not swap
-                                cs_dif_travel_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
+                                data = get_data_rec_pair(data_map_all[name_src][name_rec]);
+
+                            std::string name_rec1, name_rec2;
+                            CUSTOMREAL  cs_dif_travel_time;
+
+                            if (get_is_srcrec_swap()) { // do reverse swap
+                                name_rec1 = data.name_src_pair[0];
+                                name_rec2 = data.name_src_pair[1];
+
+                                cs_dif_travel_time = data.cr_dif_travel_time;
+                                //cs_dif_travel_time = get_data_src_pair(data_map_all[name_rec1][name_src]).travel_time \
+                                                   - get_data_src_pair(data_map_all[name_rec2][name_src]).travel_time;
+                            } else { // do not swap
+                                name_rec1 = data.name_rec_pair[0];
+                                name_rec2 = data.name_rec_pair[1];
+                                cs_dif_travel_time = data.cs_dif_travel_time;
+                                //cs_dif_travel_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
                                                    - get_data_rec_pair(data_map_all[name_src][name_rec2]).travel_time;
+                            }
+
+                            SrcRecInfo& rec1 = rec_map_back[name_rec1];
+                            SrcRecInfo& rec2 = rec_map_back[name_rec2];
 
                             // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
                             ofs << std::setw(7) << std::right << std::setfill(' ') <<  i_src << " "
@@ -1398,7 +1425,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::endl;
 
                         // common receiver differential traveltime
-                        } else if (data.is_src_pair){
+                        } else if (src_pair_data){
                             // TODO: implement this later
                         }
 

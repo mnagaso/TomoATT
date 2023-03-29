@@ -269,6 +269,21 @@ private:
 //
 // utils
 //
+inline DataInfo& get_data_src_rec(std::vector<DataInfo>& v){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_src_rec)
+            return *it;
+    }
+
+    // error if no rec pair is found
+    std::cerr << "Error: no src/rec is found in get_data_src_rec" << std::endl;
+    exit(1);
+
+    // return the first element in the vector as a dummy
+    return v[0];
+}
+
 inline DataInfo& get_data_rec_pair(std::vector<DataInfo>& v){
     // return the first element in the vector with is_rec_pair = true
     for (auto it = v.begin(); it != v.end(); it++){
@@ -293,7 +308,7 @@ inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
     }
 
     // error if no rec pair is found
-    std::cerr << "Error: no rec pair is found in get_data_rec_pair" << std::endl;
+    std::cerr << "Error: no rec pair is found in get_data_src_pair" << std::endl;
     exit(1);
 
     // return the first element in the vector as a dummy
