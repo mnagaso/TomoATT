@@ -895,6 +895,7 @@ void InputParams::prepare_src_map(){
                                               src_map_all,  rec_map_all,  data_map_all,
                                               src_map_tele, rec_map_tele, data_map_tele,
                                               data_type,
+                                              N_local_data,
                                               N_abs_local_data,
                                               N_cr_dif_local_data,
                                               N_cs_dif_local_data,
@@ -1331,6 +1332,32 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0     // the weight of source is assigned to data
                     << std::endl;
 
+                // test
+                for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
+                    const std::string name_rec = iter->first;
+                    std::vector<DataInfo> v_data;
+
+                    if (swap_src_rec) // reverse swap src and rec
+                        v_data = data_map_all[name_rec][name_src];
+                    else // do not swap
+                        v_data = data_map_all[name_src][name_rec];
+
+                    std::cout << "size of map: " << data_map_back[name_src].size() << std::endl;
+                    for (const auto& data : v_data){
+
+                        std::cout << "  size of data: " << v_data.size()
+                                  << "  id_sim: " << id_sim
+                                  << "  name_rec: " << name_rec 
+                                  << ", name_src: " << name_src
+                                  << ", is_src_rec: " << data.is_src_rec
+                                  << ", is_src_pair: " << data.is_src_pair
+                                  << ", is_rec_pair: " << data.is_rec_pair
+                                  << std::endl;
+                    }
+                }
+
+
+
                 // data line
                 for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
 
@@ -1365,7 +1392,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::endl;
 
                         // common source differential traveltime
-                        } else if (data.is_rec_pair){
+                        } else if ((data.is_rec_pair && !get_is_srcrec_swap()) || (data.is_src_pair && get_is_srcrec_swap())){
 
                             std::string name_rec1 = data.name_rec_pair[0];
                             SrcRecInfo  rec1      = rec_map_back[name_rec1];
@@ -1374,8 +1401,8 @@ void InputParams::write_src_rec_file(int i_inv) {
                             CUSTOMREAL cs_dif_travel_time;
 
                             if (get_is_srcrec_swap()) // do reverse swap
-                                cs_dif_travel_time = get_data_rec_pair(data_map_all[name_rec1][name_src]).travel_time \
-                                                   - get_data_rec_pair(data_map_all[name_rec2][name_src]).travel_time;
+                                cs_dif_travel_time = get_data_src_pair(data_map_all[name_rec1][name_src]).travel_time \
+                                                   - get_data_src_pair(data_map_all[name_rec2][name_src]).travel_time;
                             else // do not swap
                                 cs_dif_travel_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
                                                    - get_data_rec_pair(data_map_all[name_src][name_rec2]).travel_time;
@@ -1398,8 +1425,9 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::endl;
 
                         // common receiver differential traveltime
-                        } else if (data.is_src_pair){
+                        } else if ((data.is_src_pair && !get_is_srcrec_swap()) || (data.is_rec_pair && get_is_srcrec_swap())){
                             // TODO: implement this later
+                            std::cout << "src pair data, to do in the future" << std::endl;
                         }
 
                     } // end of for (const auto& data : v_data)

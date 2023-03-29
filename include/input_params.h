@@ -149,6 +149,7 @@ public:
 
 
     // the number of data
+    int N_local_data        = 0;
     int N_abs_local_data    = 0;
     int N_cr_dif_local_data = 0;
     int N_cs_dif_local_data = 0;
@@ -276,14 +277,14 @@ inline DataInfo& get_data_rec_pair(std::vector<DataInfo>& v){
 
 
 inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
-    // return the first element in the vector with is_rec_pair = true
+    // return the first element in the vector with is_src_pair = true
     for (auto it = v.begin(); it != v.end(); it++){
         if (it->is_src_pair)
             return *it;
     }
 
-    // error if no rec pair is found
-    std::cerr << "Error: no rec pair is found in get_data_rec_pair" << std::endl;
+    // error if no src pair is found
+    std::cerr << "Error: no src pair is found in get_data_src_pair" << std::endl;
     exit(1);
 
     // return the first element in the vector as a dummy

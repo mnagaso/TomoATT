@@ -442,6 +442,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                                            std::map<std::string, SrcRecInfo>                                  &rec_map_tele,
                                            std::map<std::string, std::map<std::string,std::vector<DataInfo>>> &data_map_tele,
                                            std::map<std::string, int> &data_type,
+                                           int                        &N_local_data,
                                            int                        &N_abs_local_data,
                                            int                        &N_cr_dif_local_data,
                                            int                        &N_cs_dif_local_data,
@@ -618,7 +619,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                 // absolute traveltime
                 if(data.is_src_rec){
                     N_abs_local_data += 1;
-
+    
                 // common receiver differential traveltime
                 } else if (data.is_src_pair){
                     N_cr_dif_local_data += 1;
@@ -627,9 +628,13 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                 } else if (data.is_rec_pair){
                     N_cs_dif_local_data += 1;
                 }
+                
             }
         }
     }
+
+    N_cs_dif_local_data /= 2;
+
 
     // teleseismic data
     for(auto it_src = data_map_tele.begin(); it_src != data_map_tele.end(); it_src++){
@@ -638,6 +643,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
         }
     }
 
+    N_local_data = N_abs_local_data + N_cr_dif_local_data + N_cs_dif_local_data + N_teleseismic_data;
     // std::cout << "N_abs_local_data: " << N_abs_local_data << ", N_cr_dif_local_data" << N_cr_dif_local_data
     //           << ", N_cs_dif_local_data: " << N_cs_dif_local_data << ", N_teleseismic_data: " << N_teleseismic_data
     //           << std::endl
