@@ -682,11 +682,20 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                 const CUSTOMREAL& weight = data.weight;
                 const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
                 IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+        
+                std::cout << "id_sim: " << id_sim
+                        << ", ckp1: name_src: " << name_src 
+                        << ", t_obs: " << data.travel_time_obs
+                        << ", t_syn: " << data.travel_time
+                        << ", tau_opt: " << IP.rec_map[name_rec].tau_opt
+                        << ", tp_obj: " << weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt)
+                        << ", obj: " << IP.rec_map[name_rec].vobj_src_reloc
+                        << std::endl;
             }
         }
     }
 
-
+    
     // sum the obj from all sources (swapped receivers)
     if (subdom_main) {
         IP.allreduce_rec_map_vobj_src_reloc();

@@ -260,6 +260,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // calculate sum of objective function and gradient
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
+            std::cout << "name:" << iter->first << ", v_obj: " << iter->second.vobj_src_reloc << std::endl;
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
         }
@@ -280,7 +281,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         broadcast_bool_inter_and_intra_sim(finished, 0);
 
         if (finished)
-            break;
+            // break;
 
         // new iteration
         i_iter++;

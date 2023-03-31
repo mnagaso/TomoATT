@@ -633,7 +633,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         //if (iter_count==0)
         // MNMN: please leave this line active when pushing your commit.
         // MNMN: because std::cout/endl is very slow when called in the loop.
-        //std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+        std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
 
         // debug store temporal T fields
         //io.write_tmp_tau_h5(grid, iter_count);
