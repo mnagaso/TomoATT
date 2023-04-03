@@ -146,8 +146,6 @@ public:
     std::map<std::string, SrcRecInfo>                                   rec_map_back;
     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> data_map_back;
 
-
-
     // the number of data
     int N_abs_local_data    = 0;
     int N_cr_dif_local_data = 0;
@@ -170,7 +168,7 @@ public:
 
     // reduce necessary data in rec_map, which has differed elements in each sim group.
     template <typename T>
-    void allreduce_rec_map_var(std::string&, T&);
+    void allreduce_rec_map_var(T&);
 
     void allreduce_rec_map_tau_opt();
     void allreduce_rec_map_sum_weight();
@@ -233,6 +231,9 @@ private:
 
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
+    // gather rec info to main process
+    void gather_rec_info_to_main();
+
     // geneerate a map of sources which include common source double difference data
     void generate_src_map_with_common_source(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>&,
                                              std::map<std::string, SrcRecInfo>&,

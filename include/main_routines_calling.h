@@ -215,18 +215,17 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
     Receiver recs;
+    int nrec_total = IP.rec_map_all.size();
+    // broadcast
+    broadcast_i_single_inter_and_intra_sim(nrec_total, 0);
 
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
-
-    synchronize_all_world();
 
     std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", Nrec: " << IP.rec_map.size() << std::endl;
     for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
         std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", name: " << iter->first << std::endl;
     }
-
-    synchronize_all_world();
 
     // prepare output for iteration status
     std::ofstream out_main;
@@ -272,6 +271,15 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
         }
 
+        // v_obj before allreduce
+        CUSTOMREAL v_obj_before = v_obj;
+        // reduce
+        allreduce_cr_sim_single_inplace(v_obj);
+        allreduce_cr_sim_single_inplace(v_obj_grad);
+
+        std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", v_obj_before: " << v_obj_before << ", v_obj: " << v_obj << std::endl;
+
+
         // check convergence
         int count_loc = 0;
         bool finished = false;
@@ -301,12 +309,12 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
             // write objective function
             std::cout << "iteration: " << i_iter << " objective function: " << v_obj
                                                  << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
-                                                 << " v_obj/n_src: " << v_obj/IP.rec_map.size()
+                                                 << " v_obj/n_src: " << v_obj/nrec_total
                                                  << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
-            std::cout << IP.rec_map.size() << " earthquakes require location, " << n_relocated << " of which have been relocated. " << std::endl;
+            std::cout << nrec_total << " earthquakes require location, " << n_relocated << " of which have been relocated. " << std::endl;
 
             // the last 10 sources under location
-            if (IP.rec_map.size() - count_loc < 10){
+            if (nrec_total - count_loc < 10){
                 std::cout << "Source under location. names: ";
                 for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
                     std::cout << IP.name_for_reloc[i] << ", ";

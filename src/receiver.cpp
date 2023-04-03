@@ -416,8 +416,8 @@ void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::stri
 
             std::string name_rec = iter->first;
 
-            // broadcast is_stop
-            broadcast_bool_single(IP.rec_map[name_rec].is_stop, 0);
+            // allreduce the flag of stop
+            allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop);
 
             if(!IP.rec_map[name_rec].is_stop){
                 calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec]);
@@ -657,6 +657,8 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
                     }
                 }
             }
+            std::cout << "DEBUG: " << name_rec << ", " << IP.rec_map[name_rec].tau_opt << ", " << IP.rec_map[name_rec].sum_weight << std::endl;
+
         }
 
     }
@@ -665,12 +667,10 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
 void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
     if (subdom_main) {
 
-        IP.allreduce_rec_map_tau_opt();
-        IP.allreduce_rec_map_sum_weight();
-
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
             iter->second.tau_opt /= iter->second.sum_weight;
-            // std::cout << "id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
+
+            std::cout << "DEBUGDEBIG: id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
         }
     }
     //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
@@ -678,21 +678,20 @@ void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
 
 void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
-    for (auto it_src = IP.data_map.begin(); it_src != IP.data_map.end(); it_src++) {
-        std::string name_src = it_src->first;
-        for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
-            std::string name_rec = it_rec->first;
-            for (const auto& data: it_rec->second){
-                const CUSTOMREAL& weight = data.weight;
-                const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
-                IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+    if (subdom_main) {
+        for (auto it_src = IP.data_map.begin(); it_src != IP.data_map.end(); it_src++) {
+            std::string name_src = it_src->first;
+            for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
+                std::string name_rec = it_rec->first;
+                for (const auto& data: it_rec->second){
+                    const CUSTOMREAL& weight = data.weight;
+                    const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
+                    IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+                }
             }
         }
-    }
 
-
-    // sum the obj from all sources (swapped receivers)
-    if (subdom_main) {
+        // sum the obj from all sources (swapped receivers)
         IP.allreduce_rec_map_vobj_src_reloc();
     }
 
@@ -754,7 +753,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
         for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){
             std::string name_rec = IP.name_for_reloc[i];
 
-            // MNMN: this if statement is not necessary because nome_for_reloc is already filtered
+            // MNMN: this if statement is not necessary because name_for_reloc is already filtered
             //if (IP.rec_map[name_rec].is_stop){
             //    // do nothing
             //} else {

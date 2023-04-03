@@ -43,14 +43,16 @@ inline void recv_str_sim(std::string&, int);
 inline void allreduce_i_single(int&, int&);
 inline void allreduce_cr_single(CUSTOMREAL&, CUSTOMREAL&);
 inline void allreduce_i_inplace(int*, int);
-inline void allreduce_i_sim_sigle_inplace(int&);
+inline void allreduce_i_sim_single_inplace(int&);
 inline void allreduce_bool_inplace_inter_sim(bool*, int);
 inline void allreduce_bool_inplace(bool*, int);
 inline void allreduce_bool_inplace_sub(bool*, int);
+inline void allreduce_bool_single_inplace(bool&);
 inline void allreduce_bool_single_inplace_world(bool&);
 inline void allreduce_cr_inplace(CUSTOMREAL*, int);
 inline void allreduce_cr_sim(CUSTOMREAL*, int, CUSTOMREAL*);
 inline void allreduce_cr_sim_inplace(CUSTOMREAL*, int);
+inline void allreduce_cr_sim_single_inplace(CUSTOMREAL&);
 inline void allgather_i_single(int*, int*);
 inline void allgather_cr_single(CUSTOMREAL*, CUSTOMREAL*);
 inline void allgather_str(const std::string&, std::vector<std::string>&);
@@ -570,6 +572,11 @@ inline void allreduce_bool_inplace_sub(bool* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CXX_BOOL, MPI_LOR, sub_comm);
 }
 
+
+inline void allreduce_bool_single_inplace(bool& loc_buf){
+    MPI_Allreduce(MPI_IN_PLACE, &loc_buf, 1, MPI_CXX_BOOL, MPI_LAND, inter_sub_comm);
+}
+
 // true if all processes return true else false
 inline void allreduce_bool_single_inplace_sim(bool& loc_buf){
     MPI_Allreduce(MPI_IN_PLACE, &loc_buf, 1, MPI_CXX_BOOL, MPI_LAND, inter_sim_comm);
@@ -579,11 +586,9 @@ inline void allreduce_i_inplace(int* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_INT, MPI_SUM, inter_sub_comm);
 }
 
-
 inline void allreduce_cr_inplace(CUSTOMREAL* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CR, MPI_SUM, inter_sub_comm);
 }
-
 
 inline void allreduce_cr_sim(CUSTOMREAL* loc_buf, int count, CUSTOMREAL* all_buf){
     MPI_Allreduce(loc_buf, all_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
@@ -603,6 +608,10 @@ inline void allreduce_cr_sim_inplace(CUSTOMREAL* loc_buf, int count){
     MPI_Allreduce(MPI_IN_PLACE, loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
 }
 
+inline void alleduce_cr_sim_single_inplace(CUSTOMREAL& loc_buf){
+    int count = 1;
+    MPI_Allreduce(MPI_IN_PLACE, &loc_buf, count, MPI_CR, MPI_SUM, inter_sim_comm);
+}
 
 inline void allreduce_cr_single_max(CUSTOMREAL& loc_buf, CUSTOMREAL& all_buf){
     int count = 1;
