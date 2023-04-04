@@ -60,9 +60,9 @@ public:
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
-    CUSTOMREAL DTi          = 0.0;
-    CUSTOMREAL DTj          = 0.0;
-    CUSTOMREAL DTk          = 0.0;
+    //CUSTOMREAL DTi          = 0.0;
+    //CUSTOMREAL DTj          = 0.0;
+    //CUSTOMREAL DTk          = 0.0;
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
     CUSTOMREAL change_dep = 0.0;
     CUSTOMREAL change_lat = 0.0;
@@ -117,6 +117,11 @@ public:
     // common receiver differential travel time
     CUSTOMREAL cr_dif_travel_time     = -999.0;
     CUSTOMREAL cr_dif_travel_time_obs = -999.0;
+
+    // source relocation
+    CUSTOMREAL DTi          = 0.0;
+    CUSTOMREAL DTj          = 0.0;
+    CUSTOMREAL DTk          = 0.0;
 
 };
 

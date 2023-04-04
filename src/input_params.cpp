@@ -1175,8 +1175,6 @@ void InputParams::gather_rec_info_to_main(){
             allreduce_rec_map_var(rec_counter);
             allreduce_rec_map_var(tau_tmp);
 
-            std::cout << "DEBUG ???: " << name_rec << " " << rec_counter << " " << tau_tmp << std::endl;
-
             // assign tau_opt to rec_map_all
             if (rec_counter > 0){
                 rec_map_all[name_rec].tau_opt = tau_tmp / (CUSTOMREAL)rec_counter;
@@ -1550,12 +1548,9 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 }
 
                                 SrcRecInfo rec = rec_map_back[name_rec];
-                                CUSTOMREAL travel_time_obs;
+                                CUSTOMREAL travel_time_obs = data.travel_time_obs - rec_map_all[name_src].tau_opt;
 
-                                if (get_is_srcrec_swap()) // reverse swap src and rec
-                                    travel_time_obs = data.travel_time_obs - rec_map_all[name_src].tau_opt;
-
-                                std::cout << "src_rec_data: " << name_src << " " << name_rec << " " << data.travel_time_obs << " " << rec_map_all[name_src].tau_opt << " " << travel_time_obs << std::endl;
+                                //std::cout << "src_rec_data: " << name_src << " " << name_rec << " " << data.travel_time_obs << " " << rec_map_all[name_src].tau_opt << " " << travel_time_obs << std::endl;
 
                                 // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
                                 ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
@@ -1785,7 +1780,7 @@ void InputParams::allreduce_rec_map_var(T& var){
 
     T tmp_var = (T)var;
 
-    if (subdom_main && id_subdomain == 0){
+    if (subdom_main){
         // allreduce sum the variable var of rec_map[name_rec] to all
         // some process has rec_map[name_rec], some process does not have it
 
@@ -1812,21 +1807,21 @@ void InputParams::allreduce_rec_map_var(T& var){
     // assign the value to the variable var
     var = tmp_var;
 
-    // broadcast the variable var to all subdomains
-    if (std::is_same<T, CUSTOMREAL>::value){
-        CUSTOMREAL v = var; // for compiler warning
-        broadcast_cr_single(v,0);
-        var = v; // for compiler warning
-    // if T is int
-    } else if (std::is_same<T, int>::value){
-        int v = var; // for compiler warning
-        broadcast_i_single(v,0);
-        var = v; // for compiler warning
-    } else {
-        //error
-        std::cout << "error in allreduce_rec_map_var" << std::endl;
-        exit(1);
-    }
+//    // broadcast the variable var to all subdomains within the same simultaneous run group
+//    if (std::is_same<T, CUSTOMREAL>::value){
+//        CUSTOMREAL v = var; // for compiler warning
+//        broadcast_cr_single(v,0);
+//        var = v; // for compiler warning
+//    // if T is int
+//    } else if (std::is_same<T, int>::value){
+//        int v = var; // for compiler warning
+//        broadcast_i_single(v,0);
+//        var = v; // for compiler warning
+//    } else {
+//        //error
+//        std::cout << "error in allreduce_rec_map_var" << std::endl;
+//        exit(1);
+//    }
 
 }
 
@@ -1856,6 +1851,19 @@ void InputParams::allreduce_rec_map_tau_opt(){
                 name_rec = name_rec_all[i_rec];
 
             broadcast_str_inter_sim(name_rec,0);
+
+            // check if the tau_opt of rec_map_all[name_rec] is needed
+            bool is_stop = false;
+            if (rec_map.find(name_rec) != rec_map.end()){
+                is_stop = rec_map[name_rec].is_stop;
+            }
+
+            // allreduce
+            allreduce_bool_single_inplace_sim(is_stop);
+
+            // stop allreduce of tau_opt if is_stop is true (no further addition of tau_opt is needed)
+            if (is_stop)
+                continue;
 
             // allreduce the tau_opt of rec_map_all[name_rec] to all processors
             if (rec_map.find(name_rec) != rec_map.end()){

@@ -67,6 +67,7 @@ inline void broadcast_i_single_inter_and_intra_sim(int&, int);
 inline void broadcast_f_single(float&, int);
 inline void broadcast_cr(CUSTOMREAL* , int, int);
 inline void broadcast_cr_single(CUSTOMREAL&, int);
+inline void broadcast_cr_single_inplace(CUSTOMREAL&);
 inline void broadcast_cr_inter_sim(CUSTOMREAL*, int, int);
 inline void broadcast_str(std::string&, int);
 inline void broadcast_str_inter_sim(std::string&, int);
@@ -455,6 +456,11 @@ inline void synchronize_all_inter(){
 }
 
 
+inline void synchronize_all_inter_sim(){
+    MPI_Barrier(inter_sim_comm);
+}
+
+
 inline void synchronize_all_world(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
@@ -680,11 +686,13 @@ inline void broadcast_cr_single(CUSTOMREAL& buf, int root){
     MPI_Bcast(&buf, 1, MPI_CR, root, inter_sub_comm);
 }
 
-
 inline void broadcast_cr(CUSTOMREAL* buf, int count, int root){
     MPI_Bcast(buf, count, MPI_CR, root, inter_sub_comm);
 }
 
+inline void broadcast_cr_single_inplace(CUSTOMREAL& buf, int root){
+    MPI_Bcast(&buf, 1, MPI_CR, root, inter_sub_comm);
+}
 
 inline void broadcast_cr_inter_sim(CUSTOMREAL* buf, int count, int root){
     MPI_Bcast(buf, count, MPI_CR, root, inter_sim_comm);

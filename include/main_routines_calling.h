@@ -222,10 +222,10 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
 
-    std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", Nrec: " << IP.rec_map.size() << std::endl;
-    for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-        std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", name: " << iter->first << std::endl;
-    }
+    //std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", Nrec: " << IP.rec_map.size() << std::endl;
+    //for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+    //    std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", name: " << iter->first << std::endl;
+    //}
 
     // prepare output for iteration status
     std::ofstream out_main;
@@ -240,7 +240,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     }
 
     // objective function and its gradient
-    CUSTOMREAL v_obj      = 0.0;
+    CUSTOMREAL v_obj      = 999999999.0;
     CUSTOMREAL v_obj_old  = 0.0;
     CUSTOMREAL v_obj_grad = 0.0;
     int        i_iter     = 0;
@@ -265,53 +265,55 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         // update source location
         recs.update_source_location(IP, grid);
 
+        synchronize_all_world();
+
         // calculate sum of objective function and gradient
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
         }
 
-        // v_obj before allreduce
-        CUSTOMREAL v_obj_before = v_obj;
         // reduce
-        allreduce_cr_sim_single_inplace(v_obj);
-        allreduce_cr_sim_single_inplace(v_obj_grad);
-
-        std::cout << "cpk-sp, id_sim: " << id_sim << ", myrank: " << myrank << ", v_obj_before: " << v_obj_before << ", v_obj: " << v_obj << std::endl;
-
+        //allreduce_cr_sim_single_inplace(v_obj);
+        //allreduce_cr_sim_single_inplace(v_obj_grad);
 
         // check convergence
         int count_loc = 0;
         bool finished = false;
 
         if (subdom_main && id_subdomain==0) {
-
-            if (IP.name_for_reloc.size() == 0 || i_iter >= N_ITER_MAX_SRC_RELOC)
+            if (IP.name_for_reloc.size() == 0){
+                std::cout << "DEBUG: finishe relocation because all receivers have been located." << std::endl;
                 finished = true;
+            }
 
+            if (i_iter >= N_ITER_MAX_SRC_RELOC){
+                std::cout << "DEBUG: finishe relocation because iteration number is larger than " << N_ITER_MAX_SRC_RELOC << std::endl;
+                finished = true;
+            }
             allreduce_bool_single_inplace_sim(finished); //LAND
         }
+
+        synchronize_all_world();
 
         // check if all processes have finished
         broadcast_bool_inter_and_intra_sim(finished, 0);
 
-        if (finished)
-            break;
-
-        // new iteration
-        i_iter++;
-
+        synchronize_all_world();
 
         // output location information
         if(id_sim == 0 && myrank == 0){
+            // number of receiver which have been completed
             int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
 
             // write objective function
-            std::cout << "iteration: " << i_iter << " objective function: " << v_obj
-                                                 << " mean norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
-                                                 << " v_obj/n_src: " << v_obj/nrec_total
-                                                 << " diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
-            std::cout << nrec_total << " earthquakes require location, " << n_relocated << " of which have been relocated. " << std::endl;
+            std::cout << "iteration: " << i_iter << ", objective function: " << v_obj
+                                                 << ", objective function old: " << v_obj_old
+                                                 << ", norm grad of relocating: " << v_obj_grad
+                                                 << ", average norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
+                                                 << ", v_obj/n_src: " << v_obj/nrec_total
+                                                 << ", diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
+            std::cout << "Earthquakes require location: " << n_relocated << " / " << nrec_total << " completed." << std::endl;
 
             // the last 10 sources under location
             if (nrec_total - count_loc < 10){
@@ -332,6 +334,14 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
             out_main << std::setw(16) << std::right << v_obj;
             out_main << std::endl;
         }
+
+        if (finished)
+            break;
+
+        // new iteration
+        i_iter++;
+
+
     }
 
 

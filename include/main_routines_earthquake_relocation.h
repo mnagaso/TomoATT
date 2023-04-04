@@ -27,10 +27,6 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         exit(1);
     }
 
-    // initialize kernel arrays
-    //if (IP.get_run_mode() == DO_INVERSION)
-    //    grid.initialize_kernels();
-
     // reinitialize factors
     grid.reinitialize_abcf();
 
@@ -113,7 +109,6 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
         // change target group to be read
         io.change_group_name_for_source();
-        // io.change_group_name_for_source();
 
         // load travel time field on grid.T_loc
         io.read_T(grid);
@@ -139,8 +134,6 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
     // compute the objective function
     recs.calculate_obj_reloc(IP, i_iter);
-
-
 
     // iterate over sources
     for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
