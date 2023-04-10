@@ -468,11 +468,13 @@ void Iterator_legacy_1st_order_upwind_tele::do_sweep(int iswp, Grid& grid, Input
                     // this if statement is not necessary because always only the outer layer
                     // is !is_changed in teleseismic case
                     // if (grid.is_changed[I2V(iip, jjt, kkr)]) {
+                    
                     if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
                     // 1st order, calculate stencils
                         
                         calculate_stencil_1st_order_upwind_tele(grid, iip, jjt, kkr);       // no need to consider the boundary for upwind scheme
-                    }
+
+                    }                    
                 }
             }
         }

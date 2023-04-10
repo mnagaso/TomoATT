@@ -2034,6 +2034,10 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
 
 void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&jjt, int&kkr){
 
+    bool check_out = false;
+    int iip_out = 2; 
+    int jjt_out = 1;
+    int kkr_out = 1;
     // preparations
 
     count_cand = 0;
@@ -2220,6 +2224,13 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                     // }
                 }
 
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "body case, i_case, i_solution, is_causality, T_tmp, T: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                                << grid.T_loc[I2V(iip,jjt,kkr)]
+                                << ", " << std::endl;
+                }
+
             }
 
         }
@@ -2320,6 +2331,12 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                     // }
                 }
 
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "plane case, i_case, i_solution, is_causality, T_tmp, T: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                                << grid.T_loc[I2V(iip,jjt,kkr)]
+                                << ", " << std::endl;
+                }
             }
         }
 
@@ -2417,6 +2434,13 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                     // if (iip == 1 && jjt ==1 && kkr ==1){
                     //     std::cout << "id_sim: " << id_sim << ", cd plane icase " << i_case << ": " << canditate[count_cand-1] << std::endl;
                     // }
+                }
+
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "plane case, i_case, i_solution, is_causality, T_tmp, T: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                                << grid.T_loc[I2V(iip,jjt,kkr)]
+                                << ", " << std::endl;
                 }
 
             }
@@ -2520,6 +2544,13 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                     // }
                 }
 
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "plane case, i_case, i_solution, is_causality, T_tmp, T: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                                << grid.T_loc[I2V(iip,jjt,kkr)]
+                                << ", " << std::endl;
+                }
+
             }
         }
     }
@@ -2562,12 +2593,12 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
             is_causality = false;
             switch (i_case){
                 case 0:  //characteristic travels from -r (we can simply compare the traveltime, which is the same as check the direction of characteristic)
-                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr-1) && tmp_T > 0]){   // this additional condition ensures the causality near the source
+                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr-1)] && tmp_T > 0){   // this additional condition ensures the causality near the source
                         is_causality = true;
                     }
                     break;
                 case 1:  //characteristic travels from +r
-                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr+1) && tmp_T > 0]){
+                    if (tmp_T >= grid.T_loc[I2V(iip,jjt,kkr+1)] && tmp_T > 0){
                         is_causality = true;
                     }
                     break;
@@ -2580,6 +2611,13 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 // if (iip == 1 && jjt ==1 && kkr ==1){
                 //     std::cout << "id_sim: " << id_sim << ", cd line icase " << i_case << ": " << canditate[count_cand-1] << std::endl;
                 // }
+            }
+
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, T_tmp, T: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                            << grid.T_loc[I2V(iip,jjt,kkr)]
+                            << ", " << std::endl;
             }
 
         }
@@ -2644,6 +2682,13 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 // }
             }
 
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, T_tmp, T: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                            << grid.T_loc[I2V(iip,jjt,kkr)]
+                            << ", " << std::endl;
+            }
+
         }
     }
 
@@ -2704,6 +2749,13 @@ void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&j
                 // if (iip == 1 && jjt ==1 && kkr ==1){
                 //     std::cout << "id_sim: " << id_sim << ", cd line icase " << i_case << ": " << canditate[count_cand-1] << std::endl;
                 // }
+            }
+
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, T_tmp, T: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_T << ", "
+                            << grid.T_loc[I2V(iip,jjt,kkr)]
+                            << ", " << std::endl;
             }
         }
     }
