@@ -2013,7 +2013,9 @@ void InputParams::allreduce_rec_map_grad_chi_ijk(){
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
+                dummy = 0;
                 allreduce_rec_map_var(dummy);
+                dummy = 0;
                 allreduce_rec_map_var(dummy);
             }
         }

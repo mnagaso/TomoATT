@@ -283,12 +283,12 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         if (subdom_main && id_subdomain==0) {
             if (IP.name_for_reloc.size() == 0){
-                std::cout << "DEBUG: finishe relocation because all receivers have been located." << std::endl;
+                std::cout << "DEBUG: finished relocation because all receivers have been located." << std::endl;
                 finished = true;
             }
 
             if (i_iter >= N_ITER_MAX_SRC_RELOC){
-                std::cout << "DEBUG: finishe relocation because iteration number is larger than " << N_ITER_MAX_SRC_RELOC << std::endl;
+                std::cout << "DEBUG: finished relocation because iteration number is larger than " << N_ITER_MAX_SRC_RELOC << std::endl;
                 finished = true;
             }
             allreduce_bool_single_inplace_sim(finished); //LAND
@@ -307,12 +307,12 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
             int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
 
             // write objective function
-            std::cout << "iteration: " << i_iter << ", objective function: " << v_obj
-                                                 << ", objective function old: " << v_obj_old
-                                                 << ", norm grad of relocating: " << v_obj_grad
+            std::cout << "iteration: " << i_iter << ", objective function: "              << v_obj
+                                                 << ", objective function old: "          << v_obj_old
+                                                 << ", norm grad of relocating: "         << v_obj_grad // BUG: strangely high when simultaneous run
                                                  << ", average norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
-                                                 << ", v_obj/n_src: " << v_obj/nrec_total
-                                                 << ", diff_v/v_obj_old " << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
+                                                 << ", v_obj/n_src: "                     << v_obj/nrec_total
+                                                 << ", diff_v/v_obj_old "                 << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
             std::cout << "Earthquakes require location: " << n_relocated << " / " << nrec_total << " completed." << std::endl;
 
             // the last 10 sources under location
