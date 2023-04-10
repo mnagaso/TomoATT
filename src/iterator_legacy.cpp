@@ -473,6 +473,7 @@ void Iterator_legacy_1st_order_upwind_tele::do_sweep(int iswp, Grid& grid, Input
                         
                         calculate_stencil_1st_order_upwind_tele(grid, iip, jjt, kkr);       // no need to consider the boundary for upwind scheme
                     }
+                   
                 }
             }
         }
