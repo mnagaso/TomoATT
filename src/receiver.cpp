@@ -695,7 +695,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
             for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
                 std::string name_rec = it_rec->first;
 
-                if (IP.rec_map[name_rec].is_stop) continue; // avoid division by zero
+                //if (IP.rec_map[name_rec].is_stop) continue; // avoid division by zero
 
                 for (const auto& data: it_rec->second){
                     const CUSTOMREAL& weight = data.weight;
