@@ -873,7 +873,8 @@ void InputParams::prepare_src_map(){
                            src_map_all, \
                            rec_map_all, \
                            data_map_all, \
-                           src_id2name_all);
+                           src_id2name_all, \
+                           rec_id2name_back);
 
         // read station correction file by all processes
         if (sta_correction_file_exist) {
@@ -899,6 +900,7 @@ void InputParams::prepare_src_map(){
                                               N_cr_dif_local_data,
                                               N_cs_dif_local_data,
                                               N_teleseismic_data,
+                                              N_data,
                                               min_lat, max_lat, min_lon, max_lon, min_dep, max_dep);
 
         if (swap_src_rec) {
@@ -1394,17 +1396,10 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << std::endl;
 
                 // data line
-                for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
-
-                    const std::string name_rec = iter->first;
+                for (auto& name_rec: rec_id2name_back[i_src]){
                     std::vector<DataInfo> v_data;
 
-                    //
                     // CALCULATED DATA IS STORED IN data_map_all
-                    //if (swap_src_rec) // reverse swap src and rec
-                    //    v_data = data_map_all[name_rec][name_src];
-                    //else // do not swap
-                    //    v_data = data_map_all[name_src][name_rec];
 
                     v_data = data_map_back[name_src][name_rec];
 
@@ -1424,7 +1419,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                             else // do not swap
                                 data = get_data_src_rec(data_map_all[name_src][name_rec]);
 
-                            SrcRecInfo  rec      = rec_map_back[name_rec];
+                            SrcRecInfo  rec         = rec_map_back[name_rec];
                             CUSTOMREAL  travel_time = data.travel_time;
 
                             // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
@@ -1452,11 +1447,8 @@ void InputParams::write_src_rec_file(int i_inv) {
                             if (get_is_srcrec_swap()) { // do reverse swap
                                 name_rec1 = data.name_src_pair[0];
                                 name_rec2 = data.name_src_pair[1];
-
                                 cs_dif_travel_time = data.cr_dif_travel_time;
                             } else { // do not swap
-                                name_rec1 = data.name_rec_pair[0];
-                                name_rec2 = data.name_rec_pair[1];
                                 cs_dif_travel_time = data.cs_dif_travel_time;
                             }
 
@@ -1521,9 +1513,8 @@ void InputParams::write_src_rec_file(int i_inv) {
                         << std::endl;
 
                     // data line
-                    for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
+                    for (auto& name_rec: rec_id2name_back[i_src]){
 
-                        std::string name_rec = iter->first;
                         std::vector<DataInfo> v_data;
 
                         v_data = data_map_back[name_src][name_rec];

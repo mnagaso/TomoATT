@@ -37,7 +37,7 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
 
             out_main << std::setw(8) << std::right << "# iter,";
             std::string tmp = "obj(";
-            tmp.append(std::to_string(IP.data_map_back.size()));
+            tmp.append(std::to_string(IP.N_data));
             tmp.append("),");
             out_main << std::setw(20) << tmp;
             if (have_abs){

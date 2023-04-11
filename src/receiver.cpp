@@ -20,6 +20,12 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
             for (auto& data: it_rec->second){
                 // store travel time on single receiver and double receivers
                 data.travel_time = travel_time;
+
+                if (data.is_rec_pair){
+                    // the rec_name used for storing data_map == name_rec_pair[0]
+                    CUSTOMREAL travel_time_2 = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[1]);
+                    data.cs_dif_travel_time = travel_time - travel_time_2;
+                }
             }
         }
 
@@ -107,6 +113,15 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
+                        //std::cout   << "name_src1: " << name_src1
+                        //            << ", name_src2: " << name_src2
+                        //            << ", name_rec: " << name_rec
+                        //            << ", dif: " << data.cr_dif_travel_time
+                        //            << ", obsdif: " << data.cr_dif_travel_time_obs
+                        //            << ", dobj: " << d_obj
+                        //            << ", obj: " << obj
+                        //            << std::endl;
+
                         // exit if d_obj is too large
                         if (d_obj > 100){
                             std::cout << "d_obj = " << d_obj << std::endl;
@@ -140,6 +155,15 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
+                        //std::cout   << "name_src1: " << name_src1
+                        //            << ", name_src2: " << name_src2
+                        //            << ", name_rec: " << name_rec
+                        //            << ", dif: " << data.cr_dif_travel_time
+                        //            << ", obsdif: " << data.cr_dif_travel_time_obs
+                        //            << ", dobj: " << d_obj
+                        //            << ", obj: " << obj
+                        //            << std::endl;
+
                         // exit if d_obj is too large
                         if (d_obj > 100){
                             std::cout << "d_obj = " << d_obj << std::endl;
@@ -148,7 +172,6 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                             std::cout << "data.weight = " << data.weight << std::endl;
                             exit(1);
                         }
-
 
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
@@ -173,8 +196,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     std::string name_rec1 = data.name_rec_pair[0];
                     std::string name_rec2 = data.name_rec_pair[1];
 
-                    CUSTOMREAL syn_dif_time = get_data_rec_pair(IP.data_map[name_src][name_rec1]).travel_time \
-                                            - get_data_rec_pair(IP.data_map[name_src][name_rec2]).travel_time;
+                    CUSTOMREAL syn_dif_time = data.cs_dif_travel_time;
                     CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
                     CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
@@ -184,17 +206,17 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
                     // contribute misfit
-                    obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                    obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                    misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
                     if (IP.get_src_point(name_src).is_out_of_region || \
                         IP.get_rec_point(name_rec1).is_out_of_region || \
                         IP.get_rec_point(name_rec2).is_out_of_region){
-                        obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_tele     += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                        obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);
                     } else{
-                        obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_cs_dif   += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                        obj_cs_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_cs_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
                     }
                 }
 
