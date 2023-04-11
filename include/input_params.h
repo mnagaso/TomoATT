@@ -308,8 +308,8 @@ inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
             return *it;
     }
 
-    // error if no rec pair is found
-    std::cerr << "Error: no rec pair is found in get_data_src_pair" << std::endl;
+    // error if no src pair is found
+    std::cerr << "Error: no src pair is found in get_data_src_pair" << std::endl;
     exit(1);
 
     // return the first element in the vector as a dummy
