@@ -895,18 +895,23 @@ void InputParams::prepare_src_map(){
                                               src_map_all,  rec_map_all,  data_map_all,
                                               src_map_tele, rec_map_tele, data_map_tele,
                                               data_type,
-                                              N_local_data,
                                               N_abs_local_data,
                                               N_cr_dif_local_data,
                                               N_cs_dif_local_data,
                                               N_teleseismic_data,
+                                              N_data,
                                               min_lat, max_lat, min_lon, max_lon, min_dep, max_dep);
 
         if (swap_src_rec) {
             // here only reginal events will be processed
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
             do_swap_src_rec(src_map_all, rec_map_all, data_map_all);
+        } else {
+            stdout_by_main("Do not swapping src and rec ... This may take few minutes for a large dataset (only regional events will be processed)\n");
+            do_not_swap_src_rec(src_map_all, rec_map_all, data_map_all);
         }
+
+        process_tele_data(src_map_tele,rec_map_tele,data_map_tele);
 
         // concatenate resional and teleseismic src/rec points
         //
@@ -927,6 +932,7 @@ void InputParams::prepare_src_map(){
 
     // wait
     synchronize_all_world();
+
 
 
     // to all the subdom_main processes of each simultaneous run group
@@ -966,6 +972,10 @@ void InputParams::prepare_src_map(){
         if (world_rank==0)
             std::cout << "end parse src_rec file" << std::endl;
     } // end of if src_rec_file_exists
+
+    // check data map
+    if(if_verbose)
+        check_data_map();
 }
 
 
@@ -1132,8 +1142,66 @@ void InputParams::gather_all_arrival_times_to_main(){
 
 }
 
+
+// gther tau_opt to main simultaneous run group
+void InputParams::gather_rec_info_to_main(){
+
+    // broadcast total number of recenver to all procs
+    int nrec_total= rec_map_all.size();
+    broadcast_i_single_inter_and_intra_sim(nrec_total, 0);
+
+    std::vector<std::string> name_rec_all;
+
+    if (subdom_main){
+        if (id_sim==0){
+            // assigne tau_opt to rec_map_all from its own rec_map
+            for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
+                rec_map_all[iter->first].tau_opt = iter->second.tau_opt;
+            }
+
+            // make a list of receiver names
+            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                name_rec_all.push_back(iter->first);
+            }
+        }
+
+        for (int irec =  0; irec < nrec_total; irec++){
+
+            // broadcast name of receiver
+            std::string name_rec;
+            if (id_sim==0){
+                name_rec = name_rec_all[irec];
+            }
+            broadcast_str_inter_sim(name_rec, 0);
+
+            int        rec_counter = 0;
+            CUSTOMREAL tau_tmp=0.0;
+            // copy value if rec_map[name_rec] exists
+            if (rec_map.find(name_rec) != rec_map.end()){
+                tau_tmp = rec_map[name_rec].tau_opt;
+                rec_counter = 1;
+            }
+
+            // reduce counter and tau_tmp
+            allreduce_rec_map_var(rec_counter);
+            allreduce_rec_map_var(tau_tmp);
+
+            // assign tau_opt to rec_map_all
+            if (rec_counter > 0){
+                rec_map_all[name_rec].tau_opt = tau_tmp / (CUSTOMREAL)rec_counter;
+            }
+
+       }
+
+    } // end of subdom_main
+
+
+}
+
 // gather traveltimes and calculate differences of synthetic data
 void InputParams::gather_traveltimes_and_calc_syn_diff(){
+
+    if (!src_pair_exists) return; // nothing to share
 
     // gather all synthetic traveltimes to main simultaneous run group
     gather_all_arrival_times_to_main();
@@ -1292,6 +1360,10 @@ void InputParams::write_src_rec_file(int i_inv) {
         // gather all arrival time info to the main process (need to call even n_sim=1)
         gather_all_arrival_times_to_main();
 
+        // gather tau_opt info
+        if (run_mode == SRC_RELOCATION)
+            gather_rec_info_to_main();
+
         // write only by the main processor of subdomain && the first id of subdoumains
         if (world_rank == 0 && subdom_main && id_subdomain==0){
 
@@ -1332,32 +1404,6 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0     // the weight of source is assigned to data
                     << std::endl;
 
-                // test
-                for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
-                    const std::string name_rec = iter->first;
-                    std::vector<DataInfo> v_data;
-
-                    if (swap_src_rec) // reverse swap src and rec
-                        v_data = data_map_all[name_rec][name_src];
-                    else // do not swap
-                        v_data = data_map_all[name_src][name_rec];
-
-                    std::cout << "size of map: " << data_map_back[name_src].size() << std::endl;
-                    for (const auto& data : v_data){
-
-                        std::cout << "  size of data: " << v_data.size()
-                                  << "  id_sim: " << id_sim
-                                  << "  name_rec: " << name_rec 
-                                  << ", name_src: " << name_src
-                                  << ", is_src_rec: " << data.is_src_rec
-                                  << ", is_src_pair: " << data.is_src_pair
-                                  << ", is_rec_pair: " << data.is_rec_pair
-                                  << std::endl;
-                    }
-                }
-
-
-
                 // data line
                 for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
 
@@ -1366,17 +1412,30 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                     //
                     // CALCULATED DATA IS STORED IN data_map_all
-                    if (swap_src_rec) // reverse swap src and rec
-                        v_data = data_map_all[name_rec][name_src];
-                    else // do not swap
-                        v_data = data_map_all[name_src][name_rec];
+                    //if (swap_src_rec) // reverse swap src and rec
+                    //    v_data = data_map_all[name_rec][name_src];
+                    //else // do not swap
+                    //    v_data = data_map_all[name_src][name_rec];
 
-                    for (const auto& data : v_data){
+                    v_data = data_map_back[name_src][name_rec];
+
+                    for (const auto& data_ori : v_data){
+
+                        // data type flag
+                        bool src_rec_data  = data_ori.is_src_rec;
+                        bool src_pair_data = data_ori.is_src_pair;
+                        bool rec_pair_data = data_ori.is_rec_pair;
+
+                        DataInfo& data = const_cast<DataInfo&>(data_ori); // dummy copy
 
                         // absolute traveltime data
-                        if (data.is_src_rec){
-                            SrcRecInfo  rec      = rec_map_back[name_rec];
+                        if (src_rec_data){
+                            if (get_is_srcrec_swap()) // reverse swap src and rec
+                                data = get_data_src_rec(data_map_all[name_rec][name_src]);
+                            else // do not swap
+                                data = get_data_src_rec(data_map_all[name_src][name_rec]);
 
+                            SrcRecInfo  rec      = rec_map_back[name_rec];
                             CUSTOMREAL  travel_time = data.travel_time;
 
                             // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
@@ -1392,20 +1451,33 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::endl;
 
                         // common source differential traveltime
-                        } else if ((data.is_rec_pair && !get_is_srcrec_swap()) || (data.is_src_pair && get_is_srcrec_swap())){
-
-                            std::string name_rec1 = data.name_rec_pair[0];
-                            SrcRecInfo  rec1      = rec_map_back[name_rec1];
-                            std::string name_rec2 = data.name_rec_pair[1];
-                            SrcRecInfo  rec2      = rec_map_back[name_rec2];
-                            CUSTOMREAL cs_dif_travel_time;
-
-                            if (get_is_srcrec_swap()) // do reverse swap
-                                cs_dif_travel_time = get_data_src_pair(data_map_all[name_rec1][name_src]).travel_time \
-                                                   - get_data_src_pair(data_map_all[name_rec2][name_src]).travel_time;
+                        } else if (rec_pair_data){
+                            if (get_is_srcrec_swap()) // reverse swap src and rec
+                                data = get_data_src_pair(data_map_all[name_rec][name_src]);
                             else // do not swap
-                                cs_dif_travel_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
-                                                   - get_data_rec_pair(data_map_all[name_src][name_rec2]).travel_time;
+                                data = get_data_rec_pair(data_map_all[name_src][name_rec]);
+                                      
+
+                            std::string name_rec1, name_rec2;
+                            CUSTOMREAL  cs_dif_travel_time;
+
+                            if (get_is_srcrec_swap()) { // do reverse swap
+                                name_rec1 = data.name_src_pair[0];
+                                name_rec2 = data.name_src_pair[1];
+
+                                cs_dif_travel_time = data.cr_dif_travel_time;
+                            } else { // do not swap
+                                name_rec1 = data.name_rec_pair[0];
+                                name_rec2 = data.name_rec_pair[1];
+                                // cs_dif_travel_time = data.cs_dif_travel_time;
+                                DataInfo data1 = get_data_rec_pair(data_map_all[name_src][name_rec1]);
+                                DataInfo data2 = get_data_rec_pair(data_map_all[name_src][name_rec2]);
+                                
+                                cs_dif_travel_time = data1.travel_time - data2.travel_time;
+                            }
+
+                            SrcRecInfo& rec1 = rec_map_back[name_rec1];
+                            SrcRecInfo& rec2 = rec_map_back[name_rec2];
 
                             // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
                             ofs << std::setw(7) << std::right << std::setfill(' ') <<  i_src << " "
@@ -1425,9 +1497,8 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::endl;
 
                         // common receiver differential traveltime
-                        } else if ((data.is_src_pair && !get_is_srcrec_swap()) || (data.is_rec_pair && get_is_srcrec_swap())){
+                        } else if (src_pair_data){
                             // TODO: implement this later
-                            std::cout << "src pair data, to do in the future" << std::endl;
                         }
 
                     } // end of for (const auto& data : v_data)
@@ -1442,102 +1513,124 @@ void InputParams::write_src_rec_file(int i_inv) {
             if (run_mode == SRC_RELOCATION) {
                 src_rec_file_out = output_dir + "/src_rec_file_src_reloc_obs.dat";
 
-                if (world_rank == 0 && subdom_main && id_subdomain==0){    // main processor of subdomain && the first id of subdoumains
-                    // open file
-                    ofs.open(src_rec_file_out);
+                // open file
+                ofs.open(src_rec_file_out);
 
-                    for (int i_src = 0; i_src < (int)src_id2name_all.size(); i_src++){
+                for (int i_src = 0; i_src < (int)src_id2name_back.size(); i_src++){
 
-                        std::string name_src = src_id2name_all[i_src];
-                        SrcRecInfo  src      = src_map_back[name_src];
+                    std::string name_src = src_id2name_back[i_src];
+                    SrcRecInfo  src      = src_map_back[name_src];
 
-                        // format should be the same as input src_rec_file
-                        // source line :  id_src yearm month day hour min sec lat lon dep_km mag num_recs id_event
-                        ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
-                            << src.year << " " << src.month << " " << src.day << " "
-                            << src.hour << " " << src.min   << " "
-                            << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.sec << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lat << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lon << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.dep << " "
-                            << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.mag << " "
-                            << std::setw(5) << std::right << std::setfill(' ') << src.n_data << " "
-                            << src.name << " "
-                            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0     // the weight of source is assigned to data
-                            << std::endl;
+                    // format should be the same as input src_rec_file
+                    // source line :  id_src yearm month day hour min sec lat lon dep_km mag num_recs id_event
+                    ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
+                        << src.year << " " << src.month << " " << src.day << " "
+                        << src.hour << " " << src.min   << " "
+                        << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.sec << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lat << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lon << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.dep << " "
+                        << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.mag << " "
+                        << std::setw(5) << std::right << std::setfill(' ') << src.n_data << " "
+                        << src.name << " "
+                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0     // the weight of source is assigned to data
+                        << std::endl;
 
-                        // data line
-                        for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
+                    // data line
+                    for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++){
 
-                            std::string name_rec = iter->first;
-                            std::vector<DataInfo> v_data;
+                        std::string name_rec = iter->first;
+                        std::vector<DataInfo> v_data;
 
-                            if (swap_src_rec) // reverse swap src and rec
-                                v_data = data_map_all[name_rec][name_src];
-                            else // do not swap
-                                v_data = data_map_all[name_src][name_rec];
+                        v_data = data_map_back[name_src][name_rec];
 
-                            for (const auto& data : v_data){
+                        for (const auto& data_ori : v_data){
 
-                                // absolute traveltime data
-                                if (data.is_src_rec){
-                                    std::string name_rec = data.name_rec;
-                                    SrcRecInfo rec = rec_map_back[name_rec];
-                                    CUSTOMREAL travel_time_obs;
-                                    // swapped
-                                    travel_time_obs = data.travel_time_obs - rec_map[name_src].tau_opt;
+                            // data type flag
+                            bool src_rec_data  = data_ori.is_src_rec;
+                            bool src_pair_data = data_ori.is_src_pair;
+                            bool rec_pair_data = data_ori.is_rec_pair;
 
-                                    // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
-                                    ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
-                                        << std::setw(5) << std::right << std::setfill(' ') << rec.id << " "
-                                        << rec.name << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << rec.lat << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
-                                        << data.phase << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time_obs << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
-                                        << std::endl;
+                            DataInfo& data = const_cast<DataInfo&>(data_ori); // dummy copy
 
-                                // common source differential traveltime
-                                } else if (data.is_rec_pair){
-                                    std::string name_rec1 = data.name_rec_pair[0];
-                                    SrcRecInfo  rec1      = rec_map_back[name_rec1];
-                                    std::string name_rec2 = data.name_rec_pair[1];
-                                    SrcRecInfo  rec2      = rec_map_back[name_rec2];
-                                    CUSTOMREAL  cs_dif_travel_time;
+                            // absolute traveltime data
+                            if (src_rec_data){
 
-                                    // swapped
-                                    cs_dif_travel_time = data.cs_dif_travel_time_obs;
-
-                                    // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
-                                    ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
-                                        << std::setw(5) << std::right << std::setfill(' ') <<  rec1.id << " "
-                                        << rec1.name << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lat << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lon << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec1.dep*1000.0 << " "
-                                        << std::setw(5) << std::right << std::setfill(' ') << rec2.id << " "
-                                        << rec2.name << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec2.lat << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec2.lon << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec2.dep*1000.0 << " "
-                                        << data.phase << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << cs_dif_travel_time << " "
-                                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
-                                        << std::endl;
-                                } else if (data.is_src_pair){   // common receiver differential traveltime
-                                    // not ready
+                                if (get_is_srcrec_swap()) // reverse swap src and rec
+                                    data = get_data_src_rec(data_map_all[name_rec][name_src]);
+                                else {// retern error
+                                    std::cerr << "Error: src_rec_data should not be used in src relocation mode!" << std::endl;
+                                    exit(1);
                                 }
 
+                                SrcRecInfo rec = rec_map_back[name_rec];
+                                CUSTOMREAL travel_time_obs = data.travel_time_obs - rec_map_all[name_src].tau_opt;
+
+                                //std::cout << "src_rec_data: " << name_src << " " << name_rec << " " << data.travel_time_obs << " " << rec_map_all[name_src].tau_opt << " " << travel_time_obs << std::endl;
+
+                                // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
+                                ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
+                                    << std::setw(5) << std::right << std::setfill(' ') << rec.id << " "
+                                    << rec.name << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << rec.lat << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
+                                    << data.phase << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time_obs << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
+                                    << std::endl;
+
+                            // common source differential traveltime
+                            } else if (rec_pair_data){
+                                if (get_is_srcrec_swap()) // reverse swap src and rec
+                                    data = get_data_src_pair(data_map_all[name_rec][name_src]);
+                                else // do not swap
+                                    data = get_data_rec_pair(data_map_all[name_src][name_rec]);
+
+                                std::string name_rec1, name_rec2;
+                                CUSTOMREAL  cs_dif_travel_time;
+
+                                if (get_is_srcrec_swap()) { // do reverse swap
+                                    name_rec1 = data.name_src_pair[0];
+                                    name_rec2 = data.name_src_pair[1];
+
+                                    cs_dif_travel_time = data.cr_dif_travel_time;
+                                } else { // do not swap
+                                    name_rec1 = data.name_rec_pair[0];
+                                    name_rec2 = data.name_rec_pair[1];
+                                    cs_dif_travel_time = data.cs_dif_travel_time;
+                                }
+
+                                SrcRecInfo& rec1 = rec_map_back[name_rec1];
+                                SrcRecInfo& rec2 = rec_map_back[name_rec2];
+
+                                // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
+                                ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
+                                    << std::setw(5) << std::right << std::setfill(' ') <<  rec1.id << " "
+                                    << rec1.name << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lat << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lon << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec1.dep*1000.0 << " "
+                                    << std::setw(5) << std::right << std::setfill(' ') << rec2.id << " "
+                                    << rec2.name << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec2.lat << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec2.lon << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec2.dep*1000.0 << " "
+                                    << data.phase << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << cs_dif_travel_time << " "
+                                    << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
+                                    << std::endl;
+                            } else if (src_pair_data){   // common receiver differential traveltime
+                                // not ready
                             }
-                        } // end of data loop
 
-                    } // end of src loop
+                        }
+                    } // end of data loop
 
-                    // close file
-                    ofs.close();
-                } // end of if (world_rank == 0)
+                } // end of src loop
+
+                // close file
+                ofs.close();
 
             } // end of run_mode == SRC_RELOCATION
         } // end if (world_rank == 0)
@@ -1699,19 +1792,15 @@ void InputParams::modift_swapped_source_location() {
 
 
 template <typename T>
-void InputParams::allreduce_rec_map_var(std::string& name_rec, T& var){
+void InputParams::allreduce_rec_map_var(T& var){
 
-    T tmp_var = (T)0;
+    T tmp_var = (T)var;
+
     if (subdom_main){
         // allreduce sum the variable var of rec_map[name_rec] to all
         // some process has rec_map[name_rec], some process does not have it
 
         // step 1, gather all the variable var
-        if (rec_map.find(name_rec) != rec_map.end()){
-            tmp_var = var;
-        } else {
-            tmp_var = (T)0;
-        }
 
         // allreduce the variable var to the main process
         // if T is CUSTOMREAL
@@ -1733,6 +1822,22 @@ void InputParams::allreduce_rec_map_var(std::string& name_rec, T& var){
 
     // assign the value to the variable var
     var = tmp_var;
+
+//    // broadcast the variable var to all subdomains within the same simultaneous run group
+//    if (std::is_same<T, CUSTOMREAL>::value){
+//        CUSTOMREAL v = var; // for compiler warning
+//        broadcast_cr_single(v,0);
+//        var = v; // for compiler warning
+//    // if T is int
+//    } else if (std::is_same<T, int>::value){
+//        int v = var; // for compiler warning
+//        broadcast_i_single(v,0);
+//        var = v; // for compiler warning
+//    } else {
+//        //error
+//        std::cout << "error in allreduce_rec_map_var" << std::endl;
+//        exit(1);
+//    }
 
 }
 
@@ -1763,8 +1868,26 @@ void InputParams::allreduce_rec_map_tau_opt(){
 
             broadcast_str_inter_sim(name_rec,0);
 
+            // check if the tau_opt of rec_map_all[name_rec] is needed
+            bool is_stop = false;
+            if (rec_map.find(name_rec) != rec_map.end()){
+                is_stop = rec_map[name_rec].is_stop;
+            }
+
+            // allreduce
+            allreduce_bool_single_inplace_sim(is_stop);
+
+            // stop allreduce of tau_opt if is_stop is true (no further addition of tau_opt is needed)
+            if (is_stop)
+                continue;
+
             // allreduce the tau_opt of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].tau_opt);
+            if (rec_map.find(name_rec) != rec_map.end()){
+                allreduce_rec_map_var(rec_map[name_rec].tau_opt);
+            } else {
+                CUSTOMREAL dummy = 0;
+                allreduce_rec_map_var(dummy);
+            }
         }
     }
 }
@@ -1794,7 +1917,12 @@ void InputParams::allreduce_rec_map_sum_weight(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the sum_weight of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].sum_weight);
+            if (rec_map.find(name_rec) != rec_map.end()){
+                allreduce_rec_map_var(rec_map[name_rec].sum_weight);
+            } else {
+                CUSTOMREAL dummy = 0;
+                allreduce_rec_map_var(dummy);
+            }
         }
     }
 }
@@ -1824,7 +1952,12 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].vobj_src_reloc);
+            if (rec_map.find(name_rec) != rec_map.end()){
+                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc);
+            } else {
+                CUSTOMREAL dummy = 0;
+                allreduce_rec_map_var(dummy);
+            }
         }
     }
 }
@@ -1854,7 +1987,12 @@ void InputParams::allreduce_rec_map_grad_tau(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the grad_tau of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_tau);
+            if (rec_map.find(name_rec) != rec_map.end()){
+                allreduce_rec_map_var(rec_map[name_rec].grad_tau);
+            } else {
+                CUSTOMREAL dummy = 0;
+                allreduce_rec_map_var(dummy);
+            }
         }
     }
 }
@@ -1884,9 +2022,64 @@ void InputParams::allreduce_rec_map_grad_chi_ijk(){
             broadcast_str_inter_sim(name_rec,0);
 
             // allreduce the grad_chi_ijk of rec_map_all[name_rec] to all processors
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_chi_i);
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_chi_j);
-            allreduce_rec_map_var(name_rec,rec_map_all[name_rec].grad_chi_k);
+            if (rec_map.find(name_rec) != rec_map.end()){
+                allreduce_rec_map_var(rec_map[name_rec].grad_chi_i);
+                allreduce_rec_map_var(rec_map[name_rec].grad_chi_j);
+                allreduce_rec_map_var(rec_map[name_rec].grad_chi_k);
+            } else {
+                CUSTOMREAL dummy = 0;
+                allreduce_rec_map_var(dummy);
+                dummy = 0;
+                allreduce_rec_map_var(dummy);
+                dummy = 0;
+                allreduce_rec_map_var(dummy);
+            }
         }
+    }
+}
+
+void InputParams::check_data_map(){
+    for (int i = 0; i < n_sims; i++){   
+        if(id_sim == i){
+            std::cout << "id_sim: " << id_sim << ", checking data map ..." << std::endl;
+            std::cout << "size of src: " << data_map.size() << std::endl;
+            for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+                std::cout << "src: " << it_src->first << std::endl;
+                std::cout << "size of rec: " << it_src->second.size() << std::endl;
+                for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+                    std::cout << "rec: " << it_rec->first << std::endl;
+                    std::cout << "size of data: " << it_rec->second.size() << std::endl;
+                    for(const auto& data: it_rec->second){
+                        if (data.is_src_rec){
+                            std::cout   << "key: it_src, it_rec: " << it_src->first << ", " << it_rec->first
+                                        << ", source name: "       << data.name_src
+                                        << ", receiver name: "     << data.name_rec
+                                        << ", obs absolute traveltime: " << data.travel_time_obs
+                                        << ", syn traveltime: " << data.travel_time
+                                        << std::endl;
+                        } else if (data.is_rec_pair){
+                            std::cout   << "key: it_src, it_rec: " << it_src->first << ", " << it_rec->first
+                                        << ", source name: "                                << data.name_src
+                                        << ", receiver pair name: "                         << data.name_rec_pair[0]
+                                        << ", "                                             << data.name_rec_pair[1]
+                                        << ", obs common source differential traveltime: "        << data.cs_dif_travel_time_obs
+                                        << ", syn traveltime: " << data.travel_time
+                                        << std::endl;
+                        } else if (data.is_src_pair){
+                            std::cout   << "key: it_src, it_rec: " << it_src->first << ", " << it_rec->first
+                                        << ", source pair name: "                           << data.name_src_pair[0]
+                                        << ", "                                             << data.name_src_pair[1]
+                                        << ", receiver name: "                              << data.name_rec
+                                        << ", common receiver differential traveltime: "    << data.cr_dif_travel_time_obs
+                                        << ", syn traveltime: " << data.travel_time
+                                        << std::endl;
+                        }
+                    }
+                }
+            }
+        } else {
+
+        }
+        synchronize_all_world();
     }
 }

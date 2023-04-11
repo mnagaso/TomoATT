@@ -107,6 +107,15 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
+                        std::cout   << "name_src1: " << name_src1
+                                    << ", name_src2: " << name_src2
+                                    << ", name_rec: " << name_rec
+                                    << ", dif: " << data.cr_dif_travel_time
+                                    << ", obsdif: " << data.cr_dif_travel_time_obs
+                                    << ", dobj: " << d_obj
+                                    << ", obj: " << obj
+                                    << std::endl;
+
                         // exit if d_obj is too large
                         if (d_obj > 100){
                             std::cout << "d_obj = " << d_obj << std::endl;
@@ -139,6 +148,15 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                        std::cout   << "name_src1: " << name_src1
+                                    << ", name_src2: " << name_src2
+                                    << ", name_rec: " << name_rec
+                                    << ", dif: " << data.cr_dif_travel_time
+                                    << ", obsdif: " << data.cr_dif_travel_time_obs
+                                    << ", dobj: " << d_obj
+                                    << ", obj: " << obj
+                                    << std::endl;
 
                         // exit if d_obj is too large
                         if (d_obj > 100){
@@ -184,17 +202,17 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
                     // contribute misfit
-                    obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                    obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                    misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
                     if (IP.get_src_point(name_src).is_out_of_region || \
                         IP.get_rec_point(name_rec1).is_out_of_region || \
                         IP.get_rec_point(name_rec2).is_out_of_region){
-                        obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_tele     += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                        obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);
                     } else{
-                        obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_cs_dif   += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                        obj_cs_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_cs_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
                     }
                 }
 
@@ -202,6 +220,8 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
         } // end loop receivers
     } // end subdomain
 
+
+    std::cout << "name_sim_src: " << name_sim_src << ", obj: " << obj << std::endl;
 
     // share the calculated objective function value to other processes
     broadcast_cr_single_sub(obj,0);
@@ -377,33 +397,31 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
     if (subdom_main) {
 
         // calculate gradient of travel time at each receiver (swapped source)
-        // for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
-        //     iter->second.tau_opt                    = _0_CR;
-        //     iter->second.grad_chi_i                 = _0_CR;
-        //     iter->second.grad_chi_j                 = _0_CR;
-        //     iter->second.grad_chi_k                 = _0_CR;
-        //     iter->second.sum_weight                 = _0_CR;
-        //     iter->second.vobj_src_reloc_old         = iter->second.vobj_src_reloc;
-        //     iter->second.vobj_src_reloc             = _0_CR;
-        //     iter->second.vobj_grad_norm_src_reloc   = _0_CR;
-        // }
-
-        // initialize the kernel of unrelocated source
-        for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
-            std::string name_rec = IP.name_for_reloc[i];
-            if (is_ortime_local_search == 0) // origin time global search
-                IP.rec_map[name_rec].tau_opt                    = _0_CR;
-            else    // origin time local search
-                IP.rec_map[name_rec].grad_tau                   = _0_CR;
-
-            IP.rec_map[name_rec].grad_chi_i                 = _0_CR;
-            IP.rec_map[name_rec].grad_chi_j                 = _0_CR;
-            IP.rec_map[name_rec].grad_chi_k                 = _0_CR;
-            IP.rec_map[name_rec].sum_weight                 = _0_CR;
-            IP.rec_map[name_rec].vobj_src_reloc_old         = IP.rec_map[name_rec].vobj_src_reloc;
-            IP.rec_map[name_rec].vobj_src_reloc             = _0_CR;
-            IP.rec_map[name_rec].vobj_grad_norm_src_reloc   = _0_CR;
+        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
+            if (!iter->second.is_stop){
+                if (is_ortime_local_search == 0) // origin time global search
+                    iter->second.tau_opt                    = _0_CR;
+                else    // origin time local search
+                    iter->second.grad_tau                   = _0_CR;
+            }
+            iter->second.grad_chi_i                 = _0_CR;
+            iter->second.grad_chi_j                 = _0_CR;
+            iter->second.grad_chi_k                 = _0_CR;
+            iter->second.sum_weight                 = _0_CR;    
+            iter->second.vobj_src_reloc_old         = iter->second.vobj_src_reloc;
+            iter->second.vobj_src_reloc             = _0_CR;   
+            iter->second.vobj_grad_norm_src_reloc   = _0_CR;
+            //iter->second.DTi                        = _0_CR;
+            //iter->second.DTj                        = _0_CR;
+            //iter->second.DTk                        = _0_CR;
         }
+
+        // MNMN: all the rec_map need to be inititialized
+        //// initialize the kernel of unrelocated source
+        //for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+        //    std::string name_rec = IP.name_for_reloc[i];
+        // .. ..
+        //}
 
     }
 }
@@ -415,8 +433,17 @@ void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::stri
         for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
 
             std::string name_rec = iter->first;
+
             if(!IP.rec_map[name_rec].is_stop){
-                calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec]);
+                CUSTOMREAL DTijk[3];
+                calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec], DTijk);
+
+                // store it to data
+                for (auto& data : IP.data_map[name_sim_src][name_rec]){
+                    data.DTi = DTijk[0];
+                    data.DTj = DTijk[1];
+                    data.DTk = DTijk[2];
+                }
             }
         // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
         //     std::cout << "DTi (lon) is: " << iter->second.DTi << std::endl;
@@ -429,7 +456,7 @@ void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::stri
 }
 
 
-void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec){
+void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMREAL* DTijk){
 
     // calculate the travel time of the receiver by 3d linear interpolation
 
@@ -624,10 +651,10 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec){
         broadcast_cr_single(DTi, rec_rank);
     }
 
-    // store the calculated travel time
-    rec.DTk = DTk;
-    rec.DTj = DTj;
-    rec.DTi = DTi;
+    // store the calculated travel time TODO: should be stored in data as DT is dependent with src-rec pair
+    DTijk[2] = DTk;
+    DTijk[1] = DTj;
+    DTijk[0] = DTi;
 
 }
 
@@ -639,7 +666,7 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++) {
             std::string name_rec = iter->first;
-            if(! IP.rec_map[name_rec].is_stop){
+            if(!IP.rec_map[name_rec].is_stop){
                 for (const auto& data: iter->second) {
                     const CUSTOMREAL& weight = data.weight;
                     const CUSTOMREAL& misfit = data.travel_time_obs - data.travel_time;
@@ -652,7 +679,15 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
                             (data.travel_time + IP.rec_map[name_rec].tau_opt - data.travel_time_obs);
                     }
                 }
+            //} else {
+                //if (is_ortime_local_search == 0){    // global search
+                //    IP.rec_map[name_rec].tau_opt    = 0.0;
+                //    IP.rec_map[name_rec].sum_weight = 0.0;
+                //} else {
+                //    IP.rec_map[name_rec].grad_tau = 0.0;
+                //}
             }
+
         }
 
     }
@@ -661,12 +696,12 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
 void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
     if (subdom_main) {
 
-        IP.allreduce_rec_map_tau_opt();
-        IP.allreduce_rec_map_sum_weight();
-
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
+            if (IP.rec_map[iter->first].is_stop) continue; // keep the completed tau_opt
+
             iter->second.tau_opt /= iter->second.sum_weight;
-            // std::cout << "id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
+
+            //std::cout << "DEBUG1: id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
         }
     }
     //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
@@ -674,50 +709,52 @@ void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
 
 void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
-    for (auto it_src = IP.data_map.begin(); it_src != IP.data_map.end(); it_src++) {
-        std::string name_src = it_src->first;
-        for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
-            std::string name_rec = it_rec->first;
-            for (const auto& data: it_rec->second){
-                const CUSTOMREAL& weight = data.weight;
-                const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
-                IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+    if (subdom_main) {
         
-                std::cout << "id_sim: " << id_sim
-                        << ", ckp1: name_src: " << name_src 
-                        << ", t_obs: " << data.travel_time_obs
-                        << ", t_syn: " << data.travel_time
-                        << ", tau_opt: " << IP.rec_map[name_rec].tau_opt
-                        << ", tp_obj: " << weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt)
-                        << ", obj: " << IP.rec_map[name_rec].vobj_src_reloc
-                        << std::endl;
+        // for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+        //     std::cout << "id_sim: " << id_sim << ", rec: " << iter->first << ", obj: " << iter->second.vobj_src_reloc 
+        //               << ", tau_opt: " << iter->second.tau_opt << std::endl;
+        // }
+
+        for (auto it_src = IP.data_map.begin(); it_src != IP.data_map.end(); it_src++) {
+            std::string name_src = it_src->first;
+            for (auto it_rec = IP.data_map[name_src].begin(); it_rec != IP.data_map[name_src].end(); it_rec++) {
+                std::string name_rec = it_rec->first;
+
+                if (IP.rec_map[name_rec].is_stop) continue; // avoid division by zero
+
+                for (const auto& data: it_rec->second){
+                    const CUSTOMREAL& weight = data.weight;
+                    const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
+                    IP.rec_map[name_rec].vobj_src_reloc += weight / _2_CR * my_square(misfit+IP.rec_map[name_rec].tau_opt);
+                }
             }
         }
-    }
 
-    
-    // sum the obj from all sources (swapped receivers)
-    if (subdom_main) {
+        
+        // for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+        //     std::cout << "id_sim: " << id_sim << ", rec: " << iter->first << ", obj: " << iter->second.vobj_src_reloc 
+        //               << ", tau_opt: " << iter->second.tau_opt << std::endl;
+        // }
+        // sum the obj from all sources (swapped receivers)
         IP.allreduce_rec_map_vobj_src_reloc();
-    }
 
+        //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 
-
-    //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
-
-    for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-        CUSTOMREAL obj = iter->second.vobj_src_reloc;
-        CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
-        if (i_iter != 0 && old_obj < obj){    // if obj increase, decrease the step length of this (swapped) source
-            // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
-            iter->second.step_length_max *= step_length_decay;
-            // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+            CUSTOMREAL obj = iter->second.vobj_src_reloc;
+            CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
+            if (i_iter != 0 && old_obj < obj){    // if obj increase, decrease the step length of this (swapped) source
+                // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+                iter->second.step_length_max *= step_length_decay;
+                // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+            }
+            // std::cout << "id_sim: " << id_sim << ", name: " << iter->first << ", obj: " << obj << ", old obj: " << old_obj << ", step_length_max: " << iter->second.step_length_max
+            //           << ", step_size_decay: " << step_size_decay
+            //           << std::endl;
         }
-        // std::cout << "id_sim: " << id_sim << ", name: " << iter->first << ", obj: " << obj << ", old obj: " << old_obj << ", step_length_max: " << iter->second.step_length_max
-        //           << ", step_size_decay: " << step_size_decay
-        //           << std::endl;
-    }
 
+    }
 }
 
 
@@ -738,9 +775,10 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                 for (const auto& data: it_rec->second){
                     const CUSTOMREAL& weight = data.weight;
                     const CUSTOMREAL& misfit = data.travel_time - data.travel_time_obs;
-                    IP.rec_map[name_rec].grad_chi_k += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTk * weight;
-                    IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTj * weight;
-                    IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * IP.rec_map[name_rec].DTi * weight;
+
+                    IP.rec_map[name_rec].grad_chi_k += (misfit + IP.rec_map[name_rec].tau_opt) * data.DTk * weight;
+                    IP.rec_map[name_rec].grad_chi_j += (misfit + IP.rec_map[name_rec].tau_opt) * data.DTj * weight;
+                    IP.rec_map[name_rec].grad_chi_i += (misfit + IP.rec_map[name_rec].tau_opt) * data.DTi * weight;
                 }
             }
         }
@@ -755,9 +793,11 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
         // get list of receivers from input parameters
         // std::vector<SrcRec>& receivers = IP.get_rec_names(id_sim_src);
 
-        // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-        for(int i = 0; i < (int)IP.name_for_reloc.size(); i++){
-            std::string name_rec = IP.name_for_reloc[i];
+        for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+
+            std::string name_rec = iter->first;
+            //std::string name_rec = IP.name_for_reloc[i];
+
             if (IP.rec_map[name_rec].is_stop){
                 // do nothing
             } else {
@@ -807,7 +847,6 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
 
                 CUSTOMREAL step_length;
                 step_length = 0.5 * IP.rec_map[name_rec].vobj_src_reloc/my_square(norm_grad);
-
 
                 // rescale update for dep, lat, lon
                 CUSTOMREAL update_max = -1.0;
@@ -916,10 +955,6 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                     exit(1);
                 }
 
-
-
-
-
                 // check if the new receiver position is within the domain
                 // if not then set the receiver position to the closest point on the domain
 
@@ -941,6 +976,13 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 if (IP.rec_map[name_rec].dep > IP.get_max_dep())
                     IP.rec_map[name_rec].dep = IP.get_max_dep() - mergin_r;
             }
-        }
-    }
+
+            // allreduce the flag of stop
+            allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop);
+
+        } // end iter loopvobj_grad_norm_src_reloc
+    } // end if subdom_main
+
+    //IP.allreduce_rec_map_vobj_grad_norm_src_reloc();
+
 }

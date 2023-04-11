@@ -35,7 +35,7 @@ public:
 
 private:
     CUSTOMREAL interpolate_travel_time(Grid&, InputParams&, std::string, std::string);
-    void calculate_T_gradient_one_rec(Grid&, SrcRecInfo&);
+    void calculate_T_gradient_one_rec(Grid&, SrcRecInfo&, CUSTOMREAL*);
 };
 
 #endif // RECEIVER_H

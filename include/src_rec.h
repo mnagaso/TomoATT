@@ -60,9 +60,9 @@ public:
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
-    CUSTOMREAL DTi          = 0.0;
-    CUSTOMREAL DTj          = 0.0;
-    CUSTOMREAL DTk          = 0.0;
+    //CUSTOMREAL DTi          = 0.0;
+    //CUSTOMREAL DTj          = 0.0;
+    //CUSTOMREAL DTk          = 0.0;
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
     CUSTOMREAL change_dep = 0.0;
     CUSTOMREAL change_lat = 0.0;
@@ -118,6 +118,11 @@ public:
     CUSTOMREAL cr_dif_travel_time     = -999.0;
     CUSTOMREAL cr_dif_travel_time_obs = -999.0;
 
+    // source relocation
+    CUSTOMREAL DTi          = 0.0;
+    CUSTOMREAL DTj          = 0.0;
+    CUSTOMREAL DTk          = 0.0;
+
 };
 
 
@@ -136,10 +141,19 @@ void parse_src_rec_file(std::string&                      , \
 void parse_sta_correction_file(std::string&, \
                                std::map<std::string, SrcRecInfo>&);
 
-// swap the sources and receivers
+// swap the sources and receivers (for regional sources)
 void do_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
                      std::map<std::string, SrcRecInfo> &, \
                      std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &);
+// do not swap the sources and receivers (for regional sources)
+void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
+                         std::map<std::string, SrcRecInfo> &, \
+                         std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &);
+
+// process teleseismic data
+void process_tele_data(std::map<std::string, SrcRecInfo> &, \
+                       std::map<std::string, SrcRecInfo> &, \
+                       std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &);
 
 // tele seismic source management
 void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,

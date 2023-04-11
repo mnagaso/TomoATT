@@ -27,10 +27,6 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         exit(1);
     }
 
-    // initialize kernel arrays
-    //if (IP.get_run_mode() == DO_INVERSION)
-    //    grid.initialize_kernels();
-
     // reinitialize factors
     grid.reinitialize_abcf();
 
@@ -89,6 +85,9 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
             io.write_T(grid, 0);
         }
     }
+
+    // wait for all processes to finish traveltime calculation
+    synchronize_all_world();
 }
 
 
@@ -110,7 +109,6 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
         // change target group to be read
         io.change_group_name_for_source();
-        // io.change_group_name_for_source();
 
         // load travel time field on grid.T_loc
         io.read_T(grid);
@@ -125,15 +123,17 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
     // divide optimal origin time by summed weight
     if (is_ortime_local_search == 0) {
+        IP.allreduce_rec_map_tau_opt();
+        IP.allreduce_rec_map_sum_weight();
+
         recs.divide_optimal_origin_time_by_summed_weight(IP);
     } else {
         // sum grad_tau of all simulation groups
         IP.allreduce_rec_map_grad_tau();
     }
+
     // compute the objective function
     recs.calculate_obj_reloc(IP, i_iter);
-
-
 
     // iterate over sources
     for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){

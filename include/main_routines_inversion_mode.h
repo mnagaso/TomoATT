@@ -82,7 +82,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     ///////////////////////////////////////////////////////////////////////
 
     // prepare synthetic traveltime for all earthquakes
-    if (src_pair_exists)
+    if (src_pair_exists && IP.get_run_mode() == DO_INVERSION)
         pre_run_forward_only(IP, grid, io, i_inv);
 
     //
@@ -118,6 +118,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             }
             first_src = false;
         }
+
+        if (if_verbose) 
+            IP.check_data_map();
 
         /////////////////////////
         // run forward simulation
@@ -179,9 +182,18 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         Receiver recs;
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
+        if (if_verbose) 
+            IP.check_data_map();
+
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
+
+        
+        if (myrank == 0)
+            std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", adjoint simulation starting..." << std::endl;
+        
+
 
         if (IP.get_run_mode()==DO_INVERSION){
 
@@ -222,6 +234,11 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     for(int i = 0; i < (int)v_obj_misfit.size(); i++){
         allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
     }
+
+    // gather all the traveltime to the main process and distribute to all processes
+    // for calculating the synthetic common receiver differential traveltime
+    if (IP.get_run_mode()!=DO_INVERSION) // already calculated in inversion mode
+        IP.gather_traveltimes_and_calc_syn_diff();
 
     // return current objective function value
     return v_obj_misfit;

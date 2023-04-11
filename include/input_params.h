@@ -146,14 +146,12 @@ public:
     std::map<std::string, SrcRecInfo>                                   rec_map_back;
     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> data_map_back;
 
-
-
     // the number of data
-    int N_local_data        = 0;
     int N_abs_local_data    = 0;
     int N_cr_dif_local_data = 0;
     int N_cs_dif_local_data = 0;
     int N_teleseismic_data  = 0;
+    int N_data              = 0;
     // the number of the types of data
     int N_data_type = 0;
     std::map<std::string, int> data_type;     // element: "abs", "cs_dif", "cr_dif", "tele"
@@ -171,13 +169,17 @@ public:
 
     // reduce necessary data in rec_map, which has differed elements in each sim group.
     template <typename T>
-    void allreduce_rec_map_var(std::string&, T&);
+    void allreduce_rec_map_var(T&);
 
     void allreduce_rec_map_tau_opt();
     void allreduce_rec_map_sum_weight();
     void allreduce_rec_map_vobj_src_reloc();
     void allreduce_rec_map_grad_tau();
     void allreduce_rec_map_grad_chi_ijk();
+
+    // just for debug
+    void check_data_map();
+
 
 private:
     // boundary information
@@ -234,6 +236,9 @@ private:
 
     // gather all arrival times to a main process
     void gather_all_arrival_times_to_main();
+    // gather rec info to main process
+    void gather_rec_info_to_main();
+
     // geneerate a map of sources which include common source double difference data
     void generate_src_map_with_common_source(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>&,
                                              std::map<std::string, SrcRecInfo>&,
@@ -270,6 +275,21 @@ private:
 //
 // utils
 //
+inline DataInfo& get_data_src_rec(std::vector<DataInfo>& v){
+    // return the first element in the vector with is_rec_pair = true
+    for (auto it = v.begin(); it != v.end(); it++){
+        if (it->is_src_rec)
+            return *it;
+    }
+
+    // error if no rec pair is found
+    std::cerr << "Error: no src/rec is found in get_data_src_rec" << std::endl;
+    exit(1);
+
+    // return the first element in the vector as a dummy
+    return v[0];
+}
+
 inline DataInfo& get_data_rec_pair(std::vector<DataInfo>& v){
     // return the first element in the vector with is_rec_pair = true
     for (auto it = v.begin(); it != v.end(); it++){
@@ -287,14 +307,14 @@ inline DataInfo& get_data_rec_pair(std::vector<DataInfo>& v){
 
 
 inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
-    // return the first element in the vector with is_src_pair = true
+    // return the first element in the vector with is_rec_pair = true
     for (auto it = v.begin(); it != v.end(); it++){
         if (it->is_src_pair)
             return *it;
     }
 
-    // error if no src pair is found
-    std::cerr << "Error: no src pair is found in get_data_src_pair" << std::endl;
+    // error if no rec pair is found
+    std::cerr << "Error: no rec pair is found in get_data_src_pair" << std::endl;
     exit(1);
 
     // return the first element in the vector as a dummy
@@ -323,6 +343,5 @@ inline bool get_if_any_src_pair(std::vector<DataInfo>& v){
     // return false if no rec pair is found
     return false;
 }
-
 
 #endif
