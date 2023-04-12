@@ -10,7 +10,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         std::map<std::string, SrcRecInfo>& rec_map, \
                         std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map, \
                         std::vector<std::string>& src_name_list, \
-                        std::vector<std::vector<std::string>>& srcrec_name_list){
+                        std::vector<std::vector<std::vector<std::string>>>& srcrec_name_list){
 
     // start timer
     std::string timer_name = "parse_src_rec_file";
@@ -46,7 +46,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
     int src_id = -1;
 
     // temporary receiver name list for each source
-    std::vector<std::string> rec_name_list;
+    std::vector<std::vector<std::string>> rec_name_list;
 
     while (true) {
 
@@ -163,6 +163,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                 // read single receiver or differential traveltime data
                 if (tokens.size() < 11) {
+                    // store receiver name of onle receiver line in src rec file
+                    std::vector<std::string> rec_name_list_one_line;
 
                     SrcRecInfo rec;
 
@@ -177,7 +179,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         rec_map[rec.name] = rec;
 
                     // store temporary receiver name list for each source
-                    rec_name_list.push_back(rec.name);
+                    rec_name_list_one_line.push_back(rec.name);
 
                     // traveltime data
                     DataInfo data;
@@ -198,9 +200,14 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[7])); // store read data
 
                     data_map[data.name_src][data.name_rec].push_back(data);
+
+                    // store receiver name of onle receiver line in src rec file
+                    rec_name_list.push_back(rec_name_list_one_line);
+
                     cc++;
 
                 } else {
+                    std::vector<std::string> rec_name_list_one_line;
 
                     // read differential traveltime
                     SrcRecInfo rec;
@@ -215,7 +222,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         rec_map[rec.name] = rec;
 
                     // store temporary receiver name list for each source
-                    rec_name_list.push_back(rec.name);
+                    rec_name_list_one_line.push_back(rec.name);
 
                     SrcRecInfo rec2;
                     rec2.id   = std::stoi(tokens[6]);
@@ -228,10 +235,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     if(rec_map.find(rec2.name) == rec_map.end())
                         rec_map[rec2.name] = rec2;
 
-                    // MNMN: Here we don't store the rec2.name, because rec_id2name is an index for data_map
-                    //       and data_map stores rec_pair info with only rec1 name as the key
                     // store temporary receiver name list for each source
-                    //rec_name_list.push_back(rec2.name);
+                    rec_name_list_one_line.push_back(rec2.name);
 
                     // common source differential traveltime
                     DataInfo data;
@@ -257,6 +262,9 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     data_map[data.name_src][data.name_rec_pair[0]].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
                     //data_map[data.name_src][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
+
+                    // store receiver name of onle receiver line in src rec file
+                    rec_name_list.push_back(rec_name_list_one_line);
 
                     cc++;
                 }

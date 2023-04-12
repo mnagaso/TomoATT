@@ -135,12 +135,12 @@ public:
     std::vector<std::string> name_for_reloc;    // name list of receivers (swarpped sources) for location
 
     // src id <-> src name relations
-    std::vector<std::string>              src_id2name;          // name list of sources belonging to this simultaneous group
-    std::vector<std::string>              src_id2name_comm_src; // name list of sources with common source
-    std::vector<std::string>              src_id2name_2d;       // name list of sources assigned for 2d solver.
-    std::vector<std::string>              src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
-    std::vector<std::string>              src_id2name_back;     // back up of name list of all sources (this will not be swapped)
-    std::vector<std::vector<std::string>> rec_id2name_back;     // back up of the name list of all receivers for each source (this will not be swapped)
+    std::vector<std::string>                           src_id2name;          // name list of sources belonging to this simultaneous group
+    std::vector<std::string>                           src_id2name_comm_src; // name list of sources with common source
+    std::vector<std::string>                           src_id2name_2d;       // name list of sources assigned for 2d solver.
+    std::vector<std::string>                           src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
+    std::vector<std::string>                           src_id2name_back;     // back up of name list of all sources (this will not be swapped)
+    std::vector<std::vector<std::vector<std::string>>> rec_id2name_back;     // back up of the name list of all receivers for each source (this will not be swapped)
 
     // backups used when outputing the data
     std::map<std::string, SrcRecInfo>                                   src_map_back;

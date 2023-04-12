@@ -180,7 +180,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 io.write_xi( grid, i_inv+1);
                 io.write_eta(grid, i_inv+1);
             }
-           //io.write_zeta(grid, i_inv);
+            //io.write_zeta(grid, i_inv); // TODO
 
             if (IP.get_is_verbose_output()){
                 io.write_a(grid,   i_inv+1);
