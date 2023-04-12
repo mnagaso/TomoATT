@@ -992,12 +992,6 @@ void InputParams::generate_src_map_with_common_source(std::map<std::string, std:
         }
     }
 
-    // at this line, only subdom_main process of each simultaneous run group has src_map_comm_src_tmp
-    // and src_id2name_comm_src_tmp
-    // the following lines are to broadcast src_map_comm_src_tmp and src_id2name_comm_src_tmp to all processes
-    // of each simultaneous run group
-    //if (id_sim != 0 || !subdom_main)
-    //    src_id2name_comm_src_tmp.clear();
     // broadcast the size of src_id2name_comm_src_tmp
     int n_src_id2name_comm_src_tmp = src_id2name_comm_src_tmp.size();
     broadcast_i_single_sub(n_src_id2name_comm_src_tmp, 0); // inter-sim
@@ -1227,7 +1221,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                 // id of simulation group for this source
                 int id_sim_group = select_id_sim_for_src(id_src, n_sims);
 
-                std::string name_src1 = src_id2name_all[id_src];
+                std::string name_src1 = src_id2name_all[id_src]; // list of src names after swap
 
                 // iterate over receivers
                 for (auto iter = data_map_all[name_src1].begin(); iter != data_map_all[name_src1].end(); iter++){
