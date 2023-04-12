@@ -303,10 +303,22 @@ inline DataInfo& get_data_rec_pair(std::vector<DataInfo>& v){
 }
 
 
-inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
+inline DataInfo& get_data_src_pair(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& v,
+                                   std::string& name_src1,
+                                   std::string& name_src2,
+                                   std::string& name_rec){
+
     // return the first element in the vector with is_rec_pair = true
-    for (auto it = v.begin(); it != v.end(); it++){
-        if (it->is_src_pair)
+    auto& map1 = v[name_src1][name_rec];
+    auto& map2 = v[name_src2][name_rec];
+
+    for (auto it = map1.begin(); it != map1.end(); it++){
+        if (it->is_src_pair && it->name_src_pair[0] == name_src1 && it->name_src_pair[1] == name_src2)
+            return *it;
+    }
+
+    for (auto it = map2.begin(); it != map2.end(); it++){
+        if (it->is_src_pair && it->name_src_pair[0] == name_src2 && it->name_src_pair[1] == name_src1)
             return *it;
     }
 
@@ -315,7 +327,7 @@ inline DataInfo& get_data_src_pair(std::vector<DataInfo>& v){
     exit(1);
 
     // return the first element in the vector as a dummy
-    return v[0];
+    return v[name_src1][name_rec][0];
 }
 
 

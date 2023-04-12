@@ -1215,9 +1215,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                         if (data.is_src_pair){
                             data.cr_dif_travel_time = data_map_all[data.name_src_pair[0]][data.name_rec].at(0).travel_time \
                                                     - data_map_all[data.name_src_pair[1]][data.name_rec].at(0).travel_time;
-
                             n_total_src_pair++;
-
                        }
                     }
                 }
@@ -1404,7 +1402,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << std::endl;
 
                 // data line
-                for (auto& name_rec: rec_id2name_back[i_src]){
+                for (auto& name_rec : rec_id2name_back[i_src]){
                     std::vector<DataInfo> v_data;
 
                     // CALCULATED DATA IS STORED IN data_map_all
@@ -1444,19 +1442,17 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                         // common source differential traveltime
                         } else if (rec_pair_data){
-                            if (get_is_srcrec_swap()) // reverse swap src and rec
-                                data = get_data_src_pair(data_map_all[name_rec][name_src]);
-                            else // do not swap
-                                data = get_data_rec_pair(data_map_all[name_src][name_rec]);
-
-                            std::string name_rec1, name_rec2;
+                            // common source differential traveltime data
                             CUSTOMREAL  cs_dif_travel_time;
+                            // names of the receiver pair
+                            std::string name_rec1 = data_ori.name_rec_pair[0];
+                            std::string name_rec2 = data_ori.name_rec_pair[1];
 
-                            if (get_is_srcrec_swap()) { // do reverse swap
-                                name_rec1 = data.name_src_pair[0];
-                                name_rec2 = data.name_src_pair[1];
+                            if (get_is_srcrec_swap()){ // reverse swap src and rec
+                                data               = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
                                 cs_dif_travel_time = data.cr_dif_travel_time;
-                            } else { // do not swap
+                            } else {// do not swap
+                                data = get_data_rec_pair(data_map_all[name_src][name_rec]);
                                 cs_dif_travel_time = data.cs_dif_travel_time;
                             }
 
@@ -1546,7 +1542,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                                     exit(1);
                                 }
 
-                                SrcRecInfo rec = rec_map_back[name_rec];
+                                SrcRecInfo rec             = rec_map_back[name_rec];
                                 CUSTOMREAL travel_time_obs = data.travel_time_obs - rec_map_all[name_src].tau_opt;
 
                                 //std::cout << "src_rec_data: " << name_src << " " << name_rec << " " << data.travel_time_obs << " " << rec_map_all[name_src].tau_opt << " " << travel_time_obs << std::endl;
@@ -1565,22 +1561,17 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                             // common source differential traveltime
                             } else if (rec_pair_data){
-                                if (get_is_srcrec_swap()) // reverse swap src and rec
-                                    data = get_data_src_pair(data_map_all[name_rec][name_src]);
-                                else // do not swap
-                                    data = get_data_rec_pair(data_map_all[name_src][name_rec]);
-
-                                std::string name_rec1, name_rec2;
+                                // common source differential traveltime data
                                 CUSTOMREAL  cs_dif_travel_time;
+                                // names of the receiver pair
+                                std::string name_rec1 = data_ori.name_rec_pair[0];
+                                std::string name_rec2 = data_ori.name_rec_pair[1];
 
-                                if (get_is_srcrec_swap()) { // do reverse swap
-                                    name_rec1 = data.name_src_pair[0];
-                                    name_rec2 = data.name_src_pair[1];
-
+                                if (get_is_srcrec_swap()){ // reverse swap src and rec
+                                    data               = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
                                     cs_dif_travel_time = data.cr_dif_travel_time;
-                                } else { // do not swap
-                                    name_rec1 = data.name_rec_pair[0];
-                                    name_rec2 = data.name_rec_pair[1];
+                                } else {// do not swap
+                                    data               = get_data_rec_pair(data_map_all[name_src][name_rec]);
                                     cs_dif_travel_time = data.cs_dif_travel_time;
                                 }
 
