@@ -10,7 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # check compiler type
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   #set flag
-  set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
+  #set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
   set(CXX_ADDITIONAL_FLAGS "-stdlib=libstdc++ -Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

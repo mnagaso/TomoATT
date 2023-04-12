@@ -273,7 +273,7 @@ inline void split_mpi_comm(){
 
     } else {
         mpi_node_names = mpi_node_names_pre;
-        mpi_node_ids   = mpi_node_ids;
+        //mpi_node_ids   = mpi_node_ids;
     }
 
     // debug out
