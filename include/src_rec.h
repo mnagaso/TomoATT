@@ -144,7 +144,8 @@ void parse_sta_correction_file(std::string&, \
 // swap the sources and receivers
 void do_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
                      std::map<std::string, SrcRecInfo> &, \
-                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &);
+                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &, \
+                     std::vector<std::string>&);
 
 // tele seismic source management
 void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,

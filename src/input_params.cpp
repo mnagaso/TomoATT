@@ -906,7 +906,7 @@ void InputParams::prepare_src_map(){
         if (swap_src_rec) {
             // here only reginal events will be processed
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
-            do_swap_src_rec(src_map_all, rec_map_all, data_map_all);
+            do_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all);
         }
 
         // concatenate resional and teleseismic src/rec points
@@ -1224,34 +1224,37 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
             }
 
             // send differences of synthetic data to other processes
-            for (int id_src = 0; id_src < nsrc_total; id_src++){
+            for (int id_src = 0; id_src < nsrc_total; id_src++){ // MNMN: looping over all of data.id_src_pair[0]
 
                 // id of simulation group for this source
                 int id_sim_group = select_id_sim_for_src(id_src, n_sims);
 
-                std::string name_src = src_id2name_all[id_src];
+                std::string name_src1 = src_id2name_all[id_src];
 
                 // iterate over receivers
-                for (auto iter = data_map_all[name_src].begin(); iter != data_map_all[name_src].end(); iter++){
+                for (auto iter = data_map_all[name_src1].begin(); iter != data_map_all[name_src1].end(); iter++){
                     std::string name_rec = iter->first;
 
                     // iterate over data
-                    //for (auto& data: iter->second){
                     for (int i_data = 0; i_data < (int)iter->second.size(); i_data++){
                         auto& data = iter->second.at(i_data);
 
                         if (data.is_src_pair){
+                            std::string name_src2 = data.name_src_pair[1];
+
                             if (id_sim_group == 0) {
                                 // this source is calculated in the main simultaneous run group
-                                set_cr_dif_to_src_pair(data_map[name_src][name_rec], data.cr_dif_travel_time);
+                                set_cr_dif_to_src_pair(data_map[name_src1][name_rec], name_src2, data.cr_dif_travel_time);
                             } else {
                                 // send signal with dummy int
                                 int dummy = 0;
                                 MPI_Send(&dummy, 1, MPI_INT, id_sim_group, mpi_tag_send, inter_sim_comm);
 
-                                // send src_name
-                                send_str_sim(name_src, id_sim_group);
-                                // send rec_name
+                                // send name_src1
+                                send_str_sim(name_src1, id_sim_group);
+                                // send name_src2
+                                send_str_sim(name_src2, id_sim_group);
+                                // send name_rec
                                 send_str_sim(name_rec, id_sim_group);
                                 // send index of data
                                 send_i_single_sim(&i_data, id_sim_group);
@@ -1285,17 +1288,22 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                 // if this signal is for sending data
                 if (status.MPI_TAG == mpi_tag_send) {
 
-                    std::string name_src, name_rec;
+                    std::string name_src1, name_src2, name_rec;
 
-                    // receive src_name
-                    recv_str_sim(name_src, 0);
+                    // receive src_name1
+                    recv_str_sim(name_src1, 0);
+                    // receive src_name2
+                    recv_str_sim(name_src2, 0);
                     // receive rec_name
                     recv_str_sim(name_rec, 0);
                     // receive index of data
                     int i_data = 0;
                     recv_i_single_sim(&i_data, 0);
                     // receive travel time difference
-                    recv_cr_single_sim(&(data_map[name_src][name_rec][i_data].cr_dif_travel_time), 0);
+                    CUSTOMREAL tmp_ttd = 0;
+                    recv_cr_single_sim(&(tmp_ttd), 0);
+                    set_cr_dif_to_src_pair(data_map[name_src1][name_rec], name_src2, tmp_ttd);
+
 
                 // if this signal is for terminating the wait loop
                 } else if (status.MPI_TAG == mpi_tag_end) {

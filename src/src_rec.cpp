@@ -672,7 +672,8 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
 
 void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                      std::map<std::string, SrcRecInfo> &rec_map, \
-                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map) {
+                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map,
+                     std::vector<std::string> &src_name_list) {
 
     // swap src/rec points
     // at this moment, all the sources are divided into src_points (regional) and tele_src_points (teleseismic)
@@ -764,6 +765,12 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     total_cr_dif_local_data_weight = total_cs_dif_local_data_weight;
     total_cs_dif_local_data_weight = tmp;
 
+    // create new src_id2name_all from swapped src_map
+    src_name_list.clear();
+    for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
+        src_name_list.push_back(iter->first);
+    }
+
     // check new version of src rec data
     if (if_verbose){     // check by Chen Jing
         std::cout << "do swap sources and receivers" << std::endl;
@@ -810,6 +817,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
         }
         std::cout << data_map.size() << std::endl;
     }
+
     // indicate elapsed time
     std::cout << "Total elapsed time for swapping src rec: " << timer.get_t() << " seconds.\n";
 }
@@ -856,18 +864,9 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
     // number of total sources
     int n_src = 0;
 
-    if (id_sim == 0 && subdom_main){
-        // number of total sources
+    // number of total sources
+    if (id_sim == 0 && subdom_main)
         n_src = src_map.size();
-
-        // recreate the src_name_list for swapping
-        src_name_list.clear();
-
-        // create id2key array for src names in src_map
-        for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
-            src_name_list.push_back(iter->first);
-        }
-    }
 
     // broadcast the number of sources to all the processors
     broadcast_i_single_inter_and_intra_sim(n_src, 0);

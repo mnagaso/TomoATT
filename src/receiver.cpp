@@ -968,7 +968,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                     IP.rec_map[name_rec].dep = IP.get_max_dep() - mergin_r;
             }
 
-            // allreduce the flag of stop
+            // share the flag of stop within the same simultanoue run group
             allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop);
 
         } // end iter loopvobj_grad_norm_src_reloc
