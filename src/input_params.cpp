@@ -1431,7 +1431,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                         if (get_is_srcrec_swap())
                             data = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
                         else
-                            data = get_data_rec_pair(data_map_all[name_src][name_rec1]);
+                            data = get_data_rec_pair(data_map_all, name_src, name_rec1, name_rec2);
                     } else {
                         src_rec_data = true;
                         if (get_is_srcrec_swap())
@@ -1549,7 +1549,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                             if (get_is_srcrec_swap())
                                 data = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
                             else
-                                data = get_data_rec_pair(data_map_all[name_src][name_rec1]);
+                                data = get_data_rec_pair(data_map_all, name_src, name_rec1, name_rec2);
                         } else {
                             src_rec_data = true;
                             if (get_is_srcrec_swap())
@@ -1728,6 +1728,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
         // step 3, calculate the kernel
         for (auto it_src = data_map_all.begin(); it_src != data_map_all.end(); it_src++){
             for (auto  it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+
                 for (const auto& data : it_rec->second){
 
                     // absolute traveltime
@@ -1744,8 +1745,8 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
                         std::string name_rec1  = data.name_rec_pair[0];
                         std::string name_rec2  = data.name_rec_pair[1];
 
-                        CUSTOMREAL syn_dif_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
-                                                - get_data_rec_pair(data_map_all[name_src][name_rec2]).travel_time;
+                        CUSTOMREAL syn_dif_time = data_map_all[name_src][name_rec1].at(0).travel_time \
+                                                - data_map_all[name_src][name_rec2].at(0).travel_time;
                         CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
                         rec_map[name_rec1].sta_correct_kernel += _2_CR *(syn_dif_time - obs_dif_time \
                                     + rec_map[name_rec1].sta_correct - rec_map[name_rec2].sta_correct)*data.weight;

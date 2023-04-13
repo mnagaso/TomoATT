@@ -208,17 +208,26 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
                     // contribute misfit
-                    obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                    obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                    misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
+
+                    //std::cout   << "DEBUG3: name_src: " << name_src
+                    //            << ", name_rec1: " << name_rec1
+                    //            << ", name_rec2: " << name_rec2
+                    //            << ", syn_dif_time: " << syn_dif_time
+                    //            << ", obs_dif_time: " << obs_dif_time
+                    //            << ", d_misfit: " << 1.0 * my_square(syn_dif_time - obs_dif_time)
+
+                    //            << std::endl;
 
                     if (IP.get_src_point(name_src).is_out_of_region || \
                         IP.get_rec_point(name_rec1).is_out_of_region || \
                         IP.get_rec_point(name_rec2).is_out_of_region){
-                        obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                        obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_tele     += 1.0 * my_square(syn_dif_time - obs_dif_time);
                     } else{
-                        obj_cs_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit_cs_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
+                        obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        misfit_cs_dif   += 1.0 * my_square(syn_dif_time - obs_dif_time);
                     }
                 }
 
