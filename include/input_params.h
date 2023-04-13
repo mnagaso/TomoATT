@@ -331,11 +331,23 @@ inline DataInfo& get_data_src_pair(std::map<std::string, std::map<std::string, s
 }
 
 
-inline void set_cr_dif_to_src_pair(std::vector<DataInfo>& v, std::string& name_src2, CUSTOMREAL cr_dif){
+inline void set_cr_dif_to_src_pair(std::map<std::string, std::map< std::string, std::vector<DataInfo>>>& v,
+                                   std::string& name_src1,
+                                   std::string& name_src2,
+                                   std::string& name_rec,
+                                   CUSTOMREAL& cr_dif){
     // return the first element in the vector with is_rec_pair = true
-    for (auto it = v.begin(); it != v.end(); it++){
-        if (it->is_src_pair && it->name_src_pair[1] == name_src2)
+
+    std::vector<DataInfo>& vdata = v[name_src1][name_rec];
+
+    for (auto it = vdata.begin(); it != vdata.end(); it++){
+        if (it->is_src_pair
+        && ( (it->name_src_pair[0] == name_src1 && it->name_src_pair[1] == name_src2)
+         ||  (it->name_src_pair[0] == name_src2 && it->name_src_pair[1] == name_src1) )) {
             it->cr_dif_travel_time = cr_dif;
+
+            std::cout << "DEBUGDEBUG: set_cr_dif_to_src_pair: " << name_src1 << " " << name_src2 << " " << name_rec << " " << cr_dif << std::endl;
+        }
     }
 }
 

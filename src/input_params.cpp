@@ -1221,10 +1221,10 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                 // id of simulation group for this source
                 int id_sim_group = select_id_sim_for_src(id_src, n_sims);
 
-                std::string name_src1 = src_id2name_all[id_src]; // list of src names after swap
+                std::string name_src = src_id2name_all[id_src]; // list of src names after swap
 
                 // iterate over receivers
-                for (auto iter = data_map_all[name_src1].begin(); iter != data_map_all[name_src1].end(); iter++){
+                for (auto iter = data_map_all[name_src].begin(); iter != data_map_all[name_src].end(); iter++){
                     std::string name_rec = iter->first;
 
                     // iterate over data
@@ -1232,11 +1232,18 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                         auto& data = iter->second.at(i_data);
 
                         if (data.is_src_pair){
+                            std::string name_src1 = data.name_src_pair[0];
                             std::string name_src2 = data.name_src_pair[1];
+                            // name_src1 should be the same as name_src for set_cr_dif_to_src_pair (replace otherwise)
+                            if (name_src1 != name_src){
+                                std::string tmp = name_src1;
+                                name_src1 = name_src2;
+                                name_src2 = tmp;
+                            }
 
                             if (id_sim_group == 0) {
                                 // this source is calculated in the main simultaneous run group
-                                set_cr_dif_to_src_pair(data_map[name_src1][name_rec], name_src2, data.cr_dif_travel_time);
+                                set_cr_dif_to_src_pair(data_map, name_src1, name_src2, name_rec, data.cr_dif_travel_time);
                             } else {
                                 // send signal with dummy int
                                 int dummy = 0;
@@ -1294,7 +1301,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                     // receive travel time difference
                     CUSTOMREAL tmp_ttd = 0;
                     recv_cr_single_sim(&(tmp_ttd), 0);
-                    set_cr_dif_to_src_pair(data_map[name_src1][name_rec], name_src2, tmp_ttd);
+                    set_cr_dif_to_src_pair(data_map, name_src1, name_src2, name_rec, tmp_ttd);
 
 
                 // if this signal is for terminating the wait loop

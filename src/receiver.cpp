@@ -113,13 +113,14 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
-                        //std::cout   << "name_src1: " << name_src1
+                        //std::cout   << "DEBUG: name_src1: " << name_src1
                         //            << ", name_src2: " << name_src2
                         //            << ", name_rec: " << name_rec
                         //            << ", dif: " << data.cr_dif_travel_time
                         //            << ", obsdif: " << data.cr_dif_travel_time_obs
                         //            << ", dobj: " << d_obj
                         //            << ", obj: " << obj
+                        //            << ", dmisfit: " << 0.5 * my_square(syn_dif_time - obs_dif_time)
                         //            << std::endl;
 
                         // exit if d_obj is too large
@@ -155,13 +156,14 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         obj     += d_obj;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
-                        //std::cout   << "name_src1: " << name_src1
+                        //std::cout   << "DEBUG2: name_src1: " << name_src1
                         //            << ", name_src2: " << name_src2
                         //            << ", name_rec: " << name_rec
                         //            << ", dif: " << data.cr_dif_travel_time
                         //            << ", obsdif: " << data.cr_dif_travel_time_obs
                         //            << ", dobj: " << d_obj
                         //            << ", obj: " << obj
+                        //            << ", dmisfit: " << 0.5 * my_square(syn_dif_time - obs_dif_time)
                         //            << std::endl;
 
                         // exit if d_obj is too large
