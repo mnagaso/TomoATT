@@ -1038,6 +1038,7 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
 
 
 // gather all arrival times to main simultaneous run group
+// common source double difference traveltime is also gathered here
 // then store them in data_map_all
 void InputParams::gather_all_arrival_times_to_main(){
 
@@ -1062,6 +1063,8 @@ void InputParams::gather_all_arrival_times_to_main(){
                         for(int i_data = 0; i_data < (int)iter->second.size(); i_data++){
                             // store travel time in all datainfo element of each src-rec pair
                             data_map_all[name_src][iter->first].at(i_data).travel_time = iter->second.at(i_data).travel_time;
+                            // common source double difference traveltime
+                            data_map_all[name_src][iter->first].at(i_data).cs_dif_travel_time = iter->second.at(i_data).cs_dif_travel_time;
                         }
                     }
                 } else {
@@ -1093,9 +1096,11 @@ void InputParams::gather_all_arrival_times_to_main(){
                             exit(1);   // for rec_3 src_0, ndata = 1   data_map_all[][].size() = 3
                         }
 
-                        // then receive travel time
-                        for (auto& data: data_map_all[name_src][name_rec])
+                        // then receive travel time (and common source double difference traveltime)
+                        for (auto& data: data_map_all[name_src][name_rec]) {
                             recv_cr_single_sim(&(data.travel_time), id_sim_group);
+                            recv_cr_single_sim(&(data.cs_dif_travel_time), id_sim_group);
+                        }
                     }
 
                 // the non-main simultaneous run group sends the arrival time to the main group
@@ -1112,9 +1117,11 @@ void InputParams::gather_all_arrival_times_to_main(){
                         int ndata = iter->second.size();
                         send_i_single_sim(&ndata, 0);
 
-                        // then send travel time
-                        for (auto& data: iter->second)
+                        // then send travel time (and common source double difference traveltime)
+                        for (auto& data: iter->second){
                             send_cr_single_sim(&(data.travel_time), 0);
+                            send_cr_single_sim(&(data.cs_dif_travel_time), 0);
+                        }
                     }
                 } else {
                     // do nothing
