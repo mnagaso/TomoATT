@@ -345,8 +345,6 @@ inline void set_cr_dif_to_src_pair(std::map<std::string, std::map< std::string, 
         && ( (it->name_src_pair[0] == name_src1 && it->name_src_pair[1] == name_src2)
          ||  (it->name_src_pair[0] == name_src2 && it->name_src_pair[1] == name_src1) )) {
             it->cr_dif_travel_time = cr_dif;
-
-            std::cout << "DEBUGDEBUG: set_cr_dif_to_src_pair: " << name_src1 << " " << name_src2 << " " << name_rec << " " << cr_dif << std::endl;
         }
     }
 }
