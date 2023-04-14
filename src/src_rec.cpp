@@ -256,6 +256,10 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     data.id_src          = src_id;
                     data.name_src        = src_name;
 
+                    // store the id and name of the first receiver (just used for key of the data_map)
+                    data.id_rec          = rec.id;
+                    data.name_rec        = rec.name;
+
                     data.id_rec_pair            = {rec.id, rec2.id};
                     data.name_rec_pair          = {rec.name, rec2.name};
                     data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
@@ -1167,7 +1171,6 @@ void send_data_info_inter_sim(DataInfo &data, int dest){
     send_cr_single_sim(&data.data_weight, dest);
     send_cr_single_sim(&data.weight, dest);
     send_str_sim(data.phase, dest);
-    send_bool_single_sim(&data.is_src_rec, dest);
 
     send_i_single_sim(&data.id_src, dest);
     send_str_sim(data.name_src, dest);
@@ -1209,7 +1212,6 @@ void recv_data_info_inter_sim(DataInfo &data, int orig){
     recv_cr_single_sim(&data.data_weight, orig);
     recv_cr_single_sim(&data.weight, orig);
     recv_str_sim(data.phase, orig);
-    recv_bool_single_sim(&data.is_src_rec, orig);
 
     recv_i_single_sim(&data.id_src, orig);
     recv_str_sim(data.name_src, orig);
