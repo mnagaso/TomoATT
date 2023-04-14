@@ -931,7 +931,6 @@ void InputParams::prepare_src_map(){
 
 
     // to all the subdom_main processes of each simultaneous run group
-    // #TODO: not updated yet for new srcrec !!!
     if (src_rec_file_exist) {
         // # TODO: check if this can be placed
 
@@ -952,7 +951,7 @@ void InputParams::prepare_src_map(){
                                 data_map,
                                 src_id2name);
 
-        // now src_id2name_all  includes all src names of after swapping src and rec
+        // now src_id2name_all  includes  all src names of after swapping src and rec
         //     src_id2name      includes only src names of this simultaneous run group
         //     src_id2name_back includes only src names of this simultaneous run group before swapping src and rec
 

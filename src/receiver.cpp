@@ -16,14 +16,17 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
 
         // calculate the travel time of the receiver by interpolation
         for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
-            CUSTOMREAL travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
             for (auto& data: it_rec->second){
-                // store travel time on single receiver and double receivers
-                data.travel_time = travel_time;
-
-                if (data.is_rec_pair){
-                    // the rec_name used for storing data_map == name_rec_pair[0]
+                if (!data.is_rec_pair){
+                    // store travel time on single receiver and double receivers
+                    data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
+                } else {
+                    // calculate travel times for two receivers
+                    CUSTOMREAL travel_time   = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[0]);
                     CUSTOMREAL travel_time_2 = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[1]);
+
+                    data.travel_time = travel_time;
+                    // calculate and store travel time difference
                     data.cs_dif_travel_time = travel_time - travel_time_2;
                 }
             }
