@@ -1037,6 +1037,7 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
 
 
 // gather all arrival times to main simultaneous run group
+// common source double difference traveltime is also gathered here
 // then store them in data_map_all
 void InputParams::gather_all_arrival_times_to_main(){
 
@@ -1061,6 +1062,8 @@ void InputParams::gather_all_arrival_times_to_main(){
                         for(int i_data = 0; i_data < (int)iter->second.size(); i_data++){
                             // store travel time in all datainfo element of each src-rec pair
                             data_map_all[name_src][iter->first].at(i_data).travel_time = iter->second.at(i_data).travel_time;
+                            // common source double difference traveltime
+                            data_map_all[name_src][iter->first].at(i_data).cs_dif_travel_time = iter->second.at(i_data).cs_dif_travel_time;
                         }
                     }
                 } else {
@@ -1092,9 +1095,11 @@ void InputParams::gather_all_arrival_times_to_main(){
                             exit(1);   // for rec_3 src_0, ndata = 1   data_map_all[][].size() = 3
                         }
 
-                        // then receive travel time
-                        for (auto& data: data_map_all[name_src][name_rec])
+                        // then receive travel time (and common source double difference traveltime)
+                        for (auto& data: data_map_all[name_src][name_rec]) {
                             recv_cr_single_sim(&(data.travel_time), id_sim_group);
+                            recv_cr_single_sim(&(data.cs_dif_travel_time), id_sim_group);
+                        }
                     }
 
                 // the non-main simultaneous run group sends the arrival time to the main group
@@ -1111,9 +1116,11 @@ void InputParams::gather_all_arrival_times_to_main(){
                         int ndata = iter->second.size();
                         send_i_single_sim(&ndata, 0);
 
-                        // then send travel time
-                        for (auto& data: iter->second)
+                        // then send travel time (and common source double difference traveltime)
+                        for (auto& data: iter->second){
                             send_cr_single_sim(&(data.travel_time), 0);
+                            send_cr_single_sim(&(data.cs_dif_travel_time), 0);
+                        }
                     }
                 } else {
                     // do nothing
@@ -1220,10 +1227,10 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                 // id of simulation group for this source
                 int id_sim_group = select_id_sim_for_src(id_src, n_sims);
 
-                std::string name_src1 = src_id2name_all[id_src]; // list of src names after swap
+                std::string name_src = src_id2name_all[id_src]; // list of src names after swap
 
                 // iterate over receivers
-                for (auto iter = data_map_all[name_src1].begin(); iter != data_map_all[name_src1].end(); iter++){
+                for (auto iter = data_map_all[name_src].begin(); iter != data_map_all[name_src].end(); iter++){
                     std::string name_rec = iter->first;
 
                     // iterate over data
@@ -1231,11 +1238,18 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                         auto& data = iter->second.at(i_data);
 
                         if (data.is_src_pair){
+                            std::string name_src1 = data.name_src_pair[0];
                             std::string name_src2 = data.name_src_pair[1];
+                            // name_src1 should be the same as name_src for set_cr_dif_to_src_pair (replace otherwise)
+                            if (name_src1 != name_src){
+                                std::string tmp = name_src1;
+                                name_src1 = name_src2;
+                                name_src2 = tmp;
+                            }
 
                             if (id_sim_group == 0) {
                                 // this source is calculated in the main simultaneous run group
-                                set_cr_dif_to_src_pair(data_map[name_src1][name_rec], name_src2, data.cr_dif_travel_time);
+                                set_cr_dif_to_src_pair(data_map, name_src1, name_src2, name_rec, data.cr_dif_travel_time);
                             } else {
                                 // send signal with dummy int
                                 int dummy = 0;
@@ -1293,7 +1307,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                     // receive travel time difference
                     CUSTOMREAL tmp_ttd = 0;
                     recv_cr_single_sim(&(tmp_ttd), 0);
-                    set_cr_dif_to_src_pair(data_map[name_src1][name_rec], name_src2, tmp_ttd);
+                    set_cr_dif_to_src_pair(data_map, name_src1, name_src2, name_rec, tmp_ttd);
 
 
                 // if this signal is for terminating the wait loop
@@ -1416,7 +1430,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                         if (get_is_srcrec_swap())
                             data = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
                         else
-                            data = get_data_rec_pair(data_map_all[name_src][name_rec1]);
+                            data = get_data_rec_pair(data_map_all, name_src, name_rec1, name_rec2);
                     } else {
                         src_rec_data = true;
                         if (get_is_srcrec_swap())
@@ -1534,7 +1548,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                             if (get_is_srcrec_swap())
                                 data = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
                             else
-                                data = get_data_rec_pair(data_map_all[name_src][name_rec1]);
+                                data = get_data_rec_pair(data_map_all, name_src, name_rec1, name_rec2);
                         } else {
                             src_rec_data = true;
                             if (get_is_srcrec_swap())
@@ -1713,6 +1727,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
         // step 3, calculate the kernel
         for (auto it_src = data_map_all.begin(); it_src != data_map_all.end(); it_src++){
             for (auto  it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+
                 for (const auto& data : it_rec->second){
 
                     // absolute traveltime
@@ -1729,8 +1744,8 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
                         std::string name_rec1  = data.name_rec_pair[0];
                         std::string name_rec2  = data.name_rec_pair[1];
 
-                        CUSTOMREAL syn_dif_time = get_data_rec_pair(data_map_all[name_src][name_rec1]).travel_time \
-                                                - get_data_rec_pair(data_map_all[name_src][name_rec2]).travel_time;
+                        CUSTOMREAL syn_dif_time = data_map_all[name_src][name_rec1].at(0).travel_time \
+                                                - data_map_all[name_src][name_rec2].at(0).travel_time;
                         CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
                         rec_map[name_rec1].sta_correct_kernel += _2_CR *(syn_dif_time - obs_dif_time \
                                     + rec_map[name_rec1].sta_correct - rec_map[name_rec2].sta_correct)*data.weight;
