@@ -1039,7 +1039,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
         CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
         // inversion grid is defined for all processes which covers entire domain
-        dinv_r = (r_max_inv   - r_min_inv)   / (ngrid_k_inv-1);
+        dinv_r = (r_max_inv   - r_min_inv)   / (ngrid_k_inv-2);
         // shift of each set of inversion grid
         dinv_lr = dinv_r/n_inv_grids;
 
@@ -1066,7 +1066,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
         CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
         // inversion grid is defined for all processes which covers entire domain
-        dinv_t = (lat_max_inv - lat_min_inv) / (ngrid_j_inv-1);
+        dinv_t = (lat_max_inv - lat_min_inv) / (ngrid_j_inv-2);
         // shift of each set of inversion grid
         dinv_lt = dinv_t/n_inv_grids;
 
@@ -1093,7 +1093,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
         CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
         // inversion grid is defined for all processes which covers entire domain
-        dinv_p = (lon_max_inv - lon_min_inv) / (ngrid_i_inv-1);
+        dinv_p = (lon_max_inv - lon_min_inv) / (ngrid_i_inv-2);
         // shift of each set of inversion grid
         dinv_lp = dinv_p/n_inv_grids;
 
