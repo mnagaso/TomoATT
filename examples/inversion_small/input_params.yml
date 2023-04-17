@@ -16,7 +16,7 @@ model :
 inversion :
   run_mode : 1 # 0 for forward simulation only, 1 for inversion
   optim_method : 0 # optimization method. 0 : "grad_descent", 1 : "halve-stepping", 2 : "lbfgs",
-  max_iterations_inv : 20  # maximum number of inversion iterations
+  max_iterations_inv : 10  # maximum number of inversion iterations
   step_size : 0.01  # step size for inversion
 
   # parameters for multiparametric inversion
@@ -32,8 +32,8 @@ inversion :
   #l_smooth_rtp : [10,10,10] #
 
 parallel :
-  n_sims : 2         # number of simultaneous run
-  ndiv_rtp : [1,1,2] # number of subdomains
+  n_sims : 1         # number of simultaneous run
+  ndiv_rtp : [1,2,2] # number of subdomains
   nproc_sub : 2      # number of subprocess used for each subdomain
 
 calculation :

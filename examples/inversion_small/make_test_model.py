@@ -134,6 +134,7 @@ id_dummy = 1000
 st_name_dummy = 'AAAA'
 phase_dummy = 'P'
 arriv_t_dummy = 0.0
+weight_dummy = 0.444
 
 tt1deg = tt1 * 180.0/math.pi
 tt2deg = tt2 * 180.0/math.pi
@@ -193,7 +194,7 @@ for ir in range(n_srcs[0]):
             # put independent name for each source
             id_dummy = "src_"+str(i_src)
 
-            src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
+            src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy, weight_dummy]
             lines.append(src)
 
             pos_src.append([lon,lat,dep])
@@ -206,7 +207,7 @@ for ir in range(n_srcs[0]):
                 lat_rec  = lat_recs[i_rec]
                 st_name_dummy = "rec_"+str(rec_names[i_rec])
 
-                rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
+                rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy, weight_dummy]
                 lines.append(rec)
 
                 pos_rec.append([lon_rec,lat_rec,elev_rec])
