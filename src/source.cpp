@@ -58,6 +58,23 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
             dis_src_err_lat = std::min(error_lat / grid.get_delta_lat(), _1_CR);
             dis_src_err_r   = std::min(error_r   / grid.get_delta_r()  , _1_CR);
 
+            // precision error for std::floor
+            if (dis_src_err_lon == _1_CR){
+                // i_src_loc shoud be +1
+                dis_src_err_lon = _0_CR;
+                i_src_loc++;
+            }
+            if (dis_src_err_lat == _1_CR){
+                // j_src_loc shoud be +1
+                dis_src_err_lat = _0_CR;
+                j_src_loc++;
+            }
+            if (dis_src_err_r == _1_CR){
+                // k_src_loc shoud be +1
+                dis_src_err_r = _0_CR;
+                k_src_loc++;
+            }
+
             // std::cout << "src_lon, dis_src_lon, dis_src_err_lon : " << src_lon*RAD2DEG << ", " << dis_src_lon*RAD2DEG << ", " << dis_src_err_lon << std::endl;
             // std::cout << "src_lat, dis_src_lat, dis_src_err_lat : " << src_lat*RAD2DEG << ", " << dis_src_lat*RAD2DEG << ", " << dis_src_err_lat << std::endl;
             // std::cout << "src_r, dis_src_r, dis_src_err_r   : " << src_r   << ", " << dis_src_r   << ", " << dis_src_err_r   << std::endl;

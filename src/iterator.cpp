@@ -826,6 +826,20 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
             CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
             CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
 
+            // precision error for std::floor
+            if (e_lon == _1_CR) {
+                e_lon = _0_CR;
+                i_rec_loc++;
+            }
+            if (e_lat == _1_CR) {
+                e_lat = _0_CR;
+                j_rec_loc++;
+            }
+            if (e_r == _1_CR) {
+                e_r = _0_CR;
+                k_rec_loc++;
+            }
+
             // set delta values
             grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += iter->second.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
             grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += iter->second.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
