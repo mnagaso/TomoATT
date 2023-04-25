@@ -387,6 +387,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
             << std::endl;
 
         // data line
+        int i_rec = 0;
         for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
 
             const std::string name_rec = iter->first;
@@ -402,7 +403,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
 
                     // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
                     ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
-                        << std::setw(5) << std::right << std::setfill(' ') << rec.id << " "
+                        << std::setw(5) << std::right << std::setfill(' ') << i_rec << " "
                         << rec.name << " "
                         << std::fixed << std::setprecision(4) << std::setw(9) << rec.lat << " "
                         << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
@@ -412,6 +413,7 @@ void write_src_rec_file_with_weight(std::string src_rec_file_out, \
                         << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
                         << std::endl;
 
+                        i_rec++;
                 }else {
                     std::cout << "Error: data type is not defined." << std::endl;
                     exit(1);
