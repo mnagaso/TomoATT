@@ -1445,7 +1445,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                         CUSTOMREAL  travel_time = data.travel_time;
 
                         // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
-                        ofs << std::setw(7) << std::right << std::setfill(' ') << i_src << " "
+                        ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
                             << std::setw(5) << std::right << std::setfill(' ') << rec.id << " "
                             << rec.name << " "
                             << std::fixed << std::setprecision(4) << std::setw(9) << rec.lat << " "
@@ -1471,7 +1471,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                         SrcRecInfo& rec2 = rec_map_back[name_rec2];
 
                         // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
-                        ofs << std::setw(7) << std::right << std::setfill(' ') <<  i_src << " "
+                        ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
                             << std::setw(5) << std::right << std::setfill(' ') <<  rec1.id << " "
                             << rec1.name << " "
                             << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lat << " "
