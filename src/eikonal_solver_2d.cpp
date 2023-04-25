@@ -179,9 +179,20 @@ PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
     // discretize the src position
     int src_r_i = std::floor((src_r      -rmin_2d)/dr_2d);
     int src_t_i = std::floor((src_t_dummy-tmin_2d)/dt_2d);
+
     // error of discretized source position
     CUSTOMREAL src_r_err = std::min(_1_CR, (src_r       - r_2d[src_r_i])/dr_2d);
     CUSTOMREAL src_t_err = std::min(_1_CR, (src_t_dummy - t_2d[src_t_i])/dt_2d);
+
+    // check precision error for floor
+    if (src_r_err == _1_CR) {
+        src_r_err = _0_CR;
+        src_r_i++;
+    }
+    if (src_t_err == _1_CR) {
+        src_t_err = _0_CR;
+        src_t_i++;
+    }
 
     // initialize the initial fields
     CUSTOMREAL a0 = (_1_CR - src_r_err)*(_1_CR - src_t_err)*fac_a_2d[src_r_i*nt_2d+src_t_i] \

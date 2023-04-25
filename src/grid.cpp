@@ -875,10 +875,10 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     // setup coordinates
     r_min   = depth2radius(IP.get_max_dep()); // convert from depth to radius
     r_max   = depth2radius(IP.get_min_dep()); // convert from depth to radius
-    lat_min = IP.get_min_lat();
-    lat_max = IP.get_max_lat();
-    lon_min = IP.get_min_lon();
-    lon_max = IP.get_max_lon();
+    lat_min = IP.get_min_lat(); // in rad
+    lat_max = IP.get_max_lat(); // in rad
+    lon_min = IP.get_min_lon(); // in rad
+    lon_max = IP.get_max_lon(); // in rad
 
     dr   = (r_max - r_min)     / (ngrid_k - 1);
     dlat = (lat_max - lat_min) / (ngrid_j - 1);
