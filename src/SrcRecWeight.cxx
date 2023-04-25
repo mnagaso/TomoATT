@@ -230,37 +230,37 @@ void normalize_weight_data(std::map<std::string, std::map<std::string, std::vect
 //
 // this way cancel the geographical weight on the receiver side
 //
-//    #pragma omp parallel for default(none) shared(data_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
-//    for (int i = 0; i < n_src; i++) {
-//        CUSTOMREAL w_sum_tmp = 0.0;
-//        int n_data=0;
-//        for (int j = 0; j < n_rec; j++) {
-//            int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
-//            if (v_data_size > 0) {
-//                CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
-//                w_sum_tmp += data_on_rec*v_data_size;
-//                n_data    +=v_data_size;
-//            }
-//        }
-//
-//        // normalize for receivers
-//        for (int j = 0; j < n_rec; j++) {
-//            for(auto &data : data_map[src_id2name[i]][rec_id2name[j]]){
-//                CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
-//                data.data_weight = data_on_rec/w_sum_tmp*n_data;
-//            }
-//        }
-//   }
-
     #pragma omp parallel for default(none) shared(data_map, src_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
     for (int i = 0; i < n_src; i++) {
+        CUSTOMREAL w_sum_tmp = 0.0; // sum of receiver weight
+        int n_data=0;
         for (int j = 0; j < n_rec; j++) {
             int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
-            for (int k = 0; k < v_data_size; k++) {
-                data_map[src_id2name[i]][rec_id2name[j]][k].data_weight = src_map[src_id2name[i]].sum_weight*rec_map[rec_id2name[j]].sum_weight;
+            if (v_data_size > 0) {
+                CUSTOMREAL& weight_rec = rec_map[rec_id2name[j]].sum_weight;
+                w_sum_tmp += weight_rec*v_data_size;
+                //n_data    +=v_data_size;
             }
         }
-    }
+
+        // normalize for receivers
+        for (int j = 0; j < n_rec; j++) {
+            for(auto &data : data_map[src_id2name[i]][rec_id2name[j]]){
+                CUSTOMREAL& data_on_rec = rec_map[rec_id2name[j]].sum_weight;
+                data.data_weight = src_map[src_id2name[i]].sum_weight*rec_map[rec_id2name[j]].sum_weight/w_sum_tmp;
+            }
+        }
+   }
+
+//    #pragma omp parallel for default(none) shared(data_map, src_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
+//    for (int i = 0; i < n_src; i++) {
+//        for (int j = 0; j < n_rec; j++) {
+//            int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
+//            for (int k = 0; k < v_data_size; k++) {
+//                data_map[src_id2name[i]][rec_id2name[j]][k].data_weight = src_map[src_id2name[i]].sum_weight*rec_map[rec_id2name[j]].sum_weight;
+//            }
+//        }
+//    }
 }
 
 
