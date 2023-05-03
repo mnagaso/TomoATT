@@ -96,7 +96,7 @@ inline CUSTOMREAL       step_size_lbfgs;
 // halve steping params
 inline const CUSTOMREAL HALVE_STEP_RATIO = 0.5;
 inline const CUSTOMREAL MAX_DIFF_RATIO_VOBJ = 0.01; // maximum difference ratio between vobj_t+1 and vobj_t
-inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.55;
+inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.5;
 
 // RUN MODE TYPE FLAG
 inline const int ONLY_FORWARD        = 0;
