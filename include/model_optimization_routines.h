@@ -174,7 +174,8 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
         // if the new objective function value is larger than the old one, make the step width to be half of the previous one
         diff_obj = v_obj_new - v_obj_old;
 
-        if (diff_obj > _0_CR) {
+        if ( diff_obj > _0_CR // if the objective function value is larger than the old one
+          || std::abs(diff_obj/v_obj_old) > MAX_DIFF_RATIO_VOBJ) { // if the objective function reduced too much  ) {
             // print status
             if(myrank == 0 && id_sim ==0)
                 out_main \
@@ -186,7 +187,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
                     << "," << std::setw(15) << v_obj_old << std::endl;
 
             if (subdom_main) grid.restore_fun_xi_eta_bcf();
-            step_size /= _2_CR;
+            step_size *= HALVE_STEP_RATIO;
             set_new_model(grid, step_size);
 
             sub_iter_count++;
@@ -209,6 +210,7 @@ end_of_sub_iteration:
          << "," << std::setw(15) << v_obj_old << " accepted." << std::endl;
 
     v_obj_inout = v_obj_new;
+    step_size_init = step_size/(HALVE_STEP_RATIO)*HALVE_STEP_RESTORAION_RATIO; // use this step size for the next inversion
 
     // write adjoint field
     int next_i_inv = i_inv + 1;
