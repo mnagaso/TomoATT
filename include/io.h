@@ -78,7 +78,7 @@ public:
     // write tau
     void write_tau(Grid&, int);
     // write temporal tau fields
-    //void write_tmp_tau(Grid&, int);
+    void write_tmp_tau(Grid&, int);
     // write result timetable T
     void write_T(Grid&, int);
     // write residual (resudual = true_solution - result)

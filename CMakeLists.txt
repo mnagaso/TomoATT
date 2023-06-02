@@ -162,6 +162,7 @@ set(APP_SOURCES
   #src/TOMOATT_solver_only.cxx
   #src/TOMOATT_2d_precalc.cxx
   #src/SrcRecWeight.cxx
+  src/TOMOATT_NN.cxx
   )
 
 foreach( execsourcefile ${APP_SOURCES} )

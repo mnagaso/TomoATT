@@ -876,21 +876,23 @@ void IO_utils::write_tau(Grid& grid, int i_inv) {
 }
 
 //
-//void IO_utils::write_tmp_tau(Grid& grid, int i_iter) {
-//    if (output_format==OUTPUT_FORMAT_HDF5){
-//#ifdef USE_HDF5
-//        std::string h5_dset_name = "tau_iter_" + std::to_string(i_iter);
-//        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_tau(), i_iter);
-//#else
-//        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
-//        exit(1);
-//#endif
-//    } else if (output_format==OUTPUT_FORMAT_ASCII){
-//        std::string dset_name = "tau_tmp_iter_" + int2string_zero_fill(i_iter);
-//        std::string fname = create_fname_ascii(dset_name);
-//        write_data_ascii(grid, fname, grid.get_tau());
-//    }
-//}
+void IO_utils::write_tmp_tau(Grid& grid, int i_iter) {
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name_merged = "tau_it_" + int2string_zero_fill(i_iter);
+        bool inverse_field = false;
+        write_data_merged_h5(grid, h5_output_fname, h5_group_name_data, h5_dset_name_merged, grid.get_tau(), inverse_field, false);
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if(output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "tau_it_" + int2string_zero_fill(i_iter);
+        std::string fname = create_fname_ascii(dset_name);
+        write_data_ascii(grid, fname, grid.get_tau());
+    }
+}
 //
 
 void IO_utils::write_T(Grid& grid, int i_inv) {
@@ -1173,7 +1175,7 @@ void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
         std::string h5_dset_name = "T_res";
         std::string h5_dset_name_merged = "T_res_merged_inv_" + int2string_zero_fill(i_inv);
         bool inverse_field = false;
-        write_data_merged_h5(grid, h5_output_fname, h5_group_name_data, h5_dset_name_merged, grid.get_T(), i_inv, inverse_field);
+        write_data_merged_h5(grid, h5_output_fname, h5_group_name_data, h5_dset_name_merged, grid.get_T(), inverse_field, false);
         write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T(), i_inv, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;

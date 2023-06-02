@@ -247,4 +247,9 @@ inline CUSTOMREAL       step_length_ortime_rescale = 0.1;
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation
 inline std::string output_file_weight = "srcrec_weight.txt"; // output file name for source receiver weight calculation
 
+
+// for NN mode
+inline bool store_tau = false; // if store tau in the forward simulation
+inline int  niter_max_for_tau_calc = 50; // maximum number of iterations
+
 #endif // CONFIG_H

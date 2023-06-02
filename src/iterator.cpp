@@ -636,19 +636,29 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         //std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
 
         // debug store temporal T fields
-        //io.write_tmp_tau_h5(grid, iter_count);
+        if (store_tau) {
+            if (subdom_main)
+                io.write_tmp_tau(grid, iter_count);
 
-        //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
-        if (cur_diff_L1 < IP.get_conv_tol()) {
-            //stdout_by_main("--- iteration converged. ---");
-            goto iter_end;
-        } else if (IP.get_max_iter() <= iter_count) {
-            stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
-            goto iter_end;
-        } else {
-            if(myrank==0 && if_verbose)
-                std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
+            // end at the fixed iteration
+            if (iter_count == niter_max_for_tau_calc) {
+                goto iter_end;
+            }
+
             iter_count++;
+        } else {
+            //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
+            if (cur_diff_L1 < IP.get_conv_tol()) {
+                //stdout_by_main("--- iteration converged. ---");
+                goto iter_end;
+            } else if (IP.get_max_iter() <= iter_count) {
+                stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
+                goto iter_end;
+            } else {
+                if(myrank==0 && if_verbose)
+                    std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
+                iter_count++;
+            }
         }
     }
 
