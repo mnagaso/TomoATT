@@ -199,7 +199,7 @@ jobs:
         cd hdf5-1.13.3
         PATH_TO_INTEL_MPI=$(which mpiicc | sed 's/\/bin\/mpiicc//g')
         echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
-        ./configure --prefix=/usr/local --enable-parallel --disnable-fortran --enable-cxx --with-pic CC=mpiicc CXX=mpiicpc
+        ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --with-pic CC=mpiicc CXX=mpiicpc
         make -j2
 
     - name: Configure
