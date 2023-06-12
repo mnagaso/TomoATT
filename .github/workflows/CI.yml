@@ -187,21 +187,24 @@ jobs:
         echo "mpicc version: $(mpicc --version)"
         echo "mpiicpc version: $(mpiicpc --version)"
         echo ""
+        export TERM=xterm
         echo "exports:"
         export
         echo ""
-        which icc >> $GITHUB_ENV
-        which icpc >> $GITHUB_ENV
-        which mpicc >> $GITHUB_ENV
-        which mpiicpc >> $GITHUB_ENV
-        PATH_TO_INTEL_MPI=$(which mpiicpx | sed 's/\/bin\/mpiicc//g')
-        ls -l $PATH_TO_INTEL_MPI
-        #wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
-        #tar -xzf hdf5-1.13.3.tar.gz
-        #cd hdf5-1.13.3
-        #echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
-        #./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
-        #make -j2 && sudo make install
+        which icc
+        which icpc
+        which mpicc
+        which mpiicpc
+        echo ""
+        printenv >> $GITHUB_ENV
+        echo "CXX=mpiicpc" >> $GITHUB_ENV
+        echo "CC=mpicc" >> $GITHUB_ENV
+        wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
+        tar -xzf hdf5-1.13.3.tar.gz
+        cd hdf5-1.13.3
+        echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
+        ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
+        make -j2 && sudo make install
 
     - name: Configure
       run: |
