@@ -27,22 +27,20 @@ jobs:
         run: |
           if [ $GITHUB_BASE_REF ]; then
             # Pull Request
-            echo "Pull Request:"
+            echo "Pull request:"
             git fetch origin $GITHUB_BASE_REF --depth=1
-            export DIFF=$(git diff --name-only origin/$GITHUB_BASE_REF $GUTHUB_SHA )
-            echo " diff between origin/$GITHUB_BASE_REF and $GITHUB_SHA"
+            export DIFF=$( git diff --name-only origin/$GITHUB_BASE_REF $GITHUB_SHA )
+            echo "  diff between origin/$GITHUB_BASE_REF and $GITHUB_SHA"
           else
             # Push
             echo "Push request:"
-            get fetch origin &{{ github.event.before }} --depth=1
-            export DIFF=$(git diff --name-only origin/${{ github.event.before }} $GITHUB_SHA )
-            echo " diff between ${{ github.event.before }} and $GITHUB_SHA"
+            git fetch origin ${{ github.event.before }} --depth=1
+            export DIFF=$( git diff --name-only ${{ github.event.before }} $GITHUB_SHA )
+            echo "  diff between ${{ github.event.before }} and $GITHUB_SHA"
           fi
           echo "$DIFF"
           # Escape newlines (replace \n with %0A)
-          echo "::set-output name=diff::$( echo $DIFF | sed ':a;N;$!ba;s/\n/%0A/g' )"
-          echo
-
+          echo "::set-output name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
       - name: Output changes
         run: echo "${{ steps.diff.outputs.diff }}"
 
