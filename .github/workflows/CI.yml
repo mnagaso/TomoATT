@@ -189,9 +189,8 @@ jobs:
         echo "exports:"
         export
         echo ""
-        which icx >> $GITHUB_ENV
+        which mpiicx >> $GITHUB_ENV
         which icpx >> $GITHUB_ENV
-        which mpicxx >> $GITHUB_ENV
         which mpiicpx >> $GITHUB_ENV
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
         tar -xzf hdf5-1.13.3.tar.gz
