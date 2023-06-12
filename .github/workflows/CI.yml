@@ -1,0 +1,154 @@
+# Github Actions  workflow
+#
+# run
+# - file change check
+# - compilation tests on Linux Ubuntu and Mac OS
+# - with parallel HDF5 and without HDF5
+# - with CUDA
+
+name: CI
+
+on: [push, pull_request]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  changesCheck:
+    name: Check file changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check file changes
+        id: diff
+        run: |
+          if [ $GITHUB_BASE_REF ]; then
+            # Pull Request
+            echo "Pull Request:"
+            git fetch origin $GITHUB_BASE_REF --depth=1
+            export DIFF=$(git diff --name-only origin/$GITHUB_BASE_REF $GUTHUB_SHA )
+            echo " diff between origin/$GITHUB_BASE_REF and $GITHUB_SHA"
+          else
+            # Push
+            echo "Push request:"
+            get fetch origin &{{ github.event.before }} --depth=1
+            export DIFF=$(git diff --name-only origin/${{ github.event.before }} $GITHUB_SHA )
+            echo " diff between ${{ github.event.before }} and $GITHUB_SHA"
+          fi
+          echo "$DIFF"
+          # Escape newlines (replace \n with %0A)
+          echo "::set-output name=diff::$( echo $DIFF | sed ':a;N;$!ba;s/\n/%0A/g' )"
+
+      - name: Output changes
+        run: echo "${{ steps.diff.outputs.diff }}"
+
+      - name: Check files
+        run: |
+          RUN_CHECKS=0
+          DIFF="${{ steps.diff.outputs.diff }}"
+          # Loop by lines
+          while read path; do
+            # Set $directory to substring before /
+            directory="$( echo $path | cut -d'/' -f1 -s )"
+            echo "file: $path  - directory: $directory"
+            if [ -z "$directory" ]; then
+              # root directory
+              RUN_CHECKS=1
+            elif [ "$directory" == src ]; then
+              # src/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == include ]; then
+              # include/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == cuda ]; then
+              # cuda/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == examples ]; then
+              # examples/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == test ]; then
+              # tests/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == singularity ]; then
+              # singularity/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == .github ]; then
+              # .github/ directory
+              RUN_CHECKS=1
+            fi
+          done <<< "$DIFF"
+          echo
+          echo "run checks: ${RUN_CHECKS}"
+          if [[ ${RUN_CHECKS} -eq 0 ]]; then echo "nothing to check, exiting..."; exit 1; fi
+
+  macosCheck:
+    name:  Test on Mac
+    runs-on: macos-latest
+    needs: changesCheck
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        brew cleanup
+        brew install cmake
+        brew install hdf5-mpi
+        echo ""
+        echo "compiler versions:"
+        echo "gcc version: $(gcc --version)"
+        echo "g++ version: $(g++ --version)"
+        echo "h5pcc version: $(h5pcc --version)"
+        echo "cmake version: $(cmake --version)"
+        echo ""
+        ## avoids sed -i '' issue on MacOS, using gnu sed to have the same command lines as in Linux
+        brew install gnu-sed
+        echo "PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH" >> $GITHUB_ENV
+        ## OpenMP
+        echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+        ## avoids MPI issue with number of slots
+        echo "OMPI_MCA_rmaps_base_oversubscribe=1" >> $GITHUB_ENV
+        echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
+        ## avoids MPI issue when running in MacOS
+        echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
+        # exports for xterm output (for make tests)
+        echo "TERM=xterm" >> $GITHUB_ENV
+        echo ""
+        echo "exports:"
+        export
+        echo ""
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake -j2 --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+  linuxCheck:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: changesCheck
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-18.04]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake -j2 --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
