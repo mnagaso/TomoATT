@@ -126,7 +126,7 @@ jobs:
 
     - name: Build
       run: |
-        cmake --build -j2 ${{github.workspace}}/build
+        cmake --build ${{github.workspace}}/build -j2
 
   linuxCheck:
     name: Test on ${{ matrix.os }}
@@ -150,4 +150,4 @@ jobs:
 
     - name: Build
       run: |
-        cmake --build -j2 ${{github.workspace}}/build
+        cmake --build ${{github.workspace}}/build -j2
