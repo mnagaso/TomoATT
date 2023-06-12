@@ -182,7 +182,9 @@ jobs:
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
         tar -xzf hdf5-1.13.3.tar.gz
         cd hdf5-1.13.3
-        ./configure --enable-parallel --enable-shared --enable-parallel --with-pic CC=mpiicc CXX=mpiicpc CFLAGS="-fPIC -O3 -xHost -ip -fno-alias -align" CXXFLAGS="-fPIC -O3 -xHost -ip -fno-alias -align"
+        PATH_TO_INTEL_MPI=$(which mpiicc | sed 's/\/bin\/mpiicc//g')
+        echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
+        ./configure --prefix=/usr/local --enable-parallel --enable-fortran --enable-cxx --with-pic CC=mpiicc CXX=mpiicpc FC=mpiifort F77=mpiifort F90=mpiifort
         make -j2
 
     - name: Configure
