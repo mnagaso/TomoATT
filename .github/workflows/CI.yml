@@ -185,6 +185,10 @@ jobs:
         echo "gcc version: $(icc --version)"
         echo "g++ version: $(icpc --version)"
         echo "mpic++ version: $(mpicxx --version)"
+        echo "icx version: $(icx --version)"
+        echo "mpiicx version: $(mpiicx --version)"
+        echo "icpx version: $(icpx --version)"
+        echo "mpiicpx version: $(mpiicpx --version)"
         echo ""
         echo "exports:"
         export
