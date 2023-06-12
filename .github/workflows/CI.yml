@@ -94,12 +94,12 @@ jobs:
     - name: Install dependencies
       run: |
         brew cleanup
-        brew install cmake
         brew install hdf5-mpi
         echo ""
         echo "compiler versions:"
         echo "gcc version: $(gcc --version)"
         echo "g++ version: $(g++ --version)"
+        echo "mpic++ version: $(mpic++ --version)"
         echo "h5pcc version: $(h5pcc --version)"
         echo "cmake version: $(cmake --version)"
         echo ""
@@ -126,7 +126,7 @@ jobs:
 
     - name: Build
       run: |
-        cmake -j2 --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        cmake -j2 --build ${{github.workspace}}/build
 
   linuxCheck:
     name: Test on ${{ matrix.os }}
@@ -150,4 +150,4 @@ jobs:
 
     - name: Build
       run: |
-        cmake -j2 --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        cmake -j2 --build ${{github.workspace}}/build
