@@ -40,7 +40,7 @@ jobs:
           fi
           echo "$DIFF"
           # Escape newlines (replace \n with %0A)
-          echo "::set-output name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )"
+          echo "name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )" >> $GITHUB_OUTPUT
       - name: Output changes
         run: echo "${{ steps.diff.outputs.diff }}"
 
