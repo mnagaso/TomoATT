@@ -184,7 +184,8 @@ jobs:
         echo "compiler versions:"
         echo "gcc version: $(icc --version)"
         echo "g++ version: $(icpc --version)"
-        echo "mpic++ version: $(mpicxx --version)"
+        echo "mpicc version: $(mpicc --version)"
+        echo "mpiicpc version: $(mpiicpc --version)"
         echo ""
         echo "exports:"
         export
