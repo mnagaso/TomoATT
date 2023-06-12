@@ -179,12 +179,27 @@ jobs:
         echo "packages intel oneapi:"
         sudo apt-get install -y intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel wget
         echo ""
+        source /opt/intel/oneapi/setvars.sh
+        echo ""
+        echo "compiler versions:"
+        echo "gcc version: $(icc --version)"
+        echo "g++ version: $(icpc --version)"
+        echo "mpic++ version: $(mpicxx --version)"
+        echo ""
+        echo "exports:"
+        export
+        echo ""
+        which icc >> $GITHUB_ENV
+        which icpc >> $GITHUB_ENV
+        which mpicxx >> $GITHUB_ENV
+        which mpiicc >> $GITHUB_ENV
+        which mpiicpc >> $GITHUB_ENV
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
         tar -xzf hdf5-1.13.3.tar.gz
         cd hdf5-1.13.3
         PATH_TO_INTEL_MPI=$(which mpiicc | sed 's/\/bin\/mpiicc//g')
         echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
-        ./configure --prefix=/usr/local --enable-parallel --enable-fortran --enable-cxx --with-pic CC=mpiicc CXX=mpiicpc FC=mpiifort F77=mpiifort F90=mpiifort
+        ./configure --prefix=/usr/local --enable-parallel --disnable-fortran --enable-cxx --with-pic CC=mpiicc CXX=mpiicpc
         make -j2
 
     - name: Configure
