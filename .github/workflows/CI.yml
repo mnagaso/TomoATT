@@ -181,7 +181,7 @@ jobs:
         sudo apt-get update
         echo ""
         echo "packages intel oneapi:"
-        sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel wget automake libtool
+        sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel wget automake libtool autoconf
         echo ""
         source /opt/intel/oneapi/setvars.sh
         echo ""
