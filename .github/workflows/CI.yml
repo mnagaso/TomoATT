@@ -152,6 +152,10 @@ jobs:
       run: |
         cmake --build ${{github.workspace}}/build -j2
 
+    #- name: Unit test
+
+    #- name: Test example
+
   linuxCheck-Intel:
     name: Test Intel on ubuntu-20.04
     runs-on: ubuntu-20.04
@@ -187,25 +191,15 @@ jobs:
         echo "mpicc version: $(mpicc --version)"
         echo "mpiicpc version: $(mpiicpc --version)"
         echo ""
-        export TERM=xterm
-        echo "exports:"
-        export
-        echo ""
-        which icc
-        which icpc
-        which mpicc
-        which mpiicpc
-        echo ""
-        printenv >> $GITHUB_ENV
-        echo "CXX=mpiicpc" >> $GITHUB_ENV
-        echo "CC=mpicc" >> $GITHUB_ENV
+        export PATH=$PATH:/opt/intel/oneapi/mpi/2021.9.0/bin:/opt/intel/oneapi/compiler/2023.1.0/linux/bin
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
         tar -xzf hdf5-1.13.3.tar.gz
         cd hdf5-1.13.3
-        echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
-        ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
+        ./autogen.sh
+        ./configure  --disable-fortran --enable-parallel --enable-cxx --enable-unsupported CXX="$(which mpiicpc) -cc=$(which icpx)" CC="$(which mpiicc) -cc=$(which icx)" FC="$(which mpiifort) -fc=$(which ifx)" LDFLAGS="-L/opt/intel/oneapi/mpi/2021.9.0/lib -L/opt/intel/oneapi/mpi/2021.9.0/lib/release/"
         make -j2
-        sudo env “PATH=$PATH” make install
+        make check -j2
+        sudo make install
 
     - name: Configure
       run: |
@@ -214,3 +208,4 @@ jobs:
     - name: Build
       run: |
         cmake --build ${{github.workspace}}/build -j2
+
