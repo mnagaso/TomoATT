@@ -210,7 +210,7 @@ jobs:
         echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
         ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
         make -j2
-        export PATH=$PATH_TO_INTEL_MPI:$PATH
+        export PATH=$PATH_TO_INTEL_MPI/bin:$PATH
         sudo make install
 
     - name: Configure
