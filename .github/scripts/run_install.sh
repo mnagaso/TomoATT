@@ -22,6 +22,7 @@ echo
 # python script needs numpy
 pip install --user --upgrade pip setuptools wheel
 pip install --user --only-binary=numpy numpy
+pip install --user --only-binary=h5py h5py
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi
