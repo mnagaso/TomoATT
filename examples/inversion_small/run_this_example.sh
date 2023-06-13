@@ -1,5 +1,7 @@
 #!/bin/bash
 
+python make_test_model.py
+
 # run for preparing true travel times
 mpirun -n 2 ../../build/bin/TOMOATT -i input_params_pre.yml
 
