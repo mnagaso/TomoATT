@@ -186,6 +186,10 @@ jobs:
         echo "packages intel oneapi:"
         sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel wget
         echo ""
+
+    - name: Install HDF5 compiled with intel oneapi
+      if: steps.cache-hdf5-intel-oneapi.outputs.cache-hit != 'true'
+      run: |
         source /opt/intel/oneapi/setvars.sh
         echo ""
         echo "compiler versions:"
@@ -207,9 +211,7 @@ jobs:
         echo "CXX=mpiicpc" >> $GITHUB_ENV
         echo "CC=mpicc" >> $GITHUB_ENV
 
-    - name: Install HDF5 compiled with intel oneapi
-      if: steps.cache-hdf5-intel-oneapi.outputs.cache-hit != 'true'
-      run: |
+
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.1/src/hdf5-1.14.1-2.tar.gz
         tar -xzf hdf5-1.14.1-2.tar.gz
         cd hdf5-1.14.1-2

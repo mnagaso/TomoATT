@@ -39,7 +39,7 @@ my_test(){
 cd $dir
 
 if [ "$TESTDIR" == "examples/inversion_small/" ]; then
-    ...
+    echo "Running inversion_small example..."
 fi
 
 # run the test
