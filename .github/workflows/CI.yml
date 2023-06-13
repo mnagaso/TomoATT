@@ -204,7 +204,8 @@ jobs:
         cd hdf5-1.13.3
         echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
         ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
-        make -j2 && sudo make install
+        make -j2
+        sudo make install
 
     - name: Configure
       run: |
