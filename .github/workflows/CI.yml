@@ -212,6 +212,11 @@ jobs:
         export HDF5_DIR=${{github.workspace}}/HDF5_DIR
         echo "HDF5_DIR=${{github.workspace}}/HDF5_DIR" >> $GITHUB_ENV
         export PATH=${HDF5_DIR}/bin:$PATH
+        export HDF5_LIBRARIES=${HDF5_DIR}/lib
+        echo "HDF5_LIBRARIES=${HDF5_DIR}/lib" >> $GITHUB_ENV
+        export HDF5_INCLUDE_DIRS=${HDF5_DIR}/include
+        echo "HDF5_INCLUDE_DIRS=${HDF5_DIR}/include" >> $GITHUB_ENV
+
 
     - name: Configure
       run: |
