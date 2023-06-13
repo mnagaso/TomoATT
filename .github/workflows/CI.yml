@@ -206,12 +206,11 @@ jobs:
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.3/src/hdf5-1.13.3.tar.gz
         tar -xzf hdf5-1.13.3.tar.gz
         cd hdf5-1.13.3
-        PATH_TO_INTEL_MPI= $(dirname $(dirname $(which mpiicpc)))
+        PATH_TO_INTEL_MPI=$(dirname $(dirname $(which mpiicpc)))
         echo "PATH_TO_INTEL_MPI: $PATH_TO_INTEL_MPI"
         ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
         make -j2
-        add path to mpiicpc to path
-        export PATH=$PATH:$PATH_TO_INTEL_MPI/bin
+        export PATH=$PATH_TO_INTEL_MPI:$PATH
         sudo make install
 
     - name: Configure
