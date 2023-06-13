@@ -206,9 +206,12 @@ jobs:
         wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.1/src/hdf5-1.14.1-2.tar.gz
         tar -xzf hdf5-1.14.1-2.tar.gz
         cd hdf5-1.14.1-2
-        ./configure --prefix=/usr/local --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
+        ./configure --prefix=${{github.workspace}}/HDF5_DIR --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
         make -j2
         make install
+        export HDF5_DIR=${{github.workspace}}/HDF5_DIR
+        echo "HDF5_DIR=${{github.workspace}}/HDF5_DIR" >> $GITHUB_ENV
+        export PATH=${HDF5_DIR}/bin:$PATH
 
     - name: Configure
       run: |
