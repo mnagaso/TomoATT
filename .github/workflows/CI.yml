@@ -34,9 +34,16 @@ jobs:
           else
             # Push
             echo "Push request:"
-            git fetch origin ${{ github.event.before }} --depth=1
-            export DIFF=$( git diff --name-only ${{ github.event.before }} $GITHUB_SHA )
-            echo "  diff between ${{ github.event.before }} and $GITHUB_SHA"
+            # Initial commit
+            if [ -z "${{ github.event.before }}" ]; then
+              export DIFF=$( git diff --name-only --root $GITHUB_SHA )
+              echo "  diff between initial commit: diff against root"
+            else
+              # Subsequent commit
+              git fetch origin ${{ github.event.before }} --depth=1
+              export DIFF=$( git diff --name-only ${{ github.event.before }} $GITHUB_SHA )
+              echo "  diff between ${{ github.event.before }} and $GITHUB_SHA"
+            fi
           fi
           echo "$DIFF"
           # Escape newlines (replace \n with %0A)
