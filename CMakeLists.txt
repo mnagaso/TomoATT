@@ -10,8 +10,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # check compiler type
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   #set flag
-  set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
-  set(CXX_ADDITIONAL_FLAGS "-stdlib=libstdc++ -Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  #set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
@@ -71,6 +71,9 @@ if(HDF5_FOUND)
     message(FATAL "TomoATT requires HDF5 compiled with parallel IO option.")
   endif()
 endif()
+
+# precision setting (uncomment for single precision. default is double precision.)
+#add_definitions(-DSINGLE_PRECISION)
 
 # use SIMD
 add_definitions(-DUSE_SIMD)

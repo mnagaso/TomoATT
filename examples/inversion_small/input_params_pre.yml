@@ -18,8 +18,8 @@ inversion :
   n_inversion_grid : 1
 
 parallel :
-  n_sims : 2         # number of simultaneous run
-  ndiv_rtp : [1,1,2] # number of subdomains
+  n_sims : 1         # number of simultaneous run
+  ndiv_rtp : [1,1,1] # number of subdomains
   nproc_sub : 2      # number of subprocess used for each subdomain
 
 calculation :

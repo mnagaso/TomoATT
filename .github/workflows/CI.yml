@@ -1,0 +1,311 @@
+# Github Actions  workflow
+#
+# run
+# - file change check
+# - compilation tests on Linux Ubuntu and Mac OS
+# - with parallel HDF5 and without HDF5
+# - with CUDA
+
+name: CI
+
+on: [push, pull_request]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  changesCheck:
+    name: Check file changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check file changes
+        id: diff
+        run: |
+          if [ $GITHUB_BASE_REF ]; then
+            # Pull Request
+            echo "Pull request:"
+            git fetch origin $GITHUB_BASE_REF --depth=1
+            export DIFF=$( git diff --name-only origin/$GITHUB_BASE_REF $GITHUB_SHA )
+            echo "  diff between origin/$GITHUB_BASE_REF and $GITHUB_SHA"
+          else
+            # Push
+            echo "Push request:"
+            # Initial commit
+            if [ -z "${{ github.event.before }}" ]; then
+              export DIFF=$( git diff --name-only --root $GITHUB_SHA )
+              echo "  diff between initial commit: diff against root"
+            else
+              # Subsequent commit
+              git fetch origin ${{ github.event.before }} --depth=1
+              export DIFF=$( git diff --name-only ${{ github.event.before }} $GITHUB_SHA )
+              echo "  diff between ${{ github.event.before }} and $GITHUB_SHA"
+            fi
+          fi
+          echo "$DIFF"
+          # Escape newlines (replace \n with %0A)
+          echo "name=diff::$( echo "$DIFF" | sed ':a;N;$!ba;s/\n/%0A/g' )" >> $GITHUB_OUTPUT
+      - name: Output changes
+        run: echo "${{ steps.diff.outputs.diff }}"
+
+      - name: Check files
+        run: |
+          RUN_CHECKS=0
+          DIFF="${{ steps.diff.outputs.diff }}"
+          # Loop by lines
+          while read path; do
+            # Set $directory to substring before /
+            directory="$( echo $path | cut -d'/' -f1 -s )"
+            echo "file: $path  - directory: $directory"
+            if [ -z "$directory" ]; then
+              # root directory
+              RUN_CHECKS=1
+            elif [ "$directory" == src ]; then
+              # src/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == include ]; then
+              # include/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == cuda ]; then
+              # cuda/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == examples ]; then
+              # examples/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == test ]; then
+              # tests/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == singularity ]; then
+              # singularity/ directory
+              RUN_CHECKS=1
+            elif [ "$directory" == .github ]; then
+              # .github/ directory
+              RUN_CHECKS=1
+            fi
+          done <<< "$DIFF"
+          echo
+          echo "run checks: ${RUN_CHECKS}"
+          if [[ ${RUN_CHECKS} -eq 0 ]]; then echo "nothing to check, exiting..."; exit 1; fi
+
+  macosCheck:
+    name: Test on Mac
+    runs-on: macos-latest
+    needs: changesCheck
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Cache dependencies
+      id: cache-brew-omp
+      uses: actions/cache@v2
+      with:
+        path: /usr/local/Homebrew
+        key: ${{ runner.os }}-brew-${{ hashFiles('Brewfile.lock.json') }}
+        restore-keys: ${{ runner.os }}-brew-
+
+    - name: Install dependencies
+      if: steps.cache-brew-omp.outputs.cache-hit != 'true'
+      run: |
+        brew cleanup
+        brew install hdf5-mpi
+        echo ""
+        echo "compiler versions:"
+        echo "gcc version: $(gcc --version)"
+        echo "g++ version: $(g++ --version)"
+        echo "mpic++ version: $(mpic++ --version)"
+        echo "h5pcc version: $(h5pcc --version)"
+        echo "cmake version: $(cmake --version)"
+        echo ""
+        ## avoids sed -i '' issue on MacOS, using gnu sed to have the same command lines as in Linux
+        brew install gnu-sed
+        echo "PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH" >> $GITHUB_ENV
+        ## OpenMP
+        echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+        ## avoids MPI issue with number of slots
+        echo "OMPI_MCA_rmaps_base_oversubscribe=1" >> $GITHUB_ENV
+        echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
+        ## avoids MPI issue when running in MacOS
+        echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
+        # exports for xterm output (for make tests)
+        echo "TERM=xterm" >> $GITHUB_ENV
+        echo ""
+        echo "exports:"
+        export
+        echo ""
+
+    - name: Configure
+      run: |
+        if [ "${{ steps.cache-brew-omp.outputs.cache-hit }}" == "true" ]; then
+          echo "PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH" >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "OMPI_MCA_rmaps_base_oversubscribe=1" >> $GITHUB_ENV
+          echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
+          echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
+          echo "TERM=xterm" >> $GITHUB_ENV
+        fi
+
+        cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+
+    - name: Build
+      run: |
+        cmake --build ${{ github.workspace }}/build -j2
+
+  linuxCheck:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: changesCheck
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+  linuxCheck-Intel:
+    name: Test Intel on ubuntu-20.04
+    runs-on: ubuntu-20.04
+    needs: changesCheck
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Cache Intel oneapi packages
+      id: cache-intel-oneapi
+      uses: actions/cache@v2
+      with:
+        path: /opt/intel/oneapi
+        key: install-${{ runner.os }}-all
+
+    - name: Cache HDF5 compiled with intel oneapi
+      id: cache-hdf5-intel-oneapi
+      uses: actions/cache@v2
+      with:
+        path: ${{ github.workspace }}/HDF5_DIR
+        key: install-${{ runner.os }}-all-hdf5-intel-oneapi
+
+    - name: Install packages
+      if: steps.cache-intel-oneapi.outputs.cache-hit != 'true'
+      run: |
+        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
+        echo ""
+        sudo echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+        sudo apt-get update
+        echo ""
+        echo "packages intel oneapi:"
+        sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel wget
+        echo ""
+
+    - name: Install HDF5 compiled with intel oneapi
+      if: steps.cache-hdf5-intel-oneapi.outputs.cache-hit != 'true'
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        echo ""
+        echo "compiler versions:"
+        echo "gcc version: $(icc --version)"
+        echo "g++ version: $(icpc --version)"
+        echo "mpicc version: $(mpicc --version)"
+        echo "mpiicpc version: $(mpiicpc --version)"
+        echo ""
+        export TERM=xterm
+        echo "exports:"
+        export
+        echo ""
+        which icc
+        which icpc
+        which mpicc
+        which mpiicpc
+        echo ""
+        printenv >> $GITHUB_ENV
+        echo "CXX=mpiicpc" >> $GITHUB_ENV
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "ONEAPIENV_LOADED=1" >> $GITHUB_ENV
+        wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.14/hdf5-1.14.1/src/hdf5-1.14.1-2.tar.gz
+        tar -xzf hdf5-1.14.1-2.tar.gz
+        cd hdf5-1.14.1-2
+        ./configure --prefix=${{github.workspace}}/HDF5_DIR --enable-parallel --disable-fortran --enable-cxx --enable-unsupported --with-pic CC=mpicc CXX=mpiicpc CXXFLAGS="-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076"
+        make -j2
+        make install
+        export HDF5_DIR=${{github.workspace}}/HDF5_DIR
+        echo "HDF5_DIR=${{github.workspace}}/HDF5_DIR" >> $GITHUB_ENV
+        export PATH=${HDF5_DIR}/bin:$PATH
+
+    - name: Configure
+      run: |
+        if [ -z "$ONEAPIENV_LOADED" ]; then
+          source /opt/intel/oneapi/setvars.sh
+          echo ""
+          echo "compiler versions:"
+          echo "gcc version: $(icc --version)"
+          echo "g++ version: $(icpc --version)"
+          echo "mpicc version: $(mpicc --version)"
+          echo "mpiicpc version: $(mpiicpc --version)"
+          echo ""
+          export TERM=xterm
+          echo "exports:"
+          export
+          echo ""
+          which icc
+          which icpc
+          which mpicc
+          which mpiicpc
+          echo ""
+          printenv >> $GITHUB_ENV
+          echo "CXX=mpiicpc" >> $GITHUB_ENV
+          echo "CC=mpicc" >> $GITHUB_ENV
+          export HDF5_DIR=${{github.workspace}}/HDF5_DIR
+          echo "HDF5_DIR=${{github.workspace}}/HDF5_DIR" >> $GITHUB_ENV
+          export PATH=${HDF5_DIR}/bin:$PATH
+        fi
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_PREFIX_PATH=${HDF5_DIR}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+
+  linuxTest_0:
+    name: Test run example 0 - inversion small
+    runs-on: ubuntu-latest
+    needs: [linuxCheck]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+    - name: Run test
+      env:
+        TESTDIR: examples/inversion_small/
+      run: ./.github/scripts/run_test.sh
+      shell: bash
+
+
+
+

@@ -13,8 +13,9 @@ Grid::Grid(InputParams& IP, IO_utils& io) {
     }
 
     // allocate memory for shm arrays if necessary
-    if (n_subprocs > 1)
+    if (n_subprocs > 1){
         shm_memory_allocation();
+    }
 
     synchronize_all_world();
 
@@ -874,10 +875,10 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     // setup coordinates
     r_min   = depth2radius(IP.get_max_dep()); // convert from depth to radius
     r_max   = depth2radius(IP.get_min_dep()); // convert from depth to radius
-    lat_min = IP.get_min_lat();
-    lat_max = IP.get_max_lat();
-    lon_min = IP.get_min_lon();
-    lon_max = IP.get_max_lon();
+    lat_min = IP.get_min_lat(); // in rad
+    lat_max = IP.get_max_lat(); // in rad
+    lon_min = IP.get_min_lon(); // in rad
+    lon_max = IP.get_max_lon(); // in rad
 
     dr   = (r_max - r_min)     / (ngrid_k - 1);
     dlat = (lat_max - lat_min) / (ngrid_j - 1);
@@ -939,12 +940,16 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
         std::string f_model_path = IP.get_init_model_path();
         io.read_model(f_model_path,"xi",   xi_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
+        //io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
         if(if_test) {
             // solver test
             io.read_model(f_model_path, "u", u_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
         }
+
+        // set zeta = 0 (optimization for zeta is not implemented yet)
+        memset(zeta_loc, 0, sizeof(CUSTOMREAL)*loc_I*loc_J*loc_K);
+
     }
 
     // broadcast
@@ -1034,7 +1039,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
         CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
         // inversion grid is defined for all processes which covers entire domain
-        dinv_r = (r_max_inv   - r_min_inv)   / (ngrid_k_inv-1);
+        dinv_r = (r_max_inv   - r_min_inv)   / (ngrid_k_inv-2);
         // shift of each set of inversion grid
         dinv_lr = dinv_r/n_inv_grids;
 
@@ -1061,7 +1066,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
         CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
         // inversion grid is defined for all processes which covers entire domain
-        dinv_t = (lat_max_inv - lat_min_inv) / (ngrid_j_inv-1);
+        dinv_t = (lat_max_inv - lat_min_inv) / (ngrid_j_inv-2);
         // shift of each set of inversion grid
         dinv_lt = dinv_t/n_inv_grids;
 
@@ -1088,7 +1093,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
         CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
         // inversion grid is defined for all processes which covers entire domain
-        dinv_p = (lon_max_inv - lon_min_inv) / (ngrid_i_inv-1);
+        dinv_p = (lon_max_inv - lon_min_inv) / (ngrid_i_inv-2);
         // shift of each set of inversion grid
         dinv_lp = dinv_p/n_inv_grids;
 
@@ -1291,6 +1296,11 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 
                     n_source_node++;
 
+                    // std::cout << "source def " << std::endl;
+                    // std::cout << "p_loc_1d (lon): " << p_loc_1d[i_lon]*RAD2DEG << ", id_i: " << i_lon << ", src_p: " << src_p*RAD2DEG << std::endl;
+                    // std::cout << "t_loc_1d (lat): " << t_loc_1d[j_lat]*RAD2DEG << ", id_j: " << j_lat << ", src_t: " << src_t*RAD2DEG << std::endl;
+                    // std::cout << "r_loc_1d (r): " << r_loc_1d[k_r] << ", id_k: " << k_r << ", src_r: " << src_r << std::endl;
+
                     if (if_verbose) {
                         if ( (k_r == 0 && k_first()) || (k_r == loc_K-1 && k_last()) )
                             std::cout << "Warning: source is on the boundary k of the grid.\n";
@@ -1315,6 +1325,12 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
         } // end loop j
     } // end loop k
 
+    // std::cout << "p_loc_1d (lon): " << p_loc_1d[25]*RAD2DEG << ", id_i: " << 25
+    //           << "t_loc_1d (lat): " << t_loc_1d[29]*RAD2DEG << ", id_j: " << 29
+    //           << "r_loc_1d (r): " << r_loc_1d[41] << ", id_k: " << 41 <<  std::endl;
+
+
+
     // warning if source node is not found
     if( n_source_node > 0 && if_verbose )
         std::cout << "rank  n_source_node: " << myrank << "  " << n_source_node << std::endl;
@@ -1322,7 +1338,7 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 }
 
 
-void Grid::initialize_fields_teleseismic(Source& src, SrcRec& srcrec){
+void Grid::initialize_fields_teleseismic(Source& src, SrcRecInfo& srcrec){
     CUSTOMREAL inf_T = 2000.0;
 
     for (int k_r = 0; k_r < loc_K; k_r++) {

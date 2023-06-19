@@ -1,7 +1,9 @@
 #include <iostream>
 #include <vector>
+#include <map>
 
 #include "utils.h"
+#include "input_params.h"
 #include "src_rec.h"
 #include "mpi_funcs.h"
 
@@ -17,7 +19,9 @@
     ref: Youyi Ruan(2019) https://academic.oup.com/gji/article/219/2/1225/5542709
 */
 
-void calc_dist_min_max(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_min, CUSTOMREAL& d_max){
+void calc_dist_min_max(std::map<std::string,SrcRecInfo>& src_or_rec, \
+                       std::vector<std::string>& id2name,\
+                       CUSTOMREAL& d_min, CUSTOMREAL& d_max){
     // calculate the min and max epicentral distance of all src_or_rec
 
     // check the min and max epicentral distance of all src_or_rec
@@ -26,14 +30,18 @@ void calc_dist_min_max(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_min, CUSTO
 
     int n_elm = src_or_rec.size();
 
-    #pragma omp parallel for default(none) shared(src_or_rec, n_elm) reduction(min:tmp_min) reduction(max:tmp_max)
+    #pragma omp parallel for default(none) shared(src_or_rec, id2name, n_elm) reduction(min:tmp_min) reduction(max:tmp_max)
     for (int i = 0; i < n_elm-1; i++) {
         for (int j = i+1; j < n_elm; j++) {
             CUSTOMREAL d_ij = 0.0;
-            Epicentral_distance_sphere(src_or_rec[i].lat*DEG2RAD, \
-                                       src_or_rec[i].lon*DEG2RAD, \
-                                       src_or_rec[j].lat*DEG2RAD, \
-                                       src_or_rec[j].lon*DEG2RAD, \
+
+            SrcRecInfo& sr_i = src_or_rec[id2name[i]];
+            SrcRecInfo& sr_j = src_or_rec[id2name[j]];
+
+            Epicentral_distance_sphere(sr_i.lat*DEG2RAD, \
+                                       sr_i.lon*DEG2RAD, \
+                                       sr_j.lat*DEG2RAD, \
+                                       sr_j.lon*DEG2RAD, \
                                        d_ij);
 
             if (d_ij < tmp_min) tmp_min = d_ij;
@@ -51,30 +59,36 @@ void calc_dist_min_max(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_min, CUSTO
 
 }
 
-void init_weight(std::vector<SrcRec>& src_or_rec){
+void init_weight(std::map<std::string, SrcRecInfo>& src_or_rec, \
+                 std::vector<std::string>& id2name){
     // initialize all the source and receiver weights to be zero
-    int n_elm = src_or_rec.size();
-
-    #pragma omp parallel for default(none) shared(src_or_rec, n_elm)
-    for (int i = 0; i < n_elm; i++) {
-        src_or_rec[i].weight = 0.0;
+    #pragma omp parallel for default(none) shared(src_or_rec, id2name)
+    for (int i = 0; i < (int)id2name.size(); i++) {
+        src_or_rec[id2name[i]].sum_weight = 0.0;
     }
 }
 
 
-CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
-    int n_elm = src_or_rec.size();
+CUSTOMREAL _calc_weight(std::map<std::string, SrcRecInfo>& src_or_rec, \
+                        std::vector<std::string>& id2name, \
+                        CUSTOMREAL& d_zero){
+
+    int n_elm = id2name.size();
 
     // parallelize loop over sources and receivers
     // sharing src_or_rec.weight
-    #pragma omp parallel for default(none) shared(src_or_rec, n_elm, d_zero)
+    #pragma omp parallel for default(none) shared(src_or_rec, id2name, n_elm, d_zero, std::cout)
     for (int i = 0; i < n_elm-1; i++) {
         for (int j = i+1; j < n_elm; j++) {
             CUSTOMREAL d_ij = 0.0;
-            Epicentral_distance_sphere(src_or_rec[i].lat*DEG2RAD, \
-                                       src_or_rec[i].lon*DEG2RAD, \
-                                       src_or_rec[j].lat*DEG2RAD, \
-                                       src_or_rec[j].lon*DEG2RAD, \
+
+            SrcRecInfo& sr_i = src_or_rec[id2name[i]];
+            SrcRecInfo& sr_j = src_or_rec[id2name[j]];
+
+            Epicentral_distance_sphere(sr_i.lat*DEG2RAD, \
+                                       sr_i.lon*DEG2RAD, \
+                                       sr_j.lat*DEG2RAD, \
+                                       sr_j.lon*DEG2RAD, \
                                        d_ij);
 
             d_ij *= RAD2DEG;
@@ -82,15 +96,46 @@ CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
             CUSTOMREAL w_inv_tmp = std::exp(-std::pow(d_ij/d_zero, 2.0));
             //CUSTOMREAL w_inv_tmp = std::pow(-(d_ij/d_zero)*(d_ij/d_zero),4.0);
 
-            src_or_rec[i].weight += w_inv_tmp;
-            src_or_rec[j].weight += w_inv_tmp;
+            // check if w_inv_tmp is nan or inf
+            if (std::isnan(w_inv_tmp) || std::isinf(w_inv_tmp)) {
+                std::cout << "w_inv_tmp is nan or inf " << std::endl;
+                std::cout << "d_ij = " << d_ij << std::endl;
+                std::cout << "d_zero = " << d_zero << std::endl;
+                std::cout << "i = " << i << std::endl;
+                std::cout << "j = " << j << std::endl;
+                std::cout << "name_i = " << id2name[i] << std::endl;
+                std::cout << "name_j = " << id2name[j] << std::endl;
+                std::cout << "sr_i.id = " << sr_i.id << std::endl;
+                std::cout << "sr_j.id = " << sr_j.id << std::endl;
+                std::cout << "sr_i.lat = " << sr_i.lat << std::endl;
+                std::cout << "sr_i.lon = " << sr_i.lon << std::endl;
+                std::cout << "sr_j.lat = " << sr_j.lat << std::endl;
+                std::cout << "sr_j.lon = " << sr_j.lon << std::endl;
+                std::cout << "w_inv_tmp = " << w_inv_tmp << std::endl;
+                exit(1);
+            }
+
+            sr_i.sum_weight += w_inv_tmp;
+            sr_j.sum_weight += w_inv_tmp;
         }
     }
 
+
     // here the weight is inversed weight, so we need to invert it
-    #pragma omp parallel for default(none) shared(src_or_rec, n_elm, d_zero)
+    #pragma omp parallel for default(none) shared(src_or_rec, id2name, n_elm, d_zero, std::cout)
     for (int i = 0; i < n_elm; i++) {
-        src_or_rec[i].weight = 1.0/src_or_rec[i].weight;
+        CUSTOMREAL w_tmp = src_or_rec[id2name[i]].sum_weight;
+        // check if w_tmp is nan or inf
+        if (std::isnan(w_tmp) || std::isinf(w_tmp)){
+            std::cout << "w_tmp is nan or inf" << std::endl;
+            std::cout << "i = " << i << std::endl;
+            std::cout << "name_i = " << id2name[i] << std::endl;
+            std::cout << "w_tmp = " << w_tmp << std::endl;
+            exit(1);
+        }
+
+
+        src_or_rec[id2name[i]].sum_weight = 1.0/src_or_rec[id2name[i]].sum_weight;
     }
 
     // calculate condition number (min/max of weight)
@@ -98,10 +143,10 @@ CUSTOMREAL _calc_weight(std::vector<SrcRec>& src_or_rec, CUSTOMREAL& d_zero){
     CUSTOMREAL w_max = 0.0;
 
     // parallelize loop for finding min and max with reduction
-    #pragma omp parallel for default(none) shared(src_or_rec, n_elm) reduction(min:w_min) reduction(max:w_max)
+    #pragma omp parallel for default(none) shared(src_or_rec, id2name, n_elm) reduction(min:w_min) reduction(max:w_max)
     for (int i = 0; i < n_elm; i++) {
-        if (src_or_rec[i].weight < w_min) w_min = src_or_rec[i].weight;
-        if (src_or_rec[i].weight > w_max) w_max = src_or_rec[i].weight;
+        if (src_or_rec[id2name[i]].sum_weight < w_min) w_min = src_or_rec[id2name[i]].sum_weight;
+        if (src_or_rec[id2name[i]].sum_weight > w_max) w_max = src_or_rec[id2name[i]].sum_weight;
     }
 
     std::cout << "weight min = " << w_min << std::endl;
@@ -153,25 +198,74 @@ int find_good_ncond(std::vector<CUSTOMREAL>& condition_numbers){
 }
 
 
-void normalize_weight(std::vector<SrcRec>& src_or_rec){
+void normalize_weight(std::map<std::string, SrcRecInfo>& src_or_rec, std::vector<std::string>& id2name){
 
-    // scale weight values to be the total sum becomes 1.0*number of elements
+    // scale weight values to be \sum_{i}^{S} w_i = S
+
     int n_elm = src_or_rec.size();
     CUSTOMREAL w_sum = 0.0;
-    #pragma omp parallel for default(none) reduction(+:w_sum) shared(src_or_rec, n_elm)
-    for (int i = 0; i < n_elm; i++) {
-        w_sum += src_or_rec[i].weight;
+    #pragma omp parallel for default(none) reduction(+:w_sum) shared(src_or_rec, id2name, n_elm)
+    for(int i = 0; i < n_elm; i++){
+        w_sum += src_or_rec[id2name[i]].sum_weight;
     }
 
-#pragma omp parallel for default(none) shared(src_or_rec, n_elm, w_sum)
-    for (int i = 0; i < n_elm; i++) {
-        src_or_rec[i].weight = (src_or_rec[i].weight / w_sum) * n_elm;
+    #pragma omp parallel for default(none) shared(src_or_rec, id2name, n_elm, w_sum)
+    for (int i=0; i<n_elm; i++){
+        src_or_rec[id2name[i]].sum_weight = (src_or_rec[id2name[i]].sum_weight / w_sum) * n_elm;
     }
 
 }
 
 
-void calc_weight(std::vector<SrcRec>& src_or_rec){
+void normalize_weight_data(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map, \
+                           std::map<std::string, SrcRecInfo>& src_map, \
+                           std::map<std::string, SrcRecInfo>& rec_map, \
+                           std::vector<std::string>&          src_id2name, \
+                           std::vector<std::string>&          rec_id2name){
+
+    // normalize weight in each event (sum of weight*n_data becomes 1.0*number of data tracks in the event)
+    int n_src = src_id2name.size();
+    int n_rec = rec_id2name.size();
+
+//
+// this way cancel the geographical weight on the receiver side
+//
+    #pragma omp parallel for default(none) shared(data_map, src_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
+    for (int i = 0; i < n_src; i++) {
+        CUSTOMREAL w_sum_tmp = 0.0; // sum of receiver weight
+        for (int j = 0; j < n_rec; j++) {
+            int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
+            if (v_data_size > 0) {
+                CUSTOMREAL& weight_rec = rec_map[rec_id2name[j]].sum_weight;
+                w_sum_tmp += weight_rec*v_data_size;
+                //n_data    +=v_data_size;
+            }
+        }
+
+        // normalize for receivers
+        for (int j = 0; j < n_rec; j++) {
+            for(auto &data : data_map[src_id2name[i]][rec_id2name[j]]){
+                data.data_weight = src_map[src_id2name[i]].sum_weight*rec_map[rec_id2name[j]].sum_weight/w_sum_tmp;
+            }
+        }
+   }
+
+//    #pragma omp parallel for default(none) shared(data_map, src_map, rec_map, src_id2name, rec_id2name, n_src, n_rec)
+//    for (int i = 0; i < n_src; i++) {
+//        for (int j = 0; j < n_rec; j++) {
+//            int v_data_size = data_map[src_id2name[i]][rec_id2name[j]].size();
+//            for (int k = 0; k < v_data_size; k++) {
+//                data_map[src_id2name[i]][rec_id2name[j]][k].data_weight = src_map[src_id2name[i]].sum_weight*rec_map[rec_id2name[j]].sum_weight;
+//            }
+//        }
+//    }
+}
+
+
+
+
+void calc_weight(std::map<std::string, SrcRecInfo>& src_or_rec, \
+                 std::vector<std::string>&          id2name){
 
     CUSTOMREAL d_zero_fin;
 
@@ -182,7 +276,7 @@ void calc_weight(std::vector<SrcRec>& src_or_rec){
 
         // get the min and max epicentral distance of all src_or_rec
         CUSTOMREAL d_min, d_max;
-    //    calc_dist_min_max(src_or_rec, d_min, d_max);
+    //    calc_dist_min_max(src_or_rec, id2name, d_min, d_max);
 
         // convert rad to deg
         //d_min *= RAD2DEG;
@@ -209,8 +303,8 @@ void calc_weight(std::vector<SrcRec>& src_or_rec){
         int c = 0;
         for (auto& d_zero_try : test_d_zero) {
             // initialize all the source or receiver weights to be zero
-            init_weight(src_or_rec);
-            CUSTOMREAL ncond = _calc_weight(src_or_rec, d_zero_try);
+            init_weight(src_or_rec, id2name);
+            CUSTOMREAL ncond = _calc_weight(src_or_rec, id2name, d_zero_try);
 
             // store the condition number
             condition_numbers.push_back(ncond);
@@ -230,85 +324,114 @@ void calc_weight(std::vector<SrcRec>& src_or_rec){
     }
 
     // calculate the weights with the final d_zero
-    init_weight(src_or_rec);
-    _calc_weight(src_or_rec, d_zero_fin);
+    init_weight(src_or_rec, id2name);
+    _calc_weight(src_or_rec, id2name, d_zero_fin);
 
 }
 
-void calculate_src_rec_weight(std::vector<SrcRec> &src_points, std::vector<std::vector<SrcRec>> &rec_points)
-{
+void calculate_src_rec_weight(std::map<std::string, SrcRecInfo>                                   &src_map, \
+                              std::map<std::string, SrcRecInfo>                                   &rec_map, \
+                              std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map, \
+                              std::vector<std::string>                                            &src_id2name, \
+                              std::vector<std::string>                                            &rec_id2name) {
 
-    int n_src = src_points.size();
-
-    // make a unique list of receivers
-    std::vector<SrcRec> rec_points_unique;
-    for (int i = 0; i < n_src; i++) {
-        int n_rec = rec_points[i].size();
-        for (int j = 0; j < n_rec; j++) {
-            bool is_unique = true;
-            for (auto& rec: rec_points_unique) {
-                // check if the receiver is the same as the new source
-                if (rec_points[i][j].name_rec.compare(rec.name_rec)==0) {
-                    is_unique = false;
-                    break;
-                }
-            }
-            if (is_unique) {
-                rec_points_unique.push_back(rec_points[i][j]);
-            }
-        }
-    }
 
     // calculate source weights
     std::cout << "calculating source weights..." << std::endl;
-    calc_weight(src_points);
+    calc_weight(src_map, src_id2name);
     // normalize the source weight
-    normalize_weight(src_points);
+    normalize_weight(src_map, src_id2name);
 
     // calculate receiver weights
     std::cout << "calculating receiver weights..." << std::endl;
-    calc_weight(rec_points_unique);
-    // normalize the receiver weight will be done later
-
-    // assign the receiver weights to the corresponding receivers
-    for (int i = 0; i < n_src; i++) {
-        int n_rec = rec_points[i].size();
-        for (int j = 0; j < n_rec; j++) {
-
-            // search for the receiver in the unique list
-            for (auto& rec: rec_points_unique) {
-                // check if the receiver is the same as the new source
-                if (rec_points[i][j].name_rec.compare(rec.name_rec)==0) {
-                    rec_points[i][j].weight = rec.weight;
-                    break;
-                }
-            }
-        }
-    }
+    calc_weight(rec_map, rec_id2name);
 
     // normalize the receiver weight
     // (the receiver weight is normalized for each source)
-    for (auto& recs_one_src: rec_points) {
-        normalize_weight(recs_one_src);
-    }
+    normalize_weight_data(data_map, src_map, rec_map, src_id2name, rec_id2name);
 
     // end
 }
 
 
-void copy_arrival_times(std::vector<std::vector<SrcRec>>& rec_points){
-    // copy arrival times read from input to output
-    int n_src = rec_points.size();
-    for (int i = 0; i < n_src; i++) {
-        int n_rec = rec_points[i].size();
-        for (int j = 0; j < n_rec; j++) {
-            rec_points[i][j].arr_time = rec_points[i][j].arr_time_ori;
-        }
-    }
+void write_src_rec_file_with_weight(std::string src_rec_file_out, \
+                                    std::map<std::string, SrcRecInfo> &src_map, \
+                                    std::map<std::string, SrcRecInfo> &rec_map, \
+                                    std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map, \
+                                    std::vector<std::string>          &src_id2name, \
+                                    std::vector<std::string>          &rec_id2name){
+
+    std::ofstream ofs;
+
+    // open file
+    ofs.open(src_rec_file_out);
+
+    for (int i_src = 0; i_src < (int)src_id2name.size(); i_src++){
+
+        std::string name_src = src_id2name[i_src];
+        SrcRecInfo  src      = src_map[name_src];
+
+        // format should be the same as input src_rec_file
+        // source line :  id_src year month day hour min sec lat lon dep_km mag num_recs id_event
+        ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
+            << src.year << " " << src.month << " " << src.day << " "
+            << src.hour << " " << src.min   << " "
+            << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.sec << " "
+            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lat << " "
+            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.lon << " "
+            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src.dep << " "
+            << std::fixed << std::setprecision(2) << std::setw(5) << std::right << std::setfill(' ') << src.mag << " "
+            << std::setw(5) << std::right << std::setfill(' ') << src.n_data << " "
+            << src.name << " "
+            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0 //src.sum_weight
+            << std::endl;
+
+        // data line
+        int i_rec = 0;
+        for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++){
+
+            const std::string name_rec = iter->first;
+            std::vector<DataInfo> v_data = data_map[name_src][name_rec];
+
+            for (const auto& data : v_data){
+
+                // absolute traveltime data
+                if (data.is_src_rec){
+                    SrcRecInfo  rec      = rec_map[name_rec];
+
+                    CUSTOMREAL  travel_time = data.travel_time_obs; // write the observed travel time
+
+                    // receiver line : id_src id_rec name_rec lat lon elevation_m phase epicentral_distance_km arival_time
+                    ofs << std::setw(7) << std::right << std::setfill(' ') << src.id << " "
+                        << std::setw(5) << std::right << std::setfill(' ') << i_rec << " "
+                        << rec.name << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << rec.lat << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
+                        << data.phase << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time << " "
+                        << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
+                        << std::endl;
+
+                        i_rec++;
+                }else {
+                    std::cout << "Error: data type is not defined." << std::endl;
+                    exit(1);
+                } // end of if (data.is_src_rec)
+
+            } // end of for (const auto& data : v_data)
+        } // end of for (auto iter = data_map_back[name_src].begin(); iter != data_map_back[name_src].end(); iter++)
+    } // end of for (int i_src = 0; i_src < (int)src_name_list.size(); i_src++)
+
+    // close file
+    ofs.close();
+
+
 }
 
-
+//
 // function for calculating the source and receiver weight
+// MNMN: receiver pair data is not supported yet.
 int main(int argc, char *argv[])
 {
     // parse options
@@ -316,6 +439,12 @@ int main(int argc, char *argv[])
 
     // init mpi
     initialize_mpi();
+
+    // exit if number of processes is not 1
+    if (nprocs > 1) {
+        std::cout << "number of processes should be 1." << std::endl;
+        exit(1);
+    }
 
 #ifdef USE_OMP
     // srcrec weight calculation uses opnemp parallelization
@@ -331,28 +460,41 @@ int main(int argc, char *argv[])
     std::cout << "number of openmp threads: " << n_threads << std::endl;
     stdout_by_main("------------------------------------------------------");
 
-    std::vector<SrcRec> src_points;
-    std::vector<std::vector<SrcRec>> rec_points;
-    std::map<std::string, SrcRec> dummy_rec_list;
-    std::map<std::string, CUSTOMREAL> dummy_station_correction;
-    std::map<std::string, CUSTOMREAL> dummy_station_correction_kernel;
+    std::map<std::string, SrcRecInfo>                                  src_map;
+    std::map<std::string, SrcRecInfo>                                  rec_map;
+    std::map<std::string, std::map<std::string,std::vector<DataInfo>>> data_map;
+    std::vector<std::string> src_id2name, rec_id2name;
+    std::vector<std::vector<std::vector<std::string>>> rec_id2name_back_dummy;
+
+    std::cout << "parsing src_rec file: " << input_file << std::endl;
 
     // read src_rec file
-    parse_src_rec_file(input_file,
-                       src_points,
-                       rec_points,
-                       dummy_rec_list,
-                       dummy_station_correction,
-                       dummy_station_correction_kernel);
+    parse_src_rec_file(input_file, \
+                       src_map, \
+                       rec_map, \
+                       data_map, \
+                       src_id2name, \
+                       rec_id2name_back_dummy);
+
+    // create rec_id2name
+    for (auto& rec: rec_map) {
+        rec_id2name.push_back(rec.first);
+    }
+
+    std::cout << "calculating source and receiver weight..." << std::endl;
 
     // calculate source and receiver weight
-    calculate_src_rec_weight(src_points, rec_points);
+    calculate_src_rec_weight(src_map, rec_map, data_map, src_id2name, rec_id2name);
 
-    // copy arrival times read from input to output
-    copy_arrival_times(rec_points);
+    std::cout << "writing src_rec file with weight: " << output_file_weight << std::endl;
 
     // write src_rec file with calculated weights
-    writeout_src_rec_file(output_file_weight, src_points, rec_points);
+    write_src_rec_file_with_weight(output_file_weight, \
+                                   src_map, \
+                                   rec_map, \
+                                   data_map, \
+                                   src_id2name, \
+                                   rec_id2name);
 
     stdout_by_main("------------------------------------------------------");
     stdout_by_main("end Src Rec weight calculation.");

@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <iomanip>
 #include <sstream>
+#include <cmath>
 
 #include "config.h"
 
@@ -137,17 +138,21 @@ inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL
 
 
 // calculate epicentral distance in radian from lon lat in radian
-inline void Epicentral_distance_sphere(CUSTOMREAL lat1, CUSTOMREAL lon1, \
-                                       CUSTOMREAL lat2, CUSTOMREAL lon2, \
+inline void Epicentral_distance_sphere(const CUSTOMREAL lat1, const CUSTOMREAL lon1, \
+                                       const CUSTOMREAL lat2, const CUSTOMREAL lon2, \
                                        CUSTOMREAL& dist) {
-    if (isZero(my_square((lat1-lat2)) \
-     &&      + my_square((lon1-lon2)))){
-        dist = _0_CR;
-    } else {
-        // calculate epicentral distance in radian
-        dist = std::abs(acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1)));
-    }
+
+    // calculate epicentral distance in radian
+    //dist = std::abs(acos(sin(lat1)*sin(lat2)+cos(lat1)*cos(lat2)*cos(lon2-lon1)));
+    CUSTOMREAL lon_dif = lon2 - lon1;
+
+    dist = std::atan2(std::sqrt((my_square(std::cos(lat2) * std::sin(lon_dif)) + \
+                                 my_square(std::cos(lat1) * std::sin(lat2) - std::sin(lat1) * std::cos(lat2) * std::cos(lon_dif)))), \
+                                 std::sin(lat1) * std::sin(lat2) + std::cos(lat1) * std::cos(lat2) * std::cos(lon_dif));
+
 }
+
+
 
 
 //calculate azimuth

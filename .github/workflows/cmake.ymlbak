@@ -1,8 +1,8 @@
 name: CMake
 
-on:
-  push:
-    branches: [ "devel" ]
+on: [push, pull_request]
+#  push:
+#    branches: [ "devel" ]
 #   pull_request:
 #     branches: [ "main" ]
 

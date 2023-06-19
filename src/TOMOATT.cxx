@@ -73,7 +73,7 @@ timer5.stop_timer();
 
 Timer timer6("prepare src list");
     // assign source for each simultaneous run group
-    IP.prepare_src_list();
+    IP.prepare_src_map();
 timer6.stop_timer();
 
 Timer timer7("io");
@@ -104,8 +104,8 @@ Timer timer11("write grid file");
 timer11.stop_timer();
 
 
-    // preapre teleseismic boundary conditions (do nothing if no teleseismic source is defined)
-    prepare_teleseismic_boundary_conditions(IP, grid, io);
+    // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
+    prepare_teleseismic_boundary_conditions(IP, grid, io);      // not ready for new version of src rec data
 
     synchronize_all_world();
 

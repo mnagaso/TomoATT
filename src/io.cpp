@@ -7,7 +7,7 @@ IO_utils::IO_utils(InputParams& IP) {
         // check the custom real data type
         // if float, custom_real_flag = 2
         // if double, custom_real_flag = 3
-        if (std::is_same<CUSTOMREAL, float>::value) {
+        if (std::is_same<CUSTOMREAL, float>::value || IP.get_is_single_precision_output()) {
             custom_real_flag = 2;
         } else if (std::is_same<CUSTOMREAL, double>::value) {
             custom_real_flag = 3;
@@ -52,9 +52,11 @@ IO_utils::~IO_utils() {
 void IO_utils::change_group_name_for_source() {
 #ifdef USE_HDF5
     // change group name for source
-    h5_group_name_data = "src_" + std::to_string(id_sim_src);
+    // h5_group_name_data = "src_" + std::to_string(id_sim_src);
+    h5_group_name_data = "src_" + name_sim_src;
 #endif
 }
+
 
 void IO_utils::change_group_name_for_model(){
 #ifdef USE_HDF5
@@ -62,6 +64,7 @@ void IO_utils::change_group_name_for_model(){
     h5_group_name_data = "model";
 #endif
 }
+
 
 void IO_utils::finalize_data_output_file(){
     if (output_format==OUTPUT_FORMAT_HDF5){
@@ -78,15 +81,16 @@ void IO_utils::init_data_output_file() {
     // create output file
     if (output_format==OUTPUT_FORMAT_HDF5) {
 #ifdef USE_HDF5
-        h5_output_fname   = "./out_data_sim_"+std::to_string(id_sim_src)+".h5";
-        xdmf_output_fname = "./out_data_sim_"+std::to_string(id_sim_src)+".xmf";
+        // h5_output_fname   = "./out_data_sim_"+std::to_string(id_sim_src)+".h5";
+        // xdmf_output_fname = "./out_data_sim_"+std::to_string(id_sim_src)+".xmf";
+        h5_output_fname   = "./out_data_sim_"+name_sim_src+".h5";
+        xdmf_output_fname = "./out_data_sim_"+name_sim_src+".xmf";
 
         if (subdom_main) {
             // write xdmf file
             if (id_subdomain == 0)
                 write_xdmf_file_grid();
 
-            //store_xdmf_obj();
             // create output file
             h5_create_file_by_group_main(h5_output_fname); // file for field data
         }
@@ -384,7 +388,8 @@ void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& st
     std::string str_dset_h5   = str_dset + "_inv_" + int2string_zero_fill(i_inv);
     std::string str_dset_xdmf;
     if (!model_data)
-        str_dset_xdmf = str_dset + "_src_" + int2string_zero_fill(id_sim_src); // use different name for xdmf
+        // str_dset_xdmf = str_dset + "_src_" + int2string_zero_fill(id_sim_src); // use different name for xdmf
+        str_dset_xdmf = str_dset + "_src_" + name_sim_src; // use different name for xdmf
     else
         str_dset_xdmf = str_dset; // use different name for xdmf
 
@@ -601,20 +606,21 @@ void IO_utils::write_2d_travel_time_field(CUSTOMREAL* T, CUSTOMREAL* r, CUSTOMRE
             auto str = std::to_string(src_dep);
             std::string fname = output_dir + "/" + OUTPUT_DIR_2D + "/2d_travel_time_field_dep_" +str.substr(0,str.find(".")+4)+".h5";
             // create and open h5 file
-            //plist_id_2d = H5Pcreate(H5P_FILE_ACCESS);
             file_id_2d  = H5Fcreate(fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+            // force to use CUSTOMREAL type for 2D fields
+            int dtype = check_data_type(T[0]);
 
             // create dataset and write
             int dims_T[2] = {nr, nt};
             std::string str_dset = "T";
-            h5_create_and_write_dataset_2d(str_dset, 2, dims_T, custom_real_flag, T);
+            h5_create_and_write_dataset_2d(str_dset, 2, dims_T, dtype, T);
             str_dset = "r";
-            h5_create_and_write_dataset_2d(str_dset, 1, &nr, custom_real_flag, r);
+            h5_create_and_write_dataset_2d(str_dset, 1, &nr, dtype, r);
             str_dset = "t";
-            h5_create_and_write_dataset_2d(str_dset, 1, &nt, custom_real_flag, t);
+            h5_create_and_write_dataset_2d(str_dset, 1, &nt, dtype, t);
 
             // close h5 file
-            //H5Pclose(plist_id_2d);
             H5Fclose(file_id_2d);
 #else
             std::cout << "ERROR: HDF5 is not enabled" << std::endl;
@@ -672,8 +678,10 @@ void IO_utils::read_2d_travel_time_field(std::string& fname, CUSTOMREAL* T, int 
 
 
 std::string IO_utils::create_fname_ascii(std::string& dset_name){
+    // std::string fname = output_dir + "/" + dset_name
+    // + "_src_" + int2string_zero_fill(id_sim_src) + ".dat";
     std::string fname = output_dir + "/" + dset_name \
-    + "_src_" + int2string_zero_fill(id_sim_src) + ".dat";
+    + "_src_" + name_sim_src + ".dat";
     return fname;
 }
 
@@ -753,8 +761,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " ";
-                    // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " "
+                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
+                    << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " ";
                     if (IP.get_run_mode() == 1) {
                         fout << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
                         // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
@@ -782,7 +790,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                 Ks = get_grid_data(grid.get_Ks());
                 Ks_update = get_grid_data(grid.get_Ks_update());
             }
-            // std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
+            std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
 
             for (int k = 0; k < loc_K_vis; k++){
                 for (int j = 0; j < loc_J_vis; j++){
@@ -794,8 +802,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " ";
-                            // << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
+                            << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " ";
 
                             if (IP.get_run_mode() == 1) {
                                 fout << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
@@ -1200,6 +1208,10 @@ void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
             dset_name = "xi";
             inverse_field = false;
             write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.xi_loc, inverse_field);
+            //dset_name = "zeta";
+            //inverse_field = false;
+            //write_data_merged_h5(grid, fname, gname_dummy, dset_name, grid.zeta_loc, inverse_field);
+
 
 #else
             std::cout << "ERROR: HDF5 is not enabled" << std::endl;
@@ -1374,7 +1386,8 @@ void IO_utils::read_T(Grid& grid) {
         if (output_format == OUTPUT_FORMAT_HDF5) {
             // read traveltime field from HDF5 file
 #ifdef USE_HDF5
-            h5_group_name_data = "src_" + std::to_string(id_sim_src);
+            // h5_group_name_data = "src_" + std::to_string(id_sim_src);
+            h5_group_name_data = "src_" + name_sim_src;
             std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
             read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else
