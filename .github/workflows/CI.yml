@@ -34,8 +34,9 @@ jobs:
           else
             # Push
             echo "Push request:"
+            COMMIT_COUNT=$(git rev-list --count ${{ github.sha }})
             # Initial commit
-            if [ -z "${{ github.event.before }}" ]; then
+            if [ $COMMIT_COUNT -eq 1 ]; then
               export DIFF=$( git diff --name-only --root $GITHUB_SHA )
               echo "  diff between initial commit: diff against root"
             else
