@@ -8,10 +8,13 @@
 #include <limits>
 
 // custom floating point accuracy
-//#define CUSTOMREAL float
-//#define MPI_CR MPI_FLOAT
+#ifdef SINGLE_PRECISION
+#define CUSTOMREAL float
+#define MPI_CR MPI_FLOAT
+#else
 #define CUSTOMREAL double
 #define MPI_CR MPI_DOUBLE
+#endif
 
 
 #define MPI_DUMMY_TAG 1000
@@ -90,6 +93,11 @@ inline CUSTOMREAL       step_size_init_sc = 0.001; // update step size limit (fo
 inline CUSTOMREAL       step_size_decay = 0.9;
 inline CUSTOMREAL       step_size_lbfgs;
 
+// halve steping params
+inline const CUSTOMREAL HALVE_STEP_RATIO = 0.7;
+inline const CUSTOMREAL MAX_DIFF_RATIO_VOBJ = 0.02; // maximum difference ratio between vobj_t+1 and vobj_t
+inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.7; // no restoration if == HALVE_STEP_RATIO
+
 // RUN MODE TYPE FLAG
 inline const int ONLY_FORWARD        = 0;
 inline const int DO_INVERSION        = 1;
@@ -139,9 +147,17 @@ inline int      ndiv_i           = 1; // number of divisions in x direction
 inline int      ndiv_j           = 1; // number of divisions in y direction
 inline int      ndiv_k           = 1; // number of divisions in z direction
 inline int      id_sim           = 0; // simultaneous run id  (not equal to src id)
-inline int      id_sim_src       = 0; // id of current target source
 inline int      id_subdomain     = 0; // subdomain id
 inline bool     subdom_main      = false; // true if this process is main process in subdomain
+
+// MNMN stop using these global variable for avoiding misleadings during the sources' iteration loop
+//inline int      id_sim_src       = 0; // id of current target source
+//inline std::string name_sim_src  = "unknown";   //name of current target source
+
+// rule to distribute source to simultaneous group
+inline int select_id_sim_for_src(const int& i_src, const int& n_sims){
+    return i_src % n_sims;
+}
 
 // read input yaml file
 inline std::string input_file="input_params.yaml";
@@ -179,6 +195,24 @@ inline bool if_verbose = false;
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
 
+// total number of sources in the srcrec file
+inline int nsrc_total = 0;
+
+// flag if common receiver double difference data is used
+inline bool src_pair_exists = false;
+
+// weight of different typs of data
+inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
+inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
+inline CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
+inline CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+// misfit balance
+inline int        is_balance_data_weight         = 0;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
+inline CUSTOMREAL total_abs_local_data_weight    = 0.0;
+inline CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
+inline CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
+inline CUSTOMREAL total_teleseismic_data_weight  = 0.0;
+
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
 inline       CUSTOMREAL rmin_2d             = 3370.5;
@@ -195,11 +229,22 @@ inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold
 inline const std::string OUTPUT_DIR_2D      = "/2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
 // earthquake relocation
-inline CUSTOMREAL step_length_src_reloc = 0.0001; // step length for source relocation
-inline const int  N_ITER_MAX_SRC_RELOC  = 1000;
-inline const CUSTOMREAL TOL_SRC_RELOC   = 1e-2;
+inline CUSTOMREAL       step_length_src_reloc      = 2.0;  // step length for source relocation
+inline CUSTOMREAL       step_length_decay          = 0.9;
+inline const int        N_ITER_MAX_SRC_RELOC       = 501;  // max iteration for source location
+inline CUSTOMREAL       TOL_SRC_RELOC              = 1e-3; // threshold of the norm of gradient for stopping single earthquake location
+inline const CUSTOMREAL TOL_STEP_SIZE              = 1e-2; // threshold of the max step size for stopping single earthquake location
+inline CUSTOMREAL       max_change_dep             = 10.0;
+inline CUSTOMREAL       max_change_lat             = 1.0;
+inline CUSTOMREAL       max_change_lon             = 1.0;
+inline int              is_ortime_local_search     = 0;
+inline CUSTOMREAL       ref_ortime_change          = 5.0;
+inline CUSTOMREAL       max_change_ortime          = 0.5;
+inline CUSTOMREAL       step_length_ortime_rescale = 0.1;
 
-// source receiver  weight calculation
+
+// source receiver weight calculation
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation
+inline std::string output_file_weight = "srcrec_weight.txt"; // output file name for source receiver weight calculation
 
 #endif // CONFIG_H

@@ -4,26 +4,61 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
-    // TODO: currently this routine is run in only serial.
-    // it can be work in parallel with simultaneous run,
+    // 2D travel time fields vary only by the depth of the source.
+    // So here we make another src_id2name list for dropping the sources
+    // that have the same depth, in onder to reduce the number of 2D eikonal solver runs.
+
+    // so we use
+    // - src_id2name_2d
+    // - src_map_2d
+    // for 2D eikonal solver runs
+
+    //
+    // pre calculation of 2d travel time fields
+    //
     if (subdom_main) {
-        for (long unsigned int i = 0; i < IP.src_ids_this_sim.size(); i++) {
-            int src_id = IP.src_ids_this_sim[i];
+
+       for (int i_src = 0; i_src < (int)IP.src_id2name_2d.size(); i_src++){
+
+            std::string name_sim_src = IP.src_id2name_2d[i_src];
+
             // get source info
-            SrcRec& src = IP.get_src_point(src_id);
+            SrcRecInfo& src = IP.src_map_2d[name_sim_src];
 
             // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-            if (src.is_teleseismic){
+            if (src.is_out_of_region){
+                // calculate 2d travel time field (or read pre-computed file)
+                // without loading the boundary source values
+                run_2d_solver(IP, src, io);
+            }
+        }
+    }
+
+    synchronize_all_world();
+
+    //
+    // load travel times on the boundary
+    //
+    if (subdom_main) {
+       for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+
+            std::string name_sim_src = IP.src_id2name[i_src];
+
+            // get source info
+            SrcRecInfo& src = IP.get_src_point(name_sim_src);
+
+            // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
+            if (src.is_out_of_region){
 
                 // allocate memory for teleseismic boundary source condition
-                IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, src_id, \
+                IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, name_sim_src, \
                     grid.i_first(), grid.i_last(), grid.j_first(), grid.j_last(), grid.k_first());
 
-                // calculate 2d travel time field (or read pre-computed file)
-                // the interpolate the 2d field onto the 3d grid boundaries
-                run_2d_solver(IP, src_id, grid, io);
+                // load 2d travel time field
+                load_2d_traveltime(IP, src, grid, io);
 
                 if_teleseismic_event_exists = true;
+
             }
         }
     }
@@ -35,7 +70,8 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 }
 
 
-PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
+
+PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
 
     stdout_by_main("PlainGrid initialization start.");
 
@@ -143,9 +179,20 @@ PlainGrid::PlainGrid(SrcRec& src, InputParams& IP) {
     // discretize the src position
     int src_r_i = std::floor((src_r      -rmin_2d)/dr_2d);
     int src_t_i = std::floor((src_t_dummy-tmin_2d)/dt_2d);
+
     // error of discretized source position
     CUSTOMREAL src_r_err = std::min(_1_CR, (src_r       - r_2d[src_r_i])/dr_2d);
     CUSTOMREAL src_t_err = std::min(_1_CR, (src_t_dummy - t_2d[src_t_i])/dt_2d);
+
+    // check precision error for floor
+    if (src_r_err == _1_CR) {
+        src_r_err = _0_CR;
+        src_r_i++;
+    }
+    if (src_t_err == _1_CR) {
+        src_t_err = _0_CR;
+        src_t_i++;
+    }
 
     // initialize the initial fields
     CUSTOMREAL a0 = (_1_CR - src_r_err)*(_1_CR - src_t_err)*fac_a_2d[src_r_i*nt_2d+src_t_i] \
@@ -223,7 +270,7 @@ void PlainGrid::deallocate_arrays(){
 
 PlainGrid::~PlainGrid() {
     deallocate_arrays();
-};
+}
 
 
 void PlainGrid::select_1d_model(std::string model_1d_name){
@@ -531,39 +578,71 @@ CUSTOMREAL interp2d(PlainGrid& pg, CUSTOMREAL t, CUSTOMREAL r) {
 }
 
 
-void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
+std::string get_2d_tt_filename(const std::string& dir_2d, SrcRecInfo& src) {
+
+    std::string fname_2d_src;
+
+    if (output_format == OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        // add the depth of the source to the file name
+        // to share the travel time field if sources have the same depth of hypocenter
+        auto str = std::to_string(src.dep);
+        fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".h5";
+#else
+        std::cout << "HDF5 is not enabled. Please recompile with HDF5" << std::endl;
+#endif
+    } else if (output_format == OUTPUT_FORMAT_ASCII) {
+        auto str = std::to_string(src.dep);
+        fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".dat";
+    }
+
+    return fname_2d_src;
+
+}
+
+void run_2d_solver(InputParams& IP, SrcRecInfo& src, IO_utils& io) {
     // calculate 2d travel time field by only the first process of each simulation group
-    SrcRec& src = IP.get_src_point(src_id);
 
     // initialize grid for all processes
-    PlainGrid plain_grid(src, IP);
+    PlainGrid plain_grid(src,IP);
 
     // check if pre-calculated 2d travel time field exists
-    bool pre_calculated = false;
     if(myrank == 0) {
+        // create output directory for 2d solver
+        std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
+        create_output_dir(dir_2d);
 
-        std::string fname_2d_src;
+        std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
+
+        if (is_file_exist(fname_2d_src.c_str())) {
+            std::cout << "2d solver skipped the src because traveltime data already exists: " << fname_2d_src << std::endl;
+        } else { // if not, calculate and store it
+            // run iteration
+            std::cout << "start run iteration myrank: " << myrank << std::endl;
+            plain_grid.run_iteration(IP);
+
+            // write out calculated 2D travel time field
+            io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.dep);
+        }
+    }
+
+ }
+
+
+void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& io) {
+    // initialize grid for all processes
+    PlainGrid plain_grid(src,IP);
+
+    // check if pre-calculated 2d travel time field exists
+    if(myrank == 0) {
 
         // create output directory for 2d solver
         std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
         create_output_dir(dir_2d);
 
-        if (output_format == OUTPUT_FORMAT_HDF5){
-#ifdef USE_HDF5
-            // add the depth of the source to the file name
-            // to share the travel time field if sources have the same depth of hypocenter
-            auto str = std::to_string(src.dep);
-            fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".h5";
-#else
-            std::cout << "HDF5 is not enabled. Please recompile with HDF5" << std::endl;
-#endif
-        } else if (output_format == OUTPUT_FORMAT_ASCII) {
-            auto str = std::to_string(src.dep);
-            fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".dat";
-        }
+        std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
 
         if (is_file_exist(fname_2d_src.c_str())) {
-            pre_calculated = true;
             // remark :: TODO :: we need to check whether the 2d_traveltime file has the same size of T_2d here.
             // Otherwise, we need to recalculate the 2d traveltime field and write it out.
 
@@ -571,11 +650,9 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
             io.read_2d_travel_time_field(fname_2d_src, plain_grid.T_2d, plain_grid.nt_2d, plain_grid.nr_2d);
 
             std::cout << "2d travel time field has been read from file: " << fname_2d_src << std::endl;
-
-        } else { // if not, calculate and store it
-            // run iteration
-            std::cout << "start run iteration myrank: " << myrank << std::endl;
-            plain_grid.run_iteration(IP);
+        } else { // if not, stop the program
+            std::cout << "2d travel time field does not exist. Please verify if the 2d solver finished normally." << std::endl;
+            exit(1);
         }
     }
 
@@ -636,10 +713,6 @@ void run_2d_solver(InputParams& IP, int src_id, Grid& grid, IO_utils& io) {
     src.is_bound_src[2] = plain_grid.activated_boundaries[2];
     src.is_bound_src[3] = plain_grid.activated_boundaries[3];
     src.is_bound_src[4] = plain_grid.activated_boundaries[4];
-
-    // write out calculated 2D travel time field
-    if (!pre_calculated && myrank == 0)
-        io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.dep);
 
 }
 

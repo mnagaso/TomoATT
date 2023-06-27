@@ -23,32 +23,29 @@
 
 class Iterator {
 public:
-    Iterator(InputParams&, Grid&, Source&, IO_utils&, bool, bool, bool);
+    Iterator(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
     virtual ~Iterator();
     // regional source
     void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
     void run_iteration_adjoint(InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
 
-    // teleseismic source (teleseismic adjoint use the same function with reginal source)
-    //void run_iteration_forward_teleseismic(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
-
-    void initialize_arrays(InputParams&, Grid&, Source&); // initialize factors etc.
+    void initialize_arrays(InputParams&, Grid&, Source&, const std::string&); // initialize factors etc.
 
 protected:
     void assign_processes_for_levels(Grid&, InputParams&); // assign intra-node processes for each sweeping level
-    void set_sweep_direction(int);      // set sweep direction
+    void set_sweep_direction(int);                         // set sweep direction
     // regional source
-    virtual void do_sweep(int, Grid&, InputParams&){};               // do sweeping with ordinal method
-    void calculate_stencil_1st_order(Grid&, int&, int&, int&);     // calculate stencil for 1st order
-    void calculate_stencil_3rd_order(Grid&, int&, int&, int&);     // calculate stencil for 3rd order
+    virtual void do_sweep(int, Grid&, InputParams&){};                // do sweeping with ordinal method
+    void calculate_stencil_1st_order(Grid&, int&, int&, int&);        // calculate stencil for 1st order
+    void calculate_stencil_3rd_order(Grid&, int&, int&, int&);        // calculate stencil for 3rd order
     void calculate_stencil_1st_order_upwind(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
-    void calculate_boundary_nodes(Grid&);                          // calculate boundary values
+    void calculate_boundary_nodes(Grid&);                             // calculate boundary values
 //    // teleseismic source
-    void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order
-    void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&); // calculate stencil for 3rd order
-    void calculate_stencil_1st_order_upwind_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order  in upwind form
-    void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);    // calculate boundary values for teleseismic source
-    void calculate_boundary_nodes_tele_adj(Grid&, int&, int&, int&);// calculate boundary values for teleseismic adjoint source
+    void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&);        // calculate stencil for 1st order
+    void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&);        // calculate stencil for 3rd order
+    void calculate_stencil_1st_order_upwind_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
+    void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);           // calculate boundary values for teleseismic source
+    void calculate_boundary_nodes_tele_adj(Grid&, int&, int&, int&);       // calculate boundary values for teleseismic adjoint source
 
     // Hamiltonian calculation
     inline CUSTOMREAL calc_LF_Hamiltonian(Grid&, CUSTOMREAL& ,CUSTOMREAL& , \
@@ -63,7 +60,7 @@ protected:
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
-    virtual void do_sweep_adj(int, Grid&, InputParams&){};                       // do sweeping with ordinal method for adjoint field
+    virtual void do_sweep_adj(int, Grid&, InputParams&){};             // do sweeping with ordinal method for adjoint field
     void calculate_stencil_adj(Grid&, int&, int&, int&);               // calculate stencil for 1st order for adjoint field
 
     // grid point information
@@ -77,7 +74,7 @@ protected:
     MPI_Win win_dr, win_dt, win_dp; // windows for grid point information
 
     std::vector< std::vector<int> > ijk_for_this_subproc; // ijk=I2V(i,j,k) for this process (level, ijk)
-    int max_n_nodes_plane;          // maximum number of nodes on a plane
+    int max_n_nodes_plane;                                // maximum number of nodes on a plane
 
 
 #if defined USE_SIMD || defined USE_CUDA

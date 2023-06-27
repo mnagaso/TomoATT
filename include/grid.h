@@ -39,7 +39,7 @@ public:
     // calculate initial fields T0 T0r T0t T0p and initialize tau
     void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
-    void initialize_fields_teleseismic(Source &, SrcRec&);
+    void initialize_fields_teleseismic(Source &, SrcRecInfo&);
     // calculate L1 and Linf diff (sum of value change on the nodes)
     void calc_L1_and_Linf_diff(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for teleseismic source (sum of value change on the nodes)
@@ -156,11 +156,6 @@ public:
     int get_offset_j_excl_gl()           {return offset_j;};
     int get_offset_k_excl_gl()           {return offset_k;};
 
-
-    // CUSTOMREAL get_delta_lon_inv() {return dinv_p;}
-    // CUSTOMREAL get_delta_lat_inv() {return dinv_t;}
-    // CUSTOMREAL get_delta_r_inv()   {return dinv_r;}
-
     // return index of the first node excluding ghost layer
     int get_k_start_loc()        {return k_start_loc;};
     int get_k_end_loc()          {return k_end_loc;};
@@ -200,14 +195,11 @@ private:
     // j: latitude,  theta,
     // k: radius,    r
 
-    // the local number of grid points in each direction
-    //int loc_I, loc_J, loc_K; // in config.h
     // starting node id for each direction expect the boundary
     int i_start_loc=0, j_start_loc=0, k_start_loc=0;
     // end node id for each direction expect the boundary
     int i_end_loc=0, j_end_loc=0, k_end_loc=0;
-    // number of grids ecxluding the ghost grids
-    //int loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost; // in config.h
+
     // for inversion grid
 public:
     // starting node id for each direction expect the boundary
@@ -432,8 +424,6 @@ public:
 private:
     // number of the layers for ghost nodes
     const int n_ghost_layers = 1;
-    // output coordinate system
-    //const bool store_cartesian = true; // store both cartesian and spherical coordinates
     // vtk format cell type
     const int cell_type = 9;
 

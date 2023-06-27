@@ -14,12 +14,12 @@ inline void smooth_descent_dir(Grid& grid){
     CUSTOMREAL r_r, r_t, r_p;
     int kdr, jdt, idp;
 
-    int k_start = 0; //grid.get_k_start_loc();
-    int j_start = 0; //grid.get_j_start_loc();
-    int i_start = 0; //grid.get_i_start_loc();
-    int k_end   = ngrid_k; //grid.get_k_end_loc();
-    int j_end   = ngrid_j; //grid.get_j_end_loc();
-    int i_end   = ngrid_i; //grid.get_i_end_loc();
+    int k_start = 0;
+    int j_start = 0;
+    int i_start = 0;
+    int k_end   = ngrid_k;
+    int j_end   = ngrid_j;
+    int i_end   = ngrid_i;
 
     //
     // sum the kernel values on the inversion grid

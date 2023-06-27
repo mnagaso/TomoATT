@@ -331,9 +331,7 @@ inline CUSTOMREAL add_regularization_obj(Grid& grid) {
     CUSTOMREAL regularization_term = _0_CR;
 
     if (subdom_main) {
-        CUSTOMREAL* tmp_arr = new CUSTOMREAL[loc_I*loc_J*loc_K];
         int ngrid = loc_I*loc_J*loc_K;
-        for (int i = 0; i < ngrid; i++) tmp_arr[i] = _0_CR;
 
         regularization_term += calc_l2norm(grid.fun_regularization_penalty_loc, ngrid);
         regularization_term += calc_l2norm(grid.eta_regularization_penalty_loc, ngrid);
@@ -342,8 +340,6 @@ inline CUSTOMREAL add_regularization_obj(Grid& grid) {
         // gather from all subdomain
         CUSTOMREAL tmp = regularization_term;
         allreduce_cr_single(tmp, regularization_term);
-
-        delete [] tmp_arr;
     }
 
     synchronize_all_world();
@@ -356,22 +352,25 @@ inline CUSTOMREAL add_regularization_obj(Grid& grid) {
 // add grad(L(m)) to gradient
 inline void add_regularization_grad(Grid& grid) {
     if (subdom_main) {
-        CUSTOMREAL* tmp_arr = new CUSTOMREAL[loc_I*loc_J*loc_K];
         int ngrid = loc_I*loc_J*loc_K;
 
+        // initialize fun_regularization_penalty_loc, eta_regularization_penalty_loc, xi_regularization_penalty_loc
+        for (int i = 0; i < ngrid; i++) {
+            grid.fun_regularization_penalty_loc[i] = _0_CR;
+            grid.eta_regularization_penalty_loc[i] = _0_CR;
+            grid.xi_regularization_penalty_loc[i] = _0_CR;
+        }
+
         // calculate LL(m) on fun (Ks)
-        for (int i = 0; i < ngrid; i++) tmp_arr[i] = _0_CR;
         calc_laplacian_field(grid, grid.fun_loc, grid.fun_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.fun_regularization_penalty_loc, grid.Ks_regularization_penalty_loc);
 
         // calculate LL(m) on eta (Keta)
-        for (int i = 0; i < ngrid; i++) tmp_arr[i] = _0_CR;
         calc_laplacian_field(grid, grid.eta_loc, grid.eta_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.eta_regularization_penalty_loc, grid.Keta_regularization_penalty_loc);
 
 
         // calculate LL(m) on xi (Kxi)
-        for (int i = 0; i < ngrid; i++) tmp_arr[i] = _0_CR;
         calc_laplacian_field(grid, grid.xi_loc, grid.xi_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.Kxi_regularization_penalty_loc);
 
@@ -390,8 +389,6 @@ inline void add_regularization_grad(Grid& grid) {
                 }
             }
         }
-
-        delete [] tmp_arr;
 
     }
 

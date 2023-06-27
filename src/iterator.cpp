@@ -1,8 +1,9 @@
 #include "iterator.h"
 
-Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
+Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, \
                    bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
          : is_second_run(is_second_run_in) {
+
     if(n_subprocs > 1) {
 
         // share necessary values between subprocs
@@ -14,6 +15,8 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
         dp = grid.dp;
 
         if (first_init) {
+
+            // #BUG this broadcast is not working by somehow...
             broadcast_i_single_sub(nr,0);
             broadcast_i_single_sub(nt,0);
             broadcast_i_single_sub(np,0);
@@ -34,7 +37,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
 
         // check if teleseismic source
         is_teleseismic = is_teleseismic_in;
-        broadcast_bool_single_sub(is_teleseismic,0);
+        broadcast_bool_single_sub(is_teleseismic, 0);
 
         // check initialized values
         if (if_verbose){
@@ -64,7 +67,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, \
     }
 
     // initialize factors etc.
-    initialize_arrays(IP, grid, src);
+    initialize_arrays(IP, grid, src, src_name);
 
 }
 
@@ -132,8 +135,10 @@ Iterator::~Iterator() {
 }
 
 
-void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
+void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src, const std::string& name_sim_src) {
     if(if_verbose && myrank == 0) std::cout << "(re) initializing arrays" << std::endl;
+
+    // std::cout << "source lat: " << src.get_src_t()*RAD2DEG << ", source lon: " << src.get_src_p()*RAD2DEG << ", source dep: " << src.get_src_r() << std::endl;
 
     if (!is_second_run) { // field initialization has already been done in the second run
         if (subdom_main) {
@@ -144,7 +149,7 @@ void Iterator::initialize_arrays(InputParams& IP, Grid& grid, Source& src) {
                 grid.initialize_fields(src, IP);
             } else {
                 // copy T_loc arrival time on domain's boundaries.
-                grid.initialize_fields_teleseismic(src, IP.get_src_point(id_sim_src));
+                grid.initialize_fields_teleseismic(src, IP.get_src_point(name_sim_src));
             }
         }
     }
@@ -567,6 +572,31 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 #endif
         }
 
+        // std::cout << "grid1, T0v_loc: " << grid.T0v_loc[I2V(23,29,40)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,29,40)]
+        //           << std::endl;
+        // std::cout << "grid2, T0v_loc: " << grid.T0v_loc[I2V(24,29,40)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,29,40)]
+        //           << std::endl;
+        // std::cout << "grid3, T0v_loc: " << grid.T0v_loc[I2V(23,30,40)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,30,40)]
+        //           << std::endl;
+        // std::cout << "grid4, T0v_loc: " << grid.T0v_loc[I2V(24,30,40)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,30,40)]
+        //           << std::endl;
+        // std::cout << "grid5, T0v_loc: " << grid.T0v_loc[I2V(23,29,41)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,29,41)]
+        //           << std::endl;
+        // std::cout << "grid6, T0v_loc: " << grid.T0v_loc[I2V(24,29,41)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,29,41)]
+        //           << std::endl;
+        // std::cout << "grid7, T0v_loc: " << grid.T0v_loc[I2V(23,30,41)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(23,30,41)]
+        //           << std::endl;
+        // std::cout << "grid8, T0v_loc: " << grid.T0v_loc[I2V(24,30,41)]
+        //           << ", tau_loc: " << grid.tau_loc[I2V(24,30,41)]
+        //           << std::endl;
+
 #ifndef FREQ_SYNC_GHOST
         // synchronize ghost cells everytime after sweeping of all directions
         // as the same method with Detrixhe2016
@@ -594,14 +624,16 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 
         // broadcast the diff values
         broadcast_cr_single_sub(cur_diff_L1, 0);
-        broadcast_cr_single_sub(cur_diff_Linf, 0);
+        broadcast_cr_single_sub(cur_diff_Linf, 0); // dead lock
         if (if_test) {
             broadcast_cr_single_sub(cur_err_L1, 0);
             broadcast_cr_single_sub(cur_err_Linf, 0);
         }
 
         //if (iter_count==0)
-        //  std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+        // MNMN: please don't leave this line active when pushing your commit.
+        // MNMN: because std::cout/endl is very slow when called in the loop.
+        //std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
 
         // debug store temporal T fields
         //io.write_tmp_tau_h5(grid, iter_count);
@@ -656,6 +688,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
 
     // initialize delta and Tadj_loc (here we use the array tau_old instead of delta for memory saving)
     if (subdom_main)
+        // init_delta_and_Tadj(grid, IP);
         init_delta_and_Tadj(grid, IP);
 
     if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
@@ -736,6 +769,7 @@ iter_end:
 }
 
 
+
 void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
     if(if_verbose) std::cout << "initializing delta and Tadj" << std::endl;
 
@@ -750,99 +784,73 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
     }
 
     // set the contributions of stations from the each station
-    std::vector<SrcRec>& receivers = IP.get_rec_points(id_sim_src); // get receivers
-
     int DEBUG_REC_COUNT = 0;
 
     // loop all receivers
-    for (auto& rec: receivers) {
+    // MNMN this loop checks all the receivers, even unrelated ones for this source. (rec_map is a unique map of all receivers)
+    for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
+
+        // "iter->second" is the receiver, with the class SrcRecInfo
+        if (iter->second.adjoint_source == 0)
+            continue;
+
         CUSTOMREAL delta_lon = grid.get_delta_lon();
         CUSTOMREAL delta_lat = grid.get_delta_lat();
         CUSTOMREAL delta_r   = grid.get_delta_r();
 
-        if(!rec.is_rec_pair){        // absolute travel time
-            // get positions
-            CUSTOMREAL rec_lon = rec.lon*DEG2RAD;
-            CUSTOMREAL rec_lat = rec.lat*DEG2RAD;
-            CUSTOMREAL rec_r = depth2radius(rec.dep);
 
-            // check if the receiver is in this subdomain
-            if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
-                grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
-                grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
+        // get positions
+        CUSTOMREAL rec_lon = iter->second.lon*DEG2RAD;
+        CUSTOMREAL rec_lat = iter->second.lat*DEG2RAD;
+        CUSTOMREAL rec_r = depth2radius(iter->second.dep);
 
-                DEBUG_REC_COUNT++;
+        // check if the receiver is in this subdomain
+        if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
+            grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
+            grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
 
-                // descretize receiver position (LOCAL ID)
-                int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
-                int j_rec_loc =  std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
-                int k_rec_loc =  std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
+            DEBUG_REC_COUNT++;
 
-                // discretized receiver position
-                CUSTOMREAL dis_rec_lon = grid.p_loc_1d[i_rec_loc];
-                CUSTOMREAL dis_rec_lat = grid.t_loc_1d[j_rec_loc];
-                CUSTOMREAL dis_rec_r   = grid.r_loc_1d[k_rec_loc];
+            // descretize receiver position (LOCAL ID)
+            int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
+            int j_rec_loc =  std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
+            int k_rec_loc =  std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
 
-                // relative position errors
-                CUSTOMREAL e_lon = std::min(_1_CR,(rec_lon - dis_rec_lon)/delta_lon);
-                CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
-                CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
+            // discretized receiver position
+            CUSTOMREAL dis_rec_lon = grid.p_loc_1d[i_rec_loc];
+            CUSTOMREAL dis_rec_lat = grid.t_loc_1d[j_rec_loc];
+            CUSTOMREAL dis_rec_r   = grid.r_loc_1d[k_rec_loc];
 
-                // set delta values
-                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += rec.t_adj*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += rec.t_adj*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += rec.t_adj*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += rec.t_adj*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += rec.t_adj*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec.t_adj*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec.t_adj*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec.t_adj*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            // relative position errors
+            CUSTOMREAL e_lon = std::min(_1_CR,(rec_lon - dis_rec_lon)/delta_lon);
+            CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
+            CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
+
+            // precision error for std::floor
+            if (e_lon == _1_CR) {
+                e_lon = _0_CR;
+                i_rec_loc++;
             }
-        } else {        // differential travel time
-
-            for(int index_rec = 0; index_rec < 2; index_rec++){
-                // get positions
-                CUSTOMREAL rec_lon = rec.lon_pair[index_rec]*DEG2RAD;
-                CUSTOMREAL rec_lat = rec.lat_pair[index_rec]*DEG2RAD;
-                CUSTOMREAL rec_r = depth2radius(rec.dep_pair[index_rec]);
-                CUSTOMREAL rec_adj = rec.ddt_adj_pair[index_rec];
-
-                // check if the receiver is in this subdomain
-                if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
-                    grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
-                    grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
-
-                    DEBUG_REC_COUNT++;
-
-                    // descretize receiver position (LOCAL ID)
-                    int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
-                    int j_rec_loc =  std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
-                    int k_rec_loc =  std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
-
-                    // discretized receiver position
-                    CUSTOMREAL dis_rec_lon = grid.p_loc_1d[i_rec_loc];
-                    CUSTOMREAL dis_rec_lat = grid.t_loc_1d[j_rec_loc];
-                    CUSTOMREAL dis_rec_r   = grid.r_loc_1d[k_rec_loc];
-
-                    // relative position errors
-                    CUSTOMREAL e_lon = std::min(_1_CR,(rec_lon - dis_rec_lon)/delta_lon);
-                    CUSTOMREAL e_lat = std::min(_1_CR,(rec_lat - dis_rec_lat)/delta_lat);
-                    CUSTOMREAL e_r   = std::min(_1_CR,(rec_r   - dis_rec_r)  /delta_r);
-
-                    // set delta values
-                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += rec_adj*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += rec_adj*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += rec_adj*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += rec_adj*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += rec_adj*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec_adj*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec_adj*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-                    grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec_adj*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-
-                }
+            if (e_lat == _1_CR) {
+                e_lat = _0_CR;
+                j_rec_loc++;
+            }
+            if (e_r == _1_CR) {
+                e_r = _0_CR;
+                k_rec_loc++;
             }
 
+            // set delta values
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += iter->second.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += iter->second.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += iter->second.adjoint_source*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += iter->second.adjoint_source*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += iter->second.adjoint_source*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += iter->second.adjoint_source*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += iter->second.adjoint_source*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += iter->second.adjoint_source*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
         }
+
 
     }
 
@@ -896,6 +904,10 @@ void Iterator::fix_boundary_Tadj(Grid& grid) {
 
 void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, int&kkr){
 
+    bool check_out = false;
+    int iip_out = 24;
+    int jjt_out = 29;
+    int kkr_out = 38;
     // preparations
 
     count_cand = 0;
@@ -1079,12 +1091,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "body case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                                << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                                << ", " << std::endl;
+                }
 
 
             }
@@ -1184,12 +1196,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "surface case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                                << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                                << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                                << ", " << std::endl;
+                }
 
             }
         }
@@ -1287,12 +1299,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "surface, case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+                }
 
             }
         }
@@ -1392,12 +1404,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                     count_cand += 1;
                 }
 
-                // if (iip == 3 && jjt == 2 && kkr == 2){
-                // std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-                //             << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-                //             << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-                //             << ", " << std::endl;
-            // }
+                if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                    std::cout   << "surface case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+                }
 
             }
         }
@@ -1460,12 +1472,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 count_cand += 1;
             }
 
-            // if (iip == 3 && jjt == 2 && kkr == 2){
-            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-            //                 << ", " << std::endl;
-            // }
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+            }
 
         }
 
@@ -1528,12 +1540,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                 count_cand += 1;
             }
 
-            // if (iip == 3 && jjt == 2 && kkr == 2){
-            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-            //                 << ", " << std::endl;
-            // }
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+            }
 
         }
     }
@@ -1590,12 +1602,12 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
 
             }
 
-            // if (iip == 3 && jjt == 2 && kkr == 2){
-            //     std::cout   << "i_case, i_solution, is_causality, tau, T0, tau*t0: "
-            //                 << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
-            //                 << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
-            //                 << ", " << std::endl;
-            // }
+            if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+                std::cout   << "line case, i_case, i_solution, is_causality, tau, T0, tau*t0: "
+                            << i_case << ", " << i_solution << ", " << is_causality << ", " << tmp_tau << ", "
+                            << grid.T0v_loc[I2V(iip,jjt,kkr)] << ", " << grid.T0v_loc[I2V(iip,jjt,kkr)]*tmp_tau
+                            << ", " << std::endl;
+            }
 
             // if satisfying the causility condition, retain it as a canditate solution
             if (is_causality) {
@@ -1608,6 +1620,24 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
     // final, choose the minimum candidate solution as the updated value
     for (int i_cand = 0; i_cand < count_cand; i_cand++){
         grid.tau_loc[I2V(iip, jjt, kkr)] = std::min(grid.tau_loc[I2V(iip, jjt, kkr)], canditate[i_cand]);
+
+        if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+            std::cout << "tau_loc: " << grid.tau_loc[I2V(iip, jjt, kkr)] << ", i_cand: " << i_cand << ", cand: " << canditate[i_cand] << std::endl;
+        }
+
+        if (grid.tau_loc[I2V(iip, jjt, kkr)] < 0 ){
+            std::cout << "error, tau_loc < 0. iip: " << iip << ", jjt: " << jjt << ", kkr: " << kkr << std::endl;
+            exit(1);
+        }
+
+    }
+
+
+
+    if (check_out && iip == iip_out && jjt == jjt_out && kkr == kkr_out){
+            std::cout << "tau_loc: " << grid.tau_loc[I2V(iip, jjt, kkr)]
+                      << ",  T_loc: " << grid.T0v_loc[I2V(iip,jjt,kkr)] * grid.tau_loc[I2V(iip, jjt, kkr)]
+                      << std::endl;
     }
 }
 

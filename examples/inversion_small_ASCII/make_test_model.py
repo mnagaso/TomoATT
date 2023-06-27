@@ -193,6 +193,9 @@ for ir in range(n_srcs[0]):
             lon = pp1deg + ip*(pp2deg-pp1deg)/n_srcs[2]
             lat = tt1deg + it*(tt2deg-tt1deg)/n_srcs[1]
 
+            # put independent name for each source
+            id_dummy = "src_"+str(i_src)
+
             src = [i_src, year_dummy, month_dummy, day_dummy, hour_dummy, minute_dummy, second_dummy, lat, lon, dep, mag_dummy, n_rec[i_src], id_dummy]
             lines.append(src)
 
@@ -204,7 +207,7 @@ for ir in range(n_srcs[0]):
                 elev_rec = elev_recs[i_rec]
                 lon_rec  = lon_recs[i_rec]
                 lat_rec  = lat_recs[i_rec]
-                st_name_dummy = rec_names[i_rec]
+                st_name_dummy = "rec_"+str(rec_names[i_rec])
 
                 rec = [i_src, i_rec, st_name_dummy, lat_rec, lon_rec, elev_rec, phase_dummy, arriv_t_dummy]
                 lines.append(rec)

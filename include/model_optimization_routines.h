@@ -24,24 +24,65 @@
 
 // do model update by gradient descent
 inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
-                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, CUSTOMREAL& v_misfit_inout, bool& first_src, std::ofstream& out_main) {
+                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, std::vector<CUSTOMREAL>& v_misfit_inout, bool& first_src, std::ofstream& out_main) {
 
     // change stepsize
     if (i_inv > 0 && v_obj_inout < old_v_obj) {
         // step_size_init = std::min(0.01, step_size_init*1.03);
-        step_size_init = std::min(1.0, step_size_init);
-        step_size_init_sc = std::min(1.0, step_size_init_sc);
+        step_size_init    = std::min((CUSTOMREAL)1.0, step_size_init);
+        step_size_init_sc = std::min((CUSTOMREAL)1.0, step_size_init_sc);
     } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
         // step_size_init = std::max(0.00001, step_size_init*0.97);
-        step_size_init = std::max(0.00001, step_size_init*step_size_decay);
-        step_size_init_sc = std::max(0.00001, step_size_init_sc*step_size_decay);
+        step_size_init    = std::max((CUSTOMREAL)0.00001, step_size_init*step_size_decay);
+        step_size_init_sc = std::max((CUSTOMREAL)0.00001, step_size_init_sc*step_size_decay);
     }
     // output objective function
-    if (myrank==0 && id_sim==0) out_main << std::setw(5) << i_inv \
-                                  << "," << std::setw(15) << v_obj_inout \
-                                  << "," << std::setw(15) << v_misfit_inout \
-                                  << "," << std::setw(15) << step_size_init << std::endl;
-
+    if (myrank==0 && id_sim==0) {
+        out_main << std::setw(5) << i_inv;
+        out_main << "," << std::setw(19) << v_misfit_inout[0];
+        if( IP.data_type.find("abs") != IP.data_type.end())
+            out_main << "," << std::setw(19) << v_misfit_inout[1];
+        if( IP.data_type.find("cs_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[3];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[2];
+        }
+        if( IP.data_type.find("cr_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[2];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[3];
+        }
+        if( IP.data_type.find("tele") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[4];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[4];
+        }
+        out_main << "," << std::setw(19) << v_misfit_inout[5];
+        if( IP.data_type.find("abs") != IP.data_type.end())
+            out_main << "," << std::setw(19) << v_misfit_inout[6];
+        if( IP.data_type.find("cs_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[8];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[7];
+        }
+        if( IP.data_type.find("cr_dif") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[7];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[8];
+        }
+        if( IP.data_type.find("tele") != IP.data_type.end()){
+            if (IP.get_is_srcrec_swap())
+                out_main << "," << std::setw(19) << v_misfit_inout[9];
+            else
+                out_main << "," << std::setw(19) << v_misfit_inout[9];
+        }
+        out_main << std::setw(19) << step_size_init << std::endl;
+    }
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
 
@@ -54,6 +95,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // make station correction
     IP.station_correction_update(step_size_init_sc);
 
+    // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
     if (subdom_main && IP.get_is_verbose_output()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
@@ -132,7 +174,8 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
         // if the new objective function value is larger than the old one, make the step width to be half of the previous one
         diff_obj = v_obj_new - v_obj_old;
 
-        if (diff_obj > _0_CR) {
+        if ( diff_obj > _0_CR // if the objective function value is larger than the old one
+          || std::abs(diff_obj/v_obj_old) > MAX_DIFF_RATIO_VOBJ) { // if the objective function reduced too much  ) {
             // print status
             if(myrank == 0 && id_sim ==0)
                 out_main \
@@ -144,7 +187,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
                     << "," << std::setw(15) << v_obj_old << std::endl;
 
             if (subdom_main) grid.restore_fun_xi_eta_bcf();
-            step_size /= _2_CR;
+            step_size *= HALVE_STEP_RATIO;
             set_new_model(grid, step_size);
 
             sub_iter_count++;
@@ -167,6 +210,7 @@ end_of_sub_iteration:
          << "," << std::setw(15) << v_obj_old << " accepted." << std::endl;
 
     v_obj_inout = v_obj_new;
+    step_size_init = step_size/(HALVE_STEP_RATIO)*HALVE_STEP_RESTORAION_RATIO; // use this step size for the next inversion
 
     // write adjoint field
     int next_i_inv = i_inv + 1;

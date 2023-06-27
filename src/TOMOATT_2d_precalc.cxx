@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     split_mpi_comm();
 
     // assign source for each simultaneous run group
-    IP.prepare_src_list();
+    IP.prepare_src_map();
 
     // initialize file IO object
     IO_utils io(IP); // create IO object for main and non-main process as well
