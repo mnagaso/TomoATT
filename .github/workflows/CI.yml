@@ -34,8 +34,9 @@ jobs:
           else
             # Push
             echo "Push request:"
+            COMMIT_COUNT=$(git rev-list --count ${{ github.sha }})
             # Initial commit
-            if [ -z "${{ github.event.before }}" ]; then
+            if [ $COMMIT_COUNT -eq 1 ]; then
               export DIFF=$( git diff --name-only --root $GITHUB_SHA )
               echo "  diff between initial commit: diff against root"
             else
@@ -91,14 +92,23 @@ jobs:
           if [[ ${RUN_CHECKS} -eq 0 ]]; then echo "nothing to check, exiting..."; exit 1; fi
 
   macosCheck:
-    name:  Test on Mac
+    name: Test on Mac
     runs-on: macos-latest
     needs: changesCheck
 
     steps:
     - uses: actions/checkout@v3
 
+    - name: Cache dependencies
+      id: cache-brew-omp
+      uses: actions/cache@v2
+      with:
+        path: /usr/local/Homebrew
+        key: ${{ runner.os }}-brew-${{ hashFiles('Brewfile.lock.json') }}
+        restore-keys: ${{ runner.os }}-brew-
+
     - name: Install dependencies
+      if: steps.cache-brew-omp.outputs.cache-hit != 'true'
       run: |
         brew cleanup
         brew install hdf5-mpi
@@ -129,11 +139,20 @@ jobs:
 
     - name: Configure
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        if [ "${{ steps.cache-brew-omp.outputs.cache-hit }}" == "true" ]; then
+          echo "PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH" >> $GITHUB_ENV
+          echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+          echo "OMPI_MCA_rmaps_base_oversubscribe=1" >> $GITHUB_ENV
+          echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
+          echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
+          echo "TERM=xterm" >> $GITHUB_ENV
+        fi
+
+        cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
 
     - name: Build
       run: |
-        cmake --build ${{github.workspace}}/build -j2
+        cmake --build ${{ github.workspace }}/build -j2
 
   linuxCheck:
     name: Test on ${{ matrix.os }}
@@ -311,8 +330,6 @@ jobs:
     - name: Run test
       env:
         TESTDIR: examples/1_forward_accuracy_1st_upwind_isotropic/
-      run: ./.github/scripts/run_test_1.sh
+      run: ./.github/scripts/run_test.sh
       shell: bash
-
-
 
