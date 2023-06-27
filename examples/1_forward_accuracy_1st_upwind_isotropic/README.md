@@ -28,3 +28,5 @@ The numerical error in a mesh of 81^3 is:  0.056 s (mean),  0.046 s (std),  0.20
 The numerical error in a mesh of 121^3 is:  0.038 s (mean),  0.032 s (std),  0.143 (max), order of accuracy is  0.99
 The numerical error in a mesh of 161^3 is:  0.028 s (mean),  0.025 s (std),  0.110 (max), order of accuracy is  1.00
 
+(PS: order of accuracy is close to 1, indicating the eikonal solver is correct and has a firts order of accuracy)
+
