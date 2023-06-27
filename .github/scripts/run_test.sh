@@ -38,9 +38,7 @@ my_test(){
 # test example
 cd $dir
 
-if [ "$TESTDIR" == "examples/inversion_small/" ]; then
-    echo "Running inversion_small example..."
-fi
+echo "Running test case in a work directory: $WORKDIR"
 
 # run the test
 ./run_this_example.sh
@@ -58,10 +56,14 @@ echo `date`
 echo
 
 # check the result
-my_test
-
-# clean up
-rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
+if [ "$TESTDIR" == "examples/inversion_small/" ]; then
+    my_test
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
+elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+fi
 
 echo
 echo "test finished successfully!"
