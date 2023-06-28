@@ -147,6 +147,9 @@ jobs:
           echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
           echo "TERM=xterm" >> $GITHUB_ENV
         fi
+        echo ""
+        echo "mpicc version: $(mpicc --version), path: $(which mpicc)"
+        echo "mpic++ version: $(mpic++ --version), path: $(which mpic++)"
 
         echo "CC=mpicc" >> $GITHUB_ENV
         echo "CXX=mpic++" >> $GITHUB_ENV
