@@ -101,11 +101,10 @@ jobs:
 
     - name: Cache dependencies
       id: cache-brew-omp
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: $(brew --prefix)
-        key: ${{ runner.os }}-brew-${{ hashFiles('Brewfile.lock.json') }}
-        restore-keys: ${{ runner.os }}-brew-
+        key: ${{ runner.os }}-brew-${{ hashFiles('.config/brew/Brewfile') }}
 
     - name: Install dependencies
       if: steps.cache-brew-omp.outputs.cache-hit != 'true'
