@@ -147,7 +147,8 @@ jobs:
           echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
           echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
           echo "TERM=xterm" >> $GITHUB_ENV
-          echo "PATH=/Applications/Xcode_14.2.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:$PATH" >> $GITHUB_ENV
+          ls -l /usr/local/Cellar/hdf5-mpi/
+          echo "PATH=/usr/local/Cellar/hdf5-mpi/bin:$PATH" >> $GITHUB_ENV
           echo "exports:"
           export
           echo ""
