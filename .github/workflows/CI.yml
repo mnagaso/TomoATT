@@ -147,8 +147,8 @@ jobs:
           echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
           echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
           echo "TERM=xterm" >> $GITHUB_ENV
-          ls -l /usr/local/Cellar/hdf5-mpi/
-          echo "PATH=/usr/local/Cellar/hdf5-mpi/bin:$PATH" >> $GITHUB_ENV
+          ls -l /usr/local/Cellar/hdf5-mpi/1.14.1/
+          echo "PATH=/usr/local/Cellar/hdf5-mpi/1.14.1/bin:$PATH" >> $GITHUB_ENV
           echo "exports:"
           export
           echo ""
