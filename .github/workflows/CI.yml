@@ -148,7 +148,9 @@ jobs:
           echo "TERM=xterm" >> $GITHUB_ENV
         fi
 
-        CC=mpicc CXX=mpic++ cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "CXX=mpic++" >> $GITHUB_ENV
+        cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
 
     - name: Build
       run: |
