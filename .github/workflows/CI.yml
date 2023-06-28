@@ -146,11 +146,12 @@ jobs:
           echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
           echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
           echo "TERM=xterm" >> $GITHUB_ENV
+          # add brew prefix
+          echo "PATH=$PATH:/usr/local/bin" >> $GITHUB_ENV
         fi
         echo ""
         echo "h5pcc version: $(mpicc --version), path: $(which mpicc)"
 
-        echo "CC=h5pcc" >> $GITHUB_ENV
         cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
 
     - name: Build
