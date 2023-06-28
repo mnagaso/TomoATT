@@ -107,6 +107,7 @@ jobs:
         key: ${{ runner.os }}-brew-${{ hashFiles('.config/brew/Brewfile') }}
         restore-keys: |
           ${{ runner.os }}-brew-
+
     - name: Install dependencies
       if: steps.cache-brew-omp.outputs.cache-hit != 'true'
       run: |
@@ -146,6 +147,7 @@ jobs:
           echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
           echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
           echo "TERM=xterm" >> $GITHUB_ENV
+          echo "PATH=$PATH:$(brew --prefix)/bin" >> $GITHUB_ENV
         fi
         echo ""
         echo "h5pcc version: $(mpicc --version), path: $(which mpicc)"
