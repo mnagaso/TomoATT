@@ -103,7 +103,7 @@ jobs:
       id: cache-brew-omp
       uses: actions/cache@v3
       with:
-        path: /usr/local
+        path: /usr/local/Cellar
         key: ${{ runner.os }}-brew-${{ hashFiles('.config/brew/Brewfile') }}
         restore-keys: |
           ${{ runner.os }}-brew-
