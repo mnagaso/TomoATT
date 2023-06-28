@@ -95,6 +95,8 @@ jobs:
     name: Test on Mac
     runs-on: macos-latest
     needs: changesCheck
+    # run only on main branch
+    if: github.ref == 'refs/heads/main'
 
     steps:
     - uses: actions/checkout@v3
