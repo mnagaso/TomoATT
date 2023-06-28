@@ -148,11 +148,9 @@ jobs:
           echo "TERM=xterm" >> $GITHUB_ENV
         fi
         echo ""
-        echo "mpicc version: $(mpicc --version), path: $(which mpicc)"
-        echo "mpic++ version: $(mpic++ --version), path: $(which mpic++)"
+        echo "h5pcc version: $(mpicc --version), path: $(which mpicc)"
 
-        echo "CC=mpicc" >> $GITHUB_ENV
-        echo "CXX=mpic++" >> $GITHUB_ENV
+        echo "CC=h5pcc" >> $GITHUB_ENV
         cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
 
     - name: Build
