@@ -103,7 +103,7 @@ jobs:
       id: cache-brew-omp
       uses: actions/cache@v2
       with:
-        path: /usr/local/Homebrew
+        path: $(brew --prefix)
         key: ${{ runner.os }}-brew-${{ hashFiles('Brewfile.lock.json') }}
         restore-keys: ${{ runner.os }}-brew-
 
@@ -146,8 +146,6 @@ jobs:
           echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
           echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
           echo "TERM=xterm" >> $GITHUB_ENV
-          # add brew prefix
-          echo "PATH=$PATH:/usr/local/bin" >> $GITHUB_ENV
         fi
         echo ""
         echo "h5pcc version: $(mpicc --version), path: $(which mpicc)"
