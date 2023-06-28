@@ -99,16 +99,17 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Cache dependencies
-      id: cache-brew-omp
-      uses: actions/cache@v2
-      with:
-        path: /usr/local/Homebrew
-        key: ${{ runner.os }}-brew-${{ hashFiles('Brewfile.lock.json') }}
-        restore-keys: ${{ runner.os }}-brew-
+    #- name: Cache dependencies
+    #  id: cache-brew-omp
+    #  uses: actions/cache@v3
+    #  with:
+    #    path: /usr/local/Cellar
+    #    key: ${{ runner.os }}-brew-${{ hashFiles('.config/brew/Brewfile') }}
+    #    restore-keys: |
+    #      ${{ runner.os }}-brew-
 
     - name: Install dependencies
-      if: steps.cache-brew-omp.outputs.cache-hit != 'true'
+      #if: steps.cache-brew-omp.outputs.cache-hit != 'true'
       run: |
         brew cleanup
         brew install hdf5-mpi
@@ -139,14 +140,23 @@ jobs:
 
     - name: Configure
       run: |
-        if [ "${{ steps.cache-brew-omp.outputs.cache-hit }}" == "true" ]; then
-          echo "PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH" >> $GITHUB_ENV
-          echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
-          echo "OMPI_MCA_rmaps_base_oversubscribe=1" >> $GITHUB_ENV
-          echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
-          echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
-          echo "TERM=xterm" >> $GITHUB_ENV
-        fi
+        #if [ "${{ steps.cache-brew-omp.outputs.cache-hit }}" == "true" ]; then
+        #  echo "PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH" >> $GITHUB_ENV
+        #  echo "OMP_NUM_THREADS=1" >> $GITHUB_ENV
+        #  echo "OMPI_MCA_rmaps_base_oversubscribe=1" >> $GITHUB_ENV
+        #  echo "OMPI_MCA_rmaps_base_inherit=1" >> $GITHUB_ENV
+        #  echo "OMPI_MCA_btl=self,tcp" >> $GITHUB_ENV
+        #  echo "TERM=xterm" >> $GITHUB_ENV
+        #  echo "ls -l /usr/local/Cellar/hdf5-mpi/1.14.1/bin"
+        #  ls -l /usr/local/Cellar/hdf5-mpi/1.14.1/bin
+        #  echo "PATH=/usr/local/Cellar/hdf5-mpi/1.14.1/bin:$PATH" >> $GITHUB_ENV
+        #  echo "CC=h5pcc" >> $GITHUB_ENV
+        #  echo "exports:"
+        #  export
+        #  echo ""
+        #fi
+        #echo ""
+        #echo "h5pcc version: $(h5pcc --version), path: $(which h5pcc)"
 
         cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
 
