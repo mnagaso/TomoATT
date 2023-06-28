@@ -148,7 +148,6 @@ jobs:
         fi
         echo ""
         echo "h5pcc version: $(mpicc --version), path: $(which mpicc)"
-        echo ""
 
         cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
 
