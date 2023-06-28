@@ -148,9 +148,7 @@ jobs:
           echo "TERM=xterm" >> $GITHUB_ENV
         fi
 
-        cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-          -DMPI_CXX_COMPILER=mpic++ \
-          -DMPI_C_COMPILER=mpicc
+        CC=mpicc CXX=mpic++ cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
 
     - name: Build
       run: |
