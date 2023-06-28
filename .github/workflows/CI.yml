@@ -105,7 +105,8 @@ jobs:
       with:
         path: $(brew --prefix)
         key: ${{ runner.os }}-brew-${{ hashFiles('.config/brew/Brewfile') }}
-
+        restore-keys: |
+          ${{ runner.os }}-brew-
     - name: Install dependencies
       if: steps.cache-brew-omp.outputs.cache-hit != 'true'
       run: |
