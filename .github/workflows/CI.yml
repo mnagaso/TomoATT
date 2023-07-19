@@ -342,8 +342,6 @@ jobs:
     - name: Run test
       env:
         TESTDIR: examples/1_forward_accuracy_1st_upwind_isotropic/
-      run: ./.github/scripts/run_test_1.sh
+      run: ./.github/scripts/run_test.sh
       shell: bash
-
-
 
