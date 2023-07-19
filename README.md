@@ -1,7 +1,7 @@
 # TomoATT 
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
-
+[![CI](https://github.com/mnagaso/TomoATT/actions/workflows/CI.yml/badge.svg?branch=devel)](https://github.com/mnagaso/TomoATT/actions/workflows/CI.yml)
 
 ![logo](docs/logo/TomoATT_logo_2.png)
 
