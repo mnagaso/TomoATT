@@ -35,7 +35,6 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
     }
 }
 
-
 std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name_sim_src) {
 
     CUSTOMREAL obj           = 0.0;
