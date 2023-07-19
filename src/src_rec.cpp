@@ -755,41 +755,49 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                 } else if (tmp_data.is_rec_pair) {
                     tmp_data.is_rec_pair            = false;
                     tmp_data.is_src_pair            = true;
+
                     tmp_data.id_src_pair            = data.id_rec_pair;
                     tmp_data.name_src_pair          = data.name_rec_pair;
+
                     tmp_data.id_rec                 = data.id_src;
                     tmp_data.name_rec               = data.name_src;
-                    tmp_data.cr_dif_travel_time_obs = data.cs_dif_travel_time_obs;
 
-                    tmp_data.name_rec = tmp_data.name_rec;
-                    tmp_data.id_rec   = tmp_data.id_rec;
+                    tmp_data.cr_dif_travel_time_obs = data.cs_dif_travel_time_obs;
 
                     tmp_data.id_rec_pair            = {-1, -1};
                     tmp_data.name_rec_pair          = {"unknown", "unknown"};
-                    //tmp_data.id_src_single          = -1;
 
                     tmp_data.name_src = tmp_data.name_src_pair[0];
+                    tmp_data.id_src   = tmp_data.id_src_pair[0];
                     tmp_data_map[tmp_data.name_src_pair[0]][tmp_data.name_rec].push_back(tmp_data);
+
                     tmp_data.name_src = tmp_data.name_src_pair[1];
+                    tmp_data.id_src   = tmp_data.id_src_pair[1];
                     tmp_data_map[tmp_data.name_src_pair[1]][tmp_data.name_rec].push_back(tmp_data);
 
                 // common receiver differential traveltime  ->  common source differential traveltime
                 } else if (tmp_data.is_src_pair) {
                     tmp_data.is_src_pair            = false;
                     tmp_data.is_rec_pair            = true;
+
                     tmp_data.id_rec_pair            = data.id_src_pair;
                     tmp_data.name_rec_pair          = data.name_src_pair;
+
                     tmp_data.id_src                 = data.id_rec;
                     tmp_data.name_src               = data.name_rec;
+
                     tmp_data.cs_dif_travel_time_obs = data.cr_dif_travel_time_obs;
 
                     tmp_data.id_src_pair            = {-1, -1};
                     tmp_data.name_src_pair          = {"unknown", "unknown"};
-                    tmp_data.id_rec                 = -1;
 
                     tmp_data.name_rec = tmp_data.name_rec_pair[0];
+                    tmp_data.id_rec   = tmp_data.id_rec_pair[0];
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec_pair[0]].push_back(tmp_data);
+
+
                     tmp_data.name_rec = tmp_data.name_rec_pair[1];
+                    tmp_data.id_rec   = tmp_data.id_rec_pair[1];
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec_pair[1]].push_back(tmp_data);
                 }
 
@@ -818,7 +826,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     }
 
     // check new version of src rec data
-    if (if_verbose){     // check by Chen Jing
+    if (if_verbose){    
         std::cout << "do swap sources and receivers" << std::endl;
 
         for(auto iter = src_map.begin(); iter != src_map.end(); iter++){
