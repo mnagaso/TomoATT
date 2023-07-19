@@ -114,9 +114,9 @@ void parse_src_rec_file(std::string& src_rec_file, \
         try { // check failure of parsing line by line
 
             // store values into structure
+            SrcRecInfo src;
             if (cc == 0){
-                SrcRecInfo src;
-
+                
                 src.id     = std::stoi(tokens[0]);
                 src.year   = std::stoi(tokens[1]);
                 src.month  = std::stoi(tokens[2]);
@@ -207,6 +207,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     cc++;
 
                 } else {
+                    // read common source differential traveltime (cs_dif) or common receiver differential traveltime (cr_dif) 
+
                     std::vector<std::string> rec_name_list_one_line;
 
                     // read differential traveltime
@@ -224,21 +226,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     // store temporary receiver name list for each source
                     rec_name_list_one_line.push_back(rec.name);
 
-                    SrcRecInfo rec2;
-                    rec2.id   = std::stoi(tokens[6]);
-                    rec2.name = tokens[7];
-                    rec2.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
-                    rec2.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
-                    rec2.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
-
-                    // new receiver detected by its name
-                    if(rec_map.find(rec2.name) == rec_map.end())
-                        rec_map[rec2.name] = rec2;
-
-                    // store temporary receiver name list for each source
-                    rec_name_list_one_line.push_back(rec2.name);
-
-                    // common source differential traveltime
+                    
+                    // differential traveltime data
                     DataInfo data;
                     if (tokens.size() > 13)
                         rec_weight = static_cast<CUSTOMREAL>(std::stod(tokens[13]));
@@ -246,10 +235,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         rec_weight = 1.0; // default weight
 
                     data.data_weight = src_weight * rec_weight;
-                    data.weight      = data.data_weight * cs_dif_time_local_weight;
                     data.phase       = tokens[11];
-
-                    data.is_rec_pair            = true;
+                  
                     //data.id_src_single          = src_id;
                     //data.name_src_single        = src_name;
                     // use common variables with src-rec data
@@ -259,14 +246,61 @@ void parse_src_rec_file(std::string& src_rec_file, \
                     // store the id and name of the first receiver (just used for key of the data_map)
                     data.id_rec          = rec.id;
                     data.name_rec        = rec.name;
+                    
+                    // determine this data is cr_dif or cs_dif
+                    bool is_cr_dif = tokens[11].find("cr")!=std::string::npos;
 
-                    data.id_rec_pair            = {rec.id, rec2.id};
-                    data.name_rec_pair          = {rec.name, rec2.name};
-                    data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
+                    if (is_cr_dif) {
+                        // cr_dif data
+                        SrcRecInfo src2;
+                        src2.id   = std::stoi(tokens[6]);
+                        src2.name = tokens[7];
+                        src2.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                        src2.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                        src2.dep  = static_cast<CUSTOMREAL>(std::stod(tokens[10])); // convert elevation in meter to depth in km
 
-                    data_map[data.name_src][data.name_rec_pair[0]].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
-                    //data_map[data.name_src][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
+                        // new source detected by its name
+                        if (src_map.find(src2.name) == src_map.end())
+                            src_map[src2.name] = src2;
 
+                        // store temporary receiver(source) name list for each source
+                        rec_name_list_one_line.push_back(src2.name);
+
+                        // common receiver differential traveltime data
+                        data.is_src_pair            = true;
+                        data.id_src_pair            = {src.id, src2.id};
+                        data.name_src_pair          = {src.name, src2.name};
+                        data.cr_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
+                        data_map[data.name_src_pair[0]][data.name_rec].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
+
+                        data.weight = data.data_weight * cr_dif_time_local_weight;
+                    } else {
+                        // cs_dif data     
+                        SrcRecInfo rec2;                   
+                        rec2.id   = std::stoi(tokens[6]);
+                        rec2.name = tokens[7];
+                        rec2.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[8])); // in degree
+                        rec2.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[9])); // in degree
+                        rec2.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[10])/1000.0); // convert elevation in meter to depth in km
+
+                        // new receiver detected by its name
+                        if(rec_map.find(rec2.name) == rec_map.end())
+                            rec_map[rec2.name] = rec2;
+
+                        // store temporary receiver name list for each source
+                        rec_name_list_one_line.push_back(rec2.name);
+
+                        // common source differential traveltime data
+                        data.is_rec_pair            = true;
+                        data.id_rec_pair            = {rec.id, rec2.id};
+                        data.name_rec_pair          = {rec.name, rec2.name};
+                        data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
+                        data_map[data.name_src][data.name_rec_pair[0]].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
+                        //data_map[data.name_src][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
+
+                        data.weight = data.data_weight * cs_dif_time_local_weight;
+                    }
+                    
                     // store receiver name of onle receiver line in src rec file
                     rec_name_list.push_back(rec_name_list_one_line);
 
