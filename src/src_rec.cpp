@@ -271,9 +271,10 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         data.id_src_pair            = {src.id, src2.id};
                         data.name_src_pair          = {src.name, src2.name};
                         data.cr_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
-                        data_map[data.name_src_pair[0]][data.name_rec].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
-
+                        
                         data.weight = data.data_weight * cr_dif_time_local_weight;
+
+                        data_map[data.name_src_pair[0]][data.name_rec].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
                     } else {
                         // cs_dif data     
                         SrcRecInfo rec2;                   
@@ -295,10 +296,10 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         data.id_rec_pair            = {rec.id, rec2.id};
                         data.name_rec_pair          = {rec.name, rec2.name};
                         data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
-                        data_map[data.name_src][data.name_rec_pair[0]].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
-                        //data_map[data.name_src][data.name_rec_pair[1]].push_back(data); // TODO: check if name_rec_pair[1] should be stored as well
-
+                        
                         data.weight = data.data_weight * cs_dif_time_local_weight;
+
+                        data_map[data.name_src][data.name_rec_pair[0]].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
                     }
                     
                     // store receiver name of onle receiver line in src rec file
@@ -741,9 +742,14 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
             for (const auto& data: it_rec->second){ // loop over datainfo
 
                 DataInfo tmp_data = data;
-
-                // absolute traveltime  ->  absolute traveltime
+             
                 if (tmp_data.is_src_rec){
+                    // absolute traveltime  ->  absolute traveltime
+                    // |    abs     |               |    abs     |
+                    // |  s0 - r0   |       ->      |  r0 - s0   |
+                    // |            |               |            |
+                    // |            |               |            |
+
                     tmp_data.id_src   = data.id_rec;
                     tmp_data.name_src = data.name_rec;
                     tmp_data.id_rec   = data.id_src;
@@ -751,8 +757,14 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
 
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
 
-                // common source differential traveltime  ->  common receiver differential traveltime
+                
                 } else if (tmp_data.is_rec_pair) {
+                    // common source differential traveltime  ->  common receiver differential traveltime
+                    // |    cs_dif     |            |          cr_dif           |
+                    // |   s0 - r1     |    ->      |   r1 - s0     r2 - s0     |
+                    // |   |           |            |        |           |      |
+                    // |   r2          |            |        r2          r1     |
+
                     tmp_data.is_rec_pair            = false;
                     tmp_data.is_src_pair            = true;
 
@@ -767,16 +779,28 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.id_rec_pair            = {-1, -1};
                     tmp_data.name_rec_pair          = {"unknown", "unknown"};
 
+                    // one data 
                     tmp_data.name_src = tmp_data.name_src_pair[0];
                     tmp_data.id_src   = tmp_data.id_src_pair[0];
-                    tmp_data_map[tmp_data.name_src_pair[0]][tmp_data.name_rec].push_back(tmp_data);
+                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
 
-                    tmp_data.name_src = tmp_data.name_src_pair[1];
-                    tmp_data.id_src   = tmp_data.id_src_pair[1];
-                    tmp_data_map[tmp_data.name_src_pair[1]][tmp_data.name_rec].push_back(tmp_data);
+                    // the other data
+                    // Note: name_src = cr_dif time always represent time(src, rec1) - time(src,rec2). Thus, -1.0 is necessary
+                    // Meanwhile, name_src(key) must equal data.name_src_pair[0] and data.name_src
+                    tmp_data.name_src_pair = {data.name_rec_pair[1],data.name_rec_pair[0]};
+                    tmp_data.cr_dif_travel_time_obs = -1.0 * data.cs_dif_travel_time_obs;
+                    tmp_data.name_src = tmp_data.name_src_pair[0];
+                    tmp_data.id_src   = tmp_data.id_src_pair[0];
+                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
 
-                // common receiver differential traveltime  ->  common source differential traveltime
+                
                 } else if (tmp_data.is_src_pair) {
+                    // common receiver differential traveltime  ->  common source differential traveltime
+                    // |    cr_dif     |        |    cs_dif     |
+                    // |   s0 - r3     |    ->  |   r3 - s0     |
+                    // |        |      |        |   |           |
+                    // |        s1     |        |   s1          |
+
                     tmp_data.is_src_pair            = false;
                     tmp_data.is_rec_pair            = true;
 
@@ -791,14 +815,11 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.id_src_pair            = {-1, -1};
                     tmp_data.name_src_pair          = {"unknown", "unknown"};
 
+                    // only need one data for common source dif
                     tmp_data.name_rec = tmp_data.name_rec_pair[0];
                     tmp_data.id_rec   = tmp_data.id_rec_pair[0];
-                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec_pair[0]].push_back(tmp_data);
+                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
 
-
-                    tmp_data.name_rec = tmp_data.name_rec_pair[1];
-                    tmp_data.id_rec   = tmp_data.id_rec_pair[1];
-                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec_pair[1]].push_back(tmp_data);
                 }
 
            }
@@ -876,6 +897,114 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     std::cout << "Total elapsed time for swapping src rec: " << timer.get_t() << " seconds.\n";
 }
 
+// do not swap source and receiver, process common receiver differential traveltime data
+void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
+                     std::map<std::string, SrcRecInfo> &rec_map, \
+                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map) {
+
+    // do not swap src/rec points
+
+    // Start timer
+    std::string timer_name = "do_not_swap_src_rec";
+    Timer timer(timer_name);
+
+    std::map<std::string, std::map<std::string, std::vector<DataInfo>>> tmp_data_map;// = data_map;
+
+    // for each element of src_map, count the number of rec_map with the same value of
+
+    for (auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){ // loop over src
+        for (auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){ // loop over rec
+            for (const auto& data: it_rec->second){ // loop over datainfo
+
+                DataInfo tmp_data = data;
+
+                // common receiver differential traveltime
+                if (tmp_data.is_src_pair) {
+                    // keep the original data, meanwhile, add cr_dif data with the other source
+                    // |    cr_dif     |            |          cr_dif           |
+                    // |   s0 - r3     |    ->      |   s0 - r3     s1 - r3     |
+                    // |        |      |            |        |           |      |
+                    // |        s1     |            |        s1          s0     |  
+                    tmp_data_map[tmp_data.name_src_pair[0]][tmp_data.name_rec].push_back(tmp_data);     // original data
+
+                    // the other data with the other source. 
+                    // Note: name_src = cr_dif time always represent time(src1, rec) - time(src2,rec). Thus, -1 is necessary
+                    // Meanwhile, name_src(key) must equal name_src_pair[0]
+                    tmp_data.name_src       = data.name_src_pair[1];
+                    tmp_data.id_src         = data.id_src_pair[1];                   
+                    tmp_data.name_src_pair  = {data.name_src_pair[1],data.name_src_pair[0]};
+                    tmp_data.id_src_pair    = {data.id_src_pair[1],data.id_src_pair[0]};
+                    tmp_data.cr_dif_travel_time_obs  = -1.0 * data.cr_dif_travel_time_obs;
+                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
+
+                } else {    // abs and cs_dif data does not change
+                    // abs data and cs_dif data remain unchanged
+                    // |    abs     |    cs_dif     |
+                    // |  s0 - r0   |   s0 - r1     |
+                    // |            |   |           |
+                    // |            |   r2          |
+                    tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
+                }
+
+           }
+        }
+    }
+
+    // replace data_map with swapped data map
+    // TODO tmp_data_map has strange elements here
+    data_map = tmp_data_map;
+
+
+    // check new version of src rec data
+    if (if_verbose){    
+        std::cout << "do swap sources and receivers" << std::endl;
+
+        for(auto iter = src_map.begin(); iter != src_map.end(); iter++){
+            std::cout   << "source id: " << iter->second.id
+                        << ", source name: " << iter->second.name
+                        << std::endl;
+        }
+
+        for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
+            std::cout   << "receiver id: " << iter->second.id
+                        << ", receiver name: " << iter->second.name
+                        << std::endl;
+        }
+
+        for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+            for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+                for(const auto& data: it_rec->second){
+
+                    if (data.is_src_rec){
+                        std::cout   << "key: it_src, it_rec: " << it_src->first << ", " << it_rec->first
+                                    << "absolute traveltime: " << data.travel_time_obs
+                                    << ", source name: "       << data.name_src
+                                    << ", receiver name: "     << data.name_rec
+                                    << std::endl;
+                    } else if (data.is_rec_pair){
+                        std::cout   << "key: it_src, it_rec: "  << it_src->first << ", " << it_rec->first
+                                    << "common source differential traveltime: " << data.cs_dif_travel_time_obs
+                                    << ", source name: "                         << data.name_src
+                                    << ", receiver pair name: "                  << data.name_rec_pair[0]
+                                    << ", "                                      << data.name_rec_pair[1]
+                                    << std::endl;
+                    } else if (data.is_src_pair){
+                        std::cout   << "key: it_src, it_rec: "    << it_src->first << ", " << it_rec->first
+                                    << "common receiver differential traveltime: " << data.cr_dif_travel_time_obs
+                                    << ", source pair name: "                      << data.name_src_pair[0]
+                                    << ", "                                        << data.name_src_pair[1]
+                                    << ", receiver name: "                         << data.name_rec
+                                    << std::endl;
+                    }
+                }
+            }
+        }
+        std::cout << data_map.size() << std::endl;
+    }
+
+    // indicate elapsed time
+    std::cout << "Total elapsed time for not swapping src rec: " << timer.get_t() << " seconds.\n";
+}
 
 
 

@@ -17,21 +17,31 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
         // calculate the travel time of the receiver by interpolation
         for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
             for (auto& data: it_rec->second){
-                if (!data.is_rec_pair){
-                    // store travel time on single receiver and double receivers
+                if (data.is_src_rec){   // absolute traveltime
+                    // store travel time on single receiver and double receivers (what is double receivers? by CHEN Jing)
+                    // store travel time from name_sim_src(src_name) to it_rec->first(rec_name)
                     data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
-                } else {
+                } else if (data.is_rec_pair) {
+                    // store travel time from name_sim_src(src_name) to rec1_name and rec2_name
                     // calculate travel times for two receivers
                     CUSTOMREAL travel_time   = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[0]);
                     CUSTOMREAL travel_time_2 = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[1]);
 
-                    data.travel_time = travel_time;
+                    data.travel_time = travel_time; // (why not travel_time_2 ? by CHEN Jing. )
+                    // if data_map[name_sim_src][name_sim_rec].travel_time represent the synthetic traveltime from "name_sim_src" to "name_sim_rec", Can we guerantee it_rec->first(name_sim_rec) == data.name_rec_pair[0]?
+                    // or we must make sure the above when we read src_rec file and do swap.
+
                     // calculate and store travel time difference
                     data.cs_dif_travel_time = travel_time - travel_time_2;
+                } else if (data.is_src_pair) {
+                    // store travel time from name_sim_src(src1_name) to it_rec->first(rec_name)
+                    data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
+
+                } else {
+                    std::cout << "error type of data" << std::endl;
                 }
             }
         }
-
     }
 }
 
@@ -76,10 +86,11 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
                     IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
-                    // contribute misfit
+                    // contribute total misfit
                     obj     += 1.0 * my_square(syn_time - obs_time)*data.weight;
                     misfit  += 1.0 * my_square(syn_time - obs_time);
 
+                    // contribute misfit of specific type of data
                     if (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region){
                         obj_tele        +=  1.0 * my_square(syn_time - obs_time)*data.weight;
                         misfit_tele     +=  1.0 * my_square(syn_time - obs_time);
@@ -109,10 +120,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
-                        // contribute misfit
-                        //obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        obj     += d_obj;
+                        // contribute total misfit
+                        // because a pair of sources are counted twice, thus * 0.5
+                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
                         //std::cout   << "DEBUG: name_src1: " << name_src1
@@ -125,20 +135,12 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         //            << ", dmisfit: " << 0.5 * my_square(syn_dif_time - obs_dif_time)
                         //            << std::endl;
 
-                        // exit if d_obj is too large
-                        if (d_obj > 100){
-                            std::cout << "d_obj = " << d_obj << std::endl;
-                            std::cout << "syn_dif_time = " << syn_dif_time << std::endl;
-                            std::cout << "obs_dif_time = " << obs_dif_time << std::endl;
-                            std::cout << "data.weight = " << data.weight << std::endl;
-                            exit(1);
-                        }
-
+                        // contribute misfit of specific type of data
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
                             IP.get_rec_point(name_rec).is_out_of_region){
                             obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                            misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);   // because a pair sf sources are counted twice, thus * 0.5
+                            misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);   
                         } else{
                             obj_cr_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                             misfit_cr_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
@@ -152,10 +154,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
-                        // contribute misfit
-                        //obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        CUSTOMREAL d_obj = 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        obj     += d_obj;
+                        // contribute total misfit
+                        // because a pair of sources are counted twice, thus * 0.5
+                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
                         //std::cout   << "DEBUG2: name_src1: " << name_src1
@@ -168,15 +169,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                         //            << ", dmisfit: " << 0.5 * my_square(syn_dif_time - obs_dif_time)
                         //            << std::endl;
 
-                        // exit if d_obj is too large
-                        if (d_obj > 100){
-                            std::cout << "d_obj = " << d_obj << std::endl;
-                            std::cout << "syn_dif_time = " << syn_dif_time << std::endl;
-                            std::cout << "obs_dif_time = " << obs_dif_time << std::endl;
-                            std::cout << "data.weight = " << data.weight << std::endl;
-                            exit(1);
-                        }
-
+                        // contribute misfit of specific type of data
                         if (IP.get_src_point(name_src1).is_out_of_region || \
                             IP.get_src_point(name_src2).is_out_of_region || \
                             IP.get_rec_point(name_rec).is_out_of_region){
@@ -209,7 +202,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
-                    // contribute misfit
+                    // contribute total misfit
                     obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                     misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
 
@@ -222,6 +215,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     //            << std::endl;
 
+                    // contribute misfit of specific type of data
                     if (IP.get_src_point(name_src).is_out_of_region || \
                         IP.get_rec_point(name_rec1).is_out_of_region || \
                         IP.get_rec_point(name_rec2).is_out_of_region){

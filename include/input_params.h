@@ -136,7 +136,7 @@ public:
 
     // src id <-> src name relations
     std::vector<std::string>                           src_id2name;          // name list of sources belonging to this simultaneous group
-    std::vector<std::string>                           src_id2name_comm_rec; // name list of sources with common source
+    std::vector<std::string>                           src_id2name_comm_rec; // name list of sources with common receiver
     std::vector<std::string>                           src_id2name_2d;       // name list of sources assigned for 2d solver.
     std::vector<std::string>                           src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
     std::vector<std::string>                           src_id2name_back;     // back up of name list of all sources (this will not be swapped)

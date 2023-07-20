@@ -868,7 +868,17 @@ void InputParams::prepare_src_map(){
 
     // read src rec file
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
-
+        // read source and receiver data, e.g.,
+        //      event info:               s0
+        //      data info1 (abs):         r0  
+        //      data info2 (cr_dif):      r1  r2
+        //      data info3 (cs_dif):      r3  s1       
+        //
+        // we generate the data structure:
+        // |    abs     |    cs_dif     |    cr_dif     |
+        // |  s0 - r0   |   s0 - r1     |   s0 - r3     |
+        // |            |   |           |        |      |
+        // |            |   r2          |        s1     |
         parse_src_rec_file(src_rec_file, \
                            src_map_all, \
                            rec_map_all, \
@@ -904,9 +914,35 @@ void InputParams::prepare_src_map(){
                                               min_lat, max_lat, min_lon, max_lon, min_dep, max_dep);
 
         if (swap_src_rec) {
-            // here only reginal events will be processed
+            // we swap the source and receviver for regional earthquakes. After that, we have new data structure:
+            // Before:
+            // |    abs     |    cs_dif     |    cr_dif     |
+            // |  s0 - r0   |   s0 - r1     |   s0 - r3     |
+            // |            |   |           |        |      |
+            // |            |   r2          |        s1     |
+            //
+            // After:    
+            // |    abs     |          cr_dif           |    cs_dif     |
+            // |  r0 - s0   |   r1 - s0     r2 - s0     |   r3 - s0     |
+            // |            |        |           |      |   |           |
+            // |            |        r2          r1     |   s1          |
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
             do_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all);
+            
+        } else {
+            // if we do not swap source and receiver, we need to process cr_dif to include the other source. After that, we have new data structure:
+            // Before:
+            // |    abs     |    cs_dif     |    cr_dif     |
+            // |  s0 - r0   |   s0 - r1     |   s0 - r3     |
+            // |            |   |           |        |      |
+            // |            |   r2          |        s1     |
+            //
+            // After:  
+            // |    abs     |    cs_dif     |          cr_dif           |
+            // |  s0 - r0   |   s0 - r1     |   s0 - r3     s1 - r3     |
+            // |            |   |           |        |           |      |
+            // |            |   r2          |        s1          s0     |           
+            do_not_swap_src_rec(src_map_all, rec_map_all, data_map_all); 
         }
 
         // concatenate resional and teleseismic src/rec points
@@ -969,7 +1005,7 @@ void InputParams::prepare_src_map(){
 }
 
 
-// generate a list of events which involve common source double difference traveltime
+// generate a list of events which involve common receiver double difference traveltime
 void InputParams::generate_src_map_with_common_receiver(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map_tmp,
                                                       std::map<std::string, SrcRecInfo>& src_map_comm_rec_tmp,
                                                       std::vector<std::string>& src_id2name_comm_rec_tmp){
@@ -1134,7 +1170,7 @@ void InputParams::gather_all_arrival_times_to_main(){
 }
 
 
-// gther tau_opt to main simultaneous run group
+// gather tau_opt to main simultaneous run group
 void InputParams::gather_rec_info_to_main(){
 
     // broadcast total number of recenver to all procs
