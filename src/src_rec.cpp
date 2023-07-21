@@ -113,10 +113,9 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
         try { // check failure of parsing line by line
 
-            // store values into structure
-            SrcRecInfo src;
+            // store values into structure        
             if (cc == 0){
-                
+                SrcRecInfo src;
                 src.id     = std::stoi(tokens[0]);
                 src.year   = std::stoi(tokens[1]);
                 src.month  = std::stoi(tokens[2]);
@@ -180,7 +179,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     // store temporary receiver name list for each source
                     rec_name_list_one_line.push_back(rec.name);
-
+                    rec_name_list_one_line.push_back("abs");
+                    
                     // traveltime data
                     DataInfo data;
                     if (tokens.size() > 8)
@@ -265,11 +265,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                         // store temporary receiver(source) name list for each source
                         rec_name_list_one_line.push_back(src2.name);
-
+                        rec_name_list_one_line.push_back("cr");
                         // common receiver differential traveltime data
                         data.is_src_pair            = true;
-                        data.id_src_pair            = {src.id, src2.id};
-                        data.name_src_pair          = {src.name, src2.name};
+                        data.id_src_pair            = {src_id, src2.id};
+                        data.name_src_pair          = {src_name, src2.name};
                         data.cr_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
                         
                         data.weight = data.data_weight * cr_dif_time_local_weight;
@@ -290,6 +290,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                         // store temporary receiver name list for each source
                         rec_name_list_one_line.push_back(rec2.name);
+                        rec_name_list_one_line.push_back("cs");
 
                         // common source differential traveltime data
                         data.is_rec_pair            = true;
@@ -381,6 +382,14 @@ void parse_src_rec_file(std::string& src_rec_file, \
                                     << ", "                     << data.name_rec_pair[1]
                                     << ", traveltime: "         << data.cs_dif_travel_time_obs
                                     << std::endl;
+                    } else if (data.is_src_pair) {
+                        std::cout   << "source pair name: "     << data.name_src_pair[0]
+                                    << ", "                     << data.name_src_pair[1]
+                                    << ", receiver name: "      << data.name_rec
+                                    << ", traveltime: "         << data.cr_dif_travel_time_obs
+                                    << std::endl;
+                    } else {
+                        std::cout   << "error type of data" << std::endl;
                     }
                 }
            }
@@ -900,7 +909,8 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
 // do not swap source and receiver, process common receiver differential traveltime data
 void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                      std::map<std::string, SrcRecInfo> &rec_map, \
-                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map) {
+                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map,
+                     std::vector<std::string> &src_name_list) {
 
     // do not swap src/rec points
 
@@ -955,9 +965,15 @@ void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
     data_map = tmp_data_map;
 
 
+    // create new src_id2name_all from swapped src_map
+    src_name_list.clear();
+    for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
+        src_name_list.push_back(iter->first);
+    }
+
     // check new version of src rec data
     if (if_verbose){    
-        std::cout << "do swap sources and receivers" << std::endl;
+        std::cout << "do not swap sources and receivers" << std::endl;
 
         for(auto iter = src_map.begin(); iter != src_map.end(); iter++){
             std::cout   << "source id: " << iter->second.id
@@ -977,20 +993,20 @@ void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
 
                     if (data.is_src_rec){
                         std::cout   << "key: it_src, it_rec: " << it_src->first << ", " << it_rec->first
-                                    << "absolute traveltime: " << data.travel_time_obs
+                                    << ", absolute traveltime: " << data.travel_time_obs
                                     << ", source name: "       << data.name_src
                                     << ", receiver name: "     << data.name_rec
                                     << std::endl;
                     } else if (data.is_rec_pair){
                         std::cout   << "key: it_src, it_rec: "  << it_src->first << ", " << it_rec->first
-                                    << "common source differential traveltime: " << data.cs_dif_travel_time_obs
+                                    << ", common source differential traveltime: " << data.cs_dif_travel_time_obs
                                     << ", source name: "                         << data.name_src
                                     << ", receiver pair name: "                  << data.name_rec_pair[0]
                                     << ", "                                      << data.name_rec_pair[1]
                                     << std::endl;
                     } else if (data.is_src_pair){
                         std::cout   << "key: it_src, it_rec: "    << it_src->first << ", " << it_rec->first
-                                    << "common receiver differential traveltime: " << data.cr_dif_travel_time_obs
+                                    << ", common receiver differential traveltime: " << data.cr_dif_travel_time_obs
                                     << ", source pair name: "                      << data.name_src_pair[0]
                                     << ", "                                        << data.name_src_pair[1]
                                     << ", receiver name: "                         << data.name_rec
@@ -1056,20 +1072,24 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
 
     // store the total number of sources
     nsrc_total = n_src;
-
+    std::cout << "ckp1, n_src: " << n_src << std::endl;
     // assign sources to each simulutaneous run group
     for (int i_src = 0; i_src < n_src; i_src++) {
 
         // id of simulutaneous run group to which the i_src-th source belongs
         int dst_id_sim = select_id_sim_for_src(i_src, n_sims);
-
+        std::cout   << "ckp2, dst_id_sim: " << dst_id_sim
+                    << ", size of src_name_list: " << src_name_list.size()
+                    << std::endl;
+        
         // broadcast the source name
         std::string src_name;
         if (id_sim == 0 && subdom_main){
             src_name = src_name_list[i_src];
         }
+        
         broadcast_str_inter_and_intra_sim(src_name, 0);
-
+        std::cout << "ckp3, src_name: " << src_name << std::endl;
         if (id_sim==0){ // sender
 
             if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group

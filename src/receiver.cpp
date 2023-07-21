@@ -27,9 +27,9 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
                     CUSTOMREAL travel_time   = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[0]);
                     CUSTOMREAL travel_time_2 = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[1]);
 
-                    data.travel_time = travel_time; // (why not travel_time_2 ? by CHEN Jing. )
-                    // if data_map[name_sim_src][name_sim_rec].travel_time represent the synthetic traveltime from "name_sim_src" to "name_sim_rec", Can we guerantee it_rec->first(name_sim_rec) == data.name_rec_pair[0]?
-                    // or we must make sure the above when we read src_rec file and do swap.
+                    // Because name_sim_src = data.name_src; it_rec->first = name_rec = name_rec_pair[0]
+                    // Thus data.travel_time is travel_time
+                    data.travel_time = travel_time; 
 
                     // calculate and store travel time difference
                     data.cs_dif_travel_time = travel_time - travel_time_2;
@@ -146,7 +146,12 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                             misfit_cr_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
                         }
 
-                    } else if (name_sim_src == name_src2) {
+                    } else if (name_sim_src == name_src2) {     // after modification, this case does not occur. since  name_sim_src = data.name_src = data.name_src_pair[0]
+
+                        std::cout   << "cs_dif data strcuture error occur. name_sim_src: " << name_sim_src 
+                                    << ", data.name_src: " << data.name_src 
+                                    << ", data.name_src_pair[0]: " << data.name_src_pair[0] 
+                                    << std::endl; 
 
                         CUSTOMREAL syn_dif_time   = - data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
@@ -244,16 +249,17 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
     broadcast_cr_single_sub(misfit_cr_dif,0);
     broadcast_cr_single_sub(misfit_tele,0);
 
-    allsum[0] = obj;
-    allsum[1] = obj_abs;
-    allsum[2] = obj_cs_dif;
-    allsum[3] = obj_cr_dif;
-    allsum[4] = obj_tele;
-    allsum[5] = misfit;
-    allsum[6] = misfit_abs;
-    allsum[7] = misfit_cs_dif;
-    allsum[8] = misfit_cr_dif;
-    allsum[9] = misfit_tele;
+    allsum = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele};
+    // allsum[0] = obj;
+    // allsum[1] = obj_abs;
+    // allsum[2] = obj_cs_dif;
+    // allsum[3] = obj_cr_dif;
+    // allsum[4] = obj_tele;
+    // allsum[5] = misfit;
+    // allsum[6] = misfit_abs;
+    // allsum[7] = misfit_cs_dif;
+    // allsum[8] = misfit_cr_dif;
+    // allsum[9] = misfit_tele;
 
     return allsum;
 

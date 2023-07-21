@@ -1,0 +1,2 @@
+ # iter,            obj(11),         obj_abs(3),      obj_cs_dif(3),      obj_cr_dif(5),             misfit,         misfit_abs,      misfit_cs_dif,      misfit_cr_dif,          step_size,
+    0,            10.9943,            3.00109,            3.00337,            4.98987,            10.9943,            3.00109,            3.00337,            4.98987               0.02

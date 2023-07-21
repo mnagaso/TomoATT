@@ -942,7 +942,7 @@ void InputParams::prepare_src_map(){
             // |  s0 - r0   |   s0 - r1     |   s0 - r3     s1 - r3     |
             // |            |   |           |        |           |      |
             // |            |   r2          |        s1          s0     |           
-            do_not_swap_src_rec(src_map_all, rec_map_all, data_map_all); 
+            do_not_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all); 
         }
 
         // concatenate resional and teleseismic src/rec points
@@ -1445,11 +1445,11 @@ void InputParams::write_src_rec_file(int i_inv) {
                     << std::endl;
 
                 // iterate data lines of i_src
-                for (auto& name_rec : rec_id2name_back[i_src]){
-                    // name_rec has one or two elements (two for rec pair data)
+                for (auto& name_data : rec_id2name_back[i_src]){
+                    // name_data has one receiver (r0), or a receiver pair (r0+r1), or one source and one receiver (r0+s1)
 
                     std::vector<DataInfo> v_data;
-                    std::string name_rec1, name_rec2; // receivers' name (before swap)
+                    std::string name_rec1, name_rec2, name_src2; // receivers' (or source's) name (before swap)
 
                     // data type flag
                     bool src_rec_data  = false;
@@ -1457,23 +1457,39 @@ void InputParams::write_src_rec_file(int i_inv) {
                     bool rec_pair_data = false;
 
                     // store reference of data to be written
-                    DataInfo& data = const_cast<DataInfo&>(data_map_back[name_src][name_rec.at(0)].at(0)); // dummy copy
+                    DataInfo& data = const_cast<DataInfo&>(data_map_back[name_src][name_data.at(0)].at(0)); // dummy copy
 
-                    name_rec1 = name_rec.at(0); // before swap, this data line is src_rec data or src_pair data
-                    if (name_rec.size() == 2) { // before swap, this data line is rec_pair data
-                        name_rec2 = name_rec.at(1);
-                        rec_pair_data = true;
-                        if (get_is_srcrec_swap())
-                            data = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
-                        else
-                            data = get_data_rec_pair(data_map_all, name_src, name_rec1, name_rec2);
-                    } else {
+                    if (name_data.size() == 2 && name_data.at(1) == "abs"){   // abs data
+                        name_rec1 = name_data.at(0);
                         src_rec_data = true;
                         if (get_is_srcrec_swap())
                             data = get_data_src_rec(data_map_all[name_rec1][name_src]);
                         else
                             data = get_data_src_rec(data_map_all[name_src][name_rec1]);
+
+                    } else if (name_data.size() == 3 && name_data.at(2) == "cs"){  // cs_dif data
+                        name_rec1 = name_data.at(0);
+                        name_rec2 = name_data.at(1);
+                        rec_pair_data = true;
+                        if (get_is_srcrec_swap())       // cs_dif data -> cr_dif data
+                            data = get_data_src_pair(data_map_all, name_rec1, name_rec2, name_src);
+                        else                            // cs_dif data
+                            data = get_data_rec_pair(data_map_all, name_src, name_rec1, name_rec2);
+
+                    } else if (name_data.size() == 3 && name_data.at(2) == "cr"){   // cr_dif data
+                        name_rec1 = name_data.at(0);
+                        name_src2 = name_data.at(1);
+                        src_pair_data = true;
+                        if (get_is_srcrec_swap())       // cr_dif -> cs_dif
+                            data = get_data_rec_pair(data_map_all, name_rec1, name_src, name_src2);                            
+                        else                            // cr_dif 
+                            data = get_data_src_pair(data_map_all, name_src, name_src2, name_rec1);
+
+                    } else{     // error data type
+                        std::cerr << "Error: incorrect data type in rec_id2name_back" << std::endl;
+                        exit(1);
                     }
+
 
                     // absolute traveltime data
                     if (src_rec_data){
@@ -1525,7 +1541,34 @@ void InputParams::write_src_rec_file(int i_inv) {
 
                     // common receiver differential traveltime
                     } else if (src_pair_data){
-                        // TODO: implement this later
+                        // common receiver differential traveltime data
+                        CUSTOMREAL  cr_dif_travel_time;
+
+                        if (get_is_srcrec_swap()){ // reverse swap src and rec
+                            cr_dif_travel_time = data.cs_dif_travel_time;
+                        } else {// do not swap
+                            cr_dif_travel_time = data.cr_dif_travel_time;
+                        }
+
+                        SrcRecInfo& rec1 = rec_map_back[name_rec1];
+                        SrcRecInfo& src2 = src_map_back[name_src2];
+
+                        // receiver pair line : id_src id_rec1 name_rec1 lat1 lon1 elevation_m1 id_rec2 name_rec2 lat2 lon2 elevation_m2 phase differential_arival_time
+                        ofs << std::setw(7) << std::right << std::setfill(' ') <<  src.id << " "
+                            << std::setw(5) << std::right << std::setfill(' ') <<  rec1.id << " "
+                            << rec1.name << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lat << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec1.lon << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << -1.0*rec1.dep*1000.0 << " "
+                            << std::setw(5) << std::right << std::setfill(' ') << src2.id << " "
+                            << src2.name << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src2.lat << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src2.lon << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << src2.dep << " "
+                            << data.phase << " "
+                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << cr_dif_travel_time << " "
+                            << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
+                            << std::endl;
                     }
 
                 } // end of rec loop
@@ -1536,6 +1579,7 @@ void InputParams::write_src_rec_file(int i_inv) {
             ofs.close();
 
             // only for source relocation, output relocated observational data for tomography
+            // TODO: under development
             if (run_mode == SRC_RELOCATION) {
                 src_rec_file_out = output_dir + "/src_rec_file_src_reloc_obs.dat";
 
