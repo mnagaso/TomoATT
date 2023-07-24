@@ -72,7 +72,7 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # parameters for optim_method 0 (grad_descent)
   optim_method_0:
     step_length_decay: 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
-    #####step_size_sc: 0.001 # ... # use it also ?
+    step_length_sc: 0.001 # ... # use it also ?
 
   # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)
   optim_method_1_2:
@@ -183,6 +183,8 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 
 
 
+# --- parameters for core solver ---------------------------------------------------------
+# --- please do not change the following parameters unless you know what you are doing ---
 
 ########################################################################
 #            Scheme of Eikonal solver (fast sweeping method)           #

@@ -1,4 +1,4 @@
-version: 2
+version: 3
 
 #################################################
 #            computational domian               #
@@ -21,15 +21,15 @@ parallel: # parameters for parallel computation
   n_sims: 1  # number of simultanoues runs
   ndiv_rtp: [1, 2, 2]  # number of subdivision on each direction
   nproc_sub: 2  # number of processors for sweep parallelization
-  use_gpu: true # 1 if use gpu (EXPERIMENTAL)
+  use_gpu: false # 1 if use gpu (EXPERIMENTAL)
 
 output_setting:
   output_dir: ./OUTPUT_FILES/ # path to output director (default is ./OUTPUT_FILES/)
-  is_output_source_field: false # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
-  is_output_model_dat: false # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
-  is_output_final_model: true # output merged final model or not.                                     1 for yes; 0 for no;  default: 1
-  is_output_in_process: true # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1
-  is_single_precision_output: false # output results in single precision or not.                            1 for yes; 0 for no;  default: 0
+  output_source_field: false # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
+  output_model_dat: false # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
+  output_final_model: true # output merged final model or not.                                     1 for yes; 0 for no;  default: 1
+  output_in_process: true # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1
+  single_precision_output: false # output results in single precision or not.                            1 for yes; 0 for no;  default: 0
   verbose_output_level: 0 # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
   output_file_format: 0
 
@@ -57,7 +57,7 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # parameters for optim_method 0 (grad_descent)
   optim_method_0:
     step_length_decay: 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
-    #####step_size_sc: 0.001 # ... # use it also ?
+    step_length_sc: 0.001 # ... # use it also ?
 
   # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)
   optim_method_1_2:
@@ -168,6 +168,8 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 
 
 
+# --- parameters for core solver ---------------------------------------------------------
+# --- please do not change the following parameters unless you know what you are doing ---
 
 ########################################################################
 #            Scheme of Eikonal solver (fast sweeping method)           #
