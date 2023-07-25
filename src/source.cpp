@@ -84,8 +84,8 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
                 std::cout << "src positions lon(deg) lat(deg) depth(km):    " << src_lon*RAD2DEG << " " << src_lat*RAD2DEG << " " << radius2depth(src_r) << std::endl;
                 std::cout << "src discretized position id i j k        :    " << i_src_loc       << " " << j_src_loc       << " " << k_src_loc    << std::endl;
                 std::cout << "src discretized position lon lat r       :    " << dis_src_lon << " " << dis_src_lat << " " << dis_src_r << std::endl;
-                std::cout << "src position error lon lat r             :    " << error_lon   << " " << error_lat   << " " << error_r   << std::endl;
-                std::cout << "src relative position error lon lat r    :    " << dis_src_err_lon << " " << dis_src_err_lat << " " << dis_src_err_r << std::endl;
+                std::cout << "src position bias lon lat r             :    " << error_lon   << " " << error_lat   << " " << error_r   << std::endl;
+                std::cout << "src relative position bias lon lat r    :    " << dis_src_err_lon << " " << dis_src_err_lat << " " << dis_src_err_r << std::endl;
                 std::cout << "delta lon lat r                          :    " << delta_lon   << " " << delta_lat   << " " << delta_r   << std::endl;
             }
             if(if_verbose) std::cout << "source is in the subdomain of rank " << myrank << std::endl;
