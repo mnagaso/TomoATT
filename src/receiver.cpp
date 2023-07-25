@@ -66,8 +66,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                 //
                 if (data.is_src_rec){
 
-                    // skip if this data is not belongs to this simulation group
-                    // (this happens only the first group, because the first group retains all data)
+                    // error check (data.name_src must be equal to name_sim_src)
                     if (data.name_src != name_sim_src) continue;
 
                     std::string name_src      = data.name_src;
@@ -98,8 +97,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     std::string name_src2 = data.name_src_pair[1];
                     std::string name_rec  = data.name_rec;
 
-                    // skip if this data is not belongs to this simulation group
-                    // (this happens only the first group, because the first group retains all data)
+                    // error check (data.name_src_pair must be equal to name_sim1 and name_sim2)
                     if (name_sim_src != name_src1 && name_sim_src != name_src2) continue;
 
                     if (name_sim_src == name_src1){
