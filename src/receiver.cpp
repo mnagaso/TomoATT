@@ -29,7 +29,7 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
 
                     // Because name_sim_src = data.name_src; it_rec->first = name_rec = name_rec_pair[0]
                     // Thus data.travel_time is travel_time
-                    data.travel_time = travel_time; 
+                    data.travel_time = travel_time;
 
                     // calculate and store travel time difference
                     data.cs_dif_travel_time = travel_time - travel_time_2;
@@ -75,8 +75,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                 //
                 if (data.is_src_rec){
 
-                    // skip if this data is not belongs to this simulation group
-                    // (this happens only the first group, because the first group retains all data)
+                    // error check (data.name_src_pair must be equal to name_sim1 and name_sim2)
                     if (data.name_src != name_sim_src) continue;
 
                     std::string name_src      = data.name_src;
@@ -108,8 +107,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     std::string name_src2 = data.name_src_pair[1];
                     std::string name_rec  = data.name_rec;
 
-                    // skip if this data is not belongs to this simulation group
-                    // (this happens only the first group, because the first group retains all data)
+                    // error check (data.name_src_pair must be equal to name_sim1 and name_sim2)
                     if (name_sim_src != name_src1 && name_sim_src != name_src2) continue;
 
                     if (name_sim_src == name_src1){
@@ -140,51 +138,18 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                             IP.get_src_point(name_src2).is_out_of_region || \
                             IP.get_rec_point(name_rec).is_out_of_region){
                             obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                            misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);   
+                            misfit_tele     += 0.5 * my_square(syn_dif_time - obs_dif_time);
                         } else{
                             obj_cr_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                             misfit_cr_dif   += 0.5 * my_square(syn_dif_time - obs_dif_time);
                         }
 
-                    } else if (name_sim_src == name_src2) {     // after modification, this case does not occur. since  name_sim_src = data.name_src = data.name_src_pair[0]
-
-                        std::cout   << "cs_dif data strcuture error occur. name_sim_src: " << name_sim_src 
-                                    << ", data.name_src: " << data.name_src 
-                                    << ", data.name_src_pair[0]: " << data.name_src_pair[0] 
-                                    << std::endl; 
-
-                        CUSTOMREAL syn_dif_time   = - data.cr_dif_travel_time;
-                        CUSTOMREAL obs_dif_time   = - data.cr_dif_travel_time_obs;
-                        CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
-
-                        IP.set_adjoint_source(name_rec, adjoint_source);
-
-                        // contribute total misfit
-                        // because a pair of sources are counted twice, thus * 0.5
-                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        misfit  += 0.5 * my_square(syn_dif_time - obs_dif_time);
-
-                        //std::cout   << "DEBUG2: name_src1: " << name_src1
-                        //            << ", name_src2: " << name_src2
-                        //            << ", name_rec: " << name_rec
-                        //            << ", dif: " << data.cr_dif_travel_time
-                        //            << ", obsdif: " << data.cr_dif_travel_time_obs
-                        //            << ", dobj: " << d_obj
-                        //            << ", obj: " << obj
-                        //            << ", dmisfit: " << 0.5 * my_square(syn_dif_time - obs_dif_time)
-                        //            << std::endl;
-
-                        // contribute misfit of specific type of data
-                        if (IP.get_src_point(name_src1).is_out_of_region || \
-                            IP.get_src_point(name_src2).is_out_of_region || \
-                            IP.get_rec_point(name_rec).is_out_of_region){
-                            obj_tele        +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                            misfit_tele     +=  0.5 * my_square(syn_dif_time - obs_dif_time);
-                        } else{
-                            obj_cr_dif      +=  0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                            misfit_cr_dif   +=  0.5 * my_square(syn_dif_time - obs_dif_time);
-                        }
-
+                    } else if (name_sim_src == name_src2) { // after modification, this case does not occur. since  name_sim_src = data.name_src = data.name_src_pair[0]
+                        // thus, this part indicate an error.
+                        std::cout   << "cs_dif data strcuture error occur. name_sim_src: " << name_sim_src
+                                    << ", data.name_src: " << data.name_src
+                                    << ", data.name_src_pair[0]: " << data.name_src_pair[0]
+                                    << std::endl;
                     } else {
                         std::cout << "error match of data in function: calculate_adjoint_source() " << std::endl;
                     }
@@ -250,19 +215,8 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
     broadcast_cr_single_sub(misfit_tele,0);
 
     allsum = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele};
-    // allsum[0] = obj;
-    // allsum[1] = obj_abs;
-    // allsum[2] = obj_cs_dif;
-    // allsum[3] = obj_cr_dif;
-    // allsum[4] = obj_tele;
-    // allsum[5] = misfit;
-    // allsum[6] = misfit_abs;
-    // allsum[7] = misfit_cs_dif;
-    // allsum[8] = misfit_cr_dif;
-    // allsum[9] = misfit_tele;
 
     return allsum;
-
 }
 
 
