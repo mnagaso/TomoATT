@@ -190,7 +190,7 @@ inline bool if_test = false;
 
 // verboose mode
 inline bool if_verbose = false;
-// inline bool if_verbose = true;
+//inline bool if_verbose = true;
 
 // if use gpu
 inline int use_gpu = 0; // 0: no, 1: yes
