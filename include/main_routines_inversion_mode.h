@@ -107,7 +107,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         io.change_group_name_for_source();
 
         // output initial field
-        if(first_src && IP.get_is_output_source_field()) {
+        if(first_src && IP.get_if_output_source_field()) {
             if (subdom_main) {
                 // write true solution
                 if (if_test){
@@ -158,7 +158,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // output the result of forward simulation
         // ignored for inversion mode.
-        if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
+        if (subdom_main && !line_search_mode && IP.get_if_output_source_field()) {
 
             // output T (result timetable)
             io.write_T(grid, i_inv);
@@ -196,7 +196,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP, name_sim_src);
 
-            if (subdom_main && !line_search_mode && IP.get_is_output_source_field()) {
+            if (subdom_main && !line_search_mode && IP.get_if_output_source_field()) {
                 // adjoint field will be output only at the end of subiteration
                 // output the result of adjoint simulation
                 io.write_adjoint_field(grid,i_inv);

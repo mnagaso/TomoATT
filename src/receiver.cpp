@@ -731,12 +731,12 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
             CUSTOMREAL obj = iter->second.vobj_src_reloc;
             CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
             if (i_iter != 0 && old_obj < obj){    // if obj increase, decrease the step length of this (swapped) source
-                // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+                // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
                 iter->second.step_length_max *= step_length_decay;
-                // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+                // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
             }
             // std::cout << "id_sim: " << id_sim << ", name: " << iter->first << ", obj: " << obj << ", old obj: " << old_obj << ", step_length_max: " << iter->second.step_length_max
-            //           << ", step_size_decay: " << step_size_decay
+            //           << ", step_length_decay: " << step_length_decay
             //           << std::endl;
         }
 
@@ -914,7 +914,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 }
 
 
-                if (IP.rec_map[name_rec].step_length_max < TOL_STEP_SIZE){
+                if (IP.rec_map[name_rec].step_length_max < TOL_step_length){
                     IP.rec_map[name_rec].is_stop = true;
                 }
 

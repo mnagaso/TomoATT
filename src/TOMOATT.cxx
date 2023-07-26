@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     }
 
     // output final state of the model
-    if (IP.get_is_output_final_model()) {
+    if (IP.get_if_output_final_model()) {
         io.write_final_model(grid, IP);
     }
 

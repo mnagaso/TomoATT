@@ -28,13 +28,13 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     // change stepsize
     if (i_inv > 0 && v_obj_inout < old_v_obj) {
-        // step_size_init = std::min(0.01, step_size_init*1.03);
-        step_size_init    = std::min((CUSTOMREAL)1.0, step_size_init);
-        step_size_init_sc = std::min((CUSTOMREAL)1.0, step_size_init_sc);
+        // step_length_init = std::min(0.01, step_length_init*1.03);
+        step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
+        step_length_init_sc = std::min((CUSTOMREAL)1.0, step_length_init_sc);
     } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
-        // step_size_init = std::max(0.00001, step_size_init*0.97);
-        step_size_init    = std::max((CUSTOMREAL)0.00001, step_size_init*step_size_decay);
-        step_size_init_sc = std::max((CUSTOMREAL)0.00001, step_size_init_sc*step_size_decay);
+        // step_length_init = std::max(0.00001, step_length_init*0.97);
+        step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
+        step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
     }
     // output objective function
     if (myrank==0 && id_sim==0) {
@@ -81,7 +81,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
             else
                 out_main << "," << std::setw(19) << v_misfit_inout[9];
         }
-        out_main << std::setw(19) << step_size_init << std::endl;
+        out_main << std::setw(19) << step_length_init << std::endl;
     }
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
@@ -90,13 +90,13 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     smooth_kernels(grid, IP);
 
     // update the model with the initial step size
-    set_new_model(grid, step_size_init);
+    set_new_model(grid, step_length_init);
 
     // make station correction
-    IP.station_correction_update(step_size_init_sc);
+    IP.station_correction_update(step_length_init_sc);
 
     // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
-    if (subdom_main && IP.get_is_verbose_output()) {
+    if (subdom_main && IP.get_verbose_output_level()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -112,7 +112,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     }
 
     // writeout temporary xdmf file
-    if (IP.get_is_verbose_output())
+    if (IP.get_verbose_output_level())
         io.update_xdmf_file();
 
     synchronize_all_world();
@@ -124,7 +124,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
 inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
 
-    CUSTOMREAL step_size = step_size_init; // step size init is global variable
+    CUSTOMREAL step_length = step_length_init; // step size init is global variable
     CUSTOMREAL diff_obj  = - 9999999999;
     CUSTOMREAL v_obj_old = v_obj_inout;
     CUSTOMREAL v_obj_new = 0.0;
@@ -141,10 +141,10 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
 
     // update the model with the initial step size
-    set_new_model(grid, step_size);
+    set_new_model(grid, step_length);
 
 
-    if (subdom_main && IP.get_is_verbose_output()) {
+    if (subdom_main && IP.get_verbose_output_level()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -160,7 +160,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     }
 
     // writeout temporary xdmf file
-    if (IP.get_is_verbose_output())
+    if (IP.get_verbose_output_level())
         io.update_xdmf_file();
 
     synchronize_all_world();
@@ -181,14 +181,14 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
                 out_main \
                            << std::setw(5) << i_inv \
                     << "," << std::setw(5) << sub_iter_count \
-                    << "," << std::setw(15) << step_size \
+                    << "," << std::setw(15) << step_length \
                     << "," << std::setw(15) << diff_obj \
                     << "," << std::setw(15) << v_obj_new \
                     << "," << std::setw(15) << v_obj_old << std::endl;
 
             if (subdom_main) grid.restore_fun_xi_eta_bcf();
-            step_size *= HALVE_STEP_RATIO;
-            set_new_model(grid, step_size);
+            step_length *= HALVE_STEP_RATIO;
+            set_new_model(grid, step_length);
 
             sub_iter_count++;
         } else {
@@ -204,17 +204,17 @@ end_of_sub_iteration:
         out_main \
                 << std::setw(5) << i_inv \
          << "," << std::setw(5) << sub_iter_count \
-         << "," << std::setw(15) << step_size \
+         << "," << std::setw(15) << step_length \
          << "," << std::setw(15) << diff_obj \
          << "," << std::setw(15) << v_obj_new \
          << "," << std::setw(15) << v_obj_old << " accepted." << std::endl;
 
     v_obj_inout = v_obj_new;
-    step_size_init = step_size/(HALVE_STEP_RATIO)*HALVE_STEP_RESTORAION_RATIO; // use this step size for the next inversion
+    step_length_init = step_length/(HALVE_STEP_RATIO)*HALVE_STEP_RESTORAION_RATIO; // use this step size for the next inversion
 
     // write adjoint field
     int next_i_inv = i_inv + 1;
-    if (subdom_main && IP.get_is_output_source_field())
+    if (subdom_main && IP.get_if_output_source_field())
         io.write_adjoint_field(grid,next_i_inv);
 
 
@@ -230,7 +230,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     CUSTOMREAL v_obj_cur     = v_obj_inout;    // store objective function value
     CUSTOMREAL td            = _0_CR;          // wolfes right step
     CUSTOMREAL tg            = _0_CR;          // wolfes left step
-    CUSTOMREAL step_size     = step_size_init; // step size init is global variable
+    CUSTOMREAL step_length     = step_length_init; // step size init is global variable
     CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
     std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(2);
@@ -259,7 +259,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     // backup the initial model
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
 
-    if (subdom_main && IP.get_is_verbose_output()) {
+    if (subdom_main && IP.get_verbose_output_level()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -275,31 +275,31 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     }
 
     // writeout temporary xdmf file
-    if (IP.get_is_verbose_output())
+    if (IP.get_verbose_output_level())
         io.update_xdmf_file();
 
     synchronize_all_world();
 
-    //initial_guess_step(grid, step_size, 1.0);
+    //initial_guess_step(grid, step_length, 1.0);
     bool init_bfgs = false;
 
     // do line search for finding a good step size
     while (optim_method == LBFGS_MODE) {
         // decide initial step size
         if (i_inv == 0 && subiter_count == 0) {
-            initial_guess_step(grid, step_size, step_size_init);
+            initial_guess_step(grid, step_length, step_length_init);
             init_bfgs = true;
-            step_size_lbfgs=step_size_init; // store input step length
+            step_length_lbfgs=step_length_init; // store input step length
         }
         else if (i_inv == 1 && subiter_count == 0) {
-            initial_guess_step(grid, step_size, step_size_lbfgs*LBFGS_RELATIVE_STEP_SIZE);
-            //step_size *= 0.1;
+            initial_guess_step(grid, step_length, step_length_lbfgs*LBFGS_RELATIVE_step_length);
+            //step_length *= 0.1;
         }
         //if (i_inv==0) init_bfgs=true;
 
         // update the model
         if(subdom_main) grid.restore_fun_xi_eta_bcf();
-        set_new_model(grid, step_size, init_bfgs);
+        set_new_model(grid, step_length, init_bfgs);
 
         // check current objective function value
         v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
@@ -321,16 +321,16 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         q_k_new = compute_q_k(grid);
 
         // check if the current step size satisfies the wolfes conditions
-        CUSTOMREAL store_step_size = step_size;
-        bool wolfe_cond_ok = check_wolfe_cond(grid, v_obj_cur, v_obj_new, q_k, q_k_new, td, tg, step_size);
+        CUSTOMREAL store_step_length = step_length;
+        bool wolfe_cond_ok = check_wolfe_cond(grid, v_obj_cur, v_obj_new, q_k, q_k_new, td, tg, step_length);
 
         // log out
         if(myrank == 0 && id_sim ==0)
             out_main \
                      << std::setw(5)  << i_inv \
               << "," << std::setw(5)  << subiter_count \
-              << "," << std::setw(15) << store_step_size \
-              << "," << std::setw(15) << (v_obj_new-v_obj_cur)/store_step_size \
+              << "," << std::setw(15) << store_step_length \
+              << "," << std::setw(15) << (v_obj_new-v_obj_cur)/store_step_length \
               << "," << std::setw(15) << v_obj_new \
               << "," << std::setw(15) << v_obj_reg \
               << "," << std::setw(15) << q_k_new \
@@ -348,7 +348,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
             // store current model and gradient
             store_model_and_gradient(grid, i_inv+1);
 
-            step_size_init = step_size; // use current step size for the next iteration
+            step_length_init = step_length; // use current step size for the next iteration
 
             goto end_of_subiteration;
         } else if (subiter_count > max_sub_iterations){

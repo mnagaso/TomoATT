@@ -79,9 +79,9 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
             if (have_tele){
                 out_main << std::setw(20) << "misfit_tele,";
             }
-            out_main << std::setw(20) << "step_size," << std::endl;
+            out_main << std::setw(20) << "step_length," << std::endl;
         } else if (optim_method == LBFGS_MODE)
-            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_size," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
+            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_length," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
                      << std::setw(16) << "v_obj_reg," << std::setw(16) << "q_new,"  << std::setw(16) << "q_k,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
                      << std::setw(16) << "c1*q_k,"    << std::setw(16) << "c2*q_k," << std::setw(6)  << "step ok"    << std::endl;
 
@@ -104,7 +104,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     std::ofstream out_main; // close() is not mandatory
     prepare_header_line(IP, out_main);
 
-    if (subdom_main && id_sim==0 && IP.get_is_output_model_dat()==1) {
+    if (subdom_main && id_sim==0 && IP.get_if_output_model_dat()==1) {
         io.write_concerning_parameters(grid, 0, IP);
     }
 
@@ -184,14 +184,14 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             io.change_group_name_for_model();
 
             // write out model info
-            if (IP.get_is_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2){
+            if (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2){
                 io.write_vel(grid, i_inv+1);
                 io.write_xi( grid, i_inv+1);
                 io.write_eta(grid, i_inv+1);
             }
             //io.write_zeta(grid, i_inv); // TODO
 
-            if (IP.get_is_verbose_output()){
+            if (IP.get_verbose_output_level()){
                 io.write_a(grid,   i_inv+1);
                 io.write_b(grid,   i_inv+1);
                 io.write_c(grid,   i_inv+1);
@@ -200,8 +200,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             }
 
             // output model_parameters_inv_0000.dat
-            if (IP.get_is_output_model_dat() \
-            && (IP.get_is_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2))
+            if (IP.get_if_output_model_dat() \
+            && (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2))
                 io.write_concerning_parameters(grid, i_inv + 1, IP);
 
         }

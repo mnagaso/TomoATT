@@ -88,10 +88,10 @@ inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
 inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
 inline const CUSTOMREAL GAMMA          = 0.0;
 inline const CUSTOMREAL r_kermel_mask  = 40.0;
-inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
-inline CUSTOMREAL       step_size_init_sc = 0.001; // update step size limit (for station correction)
-inline CUSTOMREAL       step_size_decay = 0.9;
-inline CUSTOMREAL       step_size_lbfgs;
+inline CUSTOMREAL       step_length_init = 0.01; // update step size limit
+inline CUSTOMREAL       step_length_init_sc = 0.001; // update step size limit (for station correction)
+inline CUSTOMREAL       step_length_decay = 0.9;
+inline CUSTOMREAL       step_length_lbfgs;
 
 // halve steping params
 inline const CUSTOMREAL HALVE_STEP_RATIO = 0.7;
@@ -183,7 +183,7 @@ inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
-inline const CUSTOMREAL LBFGS_RELATIVE_STEP_SIZE = 0.3; // relative step size for the second and later iteration
+inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 0.3; // relative step size for the second and later iteration
 
 // variables for test
 inline bool if_test = false;
@@ -193,7 +193,7 @@ inline bool if_verbose = false;
 //inline bool if_verbose = true;
 
 // if use gpu
-inline int use_gpu = 0; // 0: no, 1: yes
+inline bool use_gpu;
 
 // total number of sources in the srcrec file
 inline int nsrc_total = 0;
@@ -233,7 +233,7 @@ inline CUSTOMREAL       step_length_src_reloc      = 2.0;  // step length for so
 inline CUSTOMREAL       step_length_decay          = 0.9;
 inline const int        N_ITER_MAX_SRC_RELOC       = 501;  // max iteration for source location
 inline CUSTOMREAL       TOL_SRC_RELOC              = 1e-3; // threshold of the norm of gradient for stopping single earthquake location
-inline const CUSTOMREAL TOL_STEP_SIZE              = 1e-2; // threshold of the max step size for stopping single earthquake location
+inline const CUSTOMREAL TOL_step_length              = 1e-2; // threshold of the max step size for stopping single earthquake location
 inline CUSTOMREAL       max_change_dep             = 10.0;
 inline CUSTOMREAL       max_change_lat             = 1.0;
 inline CUSTOMREAL       max_change_lon             = 1.0;

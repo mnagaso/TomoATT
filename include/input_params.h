@@ -62,9 +62,9 @@ public:
     int get_run_mode()        {return run_mode;};
     int get_n_inversion_grid(){return n_inversion_grid;};
 
-    int get_type_dep_inv(){return type_dep_inv;};
-    int get_type_lat_inv(){return type_lat_inv;};
-    int get_type_lon_inv(){return type_lon_inv;};
+    int get_type_invgrid_dep(){return type_invgrid_dep;};
+    int get_type_invgrid_lat(){return type_invgrid_lat;};
+    int get_type_invgrid_lon(){return type_invgrid_lon;};
 
     // type = 0:
     int        get_n_inv_r()    {return n_inv_r;};
@@ -89,18 +89,18 @@ public:
 
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
-    bool get_is_output_source_field() {return is_output_source_field;};
-    bool get_is_output_model_dat()    {return is_output_model_dat;};
-    bool get_is_verbose_output()      {return is_verbose_output;};
-    bool get_is_output_final_model()  {return is_output_final_model;};
-    bool get_is_output_in_process()   {return is_output_in_process;};
+    bool get_if_output_source_field()     {return output_source_field;};
+    bool get_if_output_model_dat()        {return output_model_dat;};
+    bool get_if_output_final_model()      {return output_final_model;};
+    bool get_if_output_in_process()       {return output_in_process;};
+    bool get_if_single_precision_output() {return single_precision_output;};
+    int  get_verbose_output_level()       {return verbose_output_level;}; // #TODO: modify codes for verbose_output_level > 1
 
     bool get_is_inv_slowness()        {return is_inv_slowness;};
     bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
     bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
     CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
 
-    bool get_is_single_precision_output() {return is_single_precision_output;};
 
     // prepare source list for this simulation group
     void prepare_src_map();
@@ -206,7 +206,7 @@ private:
     // inversion
     int run_mode=0;                                     // do inversion or not (0: no, 1: yes)
     int n_inversion_grid=1;                             // number of inversion grid
-    int type_dep_inv=0, type_lat_inv=0, type_lon_inv=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
+    int type_invgrid_dep=0, type_invgrid_lat=0, type_invgrid_lon=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
     // type = 0: uniform inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
     // inversion grid
@@ -220,6 +220,18 @@ private:
     CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;            // flexibly designed inversion grid
     int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1; // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
+
+    // date usage setting and weights
+    bool use_abs = false; // use absolute travel time or not
+    bool use_cs  = false; // use common source double difference or not
+    bool use_cr  = false; // use common receiver double difference or not
+    static const int n_weight = 4;
+    CUSTOMREAL residual_weight_abs[n_weight];
+    CUSTOMREAL residual_weight_cs[n_weight];
+    CUSTOMREAL residual_weight_cr[n_weight];
+    CUSTOMREAL distance_weight_abs[n_weight];
+    CUSTOMREAL azimuthal_weight_cs[n_weight];
+    CUSTOMREAL azimuthal_weight_cr[n_weight];
 
     // convergence setting
     CUSTOMREAL conv_tol;       // convergence tolerance
@@ -249,11 +261,11 @@ private:
     void check_contradictions();
 
     // output setting
-    bool is_output_source_field = false; // output out_data_sim_X.h or not.
-    bool is_output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
-    bool is_verbose_output      = false; // output verbose information or not.
-    bool is_output_final_model  = true;  // output merged final model or not.
-    bool is_output_in_process   = true;  // output merged model at each inv iteration or not.
+    bool output_source_field = false; // output out_data_sim_X.h or not.
+    bool output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
+    bool output_final_model  = true;  // output merged final model or not.
+    bool output_in_process   = true;  // output merged model at each inv iteration or not.
+    int verbose_output_level    = 0;   // output verbose information or not.
 
     // inversion setting
     bool is_inv_slowness = true;  // update slowness (velocity) or not.
@@ -264,7 +276,7 @@ private:
     bool is_sta_correction = false; // apply station correction or not.
 
     // single precision (float) output mode
-    bool is_single_precision_output = false;
+    bool single_precision_output = false;
 
 };
 

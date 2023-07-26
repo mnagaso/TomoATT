@@ -6,7 +6,9 @@ InputParams::InputParams(std::string& input_file){
         // parse input files
         YAML::Node config = YAML::LoadFile(input_file);
 
-        // read domain information
+        //
+        // domain
+        //
         if (config["domain"]) {
             // minimum and maximum depth
             if (config["domain"]["min_max_dep"]) {
@@ -31,6 +33,9 @@ InputParams::InputParams(std::string& input_file){
             }
         }
 
+        //
+        // source
+        //
         if (config["source"]) {
             // source depth(km) lat lon
             if (config["source"]["src_dep_lat_lon"]) {
@@ -43,17 +48,15 @@ InputParams::InputParams(std::string& input_file){
                 src_rec_file_exist = true;
                 src_rec_file = config["source"]["src_rec_file"].as<std::string>();
             }
-
+            // swap src rec
             if (config["source"]["swap_src_rec"]) {
-                int tmp_swap = config["source"]["swap_src_rec"].as<int>();
-                if (tmp_swap == 1) {
-                    swap_src_rec = true;
-                } else {
-                    swap_src_rec = false;
-                }
+                swap_src_rec = config["source"]["swap_src_rec"].as<bool>();
             }
         }
 
+        //
+        // model
+        //
         if (config["model"]) {
             // model file path
             if (config["model"]["init_model_path"]) {
@@ -65,142 +68,263 @@ InputParams::InputParams(std::string& input_file){
             }
         }
 
-        if (config["inversion"]) {
-            // do inversion or not
-            if (config["inversion"]["run_mode"]) {
-                run_mode = config["inversion"]["run_mode"].as<int>();
+        //
+        // parallel
+        //
+        if (config["parallel"]) {
+            // number of simultaneous runs
+            if(config["parallel"]["n_sims"]) {
+                n_sims = config["parallel"]["n_sims"].as<int>();
             }
-            // number of inversion grid
-            if (config["inversion"]["n_inversion_grid"]) {
-                n_inversion_grid = config["inversion"]["n_inversion_grid"].as<int>();
+            // number of subdomains
+            if (config["parallel"]["ndiv_rtp"]) {
+                ndiv_k = config["parallel"]["ndiv_rtp"][0].as<int>();
+                ndiv_j = config["parallel"]["ndiv_rtp"][1].as<int>();
+                ndiv_i = config["parallel"]["ndiv_rtp"][2].as<int>();
             }
+            // number of processes in each subdomain
+            if (config["parallel"]["nproc_sub"]) {
+                n_subprocs = config["parallel"]["nproc_sub"].as<int>();
+            }
+            // gpu flag
+            if (config["parallel"]["use_gpu"]) {
+                use_gpu = config["parallel"]["use_gpu"].as<bool>();
+            }
+        }
 
-            // number of inversion grid
-            if (config["inversion"]["n_inv_dep_lat_lon"]) {
-                n_inv_r = config["inversion"]["n_inv_dep_lat_lon"][0].as<int>();
-                n_inv_t = config["inversion"]["n_inv_dep_lat_lon"][1].as<int>();
-                n_inv_p = config["inversion"]["n_inv_dep_lat_lon"][2].as<int>();
-            }
-
+        //
+        // output setting
+        //
+        if (config["output_setting"]) {
             // output path
-            if (config["inversion"]["output_dir"]) {
-                output_dir = config["inversion"]["output_dir"].as<std::string>();
-            }
+            if (config["output_setting"]["output_dir"])
+                output_dir = config["output_setting"]["output_dir"].as<std::string>();
 
-            // sta_correction_file
-            if (config["inversion"]["sta_correction_file"]) {
-                sta_correction_file_exist = true;
-                sta_correction_file = config["inversion"]["sta_correction_file"].as<std::string>();
-            }
+            if (config["output_setting"]["output_source_field"])
+                output_source_field = config["output_setting"]["output_source_field"].as<bool>();
 
-            // type of input inversion grid
-            if (config["inversion"]["type_dep_inv"]) {
-                type_dep_inv = config["inversion"]["type_dep_inv"].as<int>();
-            }
-            if (config["inversion"]["type_lat_inv"]) {
-                type_lat_inv = config["inversion"]["type_lat_inv"].as<int>();
-            }
-            if (config["inversion"]["type_lon_inv"]) {
-                type_lon_inv = config["inversion"]["type_lon_inv"].as<int>();
-            }
+            if (config["output_setting"]["output_model_dat"])
+                output_model_dat = config["output_setting"]["output_model_dat"].as<bool>();
 
-            // inversion grid positions
-            if (config["inversion"]["min_max_dep_inv"]) {
-                min_dep_inv = config["inversion"]["min_max_dep_inv"][0].as<CUSTOMREAL>();
-                max_dep_inv = config["inversion"]["min_max_dep_inv"][1].as<CUSTOMREAL>();
-            }
-            // minimum and maximum latitude
-            if (config["inversion"]["min_max_lat_inv"]) {
-                min_lat_inv = config["inversion"]["min_max_lat_inv"][0].as<CUSTOMREAL>();
-                max_lat_inv = config["inversion"]["min_max_lat_inv"][1].as<CUSTOMREAL>();
-            }
-            // minimum and maximum longitude
-            if (config["inversion"]["min_max_lon_inv"]) {
-                min_lon_inv = config["inversion"]["min_max_lon_inv"][0].as<CUSTOMREAL>();
-                max_lon_inv = config["inversion"]["min_max_lon_inv"][1].as<CUSTOMREAL>();
-            }
-
-            // flexible inversion grid
-            if (config["inversion"]["dep_inv"]) {
-                n_inv_r_flex = config["inversion"]["dep_inv"].size();
-                dep_inv = new CUSTOMREAL[n_inv_r_flex];
-                for (int i = 0; i < n_inv_r_flex; i++){
-                    dep_inv[i] = config["inversion"]["dep_inv"][i].as<CUSTOMREAL>();
+            if (config["output_setting"]["verbose_output_level"])
+                verbose_output_level = config["output_setting"]["verbose_output_level"].as<int>();
+                // currently only 0 or 1 is defined
+                if (verbose_output_level > 1) {
+                    std::cout << "undefined verbose_output_level. stop." << std::endl;
+                    //MPI_Finalize();
+                    exit(1);
                 }
-                n_inv_r_flex_read = true;
-            }
-            if (config["inversion"]["lat_inv"]) {
-                n_inv_t_flex = config["inversion"]["lat_inv"].size();
-                lat_inv = new CUSTOMREAL[n_inv_t_flex];
-                for (int i = 0; i < n_inv_t_flex; i++){
-                    lat_inv[i] = config["inversion"]["lat_inv"][i].as<CUSTOMREAL>();
-                }
-                n_inv_t_flex_read = true;
-            }
-            if (config["inversion"]["lon_inv"]) {
-                n_inv_p_flex = config["inversion"]["lon_inv"].size();
-                lon_inv = new CUSTOMREAL[n_inv_p_flex];
-                for (int i = 0; i < n_inv_p_flex; i++){
-                    lon_inv[i] = config["inversion"]["lon_inv"][i].as<CUSTOMREAL>();
-                }
-                n_inv_p_flex_read = true;
-            }
 
-            // number of max iteration for inversion
-            if (config["inversion"]["max_iterations_inv"]) {
-                max_iter_inv = config["inversion"]["max_iterations_inv"].as<int>();
-            }
+            if (config["output_setting"]["output_final_model"])
+                output_final_model = config["output_setting"]["output_final_model"].as<bool>();
 
-            // step_size
-            if (config["inversion"]["step_size"]) {
-                step_size_init = config["inversion"]["step_size"].as<CUSTOMREAL>();
-            }
-            if (config["inversion"]["step_size_sc"]) {
-                step_size_init_sc = config["inversion"]["step_size_sc"].as<CUSTOMREAL>();
-            }
-            if (config["inversion"]["step_size_decay"]) {
-                step_size_decay = config["inversion"]["step_size_decay"].as<CUSTOMREAL>();
-            }
+            if (config["output_setting"]["output_in_process"])
+                output_in_process = config["output_setting"]["output_in_process"].as<bool>();
 
+            if (config["output_setting"]["single_precision_output"])
+                single_precision_output = config["output_setting"]["single_precision_output"].as<bool>();
 
-            // smoothing method
-            if (config["inversion"]["smooth_method"]) {
-                smooth_method = config["inversion"]["smooth_method"].as<int>();
-                if (smooth_method > 1) {
-                    std::cout << "undefined smooth_method. stop." << std::endl;
-                    MPI_Finalize();
+            // output file format
+            if (config["output_setting"]["output_file_format"]) {
+                int ff_flag = config["output_setting"]["output_file_format"].as<int>();
+                if (ff_flag == 0){
+                    #if USE_HDF5
+                        output_format = OUTPUT_FORMAT_HDF5;
+                    #else
+                        std::cout << "output_file_format is 0, but the code is compiled without HDF5. stop." << std::endl;
+                        //MPI_Finalize();
+                        exit(1);
+                    #endif
+                } else if (ff_flag == 1){
+                    output_format = OUTPUT_FORMAT_ASCII;
+                } else {
+                    std::cout << "undefined output_file_format. stop." << std::endl;
+                    //MPI_Finalize();
                     exit(1);
                 }
             }
+        }
 
-            // l_smooth_rtp
-            if (config["inversion"]["l_smooth_rtp"]) {
-                smooth_lr = config["inversion"]["l_smooth_rtp"][0].as<CUSTOMREAL>();
-                smooth_lt = config["inversion"]["l_smooth_rtp"][1].as<CUSTOMREAL>();
-                smooth_lp = config["inversion"]["l_smooth_rtp"][2].as<CUSTOMREAL>();
+        //
+        // run mode
+        //
+        if (config["run_mode"]) {
+            run_mode = config["run_mode"].as<int>();
+        }
+
+        //
+        // model update
+        //
+        if (config["model_update"]) {
+            // number of max iteration for inversion
+            if (config["model_update"]["max_iterations"]) {
+                max_iter_inv = config["model_update"]["max_iterations"].as<int>();
             }
-
             // optim_method
-            if (config["inversion"]["optim_method"]) {
-                optim_method = config["inversion"]["optim_method"].as<int>();
+            if (config["model_update"]["optim_method"]) {
+                optim_method = config["optim_method"]["optim_method"].as<int>();
                 if (optim_method > 2) {
                     std::cout << "undefined optim_method. stop." << std::endl;
                     //MPI_Finalize();
                     exit(1);
                 }
             }
-
-            // regularization weight
-            if (config["inversion"]["regularization_weight"]) {
-                regularization_weight = config["inversion"]["regularization_weight"].as<CUSTOMREAL>();
+            // step_length
+            if (config["model_update"]["step_length"]) {
+                step_length_init = config["model_update"]["step_length"].as<CUSTOMREAL>();
             }
 
-            // max sub iteration
-            if (config["inversion"]["max_sub_iterations"]) {
-                max_sub_iterations = config["inversion"]["max_sub_iterations"].as<int>();
+            // parameters for optim_method == 0
+            if (optim_method == 0) {
+                // step length decay
+                if (config["model_update"]["optim_method_0"]["step_length_decay"]) {
+                    step_length_decay = config["model_update"]["optim_method_0"]["step_length_decay"].as<CUSTOMREAL>();
+                }
+                // step length sc
+                if (config["model_update"]["optim_method_0"]["step_length_sc"]) {
+                    step_length_init_sc = config["model_update"]["optim_method_0"]["step_length_sc"].as<CUSTOMREAL>();
+                }
+            }
+
+            // parameters for optim_method == 1 or 2
+            if (optim_method == 1 || optim_method == 2) {
+                // max_sub_iterations
+                if (config["model_update"]["optim_method_1_2"]["max_sub_iterations"]) {
+                    max_sub_iterations = config["model_update"]["optim_method_1_2"]["max_sub_iterations"].as<int>();
+                }
+                // regularization weight
+                if (config["model_update"]["optim_method_1_2"]["regularization_weight"]) {
+                    regularization_weight = config["model_update"]["optim_method_1_2"]["regularization_weight"].as<CUSTOMREAL>();
+                }
+            }
+
+            // smoothing
+            if (config["model_update"]["smoothing"]["smooth_method"]) {
+                smooth_method = config["model_update"]["smoothing"]["smooth_method"].as<int>();
+                if (smooth_method > 1) {
+                    std::cout << "undefined smooth_method. stop." << std::endl;
+                    MPI_Finalize();
+                    exit(1);
+                }
+            }
+            // l_smooth_rtp
+            if (config["model_update"]["smoothing"]["l_smooth_rtp"]) {
+                smooth_lr = config["model_update"]["smoothing"]["l_smooth_rtp"][0].as<CUSTOMREAL>();
+                smooth_lt = config["model_update"]["smoothing"]["l_smooth_rtp"][1].as<CUSTOMREAL>();
+                smooth_lp = config["model_update"]["smoothing"]["l_smooth_rtp"][2].as<CUSTOMREAL>();
+            }
+            // n_inversion_grid
+            if (config["model_update"]["n_inversion_grid"]) {
+                n_inversion_grid = config["model_update"]["n_inversion_grid"].as<int>();
+            }
+            // type_invgrid_dep
+            if (config["model_update"]["type_invgrid_dep"]) {
+                type_invgrid_dep = config["model_update"]["type_invgrid_dep"].as<int>();
+            }
+            if (config["model_update"]["type_invgrid_lat"]) {
+                type_invgrid_lat = config["model_update"]["type_invgrid_lat"].as<int>();
+            }
+            if (config["model_update"]["type_invgrid_lon"]) {
+                type_invgrid_lon = config["model_update"]["type_invgrid_lon"].as<int>();
+            }
+            // number of inversion grid for regular grid
+            if (config["model_update"]["n_inv_dep_lat_lon"]) {
+                n_inv_r = config["model_update"]["n_inv_dep_lat_lon"][0].as<int>();
+                n_inv_t = config["model_update"]["n_inv_dep_lat_lon"][1].as<int>();
+                n_inv_p = config["model_update"]["n_inv_dep_lat_lon"][2].as<int>();
+            }
+            // inversion grid positions
+            if (config["model_update"]["min_max_dep_inv"]) {
+                min_dep_inv = config["model_update"]["min_max_dep_inv"][0].as<CUSTOMREAL>();
+                max_dep_inv = config["model_update"]["min_max_dep_inv"][1].as<CUSTOMREAL>();
+            }
+            // minimum and maximum latitude
+            if (config["model_update"]["min_max_lat_inv"]) {
+                min_lat_inv = config["model_update"]["min_max_lat_inv"][0].as<CUSTOMREAL>();
+                max_lat_inv = config["model_update"]["min_max_lat_inv"][1].as<CUSTOMREAL>();
+            }
+            // minimum and maximum longitude
+            if (config["model_update"]["min_max_lon_inv"]) {
+                min_lon_inv = config["model_update"]["min_max_lon_inv"][0].as<CUSTOMREAL>();
+                max_lon_inv = config["model_update"]["min_max_lon_inv"][1].as<CUSTOMREAL>();
+            }
+
+            // flexible inversion grid
+            if (config["model_update"]["dep_inv"]) {
+                n_inv_r_flex = config["model_update"]["dep_inv"].size();
+                dep_inv = new CUSTOMREAL[n_inv_r_flex];
+                for (int i = 0; i < n_inv_r_flex; i++){
+                    dep_inv[i] = config["model_update"]["dep_inv"][i].as<CUSTOMREAL>();
+                }
+                n_inv_r_flex_read = true;
+            }
+            if (config["model_update"]["lat_inv"]) {
+                n_inv_t_flex = config["model_update"]["lat_inv"].size();
+                lat_inv = new CUSTOMREAL[n_inv_t_flex];
+                for (int i = 0; i < n_inv_t_flex; i++){
+                    lat_inv[i] = config["model_update"]["lat_inv"][i].as<CUSTOMREAL>();
+                }
+                n_inv_t_flex_read = true;
+            }
+            if (config["model_update"]["lon_inv"]) {
+                n_inv_p_flex = config["model_update"]["lon_inv"].size();
+                lon_inv = new CUSTOMREAL[n_inv_p_flex];
+                for (int i = 0; i < n_inv_p_flex; i++){
+                    lon_inv[i] = config["model_update"]["lon_inv"][i].as<CUSTOMREAL>();
+                }
+                n_inv_p_flex_read = true;
+            }
+
+            // sta_correction_file
+            if (config["model_update"]["sta_correction_file"]) {
+                sta_correction_file_exist = true;
+                sta_correction_file = config["model_update"]["sta_correction_file"].as<std::string>();
+            }
+
+            // date usage flags and weights
+            // absolute travel times
+            if (config["model_update"]["abs_time"]) {
+                use_abs = config["model_update"]["abs_time"]["use_abs_time"].as<bool>();
+                if (config["model_update"]["abs_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        residual_weight_abs[i] = config["model_update"]["abs_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                }
+                if (config["model_uodate"]["abs_time"]["distance_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        distance_weight_abs[i] = config["model_update"]["abs_time"]["distance_weight"][i].as<CUSTOMREAL>();
+                }
+            }
+
+            // common source diff travel times
+            if (config["cs_dif_time"]) {
+                use_cs = config["model_update"]["cs_dif_time"]["use_cs_dif_time"].as<bool>();
+                if (config["model_update"]["cs_dif_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        residual_weight_cs[i] = config["model_update"]["cs_dif_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                }
+                if (config["model_update"]["cs_dif_time"]["azimuthal_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        azimuthal_weight_cs[i] = config["model_update"]["cs_dif_time"]["azimuthal_weight"][i].as<CUSTOMREAL>();
+                }
+            }
+
+            // common reciever diff travel times
+            if (config["cr_dif_time"]) {
+                use_cr = config["model_update"]["cr_dif_time"]["use_cr_dif_time"].as<bool>();
+                if (config["model_update"]["cr_dif_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        residual_weight_cr[i] = config["model_update"]["cr_dif_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                }
+                if (config["model_update"]["cr_dif_time"]["azimuthal_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        azimuthal_weight_cr[i] = config["model_update"]["cr_dif_time"]["azimuthal_weight"][i].as<CUSTOMREAL>();
+                }
             }
 
             // weight of different types of data
+            if (config["inversion"]["is_balance_data_weight"]) {
+                is_balance_data_weight = config["inversion"]["is_balance_data_weight"].as<int>();
+            }
             if (config["inversion"]["abs_time_local_weight"]) {
                 abs_time_local_weight = config["inversion"]["abs_time_local_weight"].as<CUSTOMREAL>();
             }
@@ -213,10 +337,14 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion"]["teleseismic_weight"]) {
                 teleseismic_weight = config["inversion"]["teleseismic_weight"].as<CUSTOMREAL>();
             }
-            if (config["inversion"]["is_balance_data_weight"]) {
-                is_balance_data_weight = config["inversion"]["is_balance_data_weight"].as<int>();
-            }
 
+
+        }
+
+////////// done ///////////////////////////////////////////
+
+        if (config["inversion"]) {
+            // do inversion or not
 
 
             // ----- for relocation ----
@@ -283,27 +411,6 @@ InputParams::InputParams(std::string& input_file){
         }
 
 
-        if (config["parallel"]) {
-            // number of simultaneous runs
-            if(config["parallel"]["n_sims"]) {
-                n_sims = config["parallel"]["n_sims"].as<int>();
-            }
-            // number of subdomains
-            if (config["parallel"]["ndiv_rtp"]) {
-                ndiv_k = config["parallel"]["ndiv_rtp"][0].as<int>();
-                ndiv_j = config["parallel"]["ndiv_rtp"][1].as<int>();
-                ndiv_i = config["parallel"]["ndiv_rtp"][2].as<int>();
-            }
-            // number of processes in each subdomain
-            if (config["parallel"]["nproc_sub"]) {
-                n_subprocs = config["parallel"]["nproc_sub"].as<int>();
-            }
-            // gpu flag
-            if (config["parallel"]["use_gpu"]) {
-                use_gpu = config["parallel"]["use_gpu"].as<int>();
-            }
-        }
-
         if (config["calculation"]) {
             // convergence tolerance
             if (config["calculation"]["convergence_tolerance"]) {
@@ -330,41 +437,7 @@ InputParams::InputParams(std::string& input_file){
             if (config["calculation"]["sweep_type"]) {
                 sweep_type = config["calculation"]["sweep_type"].as<int>();
             }
-            // output file format
-            if (config["calculation"]["output_file_format"]) {
-                int ff_flag = config["calculation"]["output_file_format"].as<int>();
-                if (ff_flag == 0){
-                    #if USE_HDF5
-                        output_format = OUTPUT_FORMAT_HDF5;
-                    #else
-                        std::cout << "output_file_format is 0, but the code is compiled without HDF5. stop." << std::endl;
-                        MPI_Finalize();
-                        exit(1);
-                    #endif
-                } else if (ff_flag == 1){
-                    output_format = OUTPUT_FORMAT_ASCII;
-                } else {
-                    std::cout << "undefined output_file_format. stop." << std::endl;
-                    MPI_Finalize();
-                    exit(1);
-                }
-            }
-        }
-
-        if (config["output_setting"]) {
-            if (config["output_setting"]["is_output_source_field"])
-                is_output_source_field = config["output_setting"]["is_output_source_field"].as<int>();
-            if (config["output_setting"]["is_output_model_dat"])
-                is_output_model_dat = config["output_setting"]["is_output_model_dat"].as<int>();
-            if (config["output_setting"]["is_verbose_output"])
-                is_verbose_output = config["output_setting"]["is_verbose_output"].as<int>();
-            if (config["output_setting"]["is_output_final_model"])
-                is_output_final_model = config["output_setting"]["is_output_final_model"].as<int>();
-            if (config["output_setting"]["is_output_in_process"])
-                is_output_in_process = config["output_setting"]["is_output_in_process"].as<int>();
-            if (config["output_setting"]["is_single_precision_output"])
-                is_single_precision_output = config["output_setting"]["is_single_precision_output"].as<int>();
-        }
+       }
 
         if (config["debug"]) {
             if (config["debug"]["debug_mode"]) {
@@ -465,9 +538,9 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(min_lon_inv, 0);
     broadcast_cr_single(max_lon_inv, 0);
 
-    broadcast_i_single(type_dep_inv, 0);
-    broadcast_i_single(type_lat_inv, 0);
-    broadcast_i_single(type_lon_inv, 0);
+    broadcast_i_single(type_invgrid_dep, 0);
+    broadcast_i_single(type_invgrid_lat, 0);
+    broadcast_i_single(type_invgrid_lon, 0);
     broadcast_i_single(n_inv_r_flex, 0);
     broadcast_i_single(n_inv_t_flex, 0);
     broadcast_i_single(n_inv_p_flex, 0);
@@ -503,9 +576,9 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(smooth_lp, 0);
     broadcast_i_single(optim_method, 0);
     broadcast_i_single(max_iter_inv, 0);
-    broadcast_cr_single(step_size_init, 0);
-    broadcast_cr_single(step_size_init_sc, 0);
-    broadcast_cr_single(step_size_decay, 0);
+    broadcast_cr_single(step_length_init, 0);
+    broadcast_cr_single(step_length_init_sc, 0);
+    broadcast_cr_single(step_length_decay, 0);
     broadcast_cr_single(step_length_src_reloc, 0);
     broadcast_cr_single(step_length_decay, 0);
     broadcast_cr_single(regularization_weight, 0);
@@ -626,9 +699,9 @@ void InputParams::write_params_to_file() {
     fout << "   output_dir: "         << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
     fout << "   optim_method: "          << optim_method << " # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)" << std::endl;
     fout << "   max_iterations_inv: "    << max_iter_inv << " # maximum number of inversion iterations" << std::endl;
-    fout << "   step_size: "             << step_size_init << " # initial step size for model update" << std::endl;
-    fout << "   step_size_sc: "          << step_size_init_sc << " # ..."  << std::endl;
-    fout << "   step_size_decay: "       << step_size_decay << " # ..." << std::endl;
+    fout << "   step_length: "             << step_length_init << " # initial step size for model update" << std::endl;
+    fout << "   step_length_sc: "          << step_length_init_sc << " # ..."  << std::endl;
+    fout << "   step_length_decay: "       << step_length_decay << " # ..." << std::endl;
     fout << "   smooth_method: "         << smooth_method << " # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)" << std::endl;
 
     fout << std::endl;
@@ -640,9 +713,9 @@ void InputParams::write_params_to_file() {
     else
         fout << "#   sta_correction_file: " << "dummy_sta_correction_file";
     fout << " # station correction file path" << std::endl;
-    fout << "   type_dep_inv: " << type_dep_inv << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "   type_lat_inv: " << type_lat_inv << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "   type_lon_inv: " << type_lon_inv << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "   type_invgrid_dep: " << type_invgrid_dep << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "   type_invgrid_lat: " << type_invgrid_lat << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "   type_invgrid_lon: " << type_invgrid_lon << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
 
     fout << std::endl;
     fout << "   # parameters for uniform inversion grid" << std::endl;
@@ -870,9 +943,9 @@ void InputParams::prepare_src_map(){
     if (src_rec_file_exist && id_sim==0 && subdom_main) {
         // read source and receiver data, e.g.,
         //      event info:               s0
-        //      data info1 (abs):         r0  
+        //      data info1 (abs):         r0
         //      data info2 (cr_dif):      r1  r2
-        //      data info3 (cs_dif):      r3  s1       
+        //      data info3 (cs_dif):      r3  s1
         //
         // we generate the data structure:
         // |    abs     |    cs_dif     |    cr_dif     |
@@ -921,14 +994,14 @@ void InputParams::prepare_src_map(){
             // |            |   |           |        |      |
             // |            |   r2          |        s1     |
             //
-            // After:    
+            // After:
             // |    abs     |          cr_dif           |    cs_dif     |
             // |  r0 - s0   |   r1 - s0     r2 - s0     |   r3 - s0     |
             // |            |        |           |      |   |           |
             // |            |        r2          r1     |   s1          |
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
             do_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all);
-            
+
         } else {
             // if we do not swap source and receiver, we need to process cr_dif to include the other source. After that, we have new data structure:
             // Before:
@@ -937,12 +1010,12 @@ void InputParams::prepare_src_map(){
             // |            |   |           |        |      |
             // |            |   r2          |        s1     |
             //
-            // After:  
+            // After:
             // |    abs     |    cs_dif     |          cr_dif           |
             // |  s0 - r0   |   s0 - r1     |   s0 - r3     s1 - r3     |
             // |            |   |           |        |           |      |
-            // |            |   r2          |        s1          s0     |           
-            do_not_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all); 
+            // |            |   r2          |        s1          s0     |
+            do_not_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all);
         }
 
         // concatenate resional and teleseismic src/rec points
@@ -956,7 +1029,7 @@ void InputParams::prepare_src_map(){
         // abort if number of src_points are less than n_sims
         int n_src_points = src_map_all.size();
         if (n_src_points < n_sims){
-            std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort.1" << std::endl;
+            std::cout << "Error: number of sources in src_rec_file is less than n_sims. Abort." << std::endl;
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
@@ -1007,8 +1080,9 @@ void InputParams::prepare_src_map(){
 
 // generate a list of events which involve common receiver double difference traveltime
 void InputParams::generate_src_map_with_common_receiver(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map_tmp,
-                                                      std::map<std::string, SrcRecInfo>& src_map_comm_rec_tmp,
-                                                      std::vector<std::string>& src_id2name_comm_rec_tmp){
+                                                        std::map<std::string, SrcRecInfo>&                                   src_map_comm_rec_tmp,
+                                                        std::vector<std::string>&                                            src_id2name_comm_rec_tmp){
+
     // for earthquake having common receiver differential traveltime, the synthetic traveltime should be computed first at each iteration
     for(auto iter = data_map_tmp.begin(); iter != data_map_tmp.end(); iter++){
         for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
@@ -1481,8 +1555,8 @@ void InputParams::write_src_rec_file(int i_inv) {
                         name_src2 = name_data.at(1);
                         src_pair_data = true;
                         if (get_is_srcrec_swap())       // cr_dif -> cs_dif
-                            data = get_data_rec_pair(data_map_all, name_rec1, name_src, name_src2);                            
-                        else                            // cr_dif 
+                            data = get_data_rec_pair(data_map_all, name_rec1, name_src, name_src2);
+                        else                            // cr_dif
                             data = get_data_src_pair(data_map_all, name_src, name_src2, name_rec1);
 
                     } else{     // error data type

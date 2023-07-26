@@ -328,27 +328,27 @@ void Grid::setup_inversion_grids(InputParams& IP) {
 
     n_inv_grids = IP.get_n_inversion_grid();
 
-    if(IP.get_type_dep_inv() == 0){
+    if(IP.get_type_invgrid_dep() == 0){
         ngrid_k_inv = IP.get_n_inv_r();
-    } else if (IP.get_type_dep_inv() == 1) {
+    } else if (IP.get_type_invgrid_dep() == 1) {
         ngrid_k_inv = IP.get_n_inv_r_flex();
     } else {
         std::cout << "unknown type of inversion grid" << std::endl;
         exit(1);
     }
 
-    if(IP.get_type_lat_inv() == 0){
+    if(IP.get_type_invgrid_lat() == 0){
         ngrid_j_inv = IP.get_n_inv_t();
-    } else if (IP.get_type_lat_inv() == 1) {
+    } else if (IP.get_type_invgrid_lat() == 1) {
         ngrid_j_inv = IP.get_n_inv_t_flex();
     } else {
         std::cout << "unknown type of inversion grid" << std::endl;
         exit(1);
     }
 
-    if(IP.get_type_lon_inv() == 0){
+    if(IP.get_type_invgrid_lon() == 0){
         ngrid_i_inv = IP.get_n_inv_p();
-    } else if (IP.get_type_lon_inv() == 1) {
+    } else if (IP.get_type_invgrid_lon() == 1) {
         ngrid_i_inv = IP.get_n_inv_p_flex();
     } else {
         std::cout << "unknown type of inversion grid" << std::endl;
@@ -1035,7 +1035,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 void Grid::setup_inv_grid_params(InputParams& IP) {
 
     // inversion grid for depth
-    if(IP.get_type_dep_inv() == 0){     // uniform inversion grid for depth
+    if(IP.get_type_invgrid_dep() == 0){     // uniform inversion grid for depth
         CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
         CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
         // inversion grid is defined for all processes which covers entire domain
@@ -1062,7 +1062,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
     }
 
     // inversion grid for latitude
-    if(IP.get_type_lat_inv() == 0){     // uniform inversion grid for latitude
+    if(IP.get_type_invgrid_lat() == 0){     // uniform inversion grid for latitude
         CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
         CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
         // inversion grid is defined for all processes which covers entire domain
@@ -1089,7 +1089,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
     }
 
     // inversion grid for longitude
-    if(IP.get_type_lon_inv() == 0){     // uniform inversion grid for longitude
+    if(IP.get_type_invgrid_lon() == 0){     // uniform inversion grid for longitude
         CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
         CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
         // inversion grid is defined for all processes which covers entire domain

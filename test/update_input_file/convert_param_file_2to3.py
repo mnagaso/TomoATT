@@ -81,6 +81,7 @@ if __name__ == '__main__':
     # source section
     #
     params_v3['source'] = params_in['source']
+    map_value_to_bool(params_v3['source'], 'swap_src_rec')
 
     #
     # model section
