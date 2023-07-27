@@ -106,7 +106,7 @@ InputParams::InputParams(std::string& input_file){
             if (config["output_setting"]["output_model_dat"])
                 output_model_dat = config["output_setting"]["output_model_dat"].as<bool>();
 
-            if (config["output_setting"]["verbose_output_level"])
+            if (config["output_setting"]["verbose_output_level"]){
                 verbose_output_level = config["output_setting"]["verbose_output_level"].as<int>();
                 // currently only 0 or 1 is defined
                 if (verbose_output_level > 1) {
@@ -114,6 +114,7 @@ InputParams::InputParams(std::string& input_file){
                     //MPI_Finalize();
                     exit(1);
                 }
+            }
 
             if (config["output_setting"]["output_final_model"])
                 output_final_model = config["output_setting"]["output_final_model"].as<bool>();
@@ -275,6 +276,11 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex_read = true;
             }
 
+
+            // station correction (now only for teleseismic data)
+            if (config["model_update"]["use_sta_correction"]){
+                use_sta_correction = config["model_update"]["use_sta_correction"].as<bool>();
+            }
             // sta_correction_file
             if (config["model_update"]["sta_correction_file"]) {
                 sta_correction_file_exist = true;
@@ -296,7 +302,7 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // common source diff travel times
-            if (config["cs_dif_time"]) {
+            if (config["model_update"]["cs_dif_time"]) {
                 use_cs = config["model_update"]["cs_dif_time"]["use_cs_dif_time"].as<bool>();
                 if (config["model_update"]["cs_dif_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
@@ -309,7 +315,7 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // common reciever diff travel times
-            if (config["cr_dif_time"]) {
+            if (config["model_update"]["cr_dif_time"]) {
                 use_cr = config["model_update"]["cr_dif_time"]["use_cr_dif_time"].as<bool>();
                 if (config["model_update"]["cr_dif_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
@@ -322,95 +328,143 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // weight of different types of data
-            if (config["inversion"]["is_balance_data_weight"]) {
-                is_balance_data_weight = config["inversion"]["is_balance_data_weight"].as<int>();
-            }
-            if (config["inversion"]["abs_time_local_weight"]) {
-                abs_time_local_weight = config["inversion"]["abs_time_local_weight"].as<CUSTOMREAL>();
-            }
-            if (config["inversion"]["cr_dif_time_local_weight"]) {
-                cr_dif_time_local_weight = config["inversion"]["cr_dif_time_local_weight"].as<CUSTOMREAL>();
-            }
-            if (config["inversion"]["cs_dif_time_local_weight"]) {
-                cs_dif_time_local_weight = config["inversion"]["cs_dif_time_local_weight"].as<CUSTOMREAL>();
-            }
-            if (config["inversion"]["teleseismic_weight"]) {
-                teleseismic_weight = config["inversion"]["teleseismic_weight"].as<CUSTOMREAL>();
-            }
-
-
-        }
-
-////////// done ///////////////////////////////////////////
-
-        if (config["inversion"]) {
-            // do inversion or not
-
-
-            // ----- for relocation ----
-
-            // step size of relocation
-            if (config["inversion"]["step_length_src_reloc"]) {
-                step_length_src_reloc = config["inversion"]["step_length_src_reloc"].as<CUSTOMREAL>();
-            }
-            // step size decay of relocation
-            if (config["inversion"]["step_length_decay"]) {
-                step_length_decay = config["inversion"]["step_length_decay"].as<CUSTOMREAL>();
+            if (config["model_update"]["global_weight"]){
+                if (config["model_update"]["global_weight"]["balance_data_weight"]) {
+                    balance_data_weight = config["model_update"]["global_weight"]["balance_data_weight"].as<bool>();
+                }
+                if (config["model_update"]["global_weight"]["abs_time_weight"]) {
+                    abs_time_local_weight = config["model_update"]["global_weight"]["abs_time_weight"].as<CUSTOMREAL>();
+                }
+                if (config["model_update"]["global_weight"]["cs_dif_time_local_weight"]) {
+                    cs_dif_time_local_weight = config["model_update"]["global_weight"]["cs_dif_time_local_weight"].as<CUSTOMREAL>();
+                }
+                if (config["model_update"]["global_weight"]["global_weight"]["cr_dif_time_local_weight"]) {
+                    cr_dif_time_local_weight = config["model_update"]["global_weight"]["cr_dif_time_local_weight"].as<CUSTOMREAL>();
+                }
+                if (config["model_update"]["global_weight"]["teleseismic_weight"]) {
+                    teleseismic_weight = config["model_update"]["global_weight"]["teleseismic_weight"].as<CUSTOMREAL>();
+                }
             }
 
-            // max change for earthquake location
-            if (config["inversion"]["max_change_dep_lat_lon"]) {
-                max_change_dep = config["inversion"]["max_change_dep_lat_lon"][0].as<CUSTOMREAL>();
-                max_change_lat = config["inversion"]["max_change_dep_lat_lon"][1].as<CUSTOMREAL>();
-                max_change_lon = config["inversion"]["max_change_dep_lat_lon"][2].as<CUSTOMREAL>();
-            }
-
-            // norm(grad) threshold of stopping relocation
-            if (config["inversion"]["tol_gradient"]) {
-                TOL_SRC_RELOC = config["inversion"]["tol_gradient"].as<CUSTOMREAL>();
-            }
-
-            // local search scheme for relocation
-            if (config["inversion"]["is_ortime_local_search"]) {
-                is_ortime_local_search = config["inversion"]["is_ortime_local_search"].as<int>();
-            }
-            // kernel =   K_t/ref_ortime_change (only for is_ortime_local_search : 1)
-            if (config["inversion"]["ref_ortime_change"]) {
-                ref_ortime_change = config["inversion"]["ref_ortime_change"].as<CUSTOMREAL>();
-            }
-            // the change of ortime do not exceed max_change (only for is_ortime_local_search : 1)
-            if (config["inversion"]["max_change_ortime"]) {
-                max_change_ortime = config["inversion"]["max_change_ortime"].as<CUSTOMREAL>();
-            }
-            // step size of ortime is :  step_length_src_reloc * step_length_ortime_rescale
-            if (config["inversion"]["step_length_ortime_rescale"]) {
-                step_length_ortime_rescale = config["inversion"]["step_length_ortime_rescale"].as<CUSTOMREAL>();
-            }
-
-        }
-
-        if (config["inv_strategy"]) {
             // update which model parameters
-            if (config["inv_strategy"]["is_inv_slowness"])
-                is_inv_slowness = config["inv_strategy"]["is_inv_slowness"].as<int>();
-            if (config["inv_strategy"]["is_inv_azi_ani"])
-                is_inv_azi_ani = config["inv_strategy"]["is_inv_azi_ani"].as<int>();
-            if (config["inv_strategy"]["is_inv_rad_ani"])
-                is_inv_rad_ani = config["inv_strategy"]["is_inv_rad_ani"].as<int>();
+            if (config["model_update"]["update_slowness"])
+                update_slowness = config["inv_strategy"]["update_slowness"].as<bool>();
+            if (config["model_update"]["update_azi_ani"])
+                update_azi_ani = config["inv_strategy"]["update_azi_ani"].as<bool>();
+            if (config["model_udpate"]["update_rad_ani"])
+                update_rad_ani = config["inv_strategy"]["update_rad_ani"].as<bool>();
 
             // taper kernel (now only for teleseismic tomography)
-            if (config["inv_strategy"]["kernel_taper"]){
-                kernel_taper[0] = config["inv_strategy"]["kernel_taper"][0].as<CUSTOMREAL>();
-                kernel_taper[1] = config["inv_strategy"]["kernel_taper"][1].as<CUSTOMREAL>();
+            if (config["model_update"]["depth_taper"]){
+                depth_taper[0] = config["model_update"]["depth_taper"][0].as<CUSTOMREAL>();
+                depth_taper[1] = config["model_update"]["depth_taper"][1].as<CUSTOMREAL>();
+            }
+        } // end of model_update
+
+        //
+        // relocatoin
+        //
+        if (config["relocation"]) {
+            // step size of relocation
+            if (config["relocation"]["step_length"]) {
+                step_length_src_reloc = config["relocation"]["step_length"].as<CUSTOMREAL>();
+            }
+            // step size decay of relocation
+            if (config["relocation"]["step_length_decay"]) {
+                step_length_decay_src_reloc = config["relocation"]["step_length_decay"].as<CUSTOMREAL>();
+                // TODO: this value is defined but not used. (instead, step_length_decay is used)
+            }
+            // rescaling values
+            if (config["relocation"]["rescaling_dep_lat_lon_ortime"]){
+                rescaling_dep = config["relocation"]["rescaling_dep_lat_lon_ortime"][0].as<CUSTOMREAL>();
+                rescaling_lat = config["relocation"]["rescaling_dep_lat_lon_ortime"][1].as<CUSTOMREAL>();
+                rescaling_lon = config["relocation"]["rescaling_dep_lat_lon_ortime"][2].as<CUSTOMREAL>();
+                rescaling_ortime = config["relocation"]["rescaling_dep_lat_lon_ortime"][3].as<CUSTOMREAL>();
+            }
+            // max change values
+            if (config["relocation"]["max_change_dep_lat_lon_ortime"]) {
+                max_change_dep = config["relocation"]["max_change_dep_lat_lon_ortime"][0].as<CUSTOMREAL>();
+                max_change_lat = config["relocation"]["max_change_dep_lat_lon_ortime"][1].as<CUSTOMREAL>();
+                max_change_lon = config["relocation"]["max_change_dep_lat_lon_ortime"][2].as<CUSTOMREAL>();
+                max_change_ortime = config["relocation"]["max_change_dep_lat_lon_ortime"][3].as<CUSTOMREAL>();
+            }
+            // max iteration for relocation
+            if (config["relocation"]["max_iterations"]) {
+                N_ITER_MAX_SRC_RELOC = config["relocation"]["max_iterations"].as<int>();
+            }
+            // norm(grad) threshold of stopping relocation
+            if (config["relocation"]["tol_gradient"]) {
+                TOL_SRC_RELOC = config["relocation"]["tol_gradient"].as<CUSTOMREAL>();
+            }
+            // local search scheme for relocation
+            if (config["relocation"]["ortime_local_search"]) {
+                ortime_local_search = config["relocation"]["ortime_local_search"].as<bool>();
+            }
+            // kernel =   K_t/ref_ortime_change (only for ortime_local_search : 1)
+            if (config["relocation"]["ref_ortime_change"]) {
+                ref_ortime_change = config["relocation"]["ref_ortime_change"].as<CUSTOMREAL>();
+            }
+            // step size of ortime is :  step_length_src_reloc * step_length_ortime_rescale
+            if (config["relocation"]["step_length_ortime_rescale"]) {
+                step_length_ortime_rescale = config["relocation"]["step_length_ortime_rescale"].as<CUSTOMREAL>();
             }
 
-            // station correction (now only for teleseismic data)
-            if (config["inv_strategy"]["is_sta_correction"]){
-                is_sta_correction = config["inv_strategy"]["is_sta_correction"].as<int>();
+            // data usage
+            if (config["relocation"]["abs_time"]) {
+                use_abs_reloc = config["relocation"]["abs_time"]["use_abs_time"].as<bool>();
+                if (config["relocation"]["abs_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        residual_weight_abs_reloc[i] = config["relocation"]["abs_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                }
+                if (config["relocation"]["abs_time"]["distance_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        distance_weight_abs_reloc[i] = config["relocation"]["abs_time"]["distance_weight"][i].as<CUSTOMREAL>();
+                }
+            }
+            if (config["relocation"]["cr_dif_time"]){
+                use_cr_reloc = config["relocation"]["cr_dif_time"]["use_cr_time"].as<bool>();
+                if (config["relocation"]["cr_dif_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        residual_weight_cr_reloc[i] = config["relocation"]["cr_dif_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                }
+                if (config["relocation"]["cr_dif_time"]["azimuthal_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        azimuthal_weight_cr_reloc[i] = config["relocation"]["cr_dif_time"]["azimuthal_weight"][i].as<CUSTOMREAL>();
+                }
+            }
+        } // end of relocation
+
+        //
+        // inversion strategy
+        //
+        if (config["inversion_strategy"]) {
+            // inversion mode, 0: for update model parameters and relocation iteratively
+            if (config["inversion_strategy"]["inv_mode"])
+                inv_mode = config["inversion_strategy"]["inv_mode"].as<int>();
+
+            // paramters for inv_mode == 0a
+            if (config["inversoin_strategy"]["inv_mode_0"]){
+                // relocation_first
+                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first"])
+                    relocation_first = config["inversoin_strategy"]["inv_mode_0"]["relocation_first"].as<bool>();
+                // relocation_first_iterations
+                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first_iterations"])
+                    relocation_first_iterations = config["inversoin_strategy"]["inv_mode_0"]["relocation_first_iterations"].as<int>();
+                // relocation_every_N_steps
+                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_every_N_steps"])
+                    relocation_every_N_steps = config["inversoin_strategy"]["inv_mode_0"]["relocation_every_N_steps"].as<int>();
+                // relocation final
+                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final"])
+                    relocation_final = config["inversoin_strategy"]["inv_mode_0"]["relocation_final"].as<bool>();
+                // relocation_final_iterations
+                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final_iterations"])
+                    relocation_final_iterations = config["inversoin_strategy"]["inv_mode_0"]["relocation_final_iterations"].as<int>();
             }
         }
 
-
+        //
+        // calculation
+        //
         if (config["calculation"]) {
             // convergence tolerance
             if (config["calculation"]["convergence_tolerance"]) {
@@ -441,14 +495,13 @@ InputParams::InputParams(std::string& input_file){
 
         if (config["debug"]) {
             if (config["debug"]["debug_mode"]) {
-                int tmp_test = config["debug"]["debug_mode"].as<int>();
-                if (tmp_test == 1) {
-                    if_test = true;
-                } else {
-                    if_test = false;
-                }
+                if_test = config["debug"]["debug_mode"].as<bool>();
             }
         }
+
+
+////////// done ///////////////////////////////////////////
+
 
         std::cout << "min_max_dep: " << min_dep << " " << max_dep << std::endl;
         std::cout << "min_max_lat: " << min_lat << " " << max_lat << std::endl;
@@ -500,7 +553,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(src_lon, 0);
 
     broadcast_bool_single(src_rec_file_exist, 0);
-    broadcast_bool_single(sta_correction_file_exist, 0);
 
     // This have to be done only after broadcast src_rec_file_exist
     if (src_rec_file_exist == false){
@@ -520,14 +572,48 @@ InputParams::InputParams(std::string& input_file){
         DataInfo data;
         data_map[src.name][rec.name].push_back(data);
     }
-    broadcast_bool_single(swap_src_rec, 0);
 
     broadcast_str(src_rec_file, 0);
-    broadcast_str(sta_correction_file, 0);
-    broadcast_str(output_dir, 0);
+    broadcast_bool_single(swap_src_rec, 0);
+
+
     broadcast_str(init_model_path, 0);
+    broadcast_str(model_1d_name, 0);
+
+    broadcast_i_single(n_sims, 0);
+    broadcast_i_single(ndiv_i, 0);
+    broadcast_i_single(ndiv_j, 0);
+    broadcast_i_single(ndiv_k, 0);
+    broadcast_i_single(n_subprocs, 0);
+    broadcast_bool_single(use_gpu, 0);
+
+    broadcast_str(output_dir, 0);
+    broadcast_bool_single(output_source_field, 0);
+    broadcast_bool_single(output_model_dat, 0);
+    broadcast_i_single(verbose_output_level, 0);
+    broadcast_bool_single(output_final_model, 0);
+    broadcast_bool_single(output_in_process, 0);
+    broadcast_bool_single(single_precision_output, 0);
+    broadcast_i_single(output_format, 0);
+
     broadcast_i_single(run_mode, 0);
+
+    broadcast_i_single(max_iter_inv, 0);
+    broadcast_i_single(optim_method, 0);
+    broadcast_cr_single(step_length_init, 0);
+    broadcast_cr_single(step_length_decay, 0);
+    broadcast_cr_single(step_length_init_sc, 0);
+    broadcast_i_single(max_sub_iterations, 0);
+    broadcast_cr_single(regularization_weight, 0);
+    broadcast_i_single(smooth_method, 0);
+    broadcast_cr_single(smooth_lr, 0);
+    broadcast_cr_single(smooth_lt, 0);
+    broadcast_cr_single(smooth_lp, 0);
+
     broadcast_i_single(n_inversion_grid, 0);
+    broadcast_i_single(type_invgrid_dep, 0);
+    broadcast_i_single(type_invgrid_lat, 0);
+    broadcast_i_single(type_invgrid_lon, 0);
     broadcast_i_single(n_inv_r, 0);
     broadcast_i_single(n_inv_t, 0);
     broadcast_i_single(n_inv_p, 0);
@@ -537,78 +623,80 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(max_lat_inv, 0);
     broadcast_cr_single(min_lon_inv, 0);
     broadcast_cr_single(max_lon_inv, 0);
-
-    broadcast_i_single(type_invgrid_dep, 0);
-    broadcast_i_single(type_invgrid_lat, 0);
-    broadcast_i_single(type_invgrid_lon, 0);
     broadcast_i_single(n_inv_r_flex, 0);
     broadcast_i_single(n_inv_t_flex, 0);
     broadcast_i_single(n_inv_p_flex, 0);
-
     if (world_rank != 0) {
         dep_inv = new CUSTOMREAL[n_inv_r_flex];
         lat_inv = new CUSTOMREAL[n_inv_t_flex];
         lon_inv = new CUSTOMREAL[n_inv_p_flex];
     }
-
     broadcast_cr(dep_inv,n_inv_r_flex, 0);
     broadcast_cr(lat_inv,n_inv_t_flex, 0);
     broadcast_cr(lon_inv,n_inv_p_flex, 0);
 
+    broadcast_bool_single(use_sta_correction, 0);
+    broadcast_bool_single(sta_correction_file_exist, 0);
+    broadcast_str(sta_correction_file, 0);
+
+    broadcast_bool_single(use_abs, 0);
+    broadcast_cr(residual_weight_abs, n_weight, 0);
+    broadcast_cr(distance_weight_abs, n_weight, 0);
+    broadcast_bool_single(use_cs, 0);
+    broadcast_cr(residual_weight_cs, n_weight, 0);
+    broadcast_cr(azimuthal_weight_cs, n_weight, 0);
+    broadcast_bool_single(use_cr, 0);
+    broadcast_cr(residual_weight_cr, n_weight, 0);
+    broadcast_cr(azimuthal_weight_cr, n_weight, 0);
+
+    broadcast_bool_single(balance_data_weight, 0);
     broadcast_cr_single(abs_time_local_weight, 0);
     broadcast_cr_single(cs_dif_time_local_weight, 0);
     broadcast_cr_single(cr_dif_time_local_weight, 0);
     broadcast_cr_single(teleseismic_weight, 0);
-    broadcast_i_single(is_balance_data_weight, 0);
 
+    broadcast_bool_single(update_slowness, 0);
+    broadcast_bool_single(update_azi_ani, 0);
+    broadcast_bool_single(update_rad_ani, 0);
+    broadcast_cr(depth_taper,2,0);
+
+    broadcast_cr_single(step_length_src_reloc, 0);
+    broadcast_cr_single(step_length_decay_src_reloc, 0);
+    broadcast_cr_single(rescaling_dep, 0);
+    broadcast_cr_single(rescaling_lat, 0);
+    broadcast_cr_single(rescaling_lon, 0);
+    broadcast_cr_single(rescaling_ortime, 0);
     broadcast_cr_single(max_change_dep, 0);
     broadcast_cr_single(max_change_lat, 0);
     broadcast_cr_single(max_change_lon, 0);
-    broadcast_cr_single(TOL_SRC_RELOC, 0);
-    broadcast_i_single(is_ortime_local_search, 0);
-    broadcast_cr_single(ref_ortime_change, 0);
     broadcast_cr_single(max_change_ortime, 0);
+    broadcast_i_single(N_ITER_MAX_SRC_RELOC, 0);
+    broadcast_cr_single(TOL_SRC_RELOC, 0);
+    broadcast_bool_single(ortime_local_search, 0);
+    broadcast_cr_single(ref_ortime_change, 0);
     broadcast_cr_single(step_length_ortime_rescale, 0);
 
-    broadcast_i_single(smooth_method, 0);
-    broadcast_cr_single(smooth_lr, 0);
-    broadcast_cr_single(smooth_lt, 0);
-    broadcast_cr_single(smooth_lp, 0);
-    broadcast_i_single(optim_method, 0);
-    broadcast_i_single(max_iter_inv, 0);
-    broadcast_cr_single(step_length_init, 0);
-    broadcast_cr_single(step_length_init_sc, 0);
-    broadcast_cr_single(step_length_decay, 0);
-    broadcast_cr_single(step_length_src_reloc, 0);
-    broadcast_cr_single(step_length_decay, 0);
-    broadcast_cr_single(regularization_weight, 0);
-    broadcast_i_single(max_sub_iterations, 0);
-    broadcast_i_single(ndiv_i, 0);
-    broadcast_i_single(ndiv_j, 0);
-    broadcast_i_single(ndiv_k, 0);
-    broadcast_i_single(n_subprocs, 0);
-    broadcast_i_single(n_sims, 0);
+    broadcast_bool_single(use_abs_reloc, 0);
+    broadcast_cr(residual_weight_abs_reloc, n_weight, 0);
+    broadcast_cr(distance_weight_abs_reloc, n_weight, 0);
+    broadcast_bool_single(use_cr_reloc, 0);
+    broadcast_cr(residual_weight_cr_reloc, n_weight, 0);
+    broadcast_cr(azimuthal_weight_cr_reloc, n_weight, 0);
+
+    broadcast_i_single(inv_mode, 0);
+    broadcast_bool_single(relocation_first, 0);
+    broadcast_i_single(relocation_first_iterations, 0);
+    broadcast_i_single(relocation_every_N_steps, 0);
+    broadcast_bool_single(relocation_final, 0);
+    broadcast_i_single(relocation_final_iterations, 0);
+
     broadcast_cr_single(conv_tol, 0);
     broadcast_i_single(max_iter, 0);
     broadcast_i_single(stencil_order, 0);
     broadcast_bool_single(hybrid_stencil_order, 0);
     broadcast_i_single(stencil_type, 0);
     broadcast_i_single(sweep_type, 0);
-    broadcast_i_single(output_format, 0);
     broadcast_bool_single(if_test, 0);
-    broadcast_i_single(use_gpu, 0);
-
-    broadcast_bool_single(is_output_source_field, 0);
-    broadcast_bool_single(is_output_model_dat, 0);
-    broadcast_bool_single(is_verbose_output, 0);
-    broadcast_bool_single(is_output_final_model, 0);
-    broadcast_bool_single(is_output_in_process, 0);
-    broadcast_bool_single(is_single_precision_output, 0);
-    broadcast_bool_single(is_inv_slowness, 0);
-    broadcast_bool_single(is_inv_azi_ani, 0);
-    broadcast_bool_single(is_inv_rad_ani, 0);
-    broadcast_cr(kernel_taper,2,0);
-    broadcast_bool_single(is_sta_correction, 0);
 
     // check contradictory settings
     check_contradictions();
@@ -669,65 +757,127 @@ void InputParams::write_params_to_file() {
     // write all the simulation parameters in another yaml file
     std::string file_name = "params_log.yaml";
     std::ofstream fout(file_name);
-    fout << "version: " << 2 << std::endl;
+    // print boolean as string
+    fout << std::boolalpha;
+
+    fout << "version: " << 3 << std::endl;
 
     fout << std::endl;
+
+    fout << "#################################################" << std:endl;
+    fout << "#            computational domian               #" << std:endl;
+    fout << "#################################################" << std:endl;
     fout << "domain:" << std::endl;
-    fout << "   min_max_dep: [" << min_dep << ", " << max_dep << "] # depth in km" << std::endl;
-    fout << "   min_max_lat: [" << min_lat << ", " << max_lat << "] # latitude in degree" << std::endl;
-    fout << "   min_max_lon: [" << min_lon << ", " << max_lon << "] # longitude in degree" << std::endl;
-    fout << "   n_rtp: [" << ngrid_k << ", " << ngrid_j << ", " << ngrid_i << "] # number of nodes in depth,latitude,longitude direction" << std::endl;
-
+    fout << "  min_max_dep: [" << min_dep << ", " << max_dep << "] # depth in km" << std::endl;
+    fout << "  min_max_lat: [" << min_lat << ", " << max_lat << "] # latitude in degree" << std::endl;
+    fout << "  min_max_lon: [" << min_lon << ", " << max_lon << "] # longitude in degree" << std::endl;
+    fout << "  n_rtp: [" << ngrid_k << ", " << ngrid_j << ", " << ngrid_i << "] # number of nodes in depth,latitude,longitude direction" << std::endl;
     fout << std::endl;
+
+    fout << "#################################################" << std::endl;
+    fout << "#            traveltime data file path          #" << std::endl;
+    fout << "#################################################" << std::endl;
     fout << "source:" << std::endl;
-    fout << "   src_rec_file: " << src_rec_file     << " # source receiver file path" << std::endl;
-    fout << "   swap_src_rec: " << int(swap_src_rec) << " # swap source and receiver (1: yes, 0: no)" << std::endl;
-
+    fout << "  src_rec_file: " << src_rec_file     << " # source receiver file path" << std::endl;
+    fout << "  swap_src_rec: " << swap_src_rec << " # swap source and receiver" << std::endl;
     fout << std::endl;
+
+    fout << "#################################################" << std::endl;
+    fout << "#            initial model file path            #" << std::endl;
+    fout << "#################################################" << std::endl;
     fout << "model:" << std::endl;
-    fout << "   init_model_path: " << init_model_path << " # path to initial model file " << std::endl;
+    fout << "  init_model_path: " << init_model_path << " # path to initial model file " << std::endl;
     // check if model_1d_name has any characters
     if (model_1d_name.size() > 0)
-        fout << "   model_1d_name: " << model_1d_name;
+        fout << "  model_1d_name: " << model_1d_name;
     else
         fout << "#   model_1d_name: " << "dummy_model_1d_name";
     fout << " # 1D model name used in teleseismic 2D solver (iasp91, ak135, user_defined is available), defined in include/1d_model.h" << std::endl;
-
     fout << std::endl;
-    fout << "inversion:" << std::endl;
-    fout << "   run_mode: "           << run_mode << " # 0 for forward simulation only, 1 for inversion" << std::endl;
-    fout << "   output_dir: "         << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
-    fout << "   optim_method: "          << optim_method << " # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)" << std::endl;
-    fout << "   max_iterations_inv: "    << max_iter_inv << " # maximum number of inversion iterations" << std::endl;
-    fout << "   step_length: "             << step_length_init << " # initial step size for model update" << std::endl;
-    fout << "   step_length_sc: "          << step_length_init_sc << " # ..."  << std::endl;
-    fout << "   step_length_decay: "       << step_length_decay << " # ..." << std::endl;
-    fout << "   smooth_method: "         << smooth_method << " # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)" << std::endl;
 
-    fout << std::endl;
-    fout << "   # parameters for multiparametric inversion" << std::endl;
-    fout << "   n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
-    fout << "   n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
-    if (sta_correction_file_exist)
-        fout << "   sta_correction_file: " << sta_correction_file;
-    else
-        fout << "#   sta_correction_file: " << "dummy_sta_correction_file";
-    fout << " # station correction file path" << std::endl;
-    fout << "   type_invgrid_dep: " << type_invgrid_dep << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "   type_invgrid_lat: " << type_invgrid_lat << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "   type_invgrid_lon: " << type_invgrid_lon << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
 
+    fout << "#################################################" << std::endl;
+    fout << "#            parallel computation settings      #" << std::endl;
+    fout << "#################################################" << std::endl;
+    fout << "parallel: # parameters for parallel computation" << std::endl;
+    fout << "  n_sims: "    << n_sims << " # number of simultanoues runs" << std::endl;
+    fout << "  ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction" << std::endl;
+    fout << "  nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization" << std::endl;
+    fout << "  use_gpu: "   << use_gpu << " # true if use gpu (EXPERIMENTAL)" << std::endl;
     fout << std::endl;
-    fout << "   # parameters for uniform inversion grid" << std::endl;
-    fout << "   min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "]" << " # depth in km (Radius of the earth is defined in config.h/R_earth)"  << std::endl;
-    fout << "   min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "]" << " # latitude in degree"  << std::endl;
-    fout << "   min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "]" << " # longitude in degree" << std::endl;
 
+    fout << "############################################" << std::endl;
+    fout << "#            output file setting           #" << std::endl;
+    fout << "############################################" << std::endl;
+    fout << "output_setting:" << std::endl;
+    fout << "  output_dir: "              << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
+    fout << "  output_source_field:     " << output_source_field         << " # output the calculated field of all sources                       " << std::endl;
+    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat or not.                     " << std::endl;
+    fout << "  output_final_model:      " << output_final_model          << " # output merged final model or not.                                " << std::endl;
+    fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
+    fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
+    fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, if no, only model parameters are out." << std::endl;
+    fout << "  output_file_format:      " << output_format               << " # output record or not.                                            " << std::endl;
     fout << std::endl;
-    fout << "   # parameters for flexible inversion grid" << std::endl;
+
+    fout << "#################################################" << std::endl;
+    fout << "#          inversion or forward modeling        #" << std::endl;
+    fout << "#################################################" << std::endl;
+    fout << "# run mode"                                        << std::endl;
+    fout << "# 0 for forward simulation only,"                  << std::endl;
+    fout << "# 1 for inversion"                                 << std::endl;
+    fout << "# 2 for earthquake relocation"                     << std::endl;
+    fout << "# 3 for inversion+earthquake relocation"           << std::endl;
+    fout << "run_mode: " << run_mode << std::endl;
+    fout << std::endl;
+
+    fout << "###################################################" << std::endl;
+    fout << "#          model update parameters setting        #" << std::endl;
+    fout << "###################################################" << std::endl;
+    fout << "model_update:" << std::endl;
+    fout << "  max_iterations: " << max_iter_inv << " # maximum number of inversion iterations" << std::endl;
+    fout << "  optim_method: "   << optim_method << " # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)" << std::endl;
+    fout << std::endl;
+    fout << "  #common parameters for all optim methods" << std::endl;
+    fout << "  step_length: "             << step_length_init << " # step length of model perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
+    fout << std::endl;
+    fout << "  # parameters for optim_method 0 (gradient_descent)" std::endl;
+    fout << "  optim_method_0:" << std::endl;
+    fout << "    step_length_decay: " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
+    fout << "    step_length_sc: "    << step_length_init_sc << " # ..."  << std::endl;
+    fout << std::endl;
+    fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
+    fout << "  optim_method_1_2:" << std::endl;
+    fout << "    max_sub_iterations: "    << max_sub_iterations << " # maximum number of each sub-iteration" << std::endl;
+    fout << "    regularization_weight: " << regularization_weight << " # weight value for regularization (lbfgs mode only)" << std::endl;
+    fout << std::endl;
+
+    fout << "  # smoothing" << std::endl;
+    fout << "  smoothing:" << std::endl;
+    fout << "    smooth_method: " << smooth_method << " # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)" << std::endl;
+    fout << "    l_smooth_rtp: ["         << smooth_lr << ", " << smooth_lt << ", " << smooth_lp << "] # smoothing coefficients for laplacian smoothing" << std::endl;
+    fout << std::endl;
+
+    fout << "  # parameters for smooth method 0 (multigrid model parametrization)" << std::endl;
+    fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
+    fout << std::endl;
+
+    fout << "  # inversion grid type" << std::endl;
+    fout << "  type_invgrid_dep: " << type_invgrid_dep << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "  type_invgrid_lat: " << type_invgrid_lat << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "  type_invgrid_lon: " << type_invgrid_lon << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << std::endl;
+
+    fout << "  # settings for uniform inversion grid (if type_*_inv : 0)" << std::endl;
+    fout << "  n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
+    fout << "  min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "]" << " # depth in km (Radius of the earth is defined in config.h/R_earth)"  << std::endl;
+    fout << "  min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "]" << " # latitude in degree"  << std::endl;
+    fout << "  min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "]" << " # longitude in degree" << std::endl;
+    fout << std::endl;
+
+    fout << "  # settings for flexible inversion grid (if type_*_inv : 1)" << std::endl;
     if (n_inv_r_flex_read) {
-        fout << "   n_inv_r_flex: " << n_inv_r_flex << std::endl;
-        fout << "   dep_inv: [";
+        fout << "  dep_inv: [";
         for (int i = 0; i < n_inv_r_flex; i++){
             fout << dep_inv[i];
             if (i != n_inv_r_flex-1)
@@ -735,12 +885,10 @@ void InputParams::write_params_to_file() {
         }
         fout << "]" << std::endl;
     } else {
-        fout << "#   n_inv_r_flex: " << "3" << std::endl;
-        fout << "#   dep_inv: " << "[1, 1, 1]" << std::endl;
+        fout << "#  dep_inv: " << "[1, 1, 1]" << std::endl;
     }
     if (n_inv_t_flex_read) {
-        fout << "   n_inv_t_flex: " << n_inv_t_flex << std::endl;
-        fout << "   lat_inv: [";
+        fout << "  lat_inv: [";
         for (int i = 0; i < n_inv_t_flex; i++){
             fout << lat_inv[i];
             if (i != n_inv_t_flex-1)
@@ -748,12 +896,10 @@ void InputParams::write_params_to_file() {
         }
         fout << "]" << std::endl;
     } else {
-        fout << "#   n_inv_t_flex: " << "3" << std::endl;
-        fout << "#   lat_inv: " << "[1, 1, 1]" << std::endl;
+        fout << "#  lat_inv: " << "[1, 1, 1]" << std::endl;
     }
     if (n_inv_p_flex_read) {
-        fout << "   n_inv_p_flex: " << n_inv_p_flex << std::endl;
-        fout << "   lon_inv: [";
+        fout << "  lon_inv: [";
         for (int i = 0; i < n_inv_p_flex; i++){
             fout << lon_inv[i];
             if (i != n_inv_p_flex-1)
@@ -761,30 +907,64 @@ void InputParams::write_params_to_file() {
         }
         fout << "]" << std::endl;
     } else {
-        fout << "#   n_inv_p_flex: " << "3" << std::endl;
-        fout << "#   lon_inv: " << "[1, 1, 1]" << std::endl;
+        fout << "#  lon_inv: " << "[1, 1, 1]" << std::endl;
     }
-
     fout << std::endl;
-    fout << "   # parameters for halve-stepping or lbfg mode" << std::endl;
-    fout << "   max_sub_iterations: "    << max_sub_iterations << " # maximum number of each sub-iteration" << std::endl;
-    fout << "   l_smooth_rtp: ["         << smooth_lr << ", " << smooth_lt << ", " << smooth_lp << "] # smoothing coefficients for laplacian smoothing" << std::endl;
-    fout << "   regularization_weight: " << regularization_weight << " # weight value for regularization (lbfgs mode only)" << std::endl;
 
+    fout << "  # path to station correction file" << std::endl;
+    fout << "  use_sta_correction: " << use_sta_correction << std::endl;
+    if (sta_correction_file_exist)
+        fout << "  sta_correction_file: " << sta_correction_file;
+    else
+        fout << "#  sta_correction_file: " << "dummy_sta_correction_file";
+    fout << "  # station correction file path" << std::endl;
     fout << std::endl;
+
+    fout << "  #" << std::endl;
+
+    fout << "# -------------- using absolute traveltime data --------------" << std::endl;
+    fout << "abs_time:" << std::endl;
+    fout << "  use_abs_time: " << use_abs << "# 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "  residual_weight: [" << 1.0 << ", " << 3.0 << ", " << 1.0 << ", " << 0.1 << "] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "  distance_weight: [50.0, 150.0, 1.0, 0.1] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
+
+    fout << "# -------------- using common source differential traveltime data --------------
+    fout << "cs_dif_time:
+    fout << "  use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    fout << "  residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
+    fout << "  azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two stations.
+
+    fout << "# -------------- using common receiver differential traveltime data --------------
+    fout << "cr_dif_time:
+    fout << "  use_cr_time: true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    fout << "  residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
+    fout << "  azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two earthquakes.
+
+    fout << "# -------------- global weight of different types of data (to balance the weight of different data) --------------
+    fout << "global_weight:
+    fout << "  balance_data_weight: true # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)
+    fout << "  abs_time_weight: 1.0 # weight of absolute traveltime data,                       default: 1.0
+    fout << "  cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data,     default: 1.0
+    fout << "  cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data,   default: 1.0
+    fout << "  teleseismic_weight: 1.0 # weight of teleseismic data,                               default: 1.0  (exclude in this version)
+
+    fout << "# -------------- inversion parameters (exclude in this version) --------------
+    fout << "update_slowness : true  # update slowness (velocity) or not.              default: true
+    fout << "update_azi_ani  : false # update azimuthal anisotropy (xi, eta) or not.   default: false
+    fout << "update_rad_ani  : false # update radial anisotropy (in future) or not.    default: false
+
+    fout << "# -------------- for teleseismic inversion (exclude in this version) --------------
+    fout << "depth_taper : [-200.0, -100.0]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+
+
+
+
     fout << "inv_strategy: # flags for selecting the target parameters to be inversed" << std::endl;
-    fout << "   is_inv_slowness: "   << int(is_inv_slowness) << " # 1: slowness value will be calculated in inversion, 0: will not be calculated" << std::endl;
-    fout << "   is_inv_azi_ani: "    << int(is_inv_azi_ani)  << " # 1: azimuth anisotropy value will be calculated in inversion, 0: will not be calculated"<< std::endl;
-    fout << "   is_inv_rad_ani: "    << int(is_inv_rad_ani)  << " # flag for radial anisotropy (Not implemented yet)" << std::endl;
-    fout << "   kernel_taper: ["     << kernel_taper[0] << ", " << kernel_taper[1] << "]" << std::endl;
-    fout << "   is_sta_correction: " << int(is_sta_correction) << std::endl;
-
-    fout << std::endl;
-    fout << "parallel: # parameters for parallel computation" << std::endl;
-    fout << "   n_sims: "    << n_sims << " # number of simultanoues runs" << std::endl;
-    fout << "   ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction" << std::endl;
-    fout << "   nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization" << std::endl;
-    fout << "   use_gpu: "   << int(use_gpu) << " # 1 if use gpu (EXPERIMENTAL)" << std::endl;
+    fout << "   update_slowness: "   << int(update_slowness) << " # 1: slowness value will be calculated in inversion, 0: will not be calculated" << std::endl;
+    fout << "   update_azi_ani: "    << int(update_azi_ani)  << " # 1: azimuth anisotropy value will be calculated in inversion, 0: will not be calculated"<< std::endl;
+    fout << "   update_rad_ani: "    << int(update_rad_ani)  << " # flag for radial anisotropy (Not implemented yet)" << std::endl;
+    fout << "   depth_taper: ["     << depth_taper[0] << ", " << depth_taper[1] << "]" << std::endl;
+    fout << "   use_sta_correction: " << int(use_sta_correction) << std::endl;
 
     fout << std::endl;
     fout << "calculation:" << std::endl;
@@ -803,14 +983,6 @@ void InputParams::write_params_to_file() {
     fout << "   output_file_format: " << ff_flag << std::endl;
 
     fout << std::endl;
-    fout << "output_setting:" << std::endl;
-    fout << "   is_output_source_field:     " << int(is_output_source_field)         << " # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_output_model_dat:        " << int(is_output_model_dat)            << " # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_verbose_output:          " << int(is_verbose_output)              << " # output internal parameters, if no, only model parameters are out.     1 for yes; 0 for no;  default: 0" << std::endl;
-    fout << "   is_output_final_model:      " << int(is_output_final_model)          << " # output merged final model or not.                                     1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_output_in_process:       " << int(is_output_in_process)           << " # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1" << std::endl;
-    fout << "   is_single_precision_output: " << int(is_single_precision_output)     << " # output results in single precision or not.                            1 for yes; 0 for no;  default: 0" << std::endl;
-
     //fout << std::endl;
     //fout << "debug:" << std::endl;
     //fout << "   debug_mode: " << int(if_test) << std::endl;
@@ -1436,7 +1608,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
 
 
 void InputParams::write_station_correction_file(int i_inv){
-    if(is_sta_correction && run_mode == DO_INVERSION) {  // if apply station correction
+    if(use_sta_correction && run_mode == DO_INVERSION) {  // if apply station correction
         station_correction_file_out = output_dir + "/station_correction_file_step_" + int2string_zero_fill(i_inv) +".dat";
 
         std::ofstream ofs;
@@ -1861,7 +2033,7 @@ void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, std::s
 
 // station correction kernel (need revise)
 void InputParams::station_correction_update(CUSTOMREAL stepsize){
-    if (!is_sta_correction)
+    if (!use_sta_correction)
         return;
 
     // station correction kernel is generated in the main process and sent the value to all other processors

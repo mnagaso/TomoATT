@@ -122,7 +122,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     }
 
     // divide optimal origin time by summed weight
-    if (is_ortime_local_search == 0) {
+    if (ortime_local_search == 0) {
         IP.allreduce_rec_map_tau_opt();
         IP.allreduce_rec_map_sum_weight();
 

@@ -96,10 +96,10 @@ public:
     bool get_if_single_precision_output() {return single_precision_output;};
     int  get_verbose_output_level()       {return verbose_output_level;}; // #TODO: modify codes for verbose_output_level > 1
 
-    bool get_is_inv_slowness()        {return is_inv_slowness;};
-    bool get_is_inv_azi_ani()         {return is_inv_azi_ani;};
-    bool get_is_inv_rad_ani()         {return is_inv_rad_ani;};
-    CUSTOMREAL * get_kernel_taper()   {return kernel_taper;};
+    bool get_update_slowness()        {return update_slowness;};
+    bool get_update_azi_ani()         {return update_azi_ani;};
+    bool get_update_rad_ani()         {return update_rad_ani;};
+    CUSTOMREAL * get_depth_taper()   {return depth_taper;};
 
 
     // prepare source list for this simulation group
@@ -232,6 +232,13 @@ private:
     CUSTOMREAL distance_weight_abs[n_weight];
     CUSTOMREAL azimuthal_weight_cs[n_weight];
     CUSTOMREAL azimuthal_weight_cr[n_weight];
+    // for relocation
+    bool use_abs_reloc = false; // use absolute travel time or not
+    bool use_cr_reloc  = false; // use common source double difference or not
+    CUSTOMREAL residual_weight_abs_reloc[n_weight];
+    CUSTOMREAL residual_weight_cr_reloc[n_weight];
+    CUSTOMREAL distance_weight_abs_reloc[n_weight];
+    CUSTOMREAL azimuthal_weight_cr_reloc[n_weight];
 
     // convergence setting
     CUSTOMREAL conv_tol;       // convergence tolerance
@@ -268,12 +275,12 @@ private:
     int verbose_output_level    = 0;   // output verbose information or not.
 
     // inversion setting
-    bool is_inv_slowness = true;  // update slowness (velocity) or not.
-    bool is_inv_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
-    bool is_inv_rad_ani  = false; // update radial anisotropy (in future) or not.
+    bool update_slowness = true;  // update slowness (velocity) or not.
+    bool update_azi_ani  = true; // update azimuthal anisotropy (xi, eta) or not.
+    bool update_rad_ani  = false; // update radial anisotropy (in future) or not.
 
-    CUSTOMREAL kernel_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
-    bool is_sta_correction = false; // apply station correction or not.
+    CUSTOMREAL depth_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+    bool use_sta_correction = false; // apply station correction or not.
 
     // single precision (float) output mode
     bool single_precision_output = false;

@@ -32,7 +32,7 @@ parallel: # parameters for parallel computation
   n_sims: 1 # number of simultanoues runs
   ndiv_rtp: [1, 2, 2] # number of subdivision on each direction
   nproc_sub: 2 # number of processors for sweep parallelization
-  use_gpu: true # 1 if use gpu (EXPERIMENTAL)
+  use_gpu: true # true if use gpu (EXPERIMENTAL)
 
 
 ############################################
@@ -105,6 +105,7 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   lon_inv: [0.0, 1.0] # longitude in degree (ignored if type_lon_inv : 0)
 
   # path to station correction file
+  use_sta_correction: false
   sta_correction_file: dummy_sta_correction_file # station correction file path
 
   # -------------- using absolute traveltime data --------------
@@ -152,6 +153,13 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   rescaling_dep_lat_lon_ortime  : [10.0, 10.0, 10.0, 1.0]  # The perturbation is related to <rescaling_dep_lat_lon_ortime>. Unit: km,km,km,second
   max_change_dep_lat_lon_ortime : [5.0, 5.0, 5.0, 0.5]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second
   max_iterations : 100  # maximum number of iterations for relocation
+  tol_gradient : 0.0001 # threshold value for checking the convergence for each iteration
+
+  # params keeped for current version of relocation but may not be required
+  ortime_local_search : true # true: do local search for origin time; false: do not do local search for origin time
+  ref_ortime_change : 0.5 # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time.
+  step_length_ortime_rescale : 0.1 # step length for rescaling origin time
+
 
   # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
@@ -164,7 +172,7 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   cr_dif_time:
     use_cr_time : true # 'yes' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
     residual_weight  : [1.0,   3.0,   1.0, 0.1]    # weight (wt) of residual.
-    distance_weight :  [10.0, 30.0,   1.0, 0.1]    # weight of distance (km) between two earthquakes.
+    azimuthal_weight : [10.0, 30.0,   1.0, 0.1]    # weight of azimuth (deg.) between two earthquakes.
 
 
 ####################################################################

@@ -656,7 +656,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
     //
     // balance the data weight
     //
-    if (is_balance_data_weight){
+    if (balance_data_weight){
         for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
             for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
                 for(auto& data: it_rec->second){
