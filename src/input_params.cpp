@@ -491,16 +491,13 @@ InputParams::InputParams(std::string& input_file){
             if (config["calculation"]["sweep_type"]) {
                 sweep_type = config["calculation"]["sweep_type"].as<int>();
             }
-       }
+        }
 
         if (config["debug"]) {
             if (config["debug"]["debug_mode"]) {
                 if_test = config["debug"]["debug_mode"].as<bool>();
             }
         }
-
-
-////////// done ///////////////////////////////////////////
 
 
         std::cout << "min_max_dep: " << min_dep << " " << max_dep << std::endl;
@@ -764,9 +761,9 @@ void InputParams::write_params_to_file() {
 
     fout << std::endl;
 
-    fout << "#################################################" << std:endl;
-    fout << "#            computational domian               #" << std:endl;
-    fout << "#################################################" << std:endl;
+    fout << "#################################################" << std::endl;
+    fout << "#            computational domian               #" << std::endl;
+    fout << "#################################################" << std::endl;
     fout << "domain:" << std::endl;
     fout << "  min_max_dep: [" << min_dep << ", " << max_dep << "] # depth in km" << std::endl;
     fout << "  min_max_lat: [" << min_lat << ", " << max_lat << "] # latitude in degree" << std::endl;
@@ -817,7 +814,16 @@ void InputParams::write_params_to_file() {
     fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
     fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
     fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, if no, only model parameters are out." << std::endl;
-    fout << "  output_file_format:      " << output_format               << " # output record or not.                                            " << std::endl;
+    int ff_flag=0;
+    if (output_format == OUTPUT_FORMAT_HDF5) ff_flag = 0;
+    else if (output_format == OUTPUT_FORMAT_ASCII) ff_flag = 1;
+    else {
+        std::cout << "Error: output_format is not defined!" << std::endl;
+        exit(1);
+    }
+    fout << "  output_file_format: " << ff_flag << std::endl;
+
+
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
@@ -841,7 +847,7 @@ void InputParams::write_params_to_file() {
     fout << "  #common parameters for all optim methods" << std::endl;
     fout << "  step_length: "             << step_length_init << " # step length of model perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
     fout << std::endl;
-    fout << "  # parameters for optim_method 0 (gradient_descent)" std::endl;
+    fout << "  # parameters for optim_method 0 (gradient_descent)" << std::endl;
     fout << "  optim_method_0:" << std::endl;
     fout << "    step_length_decay: " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
     fout << "    step_length_sc: "    << step_length_init_sc << " # ..."  << std::endl;
@@ -920,68 +926,173 @@ void InputParams::write_params_to_file() {
     fout << "  # station correction file path" << std::endl;
     fout << std::endl;
 
-    fout << "  #" << std::endl;
+    fout << std::endl;
 
     fout << "# -------------- using absolute traveltime data --------------" << std::endl;
     fout << "abs_time:" << std::endl;
     fout << "  use_abs_time: " << use_abs << "# 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
-    fout << "  residual_weight: [" << 1.0 << ", " << 3.0 << ", " << 1.0 << ", " << 0.1 << "] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
-    fout << "  distance_weight: [50.0, 150.0, 1.0, 0.1] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
-
-    fout << "# -------------- using common source differential traveltime data --------------
-    fout << "cs_dif_time:
-    fout << "  use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    fout << "  residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
-    fout << "  azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two stations.
-
-    fout << "# -------------- using common receiver differential traveltime data --------------
-    fout << "cr_dif_time:
-    fout << "  use_cr_time: true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    fout << "  residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
-    fout << "  azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two earthquakes.
-
-    fout << "# -------------- global weight of different types of data (to balance the weight of different data) --------------
-    fout << "global_weight:
-    fout << "  balance_data_weight: true # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)
-    fout << "  abs_time_weight: 1.0 # weight of absolute traveltime data,                       default: 1.0
-    fout << "  cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data,     default: 1.0
-    fout << "  cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data,   default: 1.0
-    fout << "  teleseismic_weight: 1.0 # weight of teleseismic data,                               default: 1.0  (exclude in this version)
-
-    fout << "# -------------- inversion parameters (exclude in this version) --------------
-    fout << "update_slowness : true  # update slowness (velocity) or not.              default: true
-    fout << "update_azi_ani  : false # update azimuthal anisotropy (xi, eta) or not.   default: false
-    fout << "update_rad_ani  : false # update radial anisotropy (in future) or not.    default: false
-
-    fout << "# -------------- for teleseismic inversion (exclude in this version) --------------
-    fout << "depth_taper : [-200.0, -100.0]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
-
-
-
-
-    fout << "inv_strategy: # flags for selecting the target parameters to be inversed" << std::endl;
-    fout << "   update_slowness: "   << int(update_slowness) << " # 1: slowness value will be calculated in inversion, 0: will not be calculated" << std::endl;
-    fout << "   update_azi_ani: "    << int(update_azi_ani)  << " # 1: azimuth anisotropy value will be calculated in inversion, 0: will not be calculated"<< std::endl;
-    fout << "   update_rad_ani: "    << int(update_rad_ani)  << " # flag for radial anisotropy (Not implemented yet)" << std::endl;
-    fout << "   depth_taper: ["     << depth_taper[0] << ", " << depth_taper[1] << "]" << std::endl;
-    fout << "   use_sta_correction: " << int(use_sta_correction) << std::endl;
-
+    fout << "  residual_weight: [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_abs[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "  distance_weight: [";
+    for (int i = 0; i < n_weight; i++){
+        fout << distance_weight_abs[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
     fout << std::endl;
+
+    fout << "# -------------- using common source differential traveltime data --------------" << std::endl;
+    fout << "cs_dif_time:" << std::endl;
+    fout << "  use_cs_time: " << use_cs << " # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "  residual_weight: [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_cs[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "] # weight (wt) of residual." << std::endl;
+    fout << "  azimuthal_weight: [";
+    for (int i = 0; i < n_weight; i++){
+        fout << azimuthal_weight_cs[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "] # weight of azimuth between two stations." << std::endl;
+    fout << std::endl;
+
+    fout << "# -------------- using common receiver differential traveltime data --------------" << std::endl;
+    fout << "cr_dif_time:" << std::endl;
+    fout << "  use_cr_time: " << use_cr << " # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "  residual_weight: [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_cr[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "] # weight (wt) of residual." << std::endl;
+    fout << "  azimuthal_weight: [";
+    for (int i = 0; i < n_weight; i++){
+        fout << azimuthal_weight_cr[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "] # weight of azimuth between two earthquakes." << std::endl;
+    fout << std::endl;
+
+    fout << "# -------------- global weight of different types of data (to balance the weight of different data) --------------" << std::endl;
+    fout << "global_weight:" << std::endl;
+    fout << "  balance_data_weight: " << balance_data_weight << " # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)" << std::endl;
+    fout << "  abs_time_weight: " << abs_time_local_weight  << " # weight of absolute traveltime data,                       default: 1.0" << std::endl;
+    fout << "  cs_dif_time_local_weight: " << cs_dif_time_local_weight << " # weight of common source differential traveltime data,     default: 1.0" << std::endl;
+    fout << "  cr_dif_time_local_weight: " << cr_dif_time_local_weight << " # weight of common receiver differential traveltime data,   default: 1.0" << std::endl;
+    fout << "  teleseismic_weight: " << teleseismic_weight << " # weight of teleseismic data,                               default: 1.0  (exclude in this version)" << std::endl;
+    fout << std::endl;
+
+    fout << "# -------------- inversion parameters (exclude in this version) --------------" << std::endl;
+    fout << "update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
+    fout << "update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
+    fout << "update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
+    fout << std::endl;
+
+    fout << "# -------------- for teleseismic inversion (exclude in this version) --------------" << std::endl;
+    fout << "depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf" << std::endl;
+    fout << std::endl;
+
+    fout << "#################################################" << std::endl;
+    fout << "#          relocation parameters setting        #" << std::endl;
+    fout << "#################################################" << std::endl;
+    fout << "relocation: # update earthquake hypocenter and origin time (when run_mode : 1)" << std::endl;
+    fout << std::endl;
+
+    fout << "  # relocation_strategy" << std::endl;
+    fout << "  step_length : " << step_length_init << " # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
+    fout << "  step_length_decay : " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
+
+    fout << "  rescaling_dep_lat_lon_ortime  : [";
+    fout << rescaling_dep << ", " << rescaling_lat << ", " << rescaling_lon << ", " << rescaling_ortime;
+    fout << "]  # The perturbation is related to <rescaling_dep_lat_lon_ortime>. Unit: km,km,km,second" << std::endl;
+
+    fout << "  max_change_dep_lat_lon_ortime : [";
+    fout << max_change_dep << ", " << max_change_lat << ", " << max_change_lon << ", " << max_change_ortime;
+    fout << "]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second" << std::endl;
+    fout << "  max_iterations : " << N_ITER_MAX_SRC_RELOC <<" # maximum number of iterations for relocation" << std::endl;
+    fout << "  tol_gradient : " << TOL_SRC_RELOC << " # threshold value for checking the convergence for each iteration" << std::endl;
+    fout << std::endl;
+
+    fout << "  # params keeped for current version of relocation but may not be required" << std::endl;
+    fout << "  ortime_local_search : " << ortime_local_search << " # true: do local search for origin time; false: do not do local search for origin time" << std::endl;
+    fout << "  ref_ortime_change : " << ref_ortime_change << " # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time." << std::endl;
+    fout << "  step_length_ortime_rescale : " << step_length_ortime_rescale << " # step length for rescaling origin time" << std::endl;
+    fout << std::endl;
+
+    fout << "  # more option for using different types of data is under development (following)" << std::endl;
+    fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
+    fout << "  abs_time:" << std::endl;
+    fout << "    use_abs_time : " << use_abs_reloc << " # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_abs_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]      # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "    distance_weight : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << distance_weight_abs_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]      # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
+    fout << std::endl;
+
+    fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
+    fout << "  cr_dif_time:" << std::endl;
+    fout << "    use_cr_time : " << use_cr_reloc <<" # 'yes' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight  : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_cr_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]    # weight (wt) of residual." << std::endl;
+    fout << "    azimuthal_weight : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << azimuthal_weight_cr_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]    # weight of azimuth (deg.) between two earthquakes." << std::endl;
+    fout << std::endl;
+
+    fout << "####################################################################" << std::endl;
+    fout << "#          inversion strategy for tomography and relocation        #" << std::endl;
+    fout << "####################################################################" << std::endl;
+    fout << "inversion_strategy: # update model parameters and earthquake hypocenter iteratively (when run_mode : 3)" << std::endl;
+    fout << std::endl;
+    fout << "  inv_mode : " << inv_mode << " # 0 for update model parameters and relocation iteratively. (other options for future work)" << std::endl;
+    fout << std::endl;
+    fout << "  # for inv_mode : 0, parameters below are required" << std::endl;
+    fout << "  inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation" << std::endl;
+    fout << "    relocation_first : " << relocation_first <<" # true: do relocation first; false: do not relocation first.  default: true" << std::endl;
+    fout << "    relocation_first_iterations : " << relocation_first_iterations << " # maximum number of iterations for relocation in the beginning. default: 10" << std::endl;
+    fout << "    relocation_every_N_steps : " << relocation_every_N_steps << " # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>" << std::endl;
+    fout << "    relocation_final : " << relocation_final << " # true: do relocation finally; false: do not relocation finally.  default: yes" << std::endl;
+    fout << "    relocation_final_iterations : " << relocation_final_iterations << " # maximum number of iterations for relocation in the beginning. default: 10" << std::endl;
+    fout << std::endl;
+
+
     fout << "calculation:" << std::endl;
     fout << "   convergence_tolerance: " << conv_tol << " # threshold value for checking the convergence for each forward/adjoint run"<< std::endl;
     fout << "   max_iterations: " << max_iter << " # number of maximum iteration for each forward/adjoint run" << std::endl;
     fout << "   stencil_order: " << stencil_order << " # order of stencil, 1 or 3" << std::endl;
     fout << "   stencil_type: " << stencil_type << " # 0: , 1: first-order upwind scheme (only sweep_type 0 is supported) " << std::endl;
     fout << "   sweep_type: " << sweep_type << " # 0: legacy, 1: cuthill-mckee with shm parallelization" << std::endl;
-    int ff_flag=0;
-    if (output_format == OUTPUT_FORMAT_HDF5) ff_flag = 0;
-    else if (output_format == OUTPUT_FORMAT_ASCII) ff_flag = 1;
-    else {
-        std::cout << "Error: output_format is not defined!" << std::endl;
-        exit(1);
-    }
-    fout << "   output_file_format: " << ff_flag << std::endl;
-
     fout << std::endl;
     //fout << std::endl;
     //fout << "debug:" << std::endl;

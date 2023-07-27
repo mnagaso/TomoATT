@@ -184,10 +184,10 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation
-    relocation_first : true  # yes: do relocation first; no: do not relocation first.  default: yes
+    relocation_first : true  # true: do relocation first; false: do not relocation first.  default: true
     relocation_first_iterations : 10 # maximum number of iterations for relocation in the beginning. default: 10
     relocation_every_N_steps : 5     # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>
-    relocation_final : true  # yes: do relocation finally; no: do not relocation finally.  default: yes
+    relocation_final : true  # true: do relocation finally; false: do not relocation finally.  default: true
     relocation_final_iterations : 10 # maximum number of iterations for relocation in the beginning. default: 10
 
 
