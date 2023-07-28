@@ -1,5 +1,34 @@
 #include "input_params.h"
 
+// Base case of the variadic template function
+template <typename T>
+void getNodeValue(const YAML::Node& node, const std::string& key, T& value) {
+    if (node[key]) {
+        try {
+            value = node[key].as<T>();
+        } catch (const YAML::Exception& e) {
+            std::cout << "Error parsing YAML value for key: " << key << ". " << e.what() << std::endl;
+        }
+    } else {
+        std::cout << "Key not found in YAML: " << key << std::endl;
+    }
+}
+
+// function overload for reading array
+template <typename T>
+void getNodeValue(const YAML::Node& node, const std::string& key, T& value, const int index) {
+    if (node[key]) {
+        try {
+            value = node[key][index].as<T>();
+        } catch (const YAML::Exception& e) {
+            std::cout << "Error parsing YAML value for key: " << key << ". " << e.what() << std::endl;
+        }
+    } else {
+        std::cout << "Key not found in YAML: " << key << std::endl;
+    }
+}
+
+
 InputParams::InputParams(std::string& input_file){
 
     if (world_rank == 0) {
@@ -11,25 +40,23 @@ InputParams::InputParams(std::string& input_file){
         //
         if (config["domain"]) {
             // minimum and maximum depth
-            if (config["domain"]["min_max_dep"]) {
-                min_dep = config["domain"]["min_max_dep"][0].as<CUSTOMREAL>();
-                max_dep = config["domain"]["min_max_dep"][1].as<CUSTOMREAL>();
-            }
+            getNodeValue(config["domain"], "min_max_dep", min_dep, 0);
+            getNodeValue(config["domain"], "min_max_dep", max_dep, 1);
             // minimum and maximum latitude
             if (config["domain"]["min_max_lat"]) {
-                min_lat = config["domain"]["min_max_lat"][0].as<CUSTOMREAL>();
-                max_lat = config["domain"]["min_max_lat"][1].as<CUSTOMREAL>();
+                getNodeValue(config["domain"], "min_max_lat", min_lat, 0);
+                getNodeValue(config["domain"], "min_max_lat", max_lat, 1);
             }
             // minimum and maximum longitude
             if (config["domain"]["min_max_lon"]) {
-                min_lon = config["domain"]["min_max_lon"][0].as<CUSTOMREAL>();
-                max_lon = config["domain"]["min_max_lon"][1].as<CUSTOMREAL>();
+                getNodeValue(config["domain"], "min_max_lon", min_lon, 0);
+                getNodeValue(config["domain"], "min_max_lon", max_lon, 1);
             }
             // number of grid nodes on each axis r(dep), t(lat), p(lon)
             if (config["domain"]["n_rtp"]) {
-                ngrid_k = config["domain"]["n_rtp"][0].as<int>();
-                ngrid_j = config["domain"]["n_rtp"][1].as<int>();
-                ngrid_i = config["domain"]["n_rtp"][2].as<int>();
+                getNodeValue(config["domain"], "n_rtp", ngrid_k, 0);
+                getNodeValue(config["domain"], "n_rtp", ngrid_j, 1);
+                getNodeValue(config["domain"], "n_rtp", ngrid_i, 2);
             }
         }
 
@@ -39,18 +66,18 @@ InputParams::InputParams(std::string& input_file){
         if (config["source"]) {
             // source depth(km) lat lon
             if (config["source"]["src_dep_lat_lon"]) {
-                src_dep = config["source"]["src_dep_lat_lon"][0].as<CUSTOMREAL>();
-                src_lat = config["source"]["src_dep_lat_lon"][1].as<CUSTOMREAL>();
-                src_lon = config["source"]["src_dep_lat_lon"][2].as<CUSTOMREAL>();
+                getNodeValue(config["source"], "src_dep_lat_lon", src_dep, 0);
+                getNodeValue(config["source"], "src_dep_lat_lon", src_lat, 1);
+                getNodeValue(config["source"], "src_dep_lat_lon", src_lon, 2);
             }
             // src rec file
             if (config["source"]["src_rec_file"]) {
                 src_rec_file_exist = true;
-                src_rec_file = config["source"]["src_rec_file"].as<std::string>();
+                getNodeValue(config["source"], "src_rec_file", src_rec_file);
             }
             // swap src rec
             if (config["source"]["swap_src_rec"]) {
-                swap_src_rec = config["source"]["swap_src_rec"].as<bool>();
+                getNodeValue(config["source"], "swap_src_rec", swap_src_rec);
             }
         }
 
@@ -60,11 +87,11 @@ InputParams::InputParams(std::string& input_file){
         if (config["model"]) {
             // model file path
             if (config["model"]["init_model_path"]) {
-                init_model_path = config["model"]["init_model_path"].as<std::string>();
+                getNodeValue(config["model"], "init_model_path", init_model_path);
             }
             // model file path
             if (config["model"]["model_1d_name"]) {
-                model_1d_name = config["model"]["model_1d_name"].as<std::string>();
+                getNodeValue(config["model"], "model_1d_name", model_1d_name);
             }
         }
 
@@ -74,21 +101,21 @@ InputParams::InputParams(std::string& input_file){
         if (config["parallel"]) {
             // number of simultaneous runs
             if(config["parallel"]["n_sims"]) {
-                n_sims = config["parallel"]["n_sims"].as<int>();
+                getNodeValue(config["parallel"], "n_sims", n_sims);
             }
             // number of subdomains
             if (config["parallel"]["ndiv_rtp"]) {
-                ndiv_k = config["parallel"]["ndiv_rtp"][0].as<int>();
-                ndiv_j = config["parallel"]["ndiv_rtp"][1].as<int>();
-                ndiv_i = config["parallel"]["ndiv_rtp"][2].as<int>();
+                getNodeValue(config["parallel"], "ndiv_rtp", ndiv_k, 0);
+                getNodeValue(config["parallel"], "ndiv_rtp", ndiv_j, 1);
+                getNodeValue(config["parallel"], "ndiv_rtp", ndiv_i, 2);
             }
             // number of processes in each subdomain
             if (config["parallel"]["nproc_sub"]) {
-                n_subprocs = config["parallel"]["nproc_sub"].as<int>();
+                getNodeValue(config["parallel"], "nproc_sub", n_subprocs);
             }
             // gpu flag
             if (config["parallel"]["use_gpu"]) {
-                use_gpu = config["parallel"]["use_gpu"].as<bool>();
+                getNodeValue(config["parallel"], "use_gpu", use_gpu);
             }
         }
 
@@ -98,16 +125,16 @@ InputParams::InputParams(std::string& input_file){
         if (config["output_setting"]) {
             // output path
             if (config["output_setting"]["output_dir"])
-                output_dir = config["output_setting"]["output_dir"].as<std::string>();
+                getNodeValue(config["output_setting"], "output_dir", output_dir);
 
             if (config["output_setting"]["output_source_field"])
-                output_source_field = config["output_setting"]["output_source_field"].as<bool>();
+                getNodeValue(config["output_setting"], "output_source_field", output_source_field);
 
             if (config["output_setting"]["output_model_dat"])
-                output_model_dat = config["output_setting"]["output_model_dat"].as<bool>();
+                getNodeValue(config["output_setting"], "output_model_dat", output_model_dat);
 
             if (config["output_setting"]["verbose_output_level"]){
-                verbose_output_level = config["output_setting"]["verbose_output_level"].as<int>();
+                getNodeValue(config["output_setting"], "verbose_output_level", verbose_output_level);
                 // currently only 0 or 1 is defined
                 if (verbose_output_level > 1) {
                     std::cout << "undefined verbose_output_level. stop." << std::endl;
@@ -117,17 +144,18 @@ InputParams::InputParams(std::string& input_file){
             }
 
             if (config["output_setting"]["output_final_model"])
-                output_final_model = config["output_setting"]["output_final_model"].as<bool>();
+                getNodeValue(config["output_setting"], "output_final_model", output_final_model);
 
             if (config["output_setting"]["output_in_process"])
-                output_in_process = config["output_setting"]["output_in_process"].as<bool>();
+                getNodeValue(config["output_setting"], "output_in_process", output_in_process);
 
             if (config["output_setting"]["single_precision_output"])
-                single_precision_output = config["output_setting"]["single_precision_output"].as<bool>();
+                getNodeValue(config["output_setting"], "single_precision_output", single_precision_output);
 
             // output file format
             if (config["output_setting"]["output_file_format"]) {
-                int ff_flag = config["output_setting"]["output_file_format"].as<int>();
+                int ff_flag;
+                getNodeValue(config["output_setting"], "output_file_format", ff_flag);
                 if (ff_flag == 0){
                     #if USE_HDF5
                         output_format = OUTPUT_FORMAT_HDF5;
@@ -150,7 +178,12 @@ InputParams::InputParams(std::string& input_file){
         // run mode
         //
         if (config["run_mode"]) {
-            run_mode = config["run_mode"].as<int>();
+            getNodeValue(config, "run_mode", run_mode);
+            if (run_mode > 3) {
+                std::cout << "undefined run_mode. stop." << std::endl;
+                //MPI_Finalize();
+                exit(1);
+            }
         }
 
         //
@@ -159,11 +192,11 @@ InputParams::InputParams(std::string& input_file){
         if (config["model_update"]) {
             // number of max iteration for inversion
             if (config["model_update"]["max_iterations"]) {
-                max_iter_inv = config["model_update"]["max_iterations"].as<int>();
+                getNodeValue(config["model_update"], "max_iterations", max_iter_inv);
             }
             // optim_method
             if (config["model_update"]["optim_method"]) {
-                optim_method = config["optim_method"]["optim_method"].as<int>();
+                getNodeValue(config["model_update"], "optim_method", optim_method);
                 if (optim_method > 2) {
                     std::cout << "undefined optim_method. stop." << std::endl;
                     //MPI_Finalize();
@@ -172,18 +205,18 @@ InputParams::InputParams(std::string& input_file){
             }
             // step_length
             if (config["model_update"]["step_length"]) {
-                step_length_init = config["model_update"]["step_length"].as<CUSTOMREAL>();
+                getNodeValue(config["model_update"], "step_length", step_length_init);
             }
 
             // parameters for optim_method == 0
             if (optim_method == 0) {
                 // step length decay
                 if (config["model_update"]["optim_method_0"]["step_length_decay"]) {
-                    step_length_decay = config["model_update"]["optim_method_0"]["step_length_decay"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_decay", step_length_decay);
                 }
                 // step length sc
                 if (config["model_update"]["optim_method_0"]["step_length_sc"]) {
-                    step_length_init_sc = config["model_update"]["optim_method_0"]["step_length_sc"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_sc", step_length_init_sc);
                 }
             }
 
@@ -191,17 +224,17 @@ InputParams::InputParams(std::string& input_file){
             if (optim_method == 1 || optim_method == 2) {
                 // max_sub_iterations
                 if (config["model_update"]["optim_method_1_2"]["max_sub_iterations"]) {
-                    max_sub_iterations = config["model_update"]["optim_method_1_2"]["max_sub_iterations"].as<int>();
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "max_sub_iterations", max_sub_iterations);
                 }
                 // regularization weight
                 if (config["model_update"]["optim_method_1_2"]["regularization_weight"]) {
-                    regularization_weight = config["model_update"]["optim_method_1_2"]["regularization_weight"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "regularization_weight", regularization_weight);
                 }
             }
 
             // smoothing
             if (config["model_update"]["smoothing"]["smooth_method"]) {
-                smooth_method = config["model_update"]["smoothing"]["smooth_method"].as<int>();
+                getNodeValue(config["model_update"]["smoothing"], "smooth_method", smooth_method);
                 if (smooth_method > 1) {
                     std::cout << "undefined smooth_method. stop." << std::endl;
                     MPI_Finalize();
@@ -210,52 +243,52 @@ InputParams::InputParams(std::string& input_file){
             }
             // l_smooth_rtp
             if (config["model_update"]["smoothing"]["l_smooth_rtp"]) {
-                smooth_lr = config["model_update"]["smoothing"]["l_smooth_rtp"][0].as<CUSTOMREAL>();
-                smooth_lt = config["model_update"]["smoothing"]["l_smooth_rtp"][1].as<CUSTOMREAL>();
-                smooth_lp = config["model_update"]["smoothing"]["l_smooth_rtp"][2].as<CUSTOMREAL>();
+                getNodeValue(config["model_update"]["smoothing"], "l_smooth_rtp", smooth_lr, 0);
+                getNodeValue(config["model_update"]["smoothing"], "l_smooth_rtp", smooth_lt, 1);
+                getNodeValue(config["model_update"]["smoothing"], "l_smooth_rtp", smooth_lp, 2);
             }
             // n_inversion_grid
             if (config["model_update"]["n_inversion_grid"]) {
-                n_inversion_grid = config["model_update"]["n_inversion_grid"].as<int>();
+                getNodeValue(config["model_update"], "n_inversion_grid", n_inversion_grid);
             }
             // type_invgrid_dep
             if (config["model_update"]["type_invgrid_dep"]) {
-                type_invgrid_dep = config["model_update"]["type_invgrid_dep"].as<int>();
+                getNodeValue(config["model_update"], "type_invgrid_dep", type_invgrid_dep);
             }
             if (config["model_update"]["type_invgrid_lat"]) {
-                type_invgrid_lat = config["model_update"]["type_invgrid_lat"].as<int>();
+                getNodeValue(config["model_update"], "type_invgrid_lat", type_invgrid_lat);
             }
             if (config["model_update"]["type_invgrid_lon"]) {
-                type_invgrid_lon = config["model_update"]["type_invgrid_lon"].as<int>();
+                getNodeValue(config["model_update"], "type_invgrid_lon", type_invgrid_lon);
             }
             // number of inversion grid for regular grid
             if (config["model_update"]["n_inv_dep_lat_lon"]) {
-                n_inv_r = config["model_update"]["n_inv_dep_lat_lon"][0].as<int>();
-                n_inv_t = config["model_update"]["n_inv_dep_lat_lon"][1].as<int>();
-                n_inv_p = config["model_update"]["n_inv_dep_lat_lon"][2].as<int>();
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_r, 0);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_t, 1);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_p, 2);
             }
             // inversion grid positions
             if (config["model_update"]["min_max_dep_inv"]) {
-                min_dep_inv = config["model_update"]["min_max_dep_inv"][0].as<CUSTOMREAL>();
-                max_dep_inv = config["model_update"]["min_max_dep_inv"][1].as<CUSTOMREAL>();
+                getNodeValue(config["model_update"], "min_max_dep_inv", min_dep_inv, 0);
+                getNodeValue(config["model_update"], "min_max_dep_inv", max_dep_inv, 1);
             }
             // minimum and maximum latitude
             if (config["model_update"]["min_max_lat_inv"]) {
-                min_lat_inv = config["model_update"]["min_max_lat_inv"][0].as<CUSTOMREAL>();
-                max_lat_inv = config["model_update"]["min_max_lat_inv"][1].as<CUSTOMREAL>();
+                getNodeValue(config["model_update"], "min_max_lat_inv", min_lat_inv, 0);
+                getNodeValue(config["model_update"], "min_max_lat_inv", max_lat_inv, 1);
             }
             // minimum and maximum longitude
             if (config["model_update"]["min_max_lon_inv"]) {
-                min_lon_inv = config["model_update"]["min_max_lon_inv"][0].as<CUSTOMREAL>();
-                max_lon_inv = config["model_update"]["min_max_lon_inv"][1].as<CUSTOMREAL>();
+                getNodeValue(config["model_update"], "min_max_lon_inv", min_lon_inv, 0);
+                getNodeValue(config["model_update"], "min_max_lon_inv", max_lon_inv, 1);
             }
 
             // flexible inversion grid
             if (config["model_update"]["dep_inv"]) {
-                n_inv_r_flex = config["model_update"]["dep_inv"].size();
+                n_inv_r_flex = config["model_update"]["dep_inv"].size(); // TODO: further refactoring needed
                 dep_inv = new CUSTOMREAL[n_inv_r_flex];
                 for (int i = 0; i < n_inv_r_flex; i++){
-                    dep_inv[i] = config["model_update"]["dep_inv"][i].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"], "dep_inv", dep_inv[i], i);
                 }
                 n_inv_r_flex_read = true;
             }
@@ -263,7 +296,7 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_t_flex = config["model_update"]["lat_inv"].size();
                 lat_inv = new CUSTOMREAL[n_inv_t_flex];
                 for (int i = 0; i < n_inv_t_flex; i++){
-                    lat_inv[i] = config["model_update"]["lat_inv"][i].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"], "lat_inv", lat_inv[i], i);
                 }
                 n_inv_t_flex_read = true;
             }
@@ -271,7 +304,7 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex = config["model_update"]["lon_inv"].size();
                 lon_inv = new CUSTOMREAL[n_inv_p_flex];
                 for (int i = 0; i < n_inv_p_flex; i++){
-                    lon_inv[i] = config["model_update"]["lon_inv"][i].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"], "lon_inv", lon_inv[i], i);
                 }
                 n_inv_p_flex_read = true;
             }
@@ -279,85 +312,87 @@ InputParams::InputParams(std::string& input_file){
 
             // station correction (now only for teleseismic data)
             if (config["model_update"]["use_sta_correction"]){
-                use_sta_correction = config["model_update"]["use_sta_correction"].as<bool>();
+                getNodeValue(config["model_update"], "use_sta_correction", use_sta_correction);
             }
             // sta_correction_file
             if (config["model_update"]["sta_correction_file"]) {
-                sta_correction_file_exist = true;
-                sta_correction_file = config["model_update"]["sta_correction_file"].as<std::string>();
+                getNodeValue(config["model_update"], "sta_correction_file", sta_correction_file);
+                if (use_sta_correction) {
+                    sta_correction_file_exist = true;
+                }
             }
 
             // date usage flags and weights
             // absolute travel times
             if (config["model_update"]["abs_time"]) {
-                use_abs = config["model_update"]["abs_time"]["use_abs_time"].as<bool>();
+                getNodeValue(config["model_update"]["abs_time"], "use_abs_time", use_abs);
                 if (config["model_update"]["abs_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
-                        residual_weight_abs[i] = config["model_update"]["abs_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["model_update"]["abs_time"], "residual_weight", residual_weight_abs[i], i);
                 }
                 if (config["model_uodate"]["abs_time"]["distance_weight"]) {
                     for (int i = 0; i < n_weight; i++)
-                        distance_weight_abs[i] = config["model_update"]["abs_time"]["distance_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["model_update"]["abs_time"], "distance_weight", distance_weight_abs[i], i);
                 }
             }
 
             // common source diff travel times
             if (config["model_update"]["cs_dif_time"]) {
-                use_cs = config["model_update"]["cs_dif_time"]["use_cs_dif_time"].as<bool>();
+                getNodeValue(config["model_update"]["cs_dif_time"], "use_cs_time", use_cs);
                 if (config["model_update"]["cs_dif_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
-                        residual_weight_cs[i] = config["model_update"]["cs_dif_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["model_update"]["cs_dif_time"], "residual_weight", residual_weight_cs[i], i);
                 }
                 if (config["model_update"]["cs_dif_time"]["azimuthal_weight"]) {
                     for (int i = 0; i < n_weight; i++)
-                        azimuthal_weight_cs[i] = config["model_update"]["cs_dif_time"]["azimuthal_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["model_update"]["cs_dif_time"], "azimuthal_weight", azimuthal_weight_cs[i], i);
                 }
             }
 
             // common reciever diff travel times
             if (config["model_update"]["cr_dif_time"]) {
-                use_cr = config["model_update"]["cr_dif_time"]["use_cr_dif_time"].as<bool>();
+                getNodeValue(config["model_update"]["cr_dif_time"], "use_cr_time", use_cr);
                 if (config["model_update"]["cr_dif_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
-                        residual_weight_cr[i] = config["model_update"]["cr_dif_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["model_update"]["cr_dif_time"], "residual_weight", residual_weight_cr[i], i);
                 }
                 if (config["model_update"]["cr_dif_time"]["azimuthal_weight"]) {
                     for (int i = 0; i < n_weight; i++)
-                        azimuthal_weight_cr[i] = config["model_update"]["cr_dif_time"]["azimuthal_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["model_update"]["cr_dif_time"], "azimuthal_weight", azimuthal_weight_cr[i], i);
                 }
             }
 
             // weight of different types of data
             if (config["model_update"]["global_weight"]){
                 if (config["model_update"]["global_weight"]["balance_data_weight"]) {
-                    balance_data_weight = config["model_update"]["global_weight"]["balance_data_weight"].as<bool>();
+                    getNodeValue(config["model_update"]["global_weight"], "balance_data_weight", balance_data_weight);
                 }
                 if (config["model_update"]["global_weight"]["abs_time_weight"]) {
-                    abs_time_local_weight = config["model_update"]["global_weight"]["abs_time_weight"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["global_weight"], "abs_time_weight", abs_time_local_weight);
                 }
                 if (config["model_update"]["global_weight"]["cs_dif_time_local_weight"]) {
-                    cs_dif_time_local_weight = config["model_update"]["global_weight"]["cs_dif_time_local_weight"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["global_weight"], "cs_dif_time_local_weight", cs_dif_time_local_weight);
                 }
                 if (config["model_update"]["global_weight"]["global_weight"]["cr_dif_time_local_weight"]) {
-                    cr_dif_time_local_weight = config["model_update"]["global_weight"]["cr_dif_time_local_weight"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["global_weight"], "cr_dif_time_local_weight", cr_dif_time_local_weight);
                 }
                 if (config["model_update"]["global_weight"]["teleseismic_weight"]) {
-                    teleseismic_weight = config["model_update"]["global_weight"]["teleseismic_weight"].as<CUSTOMREAL>();
+                    getNodeValue(config["model_update"]["global_weight"], "teleseismic_weight", teleseismic_weight);
                 }
             }
 
             // update which model parameters
             if (config["model_update"]["update_slowness"])
-                update_slowness = config["inv_strategy"]["update_slowness"].as<bool>();
+                getNodeValue(config["model_update"], "update_slowness", update_slowness);
             if (config["model_update"]["update_azi_ani"])
-                update_azi_ani = config["inv_strategy"]["update_azi_ani"].as<bool>();
+                getNodeValue(config["model_update"], "update_azi_ani", update_azi_ani);
             if (config["model_udpate"]["update_rad_ani"])
-                update_rad_ani = config["inv_strategy"]["update_rad_ani"].as<bool>();
+                getNodeValue(config["model_update"], "update_rad_ani", update_rad_ani);
 
             // taper kernel (now only for teleseismic tomography)
             if (config["model_update"]["depth_taper"]){
-                depth_taper[0] = config["model_update"]["depth_taper"][0].as<CUSTOMREAL>();
-                depth_taper[1] = config["model_update"]["depth_taper"][1].as<CUSTOMREAL>();
+                getNodeValue(config["model_update"], "depth_taper", depth_taper[0], 0);
+                getNodeValue(config["model_update"], "depth_taper", depth_taper[1], 1);
             }
         } // end of model_update
 
@@ -367,69 +402,69 @@ InputParams::InputParams(std::string& input_file){
         if (config["relocation"]) {
             // step size of relocation
             if (config["relocation"]["step_length"]) {
-                step_length_src_reloc = config["relocation"]["step_length"].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "step_length", step_length_src_reloc);
             }
             // step size decay of relocation
             if (config["relocation"]["step_length_decay"]) {
-                step_length_decay_src_reloc = config["relocation"]["step_length_decay"].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "step_length_decay", step_length_decay_src_reloc);
                 // TODO: this value is defined but not used. (instead, step_length_decay is used)
             }
             // rescaling values
             if (config["relocation"]["rescaling_dep_lat_lon_ortime"]){
-                rescaling_dep = config["relocation"]["rescaling_dep_lat_lon_ortime"][0].as<CUSTOMREAL>();
-                rescaling_lat = config["relocation"]["rescaling_dep_lat_lon_ortime"][1].as<CUSTOMREAL>();
-                rescaling_lon = config["relocation"]["rescaling_dep_lat_lon_ortime"][2].as<CUSTOMREAL>();
-                rescaling_ortime = config["relocation"]["rescaling_dep_lat_lon_ortime"][3].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "rescaling_dep_lat_lon_ortime", rescaling_dep, 0);
+                getNodeValue(config["relocation"], "rescaling_dep_lat_lon_ortime", rescaling_lat, 1);
+                getNodeValue(config["relocation"], "rescaling_dep_lat_lon_ortime", rescaling_lon, 2);
+                getNodeValue(config["relocation"], "rescaling_dep_lat_lon_ortime", rescaling_ortime, 3);
             }
             // max change values
             if (config["relocation"]["max_change_dep_lat_lon_ortime"]) {
-                max_change_dep = config["relocation"]["max_change_dep_lat_lon_ortime"][0].as<CUSTOMREAL>();
-                max_change_lat = config["relocation"]["max_change_dep_lat_lon_ortime"][1].as<CUSTOMREAL>();
-                max_change_lon = config["relocation"]["max_change_dep_lat_lon_ortime"][2].as<CUSTOMREAL>();
-                max_change_ortime = config["relocation"]["max_change_dep_lat_lon_ortime"][3].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "max_change_dep_lat_lon_ortime", max_change_dep, 0);
+                getNodeValue(config["relocation"], "max_change_dep_lat_lon_ortime", max_change_lat, 1);
+                getNodeValue(config["relocation"], "max_change_dep_lat_lon_ortime", max_change_lon, 2);
+                getNodeValue(config["relocation"], "max_change_dep_lat_lon_ortime", max_change_ortime, 3);
             }
             // max iteration for relocation
             if (config["relocation"]["max_iterations"]) {
-                N_ITER_MAX_SRC_RELOC = config["relocation"]["max_iterations"].as<int>();
+                getNodeValue(config["relocation"], "max_iterations", N_ITER_MAX_SRC_RELOC);
             }
             // norm(grad) threshold of stopping relocation
             if (config["relocation"]["tol_gradient"]) {
-                TOL_SRC_RELOC = config["relocation"]["tol_gradient"].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "tol_gradient", TOL_SRC_RELOC);
             }
             // local search scheme for relocation
             if (config["relocation"]["ortime_local_search"]) {
-                ortime_local_search = config["relocation"]["ortime_local_search"].as<bool>();
+                getNodeValue(config["relocation"], "ortime_local_search", ortime_local_search);
             }
             // kernel =   K_t/ref_ortime_change (only for ortime_local_search : 1)
             if (config["relocation"]["ref_ortime_change"]) {
-                ref_ortime_change = config["relocation"]["ref_ortime_change"].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "ref_ortime_change", ref_ortime_change);
             }
             // step size of ortime is :  step_length_src_reloc * step_length_ortime_rescale
             if (config["relocation"]["step_length_ortime_rescale"]) {
-                step_length_ortime_rescale = config["relocation"]["step_length_ortime_rescale"].as<CUSTOMREAL>();
+                getNodeValue(config["relocation"], "step_length_ortime_rescale", step_length_ortime_rescale);
             }
 
             // data usage
             if (config["relocation"]["abs_time"]) {
-                use_abs_reloc = config["relocation"]["abs_time"]["use_abs_time"].as<bool>();
+                getNodeValue(config["relocation"]["abs_time"], "use_abs_time", use_abs_reloc);
                 if (config["relocation"]["abs_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
-                        residual_weight_abs_reloc[i] = config["relocation"]["abs_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["relocation"]["abs_time"], "residual_weight", residual_weight_abs_reloc[i], i);
                 }
                 if (config["relocation"]["abs_time"]["distance_weight"]) {
                     for (int i = 0; i < n_weight; i++)
-                        distance_weight_abs_reloc[i] = config["relocation"]["abs_time"]["distance_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["relocation"]["abs_time"], "distance_weight", distance_weight_abs_reloc[i], i);
                 }
             }
             if (config["relocation"]["cr_dif_time"]){
-                use_cr_reloc = config["relocation"]["cr_dif_time"]["use_cr_time"].as<bool>();
+                getNodeValue(config["relocation"]["cr_dif_time"], "use_cr_time", use_cr_reloc);
                 if (config["relocation"]["cr_dif_time"]["residual_weight"]){
                     for (int i = 0; i < n_weight; i++)
-                        residual_weight_cr_reloc[i] = config["relocation"]["cr_dif_time"]["residual_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["relocation"]["cr_dif_time"], "residual_weight", residual_weight_cr_reloc[i], i);
                 }
                 if (config["relocation"]["cr_dif_time"]["azimuthal_weight"]) {
                     for (int i = 0; i < n_weight; i++)
-                        azimuthal_weight_cr_reloc[i] = config["relocation"]["cr_dif_time"]["azimuthal_weight"][i].as<CUSTOMREAL>();
+                        getNodeValue(config["relocation"]["cr_dif_time"], "azimuthal_weight", azimuthal_weight_cr_reloc[i], i);
                 }
             }
         } // end of relocation
@@ -440,25 +475,25 @@ InputParams::InputParams(std::string& input_file){
         if (config["inversion_strategy"]) {
             // inversion mode, 0: for update model parameters and relocation iteratively
             if (config["inversion_strategy"]["inv_mode"])
-                inv_mode = config["inversion_strategy"]["inv_mode"].as<int>();
+                getNodeValue(config["inversion_strategy"], "inv_mode", inv_mode);
 
             // paramters for inv_mode == 0a
             if (config["inversoin_strategy"]["inv_mode_0"]){
                 // relocation_first
                 if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first"])
-                    relocation_first = config["inversoin_strategy"]["inv_mode_0"]["relocation_first"].as<bool>();
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_first", relocation_first);
                 // relocation_first_iterations
                 if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first_iterations"])
-                    relocation_first_iterations = config["inversoin_strategy"]["inv_mode_0"]["relocation_first_iterations"].as<int>();
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_first_iterations", relocation_first_iterations);
                 // relocation_every_N_steps
                 if (config["inversoin_strategy"]["inv_mode_0"]["relocation_every_N_steps"])
-                    relocation_every_N_steps = config["inversoin_strategy"]["inv_mode_0"]["relocation_every_N_steps"].as<int>();
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_every_N_steps", relocation_every_N_steps);
                 // relocation final
                 if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final"])
-                    relocation_final = config["inversoin_strategy"]["inv_mode_0"]["relocation_final"].as<bool>();
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_final", relocation_final);
                 // relocation_final_iterations
                 if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final_iterations"])
-                    relocation_final_iterations = config["inversoin_strategy"]["inv_mode_0"]["relocation_final_iterations"].as<int>();
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_final_iterations", relocation_final_iterations);
             }
         }
 
@@ -468,15 +503,15 @@ InputParams::InputParams(std::string& input_file){
         if (config["calculation"]) {
             // convergence tolerance
             if (config["calculation"]["convergence_tolerance"]) {
-                conv_tol = config["calculation"]["convergence_tolerance"].as<CUSTOMREAL>();
+                getNodeValue(config["calculation"], "convergence_tolerance", conv_tol);
             }
             // max number of iterations
             if (config["calculation"]["max_iterations"]) {
-                max_iter = config["calculation"]["max_iterations"].as<int>();
+                getNodeValue(config["calculation"], "max_iterations", max_iter);
             }
             // stencil order
             if (config["calculation"]["stencil_order"]) {
-                stencil_order = config["calculation"]["stencil_order"].as<int>();
+                getNodeValue(config["calculation"], "stencil_order", stencil_order);
                 // check if stencil_order == 999 : hybrid scheme
                 if (stencil_order == 999) {
                     hybrid_stencil_order = true;
@@ -485,17 +520,17 @@ InputParams::InputParams(std::string& input_file){
             }
             // stencil type
             if (config["calculation"]["stencil_type"]) {
-                stencil_type = config["calculation"]["stencil_type"].as<int>();
+                getNodeValue(config["calculation"], "stencil_type", stencil_type);
             }
             // sweep type
             if (config["calculation"]["sweep_type"]) {
-                sweep_type = config["calculation"]["sweep_type"].as<int>();
+                getNodeValue(config["calculation"], "sweep_type", sweep_type);
             }
         }
 
         if (config["debug"]) {
             if (config["debug"]["debug_mode"]) {
-                if_test = config["debug"]["debug_mode"].as<bool>();
+                getNodeValue(config["debug"], "debug_mode", if_test);
             }
         }
 

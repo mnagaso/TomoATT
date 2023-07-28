@@ -1073,15 +1073,12 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
 
     // store the total number of sources
     nsrc_total = n_src;
-    std::cout << "ckp1, n_src: " << n_src << std::endl;
+
     // assign sources to each simulutaneous run group
     for (int i_src = 0; i_src < n_src; i_src++) {
 
         // id of simulutaneous run group to which the i_src-th source belongs
         int dst_id_sim = select_id_sim_for_src(i_src, n_sims);
-        std::cout   << "ckp2, dst_id_sim: " << dst_id_sim
-                    << ", size of src_name_list: " << src_name_list.size()
-                    << std::endl;
 
         // broadcast the source name
         std::string src_name;
@@ -1090,7 +1087,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
         }
 
         broadcast_str_inter_and_intra_sim(src_name, 0);
-        std::cout << "ckp3, src_name: " << src_name << std::endl;
+
         if (id_sim==0){ // sender
 
             if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group

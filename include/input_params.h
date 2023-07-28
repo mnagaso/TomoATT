@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <unordered_set>
 #include <map>
+#include <stdexcept>
 
 #include "config.h"
 #include "yaml-cpp/yaml.h"
