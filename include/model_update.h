@@ -117,7 +117,7 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
 }
 
 
-void set_new_model(Grid& grid, CUSTOMREAL step_size_new, bool init_bfgs=false) {
+void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false) {
 
     if (subdom_main) {
 
@@ -150,7 +150,7 @@ void set_new_model(Grid& grid, CUSTOMREAL step_size_new, bool init_bfgs=false) {
 
             if (myrank == 0 && id_sim == 0)
                 //std::cout << "Scaring factor for all kernels: " << Linf_all << std::endl;
-                std::cout << "Scaring factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_size_new << std::endl;
+                std::cout << "Scaring factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
 
             // update the model
             for (int k = 0; k < loc_K; k++) {
@@ -158,9 +158,9 @@ void set_new_model(Grid& grid, CUSTOMREAL step_size_new, bool init_bfgs=false) {
                     for (int i = 0; i < loc_I; i++) {
 
                         // update
-                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_update_loc[I2V(i,j,k)  ] / (Linf_Ks   /step_size_new) );
-                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_update_loc[I2V(i,j,k) ] / (Linf_Kxi  /step_size_new)  ;
-                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_update_loc[I2V(i,j,k)] / (Linf_Keta /step_size_new)  ;
+                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_update_loc[I2V(i,j,k)  ] / (Linf_Ks   /step_length_new) );
+                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_update_loc[I2V(i,j,k) ] / (Linf_Kxi  /step_length_new)  ;
+                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_update_loc[I2V(i,j,k)] / (Linf_Keta /step_length_new)  ;
 
                         grid.fac_b_loc[I2V(i,j,k)] = _1_CR - _2_CR * grid.xi_loc[I2V(i,j,k)];
                         grid.fac_c_loc[I2V(i,j,k)] = _1_CR + _2_CR * grid.xi_loc[I2V(i,j,k)];
@@ -209,14 +209,14 @@ void set_new_model(Grid& grid, CUSTOMREAL step_size_new, bool init_bfgs=false) {
 //
 //            if (myrank == 0 && id_sim == 0)
 //                //std::cout << "Scaring factor for all kernels: " << Linf_all << std::endl;
-//                std::cout << "Scaring factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_size_new << std::endl;
+//                std::cout << "Scaring factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
 
 
-            CUSTOMREAL step_size;
+            CUSTOMREAL step_length;
             if (init_bfgs) {
-                step_size = -_1_CR * step_size_new;
+                step_length = -_1_CR * step_length_new;
             } else {
-                step_size = step_size_new;
+                step_length = step_length_new;
             }
 
 
@@ -225,12 +225,12 @@ void set_new_model(Grid& grid, CUSTOMREAL step_size_new, bool init_bfgs=false) {
                 for (int j = 0; j < loc_J; j++) {
                     for (int i = 0; i < loc_I; i++) {
                         // update
-                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_size);
-                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_size;
-                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_size;
-                        //grid.fun_loc[I2V(i,j,k)] += grid.Ks_descent_dir_loc[I2V(i,j,k)]  *step_size_new;
-                        //grid.xi_loc[I2V(i,j,k)]  += grid.Kxi_descent_dir_loc[I2V(i,j,k)] *step_size_new;
-                        //grid.eta_loc[I2V(i,j,k)] += grid.Keta_descent_dir_loc[I2V(i,j,k)]*step_size_new;
+                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_length);
+                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_length;
+                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_length;
+                        //grid.fun_loc[I2V(i,j,k)] += grid.Ks_descent_dir_loc[I2V(i,j,k)]  *step_length_new;
+                        //grid.xi_loc[I2V(i,j,k)]  += grid.Kxi_descent_dir_loc[I2V(i,j,k)] *step_length_new;
+                        //grid.eta_loc[I2V(i,j,k)] += grid.Keta_descent_dir_loc[I2V(i,j,k)]*step_length_new;
 
                         grid.fac_b_loc[I2V(i,j,k)] = _1_CR - _2_CR * grid.xi_loc[I2V(i,j,k)];
                         grid.fac_c_loc[I2V(i,j,k)] = _1_CR + _2_CR * grid.xi_loc[I2V(i,j,k)];
@@ -290,12 +290,12 @@ CUSTOMREAL compute_q_k(Grid& grid) {
 bool check_wolfe_cond(Grid& grid, \
                     CUSTOMREAL f_k, CUSTOMREAL f_new, \
                     CUSTOMREAL q_k, CUSTOMREAL q_new, \
-                    CUSTOMREAL& td, CUSTOMREAL& tg, CUSTOMREAL& step_size_sub) {
+                    CUSTOMREAL& td, CUSTOMREAL& tg, CUSTOMREAL& step_length_sub) {
 
     bool step_accepted = false;
 
-    // check  if the wolfe conditions are satisfied and update the step_size_sub
-    CUSTOMREAL qpt = (f_new - f_k) / step_size_sub;
+    // check  if the wolfe conditions are satisfied and update the step_length_sub
+    CUSTOMREAL qpt = (f_new - f_k) / step_length_sub;
 
     if (subdom_main) {
         // good step size
@@ -309,34 +309,34 @@ bool check_wolfe_cond(Grid& grid, \
             // modify the stepsize
 
             if (wolfe_c1*q_k < qpt) {
-                td = step_size_sub;
+                td = step_length_sub;
                 if (myrank==0)
                     std::cout << "Wolfe rules:  right step size updated." << std::endl;
             }
             if (qpt <= wolfe_c1*q_k && q_new < wolfe_c2*q_k) {
-                tg = step_size_sub;
+                tg = step_length_sub;
                 if (myrank==0)
                     std::cout << "Wolfe rules:  left step size updated." << std::endl;
             }
             //if (isZero(td)) {
             if (td == _0_CR) {
-                step_size_sub = _2_CR * step_size_sub;
+                step_length_sub = _2_CR * step_length_sub;
                 if (myrank==0)
-                    std::cout << "Wolfe rules:  step size too small. Increased to " << step_size_sub << std::endl;
+                    std::cout << "Wolfe rules:  step size too small. Increased to " << step_length_sub << std::endl;
             } else {
-                step_size_sub = _0_5_CR * (td+tg);
+                step_length_sub = _0_5_CR * (td+tg);
                 if (myrank==0)
-                    std::cout << "Wolfe rules:  step size too large. Decreased to " << step_size_sub << std::endl;
+                    std::cout << "Wolfe rules:  step size too large. Decreased to " << step_length_sub << std::endl;
             }
         }
 
         // share step_accepted among all subdomains
         broadcast_bool_single(step_accepted,0);
-        broadcast_cr_single(step_size_sub,0);
+        broadcast_cr_single(step_length_sub,0);
     } // end if subdom_main
 
     broadcast_bool_single_sub(step_accepted,0);
-    broadcast_cr_single_sub(step_size_sub,0);
+    broadcast_cr_single_sub(step_length_sub,0);
 
     return step_accepted;
 }

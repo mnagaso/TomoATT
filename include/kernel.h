@@ -29,7 +29,7 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
         //           << std::endl;
 
         CUSTOMREAL weight   = _1_CR;
-        // CUSTOMREAL * taper  = IP.get_kernel_taper();
+        // CUSTOMREAL * taper  = IP.get_depth_taper();
 
         // inner points
         for (int kkr = 1; kkr < nr-1; kkr++) {
@@ -55,14 +55,14 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
                         CUSTOMREAL Ttheta = (grid.T_loc[I2V(iip,jjt+1,kkr)] - grid.T_loc[I2V(iip,jjt-1,kkr)]) / (_2_CR * dt);
                         CUSTOMREAL Tphi   = (grid.T_loc[I2V(iip+1,jjt,kkr)] - grid.T_loc[I2V(iip-1,jjt,kkr)]) / (_2_CR * dp);
 
-                        if (IP.get_is_inv_slowness()==1){      // we need to update slowness
+                        if (IP.get_update_slowness()==1){      // we need to update slowness
                             // Kernel w r t slowness s
                             grid.Ks_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] * my_square(grid.fun_loc[I2V(iip,jjt,kkr)]);
                         } else {
                             grid.Ks_loc[I2V(iip,jjt,kkr)] = _0_CR;
                         }
 
-                        if (IP.get_is_inv_azi_ani()){      // we need to update azimuthal anisotropy
+                        if (IP.get_update_azi_ani()){      // we need to update azimuthal anisotropy
                             // Kernel w r t anisotrophy xi
                             if (isZero(std::sqrt(my_square(grid.xi_loc[I2V(iip,jjt,kkr)])+my_square(grid.eta_loc[I2V(iip,jjt,kkr)])))) {
                                 grid.Kxi_loc[I2V(iip,jjt,kkr)]  += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \

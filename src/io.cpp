@@ -7,7 +7,7 @@ IO_utils::IO_utils(InputParams& IP) {
         // check the custom real data type
         // if float, custom_real_flag = 2
         // if double, custom_real_flag = 3
-        if (std::is_same<CUSTOMREAL, float>::value || IP.get_is_single_precision_output()) {
+        if (std::is_same<CUSTOMREAL, float>::value || IP.get_if_single_precision_output()) {
             custom_real_flag = 2;
         } else if (std::is_same<CUSTOMREAL, double>::value) {
             custom_real_flag = 3;

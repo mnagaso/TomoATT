@@ -396,7 +396,7 @@ inline void add_regularization_grad(Grid& grid) {
 
 
 // compute initial guess for step length to try for line search
-void initial_guess_step(Grid& grid, CUSTOMREAL& step_size, CUSTOMREAL SC_VAL) {
+void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) {
     // find the max value in descent_direction
     CUSTOMREAL max_val = _0_CR;
 
@@ -421,7 +421,7 @@ void initial_guess_step(Grid& grid, CUSTOMREAL& step_size, CUSTOMREAL SC_VAL) {
     }
 
     // step size
-    step_size = SC_VAL / max_val;
+    step_length = SC_VAL / max_val;
 
 }
 

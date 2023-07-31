@@ -382,7 +382,7 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
             if (!iter->second.is_stop){
-                if (is_ortime_local_search == 0) // origin time global search
+                if (ortime_local_search == 0) // origin time global search
                     iter->second.tau_opt                    = _0_CR;
                 else    // origin time local search
                     iter->second.grad_tau                   = _0_CR;
@@ -668,7 +668,7 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
                     const CUSTOMREAL& weight = data.weight;
                     const CUSTOMREAL& misfit = data.travel_time_obs - data.travel_time;
 
-                    if (is_ortime_local_search == 0){    // global search
+                    if (ortime_local_search == 0){    // global search
                         IP.rec_map[name_rec].tau_opt    += misfit * weight;
                         IP.rec_map[name_rec].sum_weight += weight;
                     } else {
@@ -677,7 +677,7 @@ void Receiver::calculate_optimal_origin_time(InputParams& IP, const std::string&
                     }
                 }
             //} else {
-                //if (is_ortime_local_search == 0){    // global search
+                //if (ortime_local_search == 0){    // global search
                 //    IP.rec_map[name_rec].tau_opt    = 0.0;
                 //    IP.rec_map[name_rec].sum_weight = 0.0;
                 //} else {
@@ -731,12 +731,12 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
             CUSTOMREAL obj = iter->second.vobj_src_reloc;
             CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
             if (i_iter != 0 && old_obj < obj){    // if obj increase, decrease the step length of this (swapped) source
-                // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+                // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
                 iter->second.step_length_max *= step_length_decay;
-                // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_size_decay: " << step_size_decay << std::endl;
+                // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
             }
             // std::cout << "id_sim: " << id_sim << ", name: " << iter->first << ", obj: " << obj << ", old obj: " << old_obj << ", step_length_max: " << iter->second.step_length_max
-            //           << ", step_size_decay: " << step_size_decay
+            //           << ", step_length_decay: " << step_length_decay
             //           << std::endl;
         }
 
@@ -805,7 +805,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
 
                 CUSTOMREAL norm_grad;
                 CUSTOMREAL grad_ortime = 0.0;
-                if (is_ortime_local_search == 0){
+                if (ortime_local_search == 0){
                     norm_grad   = std::sqrt(my_square(grad_dep_km) + my_square(grad_lat_km) + my_square(grad_lon_km));
                 } else {
                     if (abs(max_change_ortime - abs(IP.rec_map[name_rec].change_tau)) < 0.001)
@@ -844,7 +844,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 update_max = std::max(update_max,abs(update_lon));
 
                 CUSTOMREAL update_ortime = 0.0;
-                if (is_ortime_local_search == 1){
+                if (ortime_local_search == 1){
                     update_ortime = step_length * grad_ortime * step_length_ortime_rescale;
                     update_max = std::max(update_max,abs(update_ortime));
                 }
@@ -859,7 +859,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 update_lat = - update_lat * downscale / R_earth * RAD2DEG;
                 update_lon = - update_lon * downscale / (R_earth * cos(IP.rec_map[name_rec].lat * DEG2RAD)) * RAD2DEG;
 
-                if (is_ortime_local_search == 1){
+                if (ortime_local_search == 1){
                     update_ortime = - update_ortime * downscale * step_length_ortime_rescale;
                 }
 
@@ -884,7 +884,7 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                         update_lon = - max_change_lon - IP.rec_map[name_rec].change_lon;
                 }
 
-                if (is_ortime_local_search == 1){
+                if (ortime_local_search == 1){
                     if (abs(IP.rec_map[name_rec].change_tau + update_ortime) > max_change_ortime){
                         if (IP.rec_map[name_rec].change_tau + update_ortime > 0)
                             update_ortime = max_change_ortime - IP.rec_map[name_rec].change_tau;
@@ -908,13 +908,13 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 IP.rec_map[name_rec].change_lat += update_lat;
                 IP.rec_map[name_rec].change_lon += update_lon;
 
-                if (is_ortime_local_search == 1){
+                if (ortime_local_search == 1){
                     IP.rec_map[name_rec].tau_opt += update_ortime;
                     IP.rec_map[name_rec].change_tau += update_ortime;
                 }
 
 
-                if (IP.rec_map[name_rec].step_length_max < TOL_STEP_SIZE){
+                if (IP.rec_map[name_rec].step_length_max < TOL_step_length){
                     IP.rec_map[name_rec].is_stop = true;
                 }
 

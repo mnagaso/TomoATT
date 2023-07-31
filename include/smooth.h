@@ -185,7 +185,7 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
     int i_end   = ngrid_i; //grid.get_i_end_loc();
 
     CUSTOMREAL weight   = _1_CR;
-    CUSTOMREAL * taper  = IP.get_kernel_taper();
+    CUSTOMREAL * taper  = IP.get_depth_taper();
 
     //
     // sum the kernel values on the inversion grid
@@ -414,7 +414,7 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
     } // end i_grid
 
-    
+
 
 
 }
