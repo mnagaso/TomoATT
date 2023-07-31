@@ -40,12 +40,12 @@ def check_result_times(errors, ngrid, order=None, tol=0.02):
     if order is not None:
         print("The order of accuracy is: %6.3f" % order)
 
-    # check the order of accuracy is within tolerance
-    if abs(order-1.0) < tol:
-        print("The order of accuracy is within tolerance")
-    else:
-        print("The order of accuracy is NOT within tolerance")
-        exit(1) # return non-zero exit code (test failed)
+        # check the order of accuracy is within tolerance
+        if abs(order-1.0) < tol:
+            print("The order of accuracy is within tolerance")
+        else:
+            print("The order of accuracy is NOT within tolerance")
+            exit(1) # return non-zero exit code (test failed)
 
 if __name__ == '__main__':
 
