@@ -18,7 +18,7 @@ def read_src_rec_file(filename):
     for info in doc_input:
         tmp=info.split()
         if(cc == 0):    # ev info line
-            
+
             ndata = int(tmp[11])
             cc = cc + 1
             tmp_ev_time = []
@@ -33,50 +33,63 @@ def read_src_rec_file(filename):
     return np.array(time),ev_time
 
 
-# %%
-fname = 'src_rec_true.dat'
-time_true,ev_time_true = read_src_rec_file(fname)
+def check_result_times(errors, ngrid, order=None, tol=0.02):
+    print("The numerical error in a mesh of %d^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max)" %
+         (ngrid, errors.mean(), errors.std(), errors.max()))
 
-fname = 'OUTPUT_FILES_N41_41_41/src_rec_file_forward.dat'
-time_N41,ev_time_N41 = read_src_rec_file(fname)
+    if order is not None:
+        print("The order of accuracy is: %6.3f" % order)
 
-fname = 'OUTPUT_FILES_N61_61_61/src_rec_file_forward.dat'
-time_N61,ev_time_N61 = read_src_rec_file(fname)
+    # check the order of accuracy is within tolerance
+    if abs(order-1.0) < tol:
+        print("The order of accuracy is within tolerance")
+    else:
+        print("The order of accuracy is NOT within tolerance")
+        exit(1) # return non-zero exit code (test failed)
 
-fname = 'OUTPUT_FILES_N81_81_81/src_rec_file_forward.dat'
-time_N81,ev_time_N81 = read_src_rec_file(fname)
+if __name__ == '__main__':
 
-fname = 'OUTPUT_FILES_N121_121_121/src_rec_file_forward.dat'
-time_N121,ev_time_N121 = read_src_rec_file(fname)
+    # read theoretical travel times
+    fname = 'src_rec_true.dat'
+    time_true, ev_time_true = read_src_rec_file(fname)
 
-fname = 'OUTPUT_FILES_N161_161_161/src_rec_file_forward.dat'
-time_N161,ev_time_N161 = read_src_rec_file(fname)
+    # read calculated travel times
+    fname = 'OUTPUT_FILES_N41_41_41/src_rec_file_forward.dat'
+    time_N41, ev_time_N41 = read_src_rec_file(fname)
 
+    fname = 'OUTPUT_FILES_N61_61_61/src_rec_file_forward.dat'
+    time_N61, ev_time_N61 = read_src_rec_file(fname)
 
-# %%
-error_N41 = abs((time_N41-time_true))
-print("The numerical error in a mesh of 41^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max)"%(error_N41.mean(),error_N41.std(),error_N41.max()))
+    fname = 'OUTPUT_FILES_N81_81_81/src_rec_file_forward.dat'
+    time_N81, ev_time_N81 = read_src_rec_file(fname)
 
-error_N61 = abs((time_N61-time_true))
-order = math.log(error_N61.mean()/error_N41.mean())/math.log(40/60)
-print("The numerical error in a mesh of 61^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max), order of accuracy is %5.2f"%
-      (error_N61.mean(),error_N61.std(),error_N61.max(),order))
+    fname = 'OUTPUT_FILES_N121_121_121/src_rec_file_forward.dat'
+    time_N121, ev_time_N121 = read_src_rec_file(fname)
 
-error_N81 = abs((time_N81-time_true))
-order = math.log(error_N81.mean()/error_N61.mean())/math.log(60/80)
-print("The numerical error in a mesh of 81^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max), order of accuracy is %5.2f"%
-      (error_N81.mean(),error_N81.std(),error_N81.max(),order))
+    fname = 'OUTPUT_FILES_N161_161_161/src_rec_file_forward.dat'
+    time_N161, ev_time_N161 = read_src_rec_file(fname)
 
-error_N121 = abs((time_N121-time_true))
-order = math.log(error_N121.mean()/error_N81.mean())/math.log(80/120)
-print("The numerical error in a mesh of 121^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max), order of accuracy is %5.2f"%
-      (error_N121.mean(),error_N121.std(),error_N121.max(),order))
+    # calculate errors
+    error_N41 = abs((time_N41-time_true))
+    check_result_times(error_N41, 41)
 
-error_N161 = abs((time_N161-time_true))
-order = math.log(error_N161.mean()/error_N121.mean())/math.log(120/160)
-print("The numerical error in a mesh of 161^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max), order of accuracy is %5.2f"%
-      (error_N161.mean(),error_N161.std(),error_N161.max(),order))
+    error_N61 = abs((time_N61-time_true))
+    order = math.log(error_N61.mean()/error_N41.mean())/math.log(40/60)
+    check_result_times(error_N61, 61, order)
 
+    error_N81 = abs((time_N81-time_true))
+    order = math.log(error_N81.mean()/error_N61.mean())/math.log(60/80)
+    check_result_times(error_N81, 81, order)
+
+    error_N121 = abs((time_N121-time_true))
+    order = math.log(error_N121.mean()/error_N81.mean())/math.log(80/120)
+    check_result_times(error_N121, 121, order)
+
+    error_N161 = abs((time_N161-time_true))
+    order = math.log(error_N161.mean()/error_N121.mean())/math.log(120/160)
+    check_result_times(error_N161, 161, order)
+
+    exit(0) # return zero exit code (success)
 
 
 
