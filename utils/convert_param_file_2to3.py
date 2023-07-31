@@ -96,13 +96,18 @@ if __name__ == '__main__':
     #
     # output_setting section
     #
-    with suppress(KeyError): params_v3['output_setting']['output_dir'] = params_in['inversion']['output_dir']
+    with suppress(KeyError): params_v3['output_setting']['output_dir']              = params_in['inversion']['output_dir']
+    with suppress(KeyError): params_v3['output_setting']['output_source_field']     = params_in['output_setting']['is_output_source_field']
+    with suppress(KeyError): params_v3['output_setting']['output_model_dat']        = params_in['output_setting']['is_output_model_dat']
+    with suppress(KeyError): params_v3['output_setting']['output_final_model']      = params_in['output_setting']['is_output_final_model']
+    with suppress(KeyError): params_v3['output_setting']['output_in_process']       = params_in['output_setting']['is_output_in_process']
+    with suppress(KeyError): params_v3['output_setting']['single_precision_output'] = params_in['output_setting']['is_single_precision_output']
 
-    map_value_to_bool(params_v3['output_setting'], 'output_source_field', 'is_output_source_field')
-    map_value_to_bool(params_v3['output_setting'], 'output_model_dat', 'is_output_model_dat')
-    map_value_to_bool(params_v3['output_setting'], 'output_final_model', 'is_output_final_model')
-    map_value_to_bool(params_v3['output_setting'], 'output_in_process', 'is_output_in_process')
-    map_value_to_bool(params_v3['output_setting'], 'single_precision_output', 'is_single_precision_output')
+    map_value_to_bool(params_v3['output_setting'], 'output_source_field')
+    map_value_to_bool(params_v3['output_setting'], 'output_model_dat')
+    map_value_to_bool(params_v3['output_setting'], 'output_final_model')
+    map_value_to_bool(params_v3['output_setting'], 'output_in_process')
+    map_value_to_bool(params_v3['output_setting'], 'single_precision_output')
 
     # remove the old key 'output_setting'->'is_verbose_output'
     params_v3['output_setting'].pop('is_verbose_output', None)
