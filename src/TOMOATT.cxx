@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     initialize_mpi();
 
     stdout_by_rank_zero("------------------------------------------------------");
-    stdout_by_rank_zero("start TOMOATT forward or inversion calculation.");
+    stdout_by_rank_zero("TOMOATT calculation starting...");
     stdout_by_rank_zero("------------------------------------------------------");
 
     // read input file
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
     finalize_mpi();
 
     stdout_by_rank_zero("------------------------------------------------------");
-    stdout_by_rank_zero("end TOMOATT solver.");
+    stdout_by_rank_zero("TOMOATT calculation end.");
     stdout_by_rank_zero("------------------------------------------------------");
 
     return 0;

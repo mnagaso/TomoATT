@@ -101,8 +101,8 @@ inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.7; // no restoration if 
 // RUN MODE TYPE FLAG
 inline const int ONLY_FORWARD        = 0;
 inline const int DO_INVERSION        = 1;
-inline const int TELESEIS_PREPROCESS = 2;
-inline const int SRC_RELOCATION      = 3;
+inline const int SRC_RELOCATION      = 2;
+inline const int TELESEIS_PREPROCESS = 4; // hiden function
 
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
