@@ -169,7 +169,8 @@ if __name__ == '__main__':
     # calculation section
     #
     params_v3['calculation'] = params_in['calculation']
-
+    # erase the old key 'calculation'->'output_file_format' if it exists
+    params_v3['calculation'].pop('output_file_format', None)
 
     # write the output file with adding .v3 to the file name
     outfile = infile + '.v3.yaml'
