@@ -71,6 +71,7 @@ if [ "$TESTDIR" == "examples/inversion_small/" ]; then
     # clean up
     rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
 elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
+    my_test_forward_accuracy_1st_upwind_isotropic
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
 fi
