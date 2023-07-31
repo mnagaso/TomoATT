@@ -74,11 +74,11 @@ elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
     my_test_forward
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
-elif [ "$TESTDIR" == "examples/3_forward_accuracy_1st_cuthill_isotropic"]; then
+elif [ "$TESTDIR" == "examples/3_forward_accuracy_1st_cuthill_isotropic/" ]; then
     my_test_forward
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
-elif [ "$TESTDIR" == "examples/4_forward_accuracy_3rd_cuthill_isotropic"]; then
+elif [ "$TESTDIR" == "examples/4_forward_accuracy_3rd_cuthill_isotropic/" ]; then
     my_test_forward
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
