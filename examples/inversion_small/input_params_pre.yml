@@ -11,25 +11,25 @@ domain:
 
 source:
   src_rec_file: src_rec_test.dat    # source receiver file (if found, src_dep_lat_lon is ignored)
-  swap_src_rec: true # swap source and receiver (1: yes, 0: no)
+  swap_src_rec: true                # swap source and receiver (1: yes, 0: no)
 
 model:
   init_model_path: ./test_model_true.h5    # path to initial model file (ignored if init_model_type is '1d_*')
 
 parallel: # parameters for parallel computation
-  n_sims: 1          # number of simultaneous run
+  n_sims: 1           # number of simultaneous run
   ndiv_rtp: [1, 1, 1] # number of subdomains
-  nproc_sub: 2       # number of subprocess used for each subdomain
+  nproc_sub: 2        # number of subprocess used for each subdomain
 
 output_setting:
-  output_dir: ./OUTPUT_FILES/ # path to output director (default is ./OUTPUT_FILES/)
-  output_source_field: false # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
-  output_model_dat: false # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
-  output_final_model: true # output merged final model or not.                                     1 for yes; 0 for no;  default: 1
-  output_in_process: true # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1
-  single_precision_output: false # output results in single precision or not.                            1 for yes; 0 for no;  default: 0
-  verbose_output_level: 0 # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
-  output_file_format: 0 # in/output file format, if 0: HDF5, if 1: ASCII
+  output_dir: ./OUTPUT_FILES/    # path to output director (default is ./OUTPUT_FILES/)
+  output_source_field: false     # output the calculated field of all sources
+  output_model_dat: false        # output model_parameters_inv_0000.dat or not.
+  output_final_model: true       # output merged final model or not.
+  output_in_process: true        # output model at each inv iteration or not.
+  single_precision_output: false # output results in single precision or not.
+  verbose_output_level: 0        # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
+  output_file_format: 0          # in/output file format, if 0: HDF5, if 1: ASCII
 
 
 #################################################

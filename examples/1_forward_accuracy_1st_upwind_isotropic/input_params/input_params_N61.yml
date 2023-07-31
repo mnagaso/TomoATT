@@ -24,11 +24,11 @@ parallel: # parameters for parallel computation
 
 output_setting:
   output_dir: OUTPUT_FILES_N61_61_61 # path to output director (default is ./OUTPUT_FILES/)
-  output_source_field: false # output the calculated field of all sources                            1 for yes; 0 for no;  default: 1
-  output_model_dat: false # output model_parameters_inv_0000.dat or not.                          1 for yes; 0 for no;  default: 1
-  output_final_model: true # output merged final model or not.                                     1 for yes; 0 for no;  default: 1
-  output_in_process: true # output model at each inv iteration or not.                            1 for yes; 0 for no;  default: 1
-  single_precision_output: false # output results in single precision or not.                            1 for yes; 0 for no;  default: 0
+  output_source_field: false # output the calculated field of all sources
+  output_model_dat: false # output model_parameters_inv_0000.dat or not.
+  output_final_model: true # output merged final model or not.
+  output_in_process: true # output model at each inv iteration or not.
+  single_precision_output: false # output results in single precision or not.
   verbose_output_level: 0 # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
   output_file_format: 0 # in/output file format, if 0: HDF5, if 1: ASCII
 

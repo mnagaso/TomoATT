@@ -1,4 +1,4 @@
-version: 2
+version: 3
 
 #################################################
 #            computational domian               #
@@ -29,24 +29,24 @@ model:
 #            parallel computation settings      #
 #################################################
 parallel: # parameters for parallel computation
-  n_sims: 1 # number of simultanoues runs
+  n_sims: 1           # number of simultanoues runs
   ndiv_rtp: [1, 2, 2] # number of subdivision on each direction
-  nproc_sub: 2 # number of processors for sweep parallelization
-  use_gpu: false # true if use gpu (EXPERIMENTAL)
+  nproc_sub: 2        # number of processors for sweep parallelization
+  use_gpu: false      # true if use gpu (EXPERIMENTAL)
 
 
 ############################################
 #            output file setting           #
 ############################################
 output_setting:
-  output_dir: ./OUTPUT_FILES/ # path to output director (default is ./OUTPUT_FILES/)
-  output_source_field: false # output the calculated field of all sources
-  output_model_dat: false # output model_parameters_inv_0000.dat or not.
-  output_final_model: true # output merged final model or not.
-  output_in_process: true # output model at each inv iteration or not.
+  output_dir: ./OUTPUT_FILES/    # path to output director (default is ./OUTPUT_FILES/)
+  output_source_field: false     # output the calculated field of all sources
+  output_model_dat: false        # output model_parameters_inv_0000.dat or not.
+  output_final_model: true       # output merged final model or not.
+  output_in_process: true        # output model at each inv iteration or not.
   single_precision_output: false # output results in single precision or not.
-  verbose_output_level: 0 # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
-  output_file_format: 0 # in/output file format, if 0: HDF5, if 1: ASCII
+  verbose_output_level: 0        # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
+  output_file_format: 0          # in/output file format, if 0: HDF5, if 1: ASCII
 
 
 #################################################
@@ -65,7 +65,7 @@ run_mode: 1
 ###################################################
 model_update: # update model parameters (when run_mode : 1 and 3)
   max_iterations: 3 # maximum number of inversion iterations
-  optim_method: 1 # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
+  optim_method: 1   # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
 
   # common parameters for all optim methods
   step_length: 0.01 # step length of model perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
@@ -73,16 +73,16 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # parameters for optim_method 0 (grad_descent)
   optim_method_0:
     step_length_decay: 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
-    step_length_sc: 0.001 # ... # use it also ?
+    step_length_sc: 0.001  # ... # use it also ?
 
   # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)
   optim_method_1_2:
-    max_sub_iterations: 10 # maximum number of each sub-iteration
+    max_sub_iterations: 10     # maximum number of each sub-iteration
     regularization_weight: 100 # weight value for regularization (lbfgs mode only)
 
   # smoothing
   smoothing:
-    smooth_method: 0 # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)
+    smooth_method: 0        # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)
     l_smooth_rtp: [1, 1, 1] # smoothing coefficients for laplacian smoothing
 
   # parameters for smooth method 0 (multigrid model parametrization)
@@ -95,9 +95,9 @@ model_update: # update model parameters (when run_mode : 1 and 3)
 
   # settings for uniform inversion grid (if type_*_inv : 0)
   n_inv_dep_lat_lon: [5, 10, 10] # number of the base inversion grid points (ignored if type_*_inv : 1)
-  min_max_dep_inv: [-10, 10] # depth in km (Radius of the earth is defined in config.h/R_earth) (ignored if type_dep_inv : 1)
-  min_max_lat_inv: [37.7, 42.3] # latitude in degree
-  min_max_lon_inv: [22.7, 27.3] # longitude in degree
+  min_max_dep_inv: [-10, 10]     # depth in km (Radius of the earth is defined in config.h/R_earth) (ignored if type_dep_inv : 1)
+  min_max_lat_inv: [37.7, 42.3]  # latitude in degree
+  min_max_lon_inv: [22.7, 27.3]  # longitude in degree
 
   # settings for flexible inversion grid (if type_*_inv : 1)
   dep_inv: [-10.0, -7.5, -5.0, -2.5, 0.0, 2.5, 5.0, 7.5, 10.0] # depth in km (Radius of the earth is defined in config.h/R_earth)
@@ -111,28 +111,28 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # -------------- using absolute traveltime data --------------
   abs_time:
     use_abs_time: true # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
+    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
     distance_weight: [50.0, 150.0, 1.0, 0.1] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
 
   # -------------- using common source differential traveltime data --------------
   cs_dif_time:
     use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
+    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual.
     azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two stations.
 
   # -------------- using common receiver differential traveltime data --------------
   cr_dif_time:
     use_cr_time: true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
+    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual.
     azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two earthquakes.
 
   # -------------- global weight of different types of data (to balance the weight of different data) --------------
   global_weight:
-    balance_data_weight: true # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)
-    abs_time_weight: 1.0 # weight of absolute traveltime data,                       default: 1.0
+    balance_data_weight: true     # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)
+    abs_time_weight: 1.0          # weight of absolute traveltime data,                       default: 1.0
     cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data,     default: 1.0
     cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data,   default: 1.0
-    teleseismic_weight: 1.0 # weight of teleseismic data,                               default: 1.0  (exclude in this version)
+    teleseismic_weight: 1.0       # weight of teleseismic data,                               default: 1.0  (exclude in this version)
 
   # -------------- inversion parameters (exclude in this version) --------------
   update_slowness : true  # update slowness (velocity) or not.              default: true
@@ -148,16 +148,16 @@ model_update: # update model parameters (when run_mode : 1 and 3)
 relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
 
   # relocation_strategy
-  step_length : 0.01  # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
-  step_length_decay : 0.9   # if objective function increase, step size -> step length * step_length_decay. default: 0.9
+  step_length : 0.01      # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
+  step_length_decay : 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
   rescaling_dep_lat_lon_ortime  : [10.0, 10.0, 10.0, 1.0]  # The perturbation is related to <rescaling_dep_lat_lon_ortime>. Unit: km,km,km,second
   max_change_dep_lat_lon_ortime : [5.0, 5.0, 5.0, 0.5]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second
   max_iterations : 100  # maximum number of iterations for relocation
   tol_gradient : 0.0001 # threshold value for checking the convergence for each iteration
 
   # params keeped for current version of relocation but may not be required
-  ortime_local_search : true # true: do local search for origin time; false: do not do local search for origin time
-  ref_ortime_change : 0.5 # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time.
+  ortime_local_search : true       # true: do local search for origin time; false: do not do local search for origin time
+  ref_ortime_change : 0.5          # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time.
   step_length_ortime_rescale : 0.1 # step length for rescaling origin time
 
 
@@ -184,10 +184,10 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation
-    relocation_first : true  # true: do relocation first; false: do not relocation first.  default: true
+    relocation_first : true          # true: do relocation first; false: do not relocation first.  default: true
     relocation_first_iterations : 10 # maximum number of iterations for relocation in the beginning. default: 10
     relocation_every_N_steps : 5     # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>
-    relocation_final : true  # true: do relocation finally; false: do not relocation finally.  default: true
+    relocation_final : true          # true: do relocation finally; false: do not relocation finally.  default: true
     relocation_final_iterations : 10 # maximum number of iterations for relocation in the beginning. default: 10
 
 
@@ -200,7 +200,7 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 ########################################################################
 calculation:
   convergence_tolerance: 0.0001 # threshold value for checking the convergence for each forward/adjoint run
-  max_iterations: 500 # number of maximum iteration for each forward/adjoint run
-  stencil_order: 3 # order of stencil, 1 or 3
-  stencil_type: 0 # 0: , 1: first-order upwind scheme (only sweep_type 0 is supported)
-  sweep_type: 1 # 0: legacy, 1: cuthill-mckee with shm parallelization
+  max_iterations: 500           # number of maximum iteration for each forward/adjoint run
+  stencil_order: 3              # order of stencil, 1 or 3
+  stencil_type: 0               # 0: , 1: first-order upwind scheme (only sweep_type 0 is supported)
+  sweep_type: 1                 # 0: legacy, 1: cuthill-mckee with shm parallelization
