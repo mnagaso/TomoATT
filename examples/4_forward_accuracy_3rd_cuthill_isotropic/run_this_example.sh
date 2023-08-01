@@ -2,7 +2,7 @@
 
 python make_test_model.py
 
-NPROC=1
+NPROC=2
 
 # run for forward simulation in the mesh of 41*41*41
 mpirun -n $NPROC  --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N41.yml
