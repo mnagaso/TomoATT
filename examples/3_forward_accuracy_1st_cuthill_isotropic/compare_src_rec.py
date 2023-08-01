@@ -33,19 +33,30 @@ def read_src_rec_file(filename):
     return np.array(time),ev_time
 
 
-def check_result_times(errors, ngrid, order=None, tol=0.02):
-    print("The numerical error in a mesh of %d^3 is: %6.3f s (mean), %6.3f s (std), %6.3f (max)" %
-         (ngrid, errors.mean(), errors.std(), errors.max()))
+def calculate_error_and_RMAE(time, time_true):
+    # calculate errors
+    error = abs(time - time_true)
+    # calculate relative mean absolute error (%)
+    rmae = error.sum()/abs(time_true).sum()*100
+    return error, rmae
+
+
+def check_result_times(errors, rmae, ngrid, order=None, tol=0.5):
+    print(rmae)
+
+    print("The numerical error in a mesh of %d^3 is: %6.3f s (mean), %6.3f s (std), %6.3f s (max), %6.3f %% (RMAE)" % (ngrid, errors.mean(), errors.std(), errors.max(), rmae))
 
     if order is not None:
         print("The order of accuracy is: %6.3f" % order)
 
-        # check the order of accuracy is within tolerance
-        if abs(order-1.0) < tol:
-            print("The order of accuracy is within tolerance")
-        else:
-            print("The order of accuracy is NOT within tolerance")
-            exit(1) # return non-zero exit code (test failed)
+    # check if error is within tolerance
+    if rmae > tol:
+        print("Relative mean absolute error is larger than tolerance (%6.3f %% > %6.3f %%)" % (rmae, tol))
+        exit(1)
+    else:
+        print("Relative mean absolute error is within tolerance (%6.3f %% < %6.3f %%)" % (rmae, tol))
+
+
 
 if __name__ == '__main__':
 
@@ -70,24 +81,24 @@ if __name__ == '__main__':
     time_N161, ev_time_N161 = read_src_rec_file(fname)
 
     # calculate errors
-    error_N41 = abs((time_N41-time_true))
-    check_result_times(error_N41, 41)
+    error_N41, rmae_N41 = calculate_error_and_RMAE(time_N41, time_true)
+    check_result_times(error_N41, rmae_N41, 41)
 
-    error_N61 = abs((time_N61-time_true))
+    error_N61, rmae_N61 = calculate_error_and_RMAE(time_N61, time_true)
     order = math.log(error_N61.mean()/error_N41.mean())/math.log(40/60)
-    check_result_times(error_N61, 61, order)
+    check_result_times(error_N61, rmae_N41, 61, order)
 
-    error_N81 = abs((time_N81-time_true))
+    error_N81, rmae_N81 = calculate_error_and_RMAE(time_N81, time_true)
     order = math.log(error_N81.mean()/error_N61.mean())/math.log(60/80)
-    check_result_times(error_N81, 81, order)
+    check_result_times(error_N81, rmae_N81, 81, order)
 
-    error_N121 = abs((time_N121-time_true))
+    error_N121, rmae_N121 = calculate_error_and_RMAE(time_N121, time_true)
     order = math.log(error_N121.mean()/error_N81.mean())/math.log(80/120)
-    check_result_times(error_N121, 121, order)
+    check_result_times(error_N121, rmae_N121, 121, order)
 
-    error_N161 = abs((time_N161-time_true))
+    error_N161, rmae_N161 = calculate_error_and_RMAE(time_N161, time_true)
     order = math.log(error_N161.mean()/error_N121.mean())/math.log(120/160)
-    check_result_times(error_N161, 161, order)
+    check_result_times(error_N161, rmae_N161, 161, order)
 
     exit(0) # return zero exit code (success)
 

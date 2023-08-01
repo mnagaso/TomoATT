@@ -2,20 +2,22 @@
 
 python make_test_model.py
 
+NPROC=1
+
 # run for forward simulation in the mesh of 41*41*41
-mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N41.yml
+mpirun -n $NPROC  --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N41.yml
 
 # run for forward simulation in the mesh of 61*61*61
-mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N61.yml
+mpirun -n $NPROC --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N61.yml
 
 # run for forward simulation in the mesh of 81*81*81
-mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N81.yml
+mpirun -n $NPROC --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N81.yml
 
 # run for forward simulation in the mesh of 121*121*121
-mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N121.yml
+mpirun -n $NPROC --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N121.yml
 
 # run for forward simulation in the mesh of 161*161*161
-mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N161.yml
+mpirun -n $NPROC --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_N161.yml
 
 # this should be called from run_test.sh
 #python compare_src_rec.py
