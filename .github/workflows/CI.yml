@@ -345,8 +345,31 @@ jobs:
       run: ./.github/scripts/run_test.sh
       shell: bash
 
-  # linuxTest_2:
-    # add later
+  linuxTest_2:
+    name: Test run example 2 - 2_src_rec_data_read/
+    runs-on: ubuntu-latest
+    needs: [linuxCheck]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+    - name: Run test
+      env:
+        TESTDIR: examples/2_src_rec_data_read/
+      run: ./.github/scripts/run_test.sh
+      shell: bash
 
   linuxTest_3:
     name: Test run example 3 - 3_forward_accuracy_1st_cuthill_isotropic
@@ -399,5 +422,30 @@ jobs:
         TESTDIR: examples/4_forward_accuracy_3rd_cuthill_isotropic/
       run: ./.github/scripts/run_test.sh
       shell: bash
+      
+  linuxTest_4:
+    name: Test run example 4 - 5_use_different_types_of_data_in_model_update
+    runs-on: ubuntu-latest
+    needs: [linuxCheck]
 
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+    - name: Run test
+      env:
+        TESTDIR: examples/5_use_different_types_of_data_in_model_update/
+      run: ./.github/scripts/run_test.sh
+      shell: bash
 
