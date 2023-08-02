@@ -423,8 +423,8 @@ jobs:
       run: ./.github/scripts/run_test.sh
       shell: bash
       
-  linuxTest_4:
-    name: Test run example 4 - 5_use_different_types_of_data_in_model_update
+  linuxTest_5:
+    name: Test run example 5 - 5_use_different_types_of_data_in_model_update
     runs-on: ubuntu-latest
     needs: [linuxCheck]
 
