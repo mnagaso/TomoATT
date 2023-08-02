@@ -19,8 +19,11 @@ The computed src_rec_file is saved as `OUTPUT_FILES_no_swap_parallel/src_rec_fil
 You can run `bash run_this_example.sh` to proceed Step 1-3. Result is correct is you have the following output:
 
 For no_swap_serial,   src_rec.dat read and output are CORRECT! (match coeffient: 0.9986460342912408)
+
 For no_swap_parallel, src_rec.dat read and output are CORRECT! (match coeffient: 0.9986460342912408)
+
 For swap_serial,      src_rec.dat read and output are CORRECT! (match coeffient: 0.9994013789951578)
+
 For swap_parallel,    src_rec.dat read and output are CORRECT! (match coeffient: 0.9994013789951578)
 
 
