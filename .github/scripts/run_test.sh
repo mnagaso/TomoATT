@@ -24,10 +24,20 @@ echo
 
 
 # test script for checking the result
-my_test(){
+my_test_inversion_small(){
     echo "Checking the result..."
     ln -s ../../utils/compare_models.py
     python compare_models.py -t ./test_model_true.h5 -r ./OUTPUT_FILES/final_model.h5
+    if [[ $? -ne 0 ]]; then
+        echo "Test failed!"
+        exit 1
+    fi
+    echo "Test passed!"
+}
+
+my_test_forward(){
+    echo "Checking the result..."
+    python compare_src_rec.py
     if [[ $? -ne 0 ]]; then
         echo "Test failed!"
         exit 1
@@ -57,12 +67,24 @@ echo
 
 # check the result
 if [ "$TESTDIR" == "examples/inversion_small/" ]; then
-    my_test
+    my_test_inversion_small
     # clean up
     rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
 elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
+    my_test_forward
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+elif [ "$TESTDIR" == "examples/3_forward_accuracy_1st_cuthill_isotropic/" ]; then
+    my_test_forward
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+elif [ "$TESTDIR" == "examples/4_forward_accuracy_3rd_cuthill_isotropic/" ]; then
+    my_test_forward
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+else
+    echo "No test script for this example!"
+    exit 1
 fi
 
 echo
