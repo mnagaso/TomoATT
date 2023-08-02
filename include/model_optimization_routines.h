@@ -81,7 +81,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
             else
                 out_main << "," << std::setw(19) << v_misfit_inout[9];
         }
-        out_main << std::setw(19) << step_length_init << std::endl;
+        out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
     }
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);

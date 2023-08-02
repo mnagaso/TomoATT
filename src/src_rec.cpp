@@ -140,8 +140,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                 // new source detected by its name
                 // TODO: add error check for duplicated source name (but different event info)
-                if (src_map.find(src.name) == src_map.end())
-                    src_map[src.name] = src;
+                // if (src_map.find(src.name) == src_map.end())
+                //     src_map[src.name] = src;
+
+                // whether the src.name exists or not, overwrite it. (it can overwrite the src_info in the cr_dif data, whose source infomation (e.g., ortime, Ndata) is incomplete.)
+                src_map[src.name] = src;
 
                 src_id   = src.id;
                 src_name = src.name;

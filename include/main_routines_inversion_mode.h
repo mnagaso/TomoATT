@@ -81,8 +81,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  compute the synthetic common receiver differential traveltime first
     ///////////////////////////////////////////////////////////////////////
 
-    // prepare synthetic traveltime for all earthquakes
-    if (src_pair_exists && IP.get_run_mode() == DO_INVERSION)
+    // prepare synthetic traveltime for all earthquakes, if
+    //  1. common receiver data exists;
+    //  2. we use common receiver data to update model; (cr + not swap) or (cs + swap)
+    //  3. we do inversion  
+    if ( src_pair_exists && 
+         ((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())) && 
+         IP.get_run_mode() == DO_INVERSION )
         pre_run_forward_only(IP, grid, io, i_inv);
 
     //
@@ -223,10 +228,14 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
     }
 
+
     // gather all the traveltime to the main process and distribute to all processes
     // for calculating the synthetic common receiver differential traveltime
-    if (IP.get_run_mode()!=DO_INVERSION) // already calculated in inversion mode
-        IP.gather_traveltimes_and_calc_syn_diff();
+    if ( IP.get_run_mode()!=DO_INVERSION ||                 // case 1. if we are doing forward modeling, traveltime is not prepared for computing cr_dif data. Now we need to compute it
+        (!IP.get_use_cr() && !IP.get_is_srcrec_swap())  ||   // case 2-1, we do inversion, but we do not use cr data (cr + no swap)
+        (!IP.get_use_cs() &&  IP.get_is_srcrec_swap())){     // case 2-2, we do inversion, but we do not use cr data (cs +    swap)
+        IP.gather_traveltimes_and_calc_syn_diff();  
+    }
 
     // return current objective function value
     return v_obj_misfit;

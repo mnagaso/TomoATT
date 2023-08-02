@@ -102,6 +102,12 @@ public:
     bool get_update_rad_ani()         {return update_rad_ani;};
     CUSTOMREAL * get_depth_taper()   {return depth_taper;};
 
+    bool get_use_abs()                  {return use_abs;};
+    bool get_use_cs()                   {return use_cs;};
+    bool get_use_cr()                   {return use_cr;};
+
+    bool get_use_abs_reloc()                  {return use_abs_reloc;};
+    bool get_use_cr_reloc()                   {return use_cr_reloc;};
 
     // prepare source list for this simulation group
     void prepare_src_map();
@@ -233,6 +239,7 @@ private:
     CUSTOMREAL distance_weight_abs[n_weight];
     CUSTOMREAL azimuthal_weight_cs[n_weight];
     CUSTOMREAL azimuthal_weight_cr[n_weight];
+
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
     bool use_cr_reloc  = false; // use common source double difference or not

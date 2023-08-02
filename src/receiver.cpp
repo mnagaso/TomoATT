@@ -8,7 +8,6 @@ Receiver::Receiver() {
 Receiver::~Receiver() {
 }
 
-
 void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
         // get receiver positions from input parameters
@@ -71,9 +70,11 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
             for (auto& data: it_src->second){
 
                 //
-                // absolute traveltime
+                // absolute traveltime  
                 //
-                if (data.is_src_rec){
+                if (data.is_src_rec){   
+                    if (!IP.get_use_abs()) // if we do not use abs data
+                        continue;   
 
                     // error check (data.name_src_pair must be equal to name_sim1 and name_sim2)
                     if (data.name_src != name_sim_src) continue;
@@ -99,9 +100,12 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     }
 
                 //
-                // common receiver differential traveltime
+                // common receiver differential traveltime && we use this data
                 //
-                } else if (data.is_src_pair) {
+                } else if (data.is_src_pair) {  
+                    if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))   
+                        continue;   // if we do not use this data (cr + not swap) or (cs + swap)
+
 
                     std::string name_src1 = data.name_src_pair[0];
                     std::string name_src2 = data.name_src_pair[1];
@@ -158,6 +162,8 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                 // common source differential traveltime
                 //
                 } else if (data.is_rec_pair) {
+                    if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))   
+                        continue; // if we do not use this data (cs + not swap) or (cr + swap)
 
                     std::string name_src  = data.name_src;
                     std::string name_rec1 = data.name_rec_pair[0];
