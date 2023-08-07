@@ -44,5 +44,8 @@ test/solver_performance/bench_fugaku
 examples/*/OUTPUT_FILES
 examples/*/*.dat
 examples/*/models
+examples/*/params_log.yaml
+examples/*/time.txt
+examples/*/*.dat
 
 
