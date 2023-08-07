@@ -20,8 +20,7 @@ mpirun --oversubscribe -n 2 ../../build/bin/TOMOATT -i input_params/input_params
 ```
 3. finally, you can run `model_visualization.ipynb` or `model_visualization.py` to plot the checkerboard model and inversion result. 
 ``` bash
-python  model_visualization.py ckb
-python  model_visualization.py inv
+python  model_visualization.py
 ```
 
 The checkerboard model:
