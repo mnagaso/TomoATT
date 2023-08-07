@@ -79,11 +79,36 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     // error check (data.name_src_pair must be equal to name_sim1 and name_sim2)
                     if (data.name_src != name_sim_src) continue;
 
+
                     std::string name_src      = data.name_src;
                     std::string name_rec      = data.name_rec;
                     CUSTOMREAL syn_time       = data.travel_time;
                     CUSTOMREAL obs_time       = data.travel_time_obs;
-                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight;
+
+                    // assign local weight
+                    CUSTOMREAL  local_weight = 1.0;
+                    
+                    // evaluate residual_weight_abs
+                    CUSTOMREAL  local_residual = abs(syn_time - obs_time);
+                    CUSTOMREAL* res_weight = IP.get_residual_weight_abs();
+
+                    if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
+                    else if (local_residual > res_weight[1])    local_weight *= res_weight[3];
+                    else                                        local_weight *= ((local_residual - res_weight[0])/(res_weight[1] - res_weight[0]) * (res_weight[3] - res_weight[2]) + res_weight[2]);
+                    
+
+                    // evaluate distance_weight_abs
+                    CUSTOMREAL  local_dis    =   0.0;
+                    Epicentral_distance_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_dis);
+                    local_dis *= R_earth;       // rad to km
+                    CUSTOMREAL* dis_weight = IP.get_distance_weight_abs();
+                    
+                    if      (local_dis < dis_weight[0])         local_weight *= dis_weight[2];
+                    else if (local_dis > dis_weight[1])         local_weight *= dis_weight[3];
+                    else                                        local_weight *= ((local_dis - dis_weight[0])/(dis_weight[1] - dis_weight[0]) * (dis_weight[3] - dis_weight[2]) + dis_weight[2]);
+                    
+                    // assign adjoint source
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight*local_weight;
                     IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
                     // contribute total misfit
@@ -118,7 +143,41 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                         CUSTOMREAL syn_dif_time   = data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
-                        CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+
+                        // assign local weight
+                        CUSTOMREAL  local_weight = 1.0;
+
+                        // evaluate residual_weight_abs
+                        CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time);
+                        CUSTOMREAL* res_weight;
+                        if (IP.get_is_srcrec_swap())    res_weight = IP.get_residual_weight_cs();
+                        else                            res_weight = IP.get_residual_weight_cr();
+                        
+                        if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
+                        else if (local_residual > res_weight[1])    local_weight *= res_weight[3];
+                        else                                        local_weight *= ((local_residual - res_weight[0])/(res_weight[1] - res_weight[0]) * (res_weight[3] - res_weight[2]) + res_weight[2]);
+                        
+
+                        // evaluate distance_weight_abs
+                        CUSTOMREAL  local_azi1    =   0.0;
+                        Azimuth_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src1).lat*DEG2RAD, IP.get_src_point(name_src1).lon*DEG2RAD, local_azi1);
+                        CUSTOMREAL  local_azi2    =   0.0;
+                        Azimuth_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src2).lat*DEG2RAD, IP.get_src_point(name_src2).lon*DEG2RAD, local_azi2);
+                        CUSTOMREAL  local_azi   = abs(local_azi1 - local_azi2)*RAD2DEG;
+                        if(local_azi > 180.0)   local_azi = 360.0 - local_azi;
+
+
+                        CUSTOMREAL* azi_weight;
+                        if (IP.get_is_srcrec_swap())    azi_weight = IP.get_azimuthal_weight_cs();
+                        else                            azi_weight = IP.get_azimuthal_weight_cr();
+
+                        if      (local_azi < azi_weight[0])         local_weight *= azi_weight[2];
+                        else if (local_azi > azi_weight[1])         local_weight *= azi_weight[3];
+                        else                                        local_weight *= ((local_azi - azi_weight[0])/(azi_weight[1] - azi_weight[0]) * (azi_weight[3] - azi_weight[2]) + azi_weight[2]);
+                        
+
+                        // assign adjoint source
+                        CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time) * data.weight * local_weight;
 
                         IP.set_adjoint_source(name_rec, adjoint_source);
 
@@ -172,10 +231,43 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     CUSTOMREAL syn_dif_time = data.cs_dif_travel_time;
                     CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
-                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time)*data.weight;
+                    // assign local weight
+                    CUSTOMREAL  local_weight = 1.0;
+
+                    // evaluate residual_weight_abs
+                    CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time);
+                    CUSTOMREAL* res_weight;
+                    if (IP.get_is_srcrec_swap())    res_weight = IP.get_residual_weight_cr();
+                    else                            res_weight = IP.get_residual_weight_cs();
+                    
+                    if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
+                    else if (local_residual > res_weight[1])    local_weight *= res_weight[3];
+                    else                                        local_weight *= ((local_residual - res_weight[0])/(res_weight[1] - res_weight[0]) * (res_weight[3] - res_weight[2]) + res_weight[2]);
+                    
+
+                    // evaluate distance_weight_abs
+                    CUSTOMREAL  local_azi1    =   0.0;
+                    Azimuth_sphere(IP.get_rec_point(name_rec1).lat*DEG2RAD, IP.get_rec_point(name_rec1).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_azi1);
+                    CUSTOMREAL  local_azi2    =   0.0;
+                    Azimuth_sphere(IP.get_rec_point(name_rec2).lat*DEG2RAD, IP.get_rec_point(name_rec2).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_azi2);
+                    CUSTOMREAL  local_azi   = abs(local_azi1 - local_azi2)*RAD2DEG;
+                    if(local_azi > 180.0)   local_azi = 360.0 - local_azi;
+
+
+                    CUSTOMREAL* azi_weight;
+                    if (IP.get_is_srcrec_swap())    azi_weight = IP.get_azimuthal_weight_cr();
+                    else                            azi_weight = IP.get_azimuthal_weight_cs();
+
+                    if      (local_azi < azi_weight[0])         local_weight *= azi_weight[2];
+                    else if (local_azi > azi_weight[1])         local_weight *= azi_weight[3];
+                    else                                        local_weight *= ((local_azi - azi_weight[0])/(azi_weight[1] - azi_weight[0]) * (azi_weight[3] - azi_weight[2]) + azi_weight[2]);
+                    
+
+                    // assign adjoint source
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec1, adjoint_source);
 
-                    adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time)*data.weight;
+                    adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
                     // contribute total misfit
@@ -191,7 +283,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
 
                     //            << std::endl;
 
-                    // contribute misfit of specific type of data
+                    // contribute misfit of specific type of data (TODO: separate this when consider teleseismic tomography)
                     if (IP.get_src_point(name_src).is_out_of_region || \
                         IP.get_rec_point(name_rec1).is_out_of_region || \
                         IP.get_rec_point(name_rec2).is_out_of_region){

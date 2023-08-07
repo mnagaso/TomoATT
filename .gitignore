@@ -42,3 +42,7 @@ test/solver_performance/bench_fugaku
 
 # examples
 examples/*/OUTPUT_FILES
+examples/*/*.dat
+examples/*/models
+
+

@@ -330,7 +330,7 @@ InputParams::InputParams(std::string& input_file){
                     for (int i = 0; i < n_weight; i++)
                         getNodeValue(config["model_update"]["abs_time"], "residual_weight", residual_weight_abs[i], i);
                 }
-                if (config["model_uodate"]["abs_time"]["distance_weight"]) {
+                if (config["model_update"]["abs_time"]["distance_weight"]) {
                     for (int i = 0; i < n_weight; i++)
                         getNodeValue(config["model_update"]["abs_time"], "distance_weight", distance_weight_abs[i], i);
                 }

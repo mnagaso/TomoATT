@@ -109,6 +109,25 @@ public:
     bool get_use_abs_reloc()                  {return use_abs_reloc;};
     bool get_use_cr_reloc()                   {return use_cr_reloc;};
 
+    CUSTOMREAL* get_residual_weight_abs()   {return residual_weight_abs;};
+    CUSTOMREAL* get_distance_weight_abs()   {return distance_weight_abs;};
+    CUSTOMREAL* get_residual_weight_cr()    {return residual_weight_cr;};
+    CUSTOMREAL* get_azimuthal_weight_cr()   {return azimuthal_weight_cr;};
+    CUSTOMREAL* get_residual_weight_cs()    {return residual_weight_cs;};
+    CUSTOMREAL* get_azimuthal_weight_cs()   {return azimuthal_weight_cs;};
+
+    CUSTOMREAL* get_residual_weight_abs_reloc()   {return residual_weight_abs_reloc;};
+    CUSTOMREAL* get_distance_weight_abs_reloc()   {return distance_weight_abs_reloc;};
+    CUSTOMREAL* get_residual_weight_cr_reloc()    {return residual_weight_cr_reloc;};
+    CUSTOMREAL* get_azimuthal_weight_cr_reloc()   {return azimuthal_weight_cr_reloc;};
+
+
+    // for relocation
+    // CUSTOMREAL residual_weight_abs_reloc[n_weight];
+    // CUSTOMREAL residual_weight_cr_reloc[n_weight];
+    // CUSTOMREAL distance_weight_abs_reloc[n_weight];
+    // CUSTOMREAL azimuthal_weight_cr_reloc[n_weight];
+
     // prepare source list for this simulation group
     void prepare_src_map();
 
@@ -239,6 +258,12 @@ private:
     CUSTOMREAL distance_weight_abs[n_weight];
     CUSTOMREAL azimuthal_weight_cs[n_weight];
     CUSTOMREAL azimuthal_weight_cr[n_weight];
+    // CUSTOMREAL* residual_weight_abs = new CUSTOMREAL[n_weight];
+    // CUSTOMREAL* residual_weight_cs  = new CUSTOMREAL[n_weight];
+    // CUSTOMREAL* residual_weight_cr  = new CUSTOMREAL[n_weight];
+    // CUSTOMREAL* distance_weight_abs = new CUSTOMREAL[n_weight];
+    // CUSTOMREAL* azimuthal_weight_cs = new CUSTOMREAL[n_weight];
+    // CUSTOMREAL* azimuthal_weight_cr = new CUSTOMREAL[n_weight];
 
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
