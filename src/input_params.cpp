@@ -408,6 +408,7 @@ InputParams::InputParams(std::string& input_file){
             if (config["relocation"]["step_length_decay"]) {
                 getNodeValue(config["relocation"], "step_length_decay", step_length_decay_src_reloc);
                 // TODO: this value is defined but not used. (instead, step_length_decay is used)
+                // DONE (20230807), this value is used in source relocation
             }
             // rescaling values
             if (config["relocation"]["rescaling_dep_lat_lon_ortime"]){
@@ -435,14 +436,14 @@ InputParams::InputParams(std::string& input_file){
             if (config["relocation"]["ortime_local_search"]) {
                 getNodeValue(config["relocation"], "ortime_local_search", ortime_local_search);
             }
-            // kernel =   K_t/ref_ortime_change (only for ortime_local_search : 1)
-            if (config["relocation"]["ref_ortime_change"]) {
-                getNodeValue(config["relocation"], "ref_ortime_change", ref_ortime_change);
-            }
-            // step size of ortime is :  step_length_src_reloc * step_length_ortime_rescale
-            if (config["relocation"]["step_length_ortime_rescale"]) {
-                getNodeValue(config["relocation"], "step_length_ortime_rescale", step_length_ortime_rescale);
-            }
+            // kernel =   K_t/ref_ortime_change (only for ortime_local_search : 1)  (no used anymore)
+            // if (config["relocation"]["ref_ortime_change"]) {
+                // getNodeValue(config["relocation"], "ref_ortime_change", ref_ortime_change);
+            // }
+            // step size of ortime is :  step_length_src_reloc * step_length_ortime_rescale     (no used anymore)
+            // if (config["relocation"]["step_length_ortime_rescale"]) {            
+            //     getNodeValue(config["relocation"], "step_length_ortime_rescale", step_length_ortime_rescale);
+            // }
 
             // data usage
             if (config["relocation"]["abs_time"]) {
@@ -705,8 +706,8 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(N_ITER_MAX_SRC_RELOC, 0);
     broadcast_cr_single(TOL_SRC_RELOC, 0);
     broadcast_bool_single(ortime_local_search, 0);
-    broadcast_cr_single(ref_ortime_change, 0);
-    broadcast_cr_single(step_length_ortime_rescale, 0);
+    // broadcast_cr_single(ref_ortime_change, 0);       (no used anymore)
+    // broadcast_cr_single(step_length_ortime_rescale, 0);  (no used anymore)
 
     broadcast_bool_single(use_abs_reloc, 0);
     broadcast_cr(residual_weight_abs_reloc, n_weight, 0);
@@ -963,17 +964,17 @@ void InputParams::write_params_to_file() {
 
     fout << std::endl;
 
-    fout << "# -------------- using absolute traveltime data --------------" << std::endl;
-    fout << "abs_time:" << std::endl;
-    fout << "  use_abs_time: " << use_abs << "# 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
-    fout << "  residual_weight: [";
+    fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
+    fout << "  abs_time:" << std::endl;
+    fout << "    use_abs_time: " << use_abs << "# 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_abs[i];
         if (i != n_weight-1)
             fout << ", ";
     }
     fout << "] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
-    fout << "  distance_weight: [";
+    fout << "    distance_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << distance_weight_abs[i];
         if (i != n_weight-1)
@@ -982,17 +983,17 @@ void InputParams::write_params_to_file() {
     fout << "] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
     fout << std::endl;
 
-    fout << "# -------------- using common source differential traveltime data --------------" << std::endl;
-    fout << "cs_dif_time:" << std::endl;
-    fout << "  use_cs_time: " << use_cs << " # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
-    fout << "  residual_weight: [";
+    fout << "  # -------------- using common source differential traveltime data --------------" << std::endl;
+    fout << "  cs_dif_time:" << std::endl;
+    fout << "    use_cs_time: " << use_cs << " # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_cs[i];
         if (i != n_weight-1)
             fout << ", ";
     }
     fout << "] # weight (wt) of residual." << std::endl;
-    fout << "  azimuthal_weight: [";
+    fout << "    azimuthal_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cs[i];
         if (i != n_weight-1)
@@ -1001,17 +1002,17 @@ void InputParams::write_params_to_file() {
     fout << "] # weight of azimuth between two stations." << std::endl;
     fout << std::endl;
 
-    fout << "# -------------- using common receiver differential traveltime data --------------" << std::endl;
-    fout << "cr_dif_time:" << std::endl;
-    fout << "  use_cr_time: " << use_cr << " # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
-    fout << "  residual_weight: [";
+    fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
+    fout << "  cr_dif_time:" << std::endl;
+    fout << "    use_cr_time: " << use_cr << " # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_cr[i];
         if (i != n_weight-1)
             fout << ", ";
     }
     fout << "] # weight (wt) of residual." << std::endl;
-    fout << "  azimuthal_weight: [";
+    fout << "    azimuthal_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cr[i];
         if (i != n_weight-1)
@@ -1020,23 +1021,23 @@ void InputParams::write_params_to_file() {
     fout << "] # weight of azimuth between two earthquakes." << std::endl;
     fout << std::endl;
 
-    fout << "# -------------- global weight of different types of data (to balance the weight of different data) --------------" << std::endl;
-    fout << "global_weight:" << std::endl;
-    fout << "  balance_data_weight: " << balance_data_weight << " # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)" << std::endl;
-    fout << "  abs_time_weight: " << abs_time_local_weight  << " # weight of absolute traveltime data,                       default: 1.0" << std::endl;
-    fout << "  cs_dif_time_local_weight: " << cs_dif_time_local_weight << " # weight of common source differential traveltime data,     default: 1.0" << std::endl;
-    fout << "  cr_dif_time_local_weight: " << cr_dif_time_local_weight << " # weight of common receiver differential traveltime data,   default: 1.0" << std::endl;
-    fout << "  teleseismic_weight: " << teleseismic_weight << " # weight of teleseismic data,                               default: 1.0  (exclude in this version)" << std::endl;
+    fout << "  # -------------- global weight of different types of data (to balance the weight of different data) --------------" << std::endl;
+    fout << "  global_weight:" << std::endl;
+    fout << "    balance_data_weight: " << balance_data_weight << " # yes: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)" << std::endl;
+    fout << "    abs_time_weight: " << abs_time_local_weight  << " # weight of absolute traveltime data,                       default: 1.0" << std::endl;
+    fout << "    cs_dif_time_local_weight: " << cs_dif_time_local_weight << " # weight of common source differential traveltime data,     default: 1.0" << std::endl;
+    fout << "    cr_dif_time_local_weight: " << cr_dif_time_local_weight << " # weight of common receiver differential traveltime data,   default: 1.0" << std::endl;
+    fout << "    teleseismic_weight: " << teleseismic_weight << " # weight of teleseismic data,                               default: 1.0  (exclude in this version)" << std::endl;
     fout << std::endl;
 
-    fout << "# -------------- inversion parameters (exclude in this version) --------------" << std::endl;
-    fout << "update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
-    fout << "update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
-    fout << "update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
+    fout << "  # -------------- inversion parameters (exclude in this version) --------------" << std::endl;
+    fout << "  update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
+    fout << "  update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
+    fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
     fout << std::endl;
 
-    fout << "# -------------- for teleseismic inversion (exclude in this version) --------------" << std::endl;
-    fout << "depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf" << std::endl;
+    fout << "  # -------------- for teleseismic inversion (exclude in this version) --------------" << std::endl;
+    fout << "  depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf" << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
@@ -1062,8 +1063,8 @@ void InputParams::write_params_to_file() {
 
     fout << "  # params keeped for current version of relocation but may not be required" << std::endl;
     fout << "  ortime_local_search : " << ortime_local_search << " # true: do local search for origin time; false: do not do local search for origin time" << std::endl;
-    fout << "  ref_ortime_change : " << ref_ortime_change << " # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time." << std::endl;
-    fout << "  step_length_ortime_rescale : " << step_length_ortime_rescale << " # step length for rescaling origin time" << std::endl;
+    // fout << "  # ref_ortime_change : " << ref_ortime_change << " # (no used any more) reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time." << std::endl;
+    // fout << "  # step_length_ortime_rescale : " << step_length_ortime_rescale << " # (no used any more) step length for rescaling origin time" << std::endl;
     fout << std::endl;
 
     fout << "  # more option for using different types of data is under development (following)" << std::endl;

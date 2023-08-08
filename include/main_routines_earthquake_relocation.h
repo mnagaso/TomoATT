@@ -122,12 +122,12 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     }
 
     // divide optimal origin time by summed weight
-    if (ortime_local_search == 0) {
+    if (!ortime_local_search) {     // global search for ortime
         IP.allreduce_rec_map_tau_opt();
         IP.allreduce_rec_map_sum_weight();
 
         recs.divide_optimal_origin_time_by_summed_weight(IP);
-    } else {
+    } else {                        // local search for ortime
         // sum grad_tau of all simulation groups
         IP.allreduce_rec_map_grad_tau();
     }

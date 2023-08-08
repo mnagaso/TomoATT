@@ -243,8 +243,8 @@ inline CUSTOMREAL       max_change_lat              = 1.0;
 inline CUSTOMREAL       max_change_lon              = 1.0;
 inline CUSTOMREAL       max_change_ortime           = 0.5;
 inline bool             ortime_local_search      = false;
-inline CUSTOMREAL       ref_ortime_change           = 5.0;
-inline CUSTOMREAL       step_length_ortime_rescale  = 0.1;
+// inline CUSTOMREAL       ref_ortime_change           = 5.0;   (no used any more)
+// inline CUSTOMREAL       step_length_ortime_rescale  = 0.1;   (no used any more)
 
 // inversion strategy parameters
 inline int inv_mode                    = 0;
