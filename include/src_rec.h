@@ -60,6 +60,8 @@ public:
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
+    CUSTOMREAL vobj_src_reloc_abs       = 0.0;
+    CUSTOMREAL vobj_src_reloc_cr        = 0.0;
     //CUSTOMREAL DTi          = 0.0;
     //CUSTOMREAL DTj          = 0.0;
     //CUSTOMREAL DTk          = 0.0;
@@ -73,8 +75,9 @@ public:
 class DataInfo {
 public:
 
-    CUSTOMREAL data_weight = 1.0;   // the weight in the src_rec file
-    CUSTOMREAL weight      = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+    CUSTOMREAL data_weight  = 1.0;   // the weight in the src_rec file
+    CUSTOMREAL weight       = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+    CUSTOMREAL weight_reloc = 1.0;   // the actual weight for relocation,   equal   data_weight * weight about the data type;
 
     std::string phase = "unknown";
 
@@ -122,6 +125,11 @@ public:
     CUSTOMREAL DTi          = 0.0;
     CUSTOMREAL DTj          = 0.0;
     CUSTOMREAL DTk          = 0.0;
+
+    std::vector<CUSTOMREAL> DTi_pair = {0.0, 0.0};
+    std::vector<CUSTOMREAL> DTj_pair = {0.0, 0.0};
+    std::vector<CUSTOMREAL> DTk_pair = {0.0, 0.0};
+    
 
 };
 

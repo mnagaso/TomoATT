@@ -201,9 +201,9 @@ public:
     void allreduce_rec_map_tau_opt();
     void allreduce_rec_map_sum_weight();
     void allreduce_rec_map_vobj_src_reloc();
-    void allreduce_rec_map_grad_tau();
-    void allreduce_rec_map_grad_chi_ijk();
-
+    // void allreduce_rec_map_grad_tau();
+    // void allreduce_rec_map_grad_chi_ijk();
+    void allreduce_rec_map_grad_src();
 private:
     // boundary information
     CUSTOMREAL min_dep; // minimum depth in km

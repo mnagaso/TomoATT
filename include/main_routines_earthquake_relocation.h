@@ -99,7 +99,7 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
     // iterate over sources
     for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
-
+        
         const std::string name_sim_src = IP.src_id2name[i_src];
         const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
@@ -116,50 +116,60 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
         // calculate travel time at the actual source location
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
-        // calculate approximated orptimal origin time
-        recs.calculate_optimal_origin_time(IP, name_sim_src);
+        // // calculate gradient of objective function with respect to ortime  // calculate approximated optimal origin time 
+        // recs.calculate_grad_obj_tau_reloc(IP, name_sim_src);  // recs.calculate_optimal_origin_time(IP, name_sim_src);   // combined in calculate_grad_obj_src_reloc
 
-    }
+    // }
 
     // divide optimal origin time by summed weight
-    if (!ortime_local_search) {     // global search for ortime
-        IP.allreduce_rec_map_tau_opt();
-        IP.allreduce_rec_map_sum_weight();
+    // if (!ortime_local_search) {     // global search for ortime (TODO: not available in the future)
+    //     IP.allreduce_rec_map_tau_opt();
+    //     IP.allreduce_rec_map_sum_weight();
 
-        recs.divide_optimal_origin_time_by_summed_weight(IP);
-    } else {                        // local search for ortime
-        // sum grad_tau of all simulation groups
-        IP.allreduce_rec_map_grad_tau();
-    }
+    //     recs.divide_optimal_origin_time_by_summed_weight(IP);
+    // } else {                        // local search for ortime
+    //     // sum grad_tau of all simulation groups
+    // IP.allreduce_rec_map_grad_tau();
+    // }
 
-    // compute the objective function
-    recs.calculate_obj_reloc(IP, i_iter);
+    
 
-    // iterate over sources
-    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    // // iterate over sources
+    // for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-        const std::string name_sim_src = IP.src_id2name[i_src];
-        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
+    //     const std::string name_sim_src = IP.src_id2name[i_src];
+    //     const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
 
-        // set simu group id and source name for output files/dataset names
-        io.set_id_src(id_sim_src);
-        io.set_name_src(name_sim_src);
+    //     // set simu group id and source name for output files/dataset names
+    //     io.set_id_src(id_sim_src);
+    //     io.set_name_src(name_sim_src);
 
-        // reset the file name to be read
-        io.change_group_name_for_source();
+    //     // reset the file name to be read
+    //     io.change_group_name_for_source();
 
-        // load travel time field on grid.T_loc
-        io.read_T(grid);
+    //     // load travel time field on grid.T_loc
+    //     io.read_T(grid);
 
         // calculate gradient at the actual source location
         recs.calculate_T_gradient(IP, grid, name_sim_src);
 
-        // calculate gradient of objective function
+        // calculate gradient of objective function with respect to location and ortime
         recs.calculate_grad_obj_src_reloc(IP, name_sim_src);
+
     }
 
+
+    // compute the objective function
+    recs.calculate_obj_reloc(IP, i_iter);
+
     // sum grad_chi_k of all simulation groups
-    IP.allreduce_rec_map_grad_chi_ijk();
+    // IP.allreduce_rec_map_grad_chi_ijk();
+
+    // sum grad_tau of all simulation groups
+    // IP.allreduce_rec_map_grad_tau();
+
+    // sum grad_tau and grad_chi_k of all simulation groups
+    IP.allreduce_rec_map_grad_src();
 
     //synchronize_all_world(); // not necessary here because allreduce is already synchronizing communication
 }

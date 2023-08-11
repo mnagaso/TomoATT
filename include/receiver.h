@@ -21,8 +21,8 @@ public:
     void calculate_T_gradient(InputParams&, Grid&, const std::string&);
     // initialize variables for source relocation
     void init_vars_src_reloc(InputParams&);
-    // approximated optimal origin time
-    void calculate_optimal_origin_time(InputParams&, const std::string&);
+    // calculate gradient of objective function with respect to ortime // approximated optimal origin time
+    // void calculate_grad_obj_tau_reloc(InputParams&, const std::string&); // void calculate_optimal_origin_time(InputParams&, const std::string&); // combined in calculate_grad_obj_src_reloc 
     // divide optimal origin time by summed weight
     void divide_optimal_origin_time_by_summed_weight(InputParams&);
     // Gradient of objective function

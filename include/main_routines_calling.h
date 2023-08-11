@@ -240,11 +240,44 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     std::ofstream out_main;
     if(myrank == 0 && id_sim ==0){
         out_main.open(output_dir + "/objective_function_reloc.txt");
+
+        bool have_abs    = ( IP.data_type.find("abs")    != IP.data_type.end() );
+        bool have_cs_dif = ( IP.data_type.find("cs_dif") != IP.data_type.end() );
+        bool have_cr_dif = ( IP.data_type.find("cr_dif") != IP.data_type.end() );
+        bool have_tele   = ( IP.data_type.find("tele")   != IP.data_type.end() );
+
         out_main << std::setw(8) << std::right << "# iter,";
         out_main << std::setw(16) << std::right << "N_reloc,";
         out_main << std::setw(16) << std::right << "N_located,";
-        out_main << std::setw(16) << std::right << "obj_weighted,";
-        // out_main << std::setw(12) << std::right << "obj_noweight,";
+        
+        std::string tmp = "obj(";
+        tmp.append(std::to_string(IP.N_data));
+        tmp.append("),");
+        out_main << std::setw(20) << tmp;
+        if (have_abs){
+            tmp = "obj_abs(";
+            tmp.append(std::to_string(IP.N_abs_local_data));
+            tmp.append("),");
+            out_main << std::setw(20) << tmp;
+        }
+        if (have_cs_dif){
+            tmp = "obj_cs_dif(";
+            tmp.append(std::to_string(IP.N_cs_dif_local_data));
+            tmp.append("),");
+            out_main << std::setw(20) << tmp;
+        }
+        if (have_cr_dif){
+            tmp = "obj_cr_dif(";
+            tmp.append(std::to_string(IP.N_cr_dif_local_data));
+            tmp.append("),");
+            out_main << std::setw(20) << tmp;
+        }
+        if (have_tele){
+            tmp = "obj_tele(";
+            tmp.append(std::to_string(IP.N_teleseismic_data));
+            tmp.append("),");
+            out_main << std::setw(20) << tmp;
+        }
         out_main << std::endl;
     }
 
@@ -252,6 +285,9 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     CUSTOMREAL v_obj      = 999999999.0;
     CUSTOMREAL v_obj_old  = 0.0;
     CUSTOMREAL v_obj_grad = 0.0;
+    CUSTOMREAL v_obj_abs      = 999999999.0;
+    CUSTOMREAL v_obj_cr       = 999999999.0;
+    
     int        i_iter     = 0;
 
     // iterate
@@ -260,7 +296,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         v_obj_old  = v_obj;
         v_obj      = 0.0;
         v_obj_grad = 0.0;
-
+        v_obj_abs  = 0.0;
+        v_obj_cr   = 0.0;
         // determine which earthquake should be located
         IP.name_for_reloc.clear();
         for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
@@ -280,6 +317,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
+            v_obj_abs  += iter->second.vobj_src_reloc_abs;
+            v_obj_cr   += iter->second.vobj_src_reloc_cr;
         }
 
         // reduce
@@ -292,12 +331,12 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         if (subdom_main && id_subdomain==0) {
             if (IP.name_for_reloc.size() == 0){
-                std::cout << "DEBUG: finished relocation because all receivers have been located." << std::endl;
+                std::cout << "Finished relocation because all receivers have been located." << std::endl;
                 finished = true;
             }
 
             if (i_iter >= N_ITER_MAX_SRC_RELOC){
-                std::cout << "DEBUG: finished relocation because iteration number is larger than " << N_ITER_MAX_SRC_RELOC << std::endl;
+                std::cout << "Finished relocation because iteration number exceeds the maximum " << N_ITER_MAX_SRC_RELOC << std::endl;
                 finished = true;
             }
             allreduce_bool_single_inplace_sim(finished); //LAND
@@ -326,7 +365,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
             // the last 10 sources under location
             if (nrec_total - count_loc < 10){
-                std::cout << "Source under location. names: ";
+                std::cout << "Last 10 sources under location. names: ";
                 for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
                     std::cout << IP.name_for_reloc[i] << ", ";
                 }
@@ -337,11 +376,14 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // write objective functions
         if (myrank==0 && id_sim==0) {
-            out_main << std::setw(8) << std::right << i_iter - 1;
-            out_main << std::setw(16) << std::right << (int)IP.rec_map.size();
-            out_main << std::setw(16) << std::right << count_loc;
-            out_main << std::setw(16) << std::right << v_obj;
-            out_main << std::endl;
+            out_main << std::setw(8) << std::right << i_iter + 1;
+            out_main << "," << std::setw(15) << (int)IP.rec_map.size();
+            out_main << "," << std::setw(15) << std::right << count_loc;
+            out_main << "," << std::setw(19) << std::right << v_obj;
+            out_main << "," << std::setw(19) << std::right << v_obj_abs;
+            out_main << "," << std::setw(19) << std::right << 0.0;
+            out_main << "," << std::setw(19) << std::right << v_obj_cr;
+            out_main << "," << std::endl;
         }
 
         if (finished)

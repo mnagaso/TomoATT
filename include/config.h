@@ -206,12 +206,22 @@ inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute trave
 inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
 inline CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
 inline CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+inline CUSTOMREAL abs_time_local_weight_reloc    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
+inline CUSTOMREAL cr_dif_time_local_weight_reloc = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
+inline CUSTOMREAL cs_dif_time_local_weight_reloc = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0
+inline CUSTOMREAL teleseismic_weight_reloc       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+
 // misfit balance
 inline bool       balance_data_weight      = false;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
 inline CUSTOMREAL total_abs_local_data_weight    = 0.0;
 inline CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
 inline CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
 inline CUSTOMREAL total_teleseismic_data_weight  = 0.0;
+inline bool       balance_data_weight_reloc      = false;    // add the weight to normalize the initial objective function of different types of data for relocation. 1 for yes and 0 for no
+inline CUSTOMREAL total_abs_local_data_weight_reloc    = 0.0;
+inline CUSTOMREAL total_cr_dif_local_data_weight_reloc = 0.0;
+inline CUSTOMREAL total_cs_dif_local_data_weight_reloc = 0.0;
+inline CUSTOMREAL total_teleseismic_data_weight_reloc  = 0.0;
 
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
@@ -242,7 +252,7 @@ inline CUSTOMREAL       max_change_dep              = 10.0;
 inline CUSTOMREAL       max_change_lat              = 1.0;
 inline CUSTOMREAL       max_change_lon              = 1.0;
 inline CUSTOMREAL       max_change_ortime           = 0.5;
-inline bool             ortime_local_search      = false;
+inline bool             ortime_local_search         = true;
 // inline CUSTOMREAL       ref_ortime_change           = 5.0;   (no used any more)
 // inline CUSTOMREAL       step_length_ortime_rescale  = 0.1;   (no used any more)
 
