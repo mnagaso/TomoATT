@@ -786,8 +786,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
             std::vector<CUSTOMREAL> slowness = get_grid_data(grid.get_fun());
             std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
             std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
-            // std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
-            std::vector<CUSTOMREAL> Ks = get_grid_data(grid.get_Ks());
+            std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
+            // std::vector<CUSTOMREAL> Ks = get_grid_data(grid.get_Ks());
             std::vector<CUSTOMREAL> Ks_update = get_grid_data(grid.get_Ks_update());
             std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
 
@@ -803,8 +803,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv) {
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
                             << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
-                            // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
+                            // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
+                            << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
                             << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " "
                             << std::endl;
                     }
