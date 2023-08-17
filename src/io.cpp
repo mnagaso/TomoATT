@@ -1615,35 +1615,39 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
         for (int i = 0; i < ndims; i++) {
             dims_h5[i] = dims_all[i];
         }
-        space_id = H5Screate_simple(ndims, dims_h5, NULL);
 
-        // create dataset
-        switch (dtype)
-        {
-        case 0:
-            dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_HBOOL, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            break;
-        case 1:
-            dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_INT, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            break;
-        case 2:
-            dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_FLOAT, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            break;
-        case 3:
-            dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_DOUBLE, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            break;
+        // check if the dataset exists
+        if (!H5Lexists(group_id, dset_name.c_str(), H5P_DEFAULT) ) {
+            space_id = H5Screate_simple(ndims, dims_h5, NULL);
+
+            // create dataset
+            switch (dtype)
+            {
+            case 0:
+                dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_HBOOL, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                break;
+            case 1:
+                dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_INT, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                break;
+            case 2:
+                dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_FLOAT, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                break;
+            case 3:
+                dset_id = H5Dcreate(group_id, dset_name.c_str(), H5T_NATIVE_DOUBLE, space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                break;
+            }
+
+            // error handle
+            if (dset_id < 0) {
+                std::cout << "Error: H5Dcreate for " << dset_name << " failed" << std::endl;
+                exit(1);
+            }
+
+            // close dataset
+            H5Dclose(dset_id);
+            // close dataspace
+            H5Sclose(space_id);
         }
-
-        // error handle
-        if (dset_id < 0) {
-            std::cout << "Error: H5Dcreate for " << dset_name << " failed" << std::endl;
-            exit(1);
-        }
-
-        // close dataset
-        H5Dclose(dset_id);
-        // close dataspace
-        H5Sclose(space_id);
 
         delete[] dims_h5;
     }
