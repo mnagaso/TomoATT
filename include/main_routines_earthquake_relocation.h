@@ -158,6 +158,9 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
 
     }
 
+    // gather all the traveltime to the main process and distribute to all processes
+    // for calculating the synthetic common receiver differential traveltime (for output)
+    IP.gather_traveltimes_and_calc_syn_diff();
 
     // compute the objective function
     recs.calculate_obj_reloc(IP, i_iter);

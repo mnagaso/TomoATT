@@ -490,23 +490,32 @@ InputParams::InputParams(std::string& input_file){
             if (config["inversion_strategy"]["inv_mode"])
                 getNodeValue(config["inversion_strategy"], "inv_mode", inv_mode);
 
-            // paramters for inv_mode == 0a
+            // paramters for inv_mode == 0
             if (config["inversoin_strategy"]["inv_mode_0"]){
-                // relocation_first
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_first", relocation_first);
-                // relocation_first_iterations
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first_iterations"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_first_iterations", relocation_first_iterations);
-                // relocation_every_N_steps
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_every_N_steps"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_every_N_steps", relocation_every_N_steps);
-                // relocation final
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_final", relocation_final);
-                // relocation_final_iterations
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final_iterations"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_final_iterations", relocation_final_iterations);
+                // model_update_N_iter
+                if (config["inversoin_strategy"]["inv_mode_0"]["model_update_N_iter"])
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "model_update_N_iter", model_update_N_iter);
+                // relocation_N_iter
+                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_N_iter"])
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_N_iter", relocation_N_iter);
+                // max_loop
+                if (config["inversoin_strategy"]["inv_mode_0"]["max_loop"])
+                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "max_loop", max_loop);
+                // // relocation_first
+                // if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first"])
+                //     getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_first", relocation_first);
+                // // relocation_first_iterations
+                // if (config["inversoin_strategy"]["inv_mode_0"]["relocation_first_iterations"])
+                //     getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_first_iterations", relocation_first_iterations);
+                // // relocation_every_N_steps
+                // if (config["inversoin_strategy"]["inv_mode_0"]["relocation_every_N_steps"])
+                //     getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_every_N_steps", relocation_every_N_steps);
+                // // relocation final
+                // if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final"])
+                //     getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_final", relocation_final);
+                // // relocation_final_iterations
+                // if (config["inversoin_strategy"]["inv_mode_0"]["relocation_final_iterations"])
+                //     getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_final_iterations", relocation_final_iterations);
             }
         }
 
@@ -733,11 +742,14 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(cr_dif_time_local_weight_reloc, 0);
 
     broadcast_i_single(inv_mode, 0);
-    broadcast_bool_single(relocation_first, 0);
-    broadcast_i_single(relocation_first_iterations, 0);
-    broadcast_i_single(relocation_every_N_steps, 0);
-    broadcast_bool_single(relocation_final, 0);
-    broadcast_i_single(relocation_final_iterations, 0);
+    broadcast_i_single(model_update_N_iter, 0);
+    broadcast_i_single(relocation_N_iter, 0);
+    broadcast_i_single(max_loop, 0);
+    // broadcast_bool_single(relocation_first, 0);
+    // broadcast_i_single(relocation_first_iterations, 0);
+    // broadcast_i_single(relocation_every_N_steps, 0);
+    // broadcast_bool_single(relocation_final, 0);
+    // broadcast_i_single(relocation_final_iterations, 0);
 
     broadcast_cr_single(conv_tol, 0);
     broadcast_i_single(max_iter, 0);
@@ -982,7 +994,7 @@ void InputParams::write_params_to_file() {
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
     fout << "  abs_time:" << std::endl;
-    fout << "    use_abs_time: " << use_abs << "# 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    use_abs_time: " << use_abs << " # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)" << std::endl;
     fout << "    residual_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_abs[i];
@@ -1139,12 +1151,16 @@ void InputParams::write_params_to_file() {
     fout << "  inv_mode : " << inv_mode << " # 0 for update model parameters and relocation iteratively. (other options for future work)" << std::endl;
     fout << std::endl;
     fout << "  # for inv_mode : 0, parameters below are required" << std::endl;
-    fout << "  inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation" << std::endl;
-    fout << "    relocation_first : " << relocation_first <<" # true: do relocation first; false: do not relocation first.  default: true" << std::endl;
-    fout << "    relocation_first_iterations : " << relocation_first_iterations << " # maximum number of iterations for relocation in the beginning. default: 10" << std::endl;
-    fout << "    relocation_every_N_steps : " << relocation_every_N_steps << " # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>" << std::endl;
-    fout << "    relocation_final : " << relocation_final << " # true: do relocation finally; false: do not relocation finally.  default: yes" << std::endl;
-    fout << "    relocation_final_iterations : " << relocation_final_iterations << " # maximum number of iterations for relocation in the beginning. default: 10" << std::endl;
+    fout << "  inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops." << std::endl;
+    fout << "    model_update_N_iter : " << model_update_N_iter << std::endl;
+    fout << "    relocation_N_iter : " << relocation_N_iter << std::endl;
+    fout << "    max_loop : " << max_loop << std::endl;
+    // fout << "  inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation" << std::endl;
+    // fout << "    relocation_first : " << relocation_first <<" # true: do relocation first; false: do not relocation first.  default: true" << std::endl;
+    // fout << "    relocation_first_iterations : " << relocation_first_iterations << " # maximum number of iterations for relocation in the beginning. default: 10" << std::endl;
+    // fout << "    relocation_every_N_steps : " << relocation_every_N_steps << " # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>" << std::endl;
+    // fout << "    relocation_final : " << relocation_final << " # true: do relocation finally; false: do not relocation finally.  default: yes" << std::endl;
+    // fout << "    relocation_final_iterations : " << relocation_final_iterations << " # maximum number of iterations for relocation in the beginning. default: 10" << std::endl;
     fout << std::endl;
 
 
@@ -2486,8 +2502,11 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc);
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_abs);
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cr);
+                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cs);
             } else {
                 CUSTOMREAL dummy = 0;
+                allreduce_rec_map_var(dummy);
+                dummy = 0;
                 allreduce_rec_map_var(dummy);
                 dummy = 0;
                 allreduce_rec_map_var(dummy);

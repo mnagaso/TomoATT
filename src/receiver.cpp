@@ -86,8 +86,8 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     // assign local weight
                     CUSTOMREAL  local_weight = 1.0;
                     
-                    // evaluate residual_weight_abs
-                    CUSTOMREAL  local_residual = abs(syn_time - obs_time);
+                    // evaluate residual_weight_abs （If run_mode == DO_INVERSION, tau_opt always equal 0. But when run_mode == INV_RELOC, we need to consider the change of ortime of earthquakes (swapped receiver)）
+                    CUSTOMREAL  local_residual = abs(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                     CUSTOMREAL* res_weight = IP.get_residual_weight_abs();
 
                     if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
@@ -106,20 +106,20 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     else                                        local_weight *= ((local_dis - dis_weight[0])/(dis_weight[1] - dis_weight[0]) * (dis_weight[3] - dis_weight[2]) + dis_weight[2]);
                     
                     // assign adjoint source
-                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time)*data.weight*local_weight;
+                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
                     // contribute total misfit
-                    obj     += 1.0 * my_square(syn_time - obs_time)*data.weight;
-                    misfit  += 1.0 * my_square(syn_time - obs_time);
+                    obj     += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
+                    misfit  += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
 
                     // contribute misfit of specific type of data
                     if (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region){
-                        obj_tele        +=  1.0 * my_square(syn_time - obs_time)*data.weight;
-                        misfit_tele     +=  1.0 * my_square(syn_time - obs_time);
+                        obj_tele        +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
+                        misfit_tele     +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                     } else{
-                        obj_abs         +=  1.0 * my_square(syn_time - obs_time)*data.weight;
-                        misfit_abs      +=  1.0 * my_square(syn_time - obs_time);
+                        obj_abs         +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
+                        misfit_abs      +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                     }
 
                 //
@@ -232,8 +232,8 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     // assign local weight
                     CUSTOMREAL  local_weight = 1.0;
 
-                    // evaluate residual_weight_abs
-                    CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time);
+                    // evaluate residual_weight_abs (see the remark in absolute traveltime data for considering tau_opt here)
+                    CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                     CUSTOMREAL* res_weight;
                     if (IP.get_is_srcrec_swap())    res_weight = IP.get_residual_weight_cr();
                     else                            res_weight = IP.get_residual_weight_cs();
@@ -262,15 +262,16 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
                     
 
                     // assign adjoint source
-                    CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time) * data.weight * local_weight;
+                    CUSTOMREAL adjoint_source;
+                    adjoint_source = IP.get_rec_point(name_rec1).adjoint_source + (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec1, adjoint_source);
 
-                    adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time) * data.weight * local_weight;
+                    adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
                     // contribute total misfit
-                    obj     += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                    misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                    obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
+                    misfit  += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
 
                     //std::cout   << "DEBUG3: name_src: " << name_src
                     //            << ", name_rec1: " << name_rec1
@@ -491,6 +492,7 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
             iter->second.vobj_src_reloc             = _0_CR;
             iter->second.vobj_src_reloc_abs         = _0_CR;
             iter->second.vobj_src_reloc_cr          = _0_CR;
+            iter->second.vobj_src_reloc_cs          = _0_CR;
             iter->second.vobj_grad_norm_src_reloc   = _0_CR;
             //iter->second.DTi                        = _0_CR;
             //iter->second.DTj                        = _0_CR;
@@ -952,7 +954,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
                         if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;
 
-                        // assign obj
+                        // assign obj (0.5 is added here because we assign this misfit to two receivers (swapped earthquake))
                         if(!IP.rec_map[name_rec1].is_stop){
                             IP.rec_map[name_rec1].vobj_src_reloc    += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             IP.rec_map[name_rec1].vobj_src_reloc_cr += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
@@ -961,6 +963,14 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                             IP.rec_map[name_rec2].vobj_src_reloc    += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             IP.rec_map[name_rec2].vobj_src_reloc_cr += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         }   
+                    } else if (data.is_src_pair) {  // we only record the obj of this kind of data
+                        std::string name_rec = data.name_rec;
+
+                        if(IP.rec_map[name_rec].is_stop) continue;
+
+                        // assign obj (0.5 is added here because there are two receiver (swapped earthquake) have this data. It will be counted twice)
+                        IP.rec_map[name_rec].vobj_src_reloc_cs += 0.5 * data.weight_reloc * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
+                        
                     } else {    // unsupported data (swapped common receiver, or others)
                         continue;
                     }
@@ -1011,7 +1021,7 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                     CUSTOMREAL local_weight = 1.0;
                      
                     // evaluate residual_weight_abs_reloc
-                    CUSTOMREAL  local_residual = abs(syn_time - obs_time);
+                    CUSTOMREAL  local_residual = abs(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                     CUSTOMREAL* res_weight = IP.get_residual_weight_abs_reloc();
 
                     if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
@@ -1048,7 +1058,7 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                     CUSTOMREAL  local_weight = 1.0;
 
                     // evaluate residual_weight_abs
-                    CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time);
+                    CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                     CUSTOMREAL* res_weight = IP.get_residual_weight_cr_reloc();       // common receiver when not swapped
 
                     if      (local_residual < res_weight[0])    local_weight *= res_weight[2];

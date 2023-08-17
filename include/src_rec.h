@@ -62,6 +62,7 @@ public:
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
     CUSTOMREAL vobj_src_reloc_abs       = 0.0;
     CUSTOMREAL vobj_src_reloc_cr        = 0.0;
+    CUSTOMREAL vobj_src_reloc_cs        = 0.0;
     //CUSTOMREAL DTi          = 0.0;
     //CUSTOMREAL DTj          = 0.0;
     //CUSTOMREAL DTk          = 0.0;

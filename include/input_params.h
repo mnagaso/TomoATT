@@ -88,6 +88,10 @@ public:
 
     int  get_max_iter_inv() {return max_iter_inv;};
 
+    int  get_model_update_N_iter()  {return model_update_N_iter;};
+    int  get_relocation_N_iter()    {return relocation_N_iter;};
+    int  get_max_loop()             {return max_loop;};
+
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
     bool get_if_output_source_field()     {return output_source_field;};

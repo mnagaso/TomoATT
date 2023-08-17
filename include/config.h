@@ -102,6 +102,7 @@ inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.7; // no restoration if 
 inline const int ONLY_FORWARD        = 0;
 inline const int DO_INVERSION        = 1;
 inline const int SRC_RELOCATION      = 2;
+inline const int INV_RELOC           = 3;
 inline const int TELESEIS_PREPROCESS = 4; // hiden function
 
 // SWEEPING TYPE FLAG
@@ -257,13 +258,10 @@ inline bool             ortime_local_search         = true;
 // inline CUSTOMREAL       step_length_ortime_rescale  = 0.1;   (no used any more)
 
 // inversion strategy parameters
-inline int inv_mode                    = 0;
-inline bool relocation_first           = false;
-inline int relocation_first_iterations = 10;
-inline int relocation_every_N_steps    = 5;
-inline bool relocation_final           = false;
-inline int relocation_final_iterations = 10;
-
+inline int inv_mode                     = 0;
+inline int model_update_N_iter          = 1;
+inline int relocation_N_iter            = 1;
+inline int max_loop                       = 10;
 
 // source receiver weight calculation
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation

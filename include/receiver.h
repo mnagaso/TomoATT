@@ -16,7 +16,7 @@ public:
     // adjoint source
     std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&, const std::string&);
     // teleseismic source
-    CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&, const std::string&);
+    // CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&, const std::string&);
     // Gradient of traveltime
     void calculate_T_gradient(InputParams&, Grid&, const std::string&);
     // initialize variables for source relocation
