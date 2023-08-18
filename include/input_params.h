@@ -125,13 +125,6 @@ public:
     CUSTOMREAL* get_residual_weight_cr_reloc()    {return residual_weight_cr_reloc;};
     CUSTOMREAL* get_azimuthal_weight_cr_reloc()   {return azimuthal_weight_cr_reloc;};
 
-
-    // for relocation
-    // CUSTOMREAL residual_weight_abs_reloc[n_weight];
-    // CUSTOMREAL residual_weight_cr_reloc[n_weight];
-    // CUSTOMREAL distance_weight_abs_reloc[n_weight];
-    // CUSTOMREAL azimuthal_weight_cr_reloc[n_weight];
-
     // prepare source list for this simulation group
     void prepare_src_map();
 
@@ -205,9 +198,8 @@ public:
     void allreduce_rec_map_tau_opt();
     void allreduce_rec_map_sum_weight();
     void allreduce_rec_map_vobj_src_reloc();
-    // void allreduce_rec_map_grad_tau();
-    // void allreduce_rec_map_grad_chi_ijk();
     void allreduce_rec_map_grad_src();
+
 private:
     // boundary information
     CUSTOMREAL min_dep; // minimum depth in km
@@ -262,12 +254,6 @@ private:
     CUSTOMREAL distance_weight_abs[n_weight];
     CUSTOMREAL azimuthal_weight_cs[n_weight];
     CUSTOMREAL azimuthal_weight_cr[n_weight];
-    // CUSTOMREAL* residual_weight_abs = new CUSTOMREAL[n_weight];
-    // CUSTOMREAL* residual_weight_cs  = new CUSTOMREAL[n_weight];
-    // CUSTOMREAL* residual_weight_cr  = new CUSTOMREAL[n_weight];
-    // CUSTOMREAL* distance_weight_abs = new CUSTOMREAL[n_weight];
-    // CUSTOMREAL* azimuthal_weight_cs = new CUSTOMREAL[n_weight];
-    // CUSTOMREAL* azimuthal_weight_cr = new CUSTOMREAL[n_weight];
 
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
@@ -305,11 +291,11 @@ private:
     void check_contradictions();
 
     // output setting
-    bool output_source_field = false; // output out_data_sim_X.h or not.
-    bool output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
-    bool output_final_model  = true;  // output merged final model or not.
-    bool output_in_process   = true;  // output merged model at each inv iteration or not.
-    int verbose_output_level    = 0;   // output verbose information or not.
+    bool output_source_field  = false; // output out_data_sim_X.h or not.
+    bool output_model_dat     = false; // output model_parameters_inv_0000.dat or not.
+    bool output_final_model   = true;  // output merged final model or not.
+    bool output_in_process    = true;  // output merged model at each inv iteration or not.
+    int  verbose_output_level = 0;  // output verbose information or not.
 
     // inversion setting
     bool update_slowness = true;  // update slowness (velocity) or not.
@@ -342,6 +328,7 @@ inline DataInfo& get_data_src_rec(std::vector<DataInfo>& v){
     // return the first element in the vector as a dummy
     return v[0];
 }
+
 
 inline DataInfo& get_data_rec_pair(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& v,
                                    const std::string& name_src,
@@ -415,6 +402,7 @@ inline void set_cr_dif_to_src_pair(std::map<std::string, std::map< std::string, 
         }
     }
 }
+
 
 inline bool get_if_any_src_pair(std::vector<DataInfo>& v){
     // return the first element in the vector with is_rec_pair = true

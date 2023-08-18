@@ -168,7 +168,6 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     // loop till
     while (sub_iter_count < max_sub_iterations) {
         // check the new objective function value
-        // v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
         v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
         v_obj_new = v_obj_misfit_new[0];
         // if the new objective function value is larger than the old one, make the step width to be half of the previous one
