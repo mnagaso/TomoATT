@@ -45,6 +45,17 @@ my_test_forward(){
     echo "Test passed!"
 }
 
+my_test_forward_2(){
+    echo "Checking the result..."
+    python compare_src_rec_obj.py
+    if [[ $? -ne 0 ]]; then
+        echo "Test failed!"
+        exit 1
+    fi
+    echo "Test passed!"
+}
+
+
 # test example
 cd $dir
 
@@ -74,12 +85,19 @@ elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
     my_test_forward
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+elif [ "$TESTDIR" == "examples/2_src_rec_data_read/" ]; then
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
 elif [ "$TESTDIR" == "examples/3_forward_accuracy_1st_cuthill_isotropic/" ]; then
     my_test_forward
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
 elif [ "$TESTDIR" == "examples/4_forward_accuracy_3rd_cuthill_isotropic/" ]; then
     my_test_forward
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+elif [ "$TESTDIR" == "examples/5_use_different_types_of_data_in_model_update/" ]; then
+    my_test_forward_2
     # clean up
     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
 else

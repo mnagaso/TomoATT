@@ -71,7 +71,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(20, 0.0);
 
     // initialize kernel arrays
-    if (IP.get_run_mode() == DO_INVERSION)
+    if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)
         grid.initialize_kernels();
 
     // reinitialize factors
@@ -81,8 +81,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  compute the synthetic common receiver differential traveltime first
     ///////////////////////////////////////////////////////////////////////
 
-    // prepare synthetic traveltime for all earthquakes
-    if (src_pair_exists && IP.get_run_mode() == DO_INVERSION)
+    // prepare synthetic traveltime for all earthquakes, if
+    //  1. common receiver data exists;
+    //  2. we use common receiver data to update model; (cr + not swap) or (cs + swap)
+    //  3. we do inversion  
+    if ( src_pair_exists && 
+         ((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())) && 
+         (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC))
         pre_run_forward_only(IP, grid, io, i_inv);
 
     //
@@ -99,9 +104,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         io.set_id_src(id_sim_src);
         io.set_name_src(name_sim_src);
 
-        if (myrank == 0)
-            std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
-
+        if (myrank == 0){
+            // std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
+            std::cout << "calculateing source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                    << std::endl;
+        }
         // set group name to be used for output in h5
         // TODO set id_sim_src and name_sim_src with this function
         io.change_group_name_for_source();
@@ -183,7 +192,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // run adjoint simulation
         /////////////////////////
 
-        if (IP.get_run_mode()==DO_INVERSION){
+        if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
 
             // calculate adjoint source
             std::vector<CUSTOMREAL> v_obj_misfit_event = recs.calculate_adjoint_source(IP, name_sim_src);
@@ -223,10 +232,14 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
     }
 
+
     // gather all the traveltime to the main process and distribute to all processes
     // for calculating the synthetic common receiver differential traveltime
-    if (IP.get_run_mode()!=DO_INVERSION) // already calculated in inversion mode
-        IP.gather_traveltimes_and_calc_syn_diff();
+    if ( IP.get_run_mode()==ONLY_FORWARD ||                 // case 1. if we are doing forward modeling, traveltime is not prepared for computing cr_dif data. Now we need to compute it
+        (!IP.get_use_cr() && !IP.get_is_srcrec_swap())  ||   // case 2-1, we do inversion, but we do not use cr data (cr + no swap)
+        (!IP.get_use_cs() &&  IP.get_is_srcrec_swap())){     // case 2-2, we do inversion, but we do not use cr data (cs +    swap)
+        IP.gather_traveltimes_and_calc_syn_diff();  
+    }
 
     // return current objective function value
     return v_obj_misfit;

@@ -88,6 +88,10 @@ public:
 
     int  get_max_iter_inv() {return max_iter_inv;};
 
+    int  get_model_update_N_iter()  {return model_update_N_iter;};
+    int  get_relocation_N_iter()    {return relocation_N_iter;};
+    int  get_max_loop()             {return max_loop;};
+
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
     bool get_if_output_source_field()     {return output_source_field;};
@@ -102,6 +106,24 @@ public:
     bool get_update_rad_ani()         {return update_rad_ani;};
     CUSTOMREAL * get_depth_taper()   {return depth_taper;};
 
+    bool get_use_abs()                  {return use_abs;};
+    bool get_use_cs()                   {return use_cs;};
+    bool get_use_cr()                   {return use_cr;};
+
+    bool get_use_abs_reloc()                  {return use_abs_reloc;};
+    bool get_use_cr_reloc()                   {return use_cr_reloc;};
+
+    CUSTOMREAL* get_residual_weight_abs()   {return residual_weight_abs;};
+    CUSTOMREAL* get_distance_weight_abs()   {return distance_weight_abs;};
+    CUSTOMREAL* get_residual_weight_cr()    {return residual_weight_cr;};
+    CUSTOMREAL* get_azimuthal_weight_cr()   {return azimuthal_weight_cr;};
+    CUSTOMREAL* get_residual_weight_cs()    {return residual_weight_cs;};
+    CUSTOMREAL* get_azimuthal_weight_cs()   {return azimuthal_weight_cs;};
+
+    CUSTOMREAL* get_residual_weight_abs_reloc()   {return residual_weight_abs_reloc;};
+    CUSTOMREAL* get_distance_weight_abs_reloc()   {return distance_weight_abs_reloc;};
+    CUSTOMREAL* get_residual_weight_cr_reloc()    {return residual_weight_cr_reloc;};
+    CUSTOMREAL* get_azimuthal_weight_cr_reloc()   {return azimuthal_weight_cr_reloc;};
 
     // prepare source list for this simulation group
     void prepare_src_map();
@@ -176,8 +198,7 @@ public:
     void allreduce_rec_map_tau_opt();
     void allreduce_rec_map_sum_weight();
     void allreduce_rec_map_vobj_src_reloc();
-    void allreduce_rec_map_grad_tau();
-    void allreduce_rec_map_grad_chi_ijk();
+    void allreduce_rec_map_grad_src();
 
 private:
     // boundary information
@@ -233,6 +254,7 @@ private:
     CUSTOMREAL distance_weight_abs[n_weight];
     CUSTOMREAL azimuthal_weight_cs[n_weight];
     CUSTOMREAL azimuthal_weight_cr[n_weight];
+
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
     bool use_cr_reloc  = false; // use common source double difference or not
@@ -269,11 +291,11 @@ private:
     void check_contradictions();
 
     // output setting
-    bool output_source_field = false; // output out_data_sim_X.h or not.
-    bool output_model_dat    = false; // output model_parameters_inv_0000.dat or not.
-    bool output_final_model  = true;  // output merged final model or not.
-    bool output_in_process   = true;  // output merged model at each inv iteration or not.
-    int verbose_output_level    = 0;   // output verbose information or not.
+    bool output_source_field  = false; // output out_data_sim_X.h or not.
+    bool output_model_dat     = false; // output model_parameters_inv_0000.dat or not.
+    bool output_final_model   = true;  // output merged final model or not.
+    bool output_in_process    = true;  // output merged model at each inv iteration or not.
+    int  verbose_output_level = 0;  // output verbose information or not.
 
     // inversion setting
     bool update_slowness = true;  // update slowness (velocity) or not.
@@ -306,6 +328,7 @@ inline DataInfo& get_data_src_rec(std::vector<DataInfo>& v){
     // return the first element in the vector as a dummy
     return v[0];
 }
+
 
 inline DataInfo& get_data_rec_pair(std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& v,
                                    const std::string& name_src,
@@ -379,6 +402,7 @@ inline void set_cr_dif_to_src_pair(std::map<std::string, std::map< std::string, 
         }
     }
 }
+
 
 inline bool get_if_any_src_pair(std::vector<DataInfo>& v){
     // return the first element in the vector with is_rec_pair = true

@@ -95,19 +95,24 @@ inline CUSTOMREAL       step_length_lbfgs;
 
 // halve steping params
 inline const CUSTOMREAL HALVE_STEP_RATIO = 0.7;
-inline const CUSTOMREAL MAX_DIFF_RATIO_VOBJ = 0.02; // maximum difference ratio between vobj_t+1 and vobj_t
+inline const CUSTOMREAL MAX_DIFF_RATIO_VOBJ = 0.8; // maximum difference ratio between vobj_t+1 and vobj_t
 inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.7; // no restoration if == HALVE_STEP_RATIO
 
 // RUN MODE TYPE FLAG
 inline const int ONLY_FORWARD        = 0;
 inline const int DO_INVERSION        = 1;
 inline const int SRC_RELOCATION      = 2;
+inline const int INV_RELOC           = 3;
 inline const int TELESEIS_PREPROCESS = 4; // hiden function
 
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
 inline const int SWEEP_TYPE_LEVEL  = 1;
 inline      bool hybrid_stencil_order = false; // if true, code at first run 1st order, then change to 3rd order (Dong Cui 2020)
+
+// STENCIL TYPE
+inline const int NON_UPWIND = 0;
+inline const int UPWIND     = 1;
 
 // convert depth <-> radius
 inline CUSTOMREAL depth2radius(CUSTOMREAL depth) {
@@ -170,14 +175,14 @@ inline std::string output_dir="./OUTPUT_FILES/";
 inline int output_format = OUTPUT_FORMAT_HDF5; // 0 - ascii, 1 - hdf5, 2 - binary
 
 // smooth parameters
-inline int smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
+inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
 inline CUSTOMREAL smooth_lp = 1.0;
 inline CUSTOMREAL smooth_lt = 1.0;
 inline CUSTOMREAL smooth_lr = 1.0;
-inline const int GRADIENT_DESCENT    = 0;
-inline const int HALVE_STEPPING_MODE = 1;
-inline const int LBFGS_MODE          = 2;
-inline int optim_method              = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
+inline const int  GRADIENT_DESCENT    = 0;
+inline const int  HALVE_STEPPING_MODE = 1;
+inline const int  LBFGS_MODE          = 2;
+inline int        optim_method        = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
 inline const CUSTOMREAL wolfe_c1     = 1e-4;
 inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
@@ -206,12 +211,22 @@ inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute trave
 inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
 inline CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
 inline CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+inline CUSTOMREAL abs_time_local_weight_reloc    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
+inline CUSTOMREAL cr_dif_time_local_weight_reloc = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
+inline CUSTOMREAL cs_dif_time_local_weight_reloc = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0
+inline CUSTOMREAL teleseismic_weight_reloc       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+
 // misfit balance
 inline bool       balance_data_weight      = false;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
 inline CUSTOMREAL total_abs_local_data_weight    = 0.0;
 inline CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
 inline CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
 inline CUSTOMREAL total_teleseismic_data_weight  = 0.0;
+inline bool       balance_data_weight_reloc      = false;    // add the weight to normalize the initial objective function of different types of data for relocation. 1 for yes and 0 for no
+inline CUSTOMREAL total_abs_local_data_weight_reloc    = 0.0;
+inline CUSTOMREAL total_cr_dif_local_data_weight_reloc = 0.0;
+inline CUSTOMREAL total_cs_dif_local_data_weight_reloc = 0.0;
+inline CUSTOMREAL total_teleseismic_data_weight_reloc  = 0.0;
 
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
@@ -242,18 +257,13 @@ inline CUSTOMREAL       max_change_dep              = 10.0;
 inline CUSTOMREAL       max_change_lat              = 1.0;
 inline CUSTOMREAL       max_change_lon              = 1.0;
 inline CUSTOMREAL       max_change_ortime           = 0.5;
-inline bool             ortime_local_search      = false;
-inline CUSTOMREAL       ref_ortime_change           = 5.0;
-inline CUSTOMREAL       step_length_ortime_rescale  = 0.1;
+inline bool             ortime_local_search         = true;
 
 // inversion strategy parameters
-inline int inv_mode                    = 0;
-inline bool relocation_first           = false;
-inline int relocation_first_iterations = 10;
-inline int relocation_every_N_steps    = 5;
-inline bool relocation_final           = false;
-inline int relocation_final_iterations = 10;
-
+inline int inv_mode                     = 0;
+inline int model_update_N_iter          = 1;
+inline int relocation_N_iter            = 1;
+inline int max_loop                       = 10;
 
 // source receiver weight calculation
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation

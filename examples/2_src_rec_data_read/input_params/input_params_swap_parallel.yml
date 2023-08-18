@@ -49,7 +49,7 @@ run_mode: 1
 ###################################################
 model_update: # update model parameters (when run_mode : 1 and 3)
   max_iterations: 1 # maximum number of inversion iterations
-  optim_method: 1 # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
+  optim_method: 0 # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
 
   # common parameters for all optim methods
   step_length: 0.02 # step length of model perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
@@ -148,7 +148,7 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
   abs_time:
-    use_abs_time: yes   # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
+    use_abs_time: true   # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1]          # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
     distance_weight: [50.0, 150.0, 1.0, 0.1]       # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
 

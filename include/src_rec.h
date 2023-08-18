@@ -60,9 +60,9 @@ public:
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
-    //CUSTOMREAL DTi          = 0.0;
-    //CUSTOMREAL DTj          = 0.0;
-    //CUSTOMREAL DTk          = 0.0;
+    CUSTOMREAL vobj_src_reloc_abs       = 0.0;
+    CUSTOMREAL vobj_src_reloc_cr        = 0.0;
+    CUSTOMREAL vobj_src_reloc_cs        = 0.0;
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
     CUSTOMREAL change_dep = 0.0;
     CUSTOMREAL change_lat = 0.0;
@@ -73,8 +73,9 @@ public:
 class DataInfo {
 public:
 
-    CUSTOMREAL data_weight = 1.0;   // the weight in the src_rec file
-    CUSTOMREAL weight      = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+    CUSTOMREAL data_weight  = 1.0;   // the weight in the src_rec file
+    CUSTOMREAL weight       = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+    CUSTOMREAL weight_reloc = 1.0;   // the actual weight for relocation,   equal   data_weight * weight about the data type;
 
     std::string phase = "unknown";
 
@@ -92,10 +93,6 @@ public:
     CUSTOMREAL travel_time     = -999.0;
     CUSTOMREAL travel_time_obs = -999.0;
 
-    // source infomation
-    //int         id_src_single   = -1; // use id_src instead
-    //std::string name_src_single = "unknown"; // use name_src instead
-
     // receiver pair infomation
     bool is_rec_pair                       = false;   // common source differential traveltime
     std::vector<int>         id_rec_pair   = {-1,-1};
@@ -110,10 +107,6 @@ public:
     std::vector<int>         id_src_pair   = {-1,-1};
     std::vector<std::string> name_src_pair = {"unknown","unknown"};
 
-    // receiver infomation
-    //int id_rec_single           = -1;  // use id_rec instead
-    //std::string name_rec_single = "unknown"; // use name_rec instead
-
     // common receiver differential travel time
     CUSTOMREAL cr_dif_travel_time     = -999.0;
     CUSTOMREAL cr_dif_travel_time_obs = -999.0;
@@ -122,6 +115,10 @@ public:
     CUSTOMREAL DTi          = 0.0;
     CUSTOMREAL DTj          = 0.0;
     CUSTOMREAL DTk          = 0.0;
+
+    std::vector<CUSTOMREAL> DTi_pair = {0.0, 0.0};
+    std::vector<CUSTOMREAL> DTj_pair = {0.0, 0.0};
+    std::vector<CUSTOMREAL> DTk_pair = {0.0, 0.0};
 
 };
 

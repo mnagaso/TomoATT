@@ -1311,7 +1311,7 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
                     }
 
                 } else {
-                    if (IP.get_stencil_type()==1)   // upwind scheme, initial tau should be large enough
+                    if (IP.get_stencil_type()==UPWIND)   // upwind scheme, initial tau should be large enough
                         tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INF_VAL;
                     else
                         tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;

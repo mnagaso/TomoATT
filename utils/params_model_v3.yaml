@@ -155,12 +155,6 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   max_iterations : 100  # maximum number of iterations for relocation
   tol_gradient : 0.0001 # threshold value for checking the convergence for each iteration
 
-  # params keeped for current version of relocation but may not be required
-  ortime_local_search : true       # true: do local search for origin time; false: do not do local search for origin time
-  ref_ortime_change : 0.5          # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time.
-  step_length_ortime_rescale : 0.1 # step length for rescaling origin time
-
-
   # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
   abs_time:
@@ -184,12 +178,9 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation
-    relocation_first : true          # true: do relocation first; false: do not relocation first.  default: true
-    relocation_first_iterations : 10 # maximum number of iterations for relocation in the beginning. default: 10
-    relocation_every_N_steps : 5     # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>
-    relocation_final : true          # true: do relocation finally; false: do not relocation finally.  default: true
-    relocation_final_iterations : 10 # maximum number of iterations for relocation in the beginning. default: 10
-
+    model_update_N_iter: 1 # update model parameters every N steps
+    relocation_N_iter: 1    # relocation every N steps
+    max_lop: 10             # maximum number of iterations for tomography
 
 
 # --- parameters for core solver ---------------------------------------------------------

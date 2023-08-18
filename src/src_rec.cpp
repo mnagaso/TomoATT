@@ -140,8 +140,11 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                 // new source detected by its name
                 // TODO: add error check for duplicated source name (but different event info)
-                if (src_map.find(src.name) == src_map.end())
-                    src_map[src.name] = src;
+                // if (src_map.find(src.name) == src_map.end())
+                //     src_map[src.name] = src;
+
+                // whether the src.name exists or not, overwrite it. (it can overwrite the src_info in the cr_dif data, whose source infomation (e.g., ortime, Ndata) is incomplete.)
+                src_map[src.name] = src;
 
                 src_id   = src.id;
                 src_name = src.name;
@@ -191,6 +194,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     data.data_weight = src_weight * rec_weight;
                     data.weight      = data.data_weight * abs_time_local_weight;
+                    data.weight_reloc= data.data_weight * abs_time_local_weight_reloc;                    
                     data.phase       = tokens[6];
 
                     data.is_src_rec      = true;
@@ -273,8 +277,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         data.name_src_pair          = {src_name, src2.name};
                         data.cr_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
-                        data.weight = data.data_weight * cr_dif_time_local_weight;
-
+                        data.weight         = data.data_weight * cr_dif_time_local_weight;
+                        data.weight_reloc   = data.data_weight * cr_dif_time_local_weight_reloc;
                         data_map[data.name_src_pair[0]][data.name_rec].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
                     } else {
                         // cs_dif data
@@ -299,8 +303,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
                         data.name_rec_pair          = {rec.name, rec2.name};
                         data.cs_dif_travel_time_obs = static_cast<CUSTOMREAL>(std::stod(tokens[12])); // store read data
 
-                        data.weight = data.data_weight * cs_dif_time_local_weight;
-
+                        data.weight       = data.data_weight * cs_dif_time_local_weight;
+                        data.weight_reloc = data.data_weight * cs_dif_time_local_weight_reloc;
                         data_map[data.name_src][data.name_rec_pair[0]].push_back(data); // USE ONE-DATAMAP-FOR-ONE-SRCREC-LINE
                     }
 
@@ -582,15 +586,19 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
 
                     // if name_src is out of region
                     if(src_map_tele.find(name_src) != src_map_tele.end()){
-                        total_teleseismic_data_weight += data.data_weight;
-                        data.weight                    = data.data_weight * teleseismic_weight;
+                        total_teleseismic_data_weight       += data.data_weight;
+                        data.weight                          = data.data_weight * teleseismic_weight;
+                        total_teleseismic_data_weight_reloc += data.data_weight;
+                        data.weight_reloc                    = data.data_weight * teleseismic_weight_reloc;
                         data_map_tele[name_src][name_rec].push_back(data);
                         rec_map_tele[name_rec]            = rec_map_back[name_rec];
                         data_type["tele"]                 = 1;
 
                     // if name_src is in the region
                     } else {
-                        total_abs_local_data_weight += data.data_weight;
+                        total_abs_local_data_weight         += data.data_weight;
+                        total_abs_local_data_weight_reloc   += data.data_weight;
+                        
                         data_map[name_src][name_rec].push_back(data);
                         rec_map[name_rec]            = rec_map_back[name_rec];
                         data_type["abs"]             = 1;
@@ -605,8 +613,11 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                     // if both sources are out of region
                     if(src_map_tele.find(name_src1) != src_map_tele.end() \
                     && src_map_tele.find(name_src2) != src_map_tele.end()){
-                        total_teleseismic_data_weight     += data.data_weight;
-                        data.weight                        = data.data_weight * teleseismic_weight;
+                        total_teleseismic_data_weight           += data.data_weight;
+                        data.weight                              = data.data_weight * teleseismic_weight;
+                        total_teleseismic_data_weight_reloc     += data.data_weight;
+                        data.weight_reloc                        = data.data_weight * teleseismic_weight_reloc;
+                        
                         data_map_tele[name_src1][name_rec].push_back(data);
                         rec_map_tele[name_rec]             = rec_map_back[name_rec];
                         data_type["tele"]                  = 1;
@@ -614,7 +625,8 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                     // if both sources is in the region
                     } else if (src_map.find(name_src1) != src_map.end() \
                             && src_map.find(name_src2) != src_map.end() ) {
-                        total_cr_dif_local_data_weight += data.data_weight;
+                        total_cr_dif_local_data_weight       += data.data_weight;
+                        total_cr_dif_local_data_weight_reloc += data.data_weight;
                         data_map[name_src1][name_rec].push_back(data);
                         rec_map[name_rec]               = rec_map_back[name_rec];
                         data_type["cr_dif"]             = 1;
@@ -632,8 +644,10 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
 
                     // if name_src is out of region
                     if(src_map_tele.find(name_src) != src_map_tele.end() ){
-                        total_teleseismic_data_weight     += data.data_weight;
-                        data.weight                        = data.data_weight * teleseismic_weight;
+                        total_teleseismic_data_weight           += data.data_weight;
+                        data.weight                              = data.data_weight * teleseismic_weight;
+                        total_teleseismic_data_weight_reloc     += data.data_weight;
+                        data.weight_reloc                        = data.data_weight * teleseismic_weight_reloc;
                         data_map_tele[name_src][name_rec1].push_back(data);
                         rec_map_tele[name_rec1]            = rec_map_back[name_rec1];
                         rec_map_tele[name_rec2]            = rec_map_back[name_rec2];
@@ -641,7 +655,8 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
 
                     // if name_src is in the region
                     } else {
-                        total_cs_dif_local_data_weight += data.data_weight;
+                        total_cs_dif_local_data_weight          += data.data_weight;
+                        total_cs_dif_local_data_weight_reloc    += data.data_weight;
                         data_map[name_src][name_rec1].push_back(data);
                         rec_map[name_rec1]              = rec_map_back[name_rec1];
                         rec_map[name_rec2]              = rec_map_back[name_rec2];
@@ -662,15 +677,13 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                 for(auto& data: it_rec->second){
                     // absolute traveltime
                    if(data.is_src_rec){
-                       data.weight = data.weight / total_abs_local_data_weight;
-
+                        data.weight = data.weight / total_abs_local_data_weight;
                    // common receiver differential traveltime
                    } else if (data.is_src_pair){
-                       data.weight = data.weight / total_cr_dif_local_data_weight;
-
+                        data.weight = data.weight / total_cr_dif_local_data_weight;
                    // common source differential traveltime
                    } else if (data.is_rec_pair){
-                       data.weight = data.weight / total_cs_dif_local_data_weight;
+                        data.weight = data.weight / total_cs_dif_local_data_weight;
                    }
                 }
             }
@@ -681,6 +694,27 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
             for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
                 for (auto& data: it_rec->second){
                     data.weight = data.weight / total_teleseismic_data_weight;
+                }
+            }
+        }
+    }
+
+    if (balance_data_weight_reloc){
+        for(auto it_src = data_map.begin(); it_src != data_map.end(); it_src++){
+            for(auto it_rec = it_src->second.begin(); it_rec != it_src->second.end(); it_rec++){
+                for(auto& data: it_rec->second){
+                    // absolute traveltime
+                   if(data.is_src_rec){
+                       data.weight_reloc = data.weight_reloc / total_abs_local_data_weight_reloc;
+
+                   // common receiver differential traveltime
+                   } else if (data.is_src_pair){
+                       data.weight_reloc = data.weight_reloc / total_cr_dif_local_data_weight_reloc;
+
+                   // common source differential traveltime
+                   } else if (data.is_rec_pair){
+                       data.weight_reloc = data.weight_reloc / total_cs_dif_local_data_weight_reloc;
+                   }
                 }
             }
         }
@@ -1359,6 +1393,7 @@ void send_data_info_inter_sim(DataInfo &data, int dest){
 
     send_cr_single_sim(&data.data_weight, dest);
     send_cr_single_sim(&data.weight, dest);
+    send_cr_single_sim(&data.weight_reloc, dest);
     send_str_sim(data.phase, dest);
 
     send_i_single_sim(&data.id_src, dest);
@@ -1400,6 +1435,7 @@ void recv_data_info_inter_sim(DataInfo &data, int orig){
 
     recv_cr_single_sim(&data.data_weight, orig);
     recv_cr_single_sim(&data.weight, orig);
+    recv_cr_single_sim(&data.weight_reloc, orig);
     recv_str_sim(data.phase, orig);
 
     recv_i_single_sim(&data.id_src, orig);
