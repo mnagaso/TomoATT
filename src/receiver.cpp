@@ -11,8 +11,9 @@ Receiver::~Receiver() {
 
 void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
-        // get receiver positions from input parameters
-        //std::vector<std::string> name_receivers = IP.get_rec_names(name_sim_src);
+        // share the traveltime values on the corner points of the subdomains for interpolation
+        // this is not necessary for sweeping (as the stencil is closs shape)
+        grid.send_recev_boundary_data_kosumi(grid.T_loc);
 
         // calculate the travel time of the receiver by interpolation
         for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
@@ -50,7 +51,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
     CUSTOMREAL misfit_tele   = 0.0;
 
     // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele
-    std::vector<CUSTOMREAL> allsum = std::vector<CUSTOMREAL>(20);
+    std::vector<CUSTOMREAL> allsum(10, 0.0);
 
     // rec.adjoint_source = 0
     IP.initialize_adjoint_source();
