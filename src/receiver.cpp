@@ -59,7 +59,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_adjoint_source(InputParams& IP, cons
     CUSTOMREAL misfit_tele   = 0.0;
 
     // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele
-    std::vector<CUSTOMREAL> allsum = std::vector<CUSTOMREAL>(20);
+    std::vector<CUSTOMREAL> allsum = std::vector<CUSTOMREAL>(10, 0.0);
 
     // rec.adjoint_source = 0
     IP.initialize_adjoint_source();

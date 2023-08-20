@@ -128,7 +128,7 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     CUSTOMREAL diff_obj  = - 9999999999;
     CUSTOMREAL v_obj_old = v_obj_inout;
     CUSTOMREAL v_obj_new = 0.0;
-    std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(2);
+    std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(10, 0.0);
     int sub_iter_count   = 0;
 
     // sum kernels among all simultaneous runs
@@ -232,7 +232,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     CUSTOMREAL step_length     = step_length_init; // step size init is global variable
     CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
-    std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(2);
+    std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(10, 0.0);
 
     // smooth kernels and calculate descent direction
     calc_descent_direction(grid, i_inv, IP);
