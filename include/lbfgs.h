@@ -67,7 +67,7 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         int imin = 0;
         int imax = 0;
         if (i_inv >= Mbfgs)
-            imax = Mbfgs-2;
+            imax = Mbfgs-1;
         else
             imax = i_inv-1;
 
@@ -233,9 +233,13 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
+                    //grid.Ks_descent_dir_loc[I2V(i,j,k)]   = - _1_CR * desc_wks_Ks[I2V(i,j,k)];
+                    //grid.Keta_descent_dir_loc[I2V(i,j,k)] = - _1_CR * desc_wks_Keta[I2V(i,j,k)];
+                    //grid.Kxi_descent_dir_loc[I2V(i,j,k)]  = - _1_CR * desc_wks_Kxi[I2V(i,j,k)];
                     grid.Ks_descent_dir_loc[I2V(i,j,k)]   = desc_wks_Ks[I2V(i,j,k)];
                     grid.Keta_descent_dir_loc[I2V(i,j,k)] = desc_wks_Keta[I2V(i,j,k)];
                     grid.Kxi_descent_dir_loc[I2V(i,j,k)]  = desc_wks_Kxi[I2V(i,j,k)];
+
                 }
             }
         }
@@ -303,9 +307,14 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
 inline void calc_laplacian_field(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_res) {
     if (subdom_main) {
 
-        CUSTOMREAL lr = 1.0;
-        CUSTOMREAL lt = 1.0;
-        CUSTOMREAL lp = 1.0;
+        //CUSTOMREAL lr = 1.0;
+        //CUSTOMREAL lt = 1.0;
+        //CUSTOMREAL lp = 1.0;
+
+        CUSTOMREAL lr = smooth_lr;
+        CUSTOMREAL lt = smooth_lt;
+        CUSTOMREAL lp = smooth_lp;
+
 
         // calculate L(m)
         for (int k = 1; k < loc_K-1; k++) {
@@ -359,6 +368,9 @@ inline void add_regularization_grad(Grid& grid) {
             grid.fun_regularization_penalty_loc[i] = _0_CR;
             grid.eta_regularization_penalty_loc[i] = _0_CR;
             grid.xi_regularization_penalty_loc[i] = _0_CR;
+            grid.Ks_regularization_penalty_loc[i] = _0_CR;
+            grid.Keta_regularization_penalty_loc[i] = _0_CR;
+            grid.Kxi_regularization_penalty_loc[i] = _0_CR;
         }
 
         // calculate LL(m) on fun (Ks)

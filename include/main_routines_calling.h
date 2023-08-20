@@ -81,9 +81,9 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
             }
             out_main << std::setw(20) << "step_length," << std::endl;
         } else if (optim_method == LBFGS_MODE)
-            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_length," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
-                     << std::setw(16) << "v_obj_reg," << std::setw(16) << "q_new,"  << std::setw(16) << "q_k,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
-                     << std::setw(16) << "c1*q_k,"    << std::setw(16) << "c2*q_k," << std::setw(6)  << "step ok,"    << std::endl;
+            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_length," << std::setw(16) << "qp_new," << std::setw(16) << "v_obj_new," \
+                     << std::setw(16) << "v_obj_reg," << std::setw(16) << "q_new,"  << std::setw(16) << "q_0,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
+                     << std::setw(16) << "c1*q_0,"    << std::setw(16) << "c2*q_0," << std::setw(6)  << "step ok,"    << std::endl;
 
     }
 }

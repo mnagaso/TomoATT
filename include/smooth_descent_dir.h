@@ -4,8 +4,23 @@
 #include <iostream>
 #include "grid.h"
 #include "config.h"
+#include "smooth.h"
 
 // # TODO add laplacian smoothing for descent direction
+inline void smooth_descent_dir_CG(Grid& grid, CUSTOMREAL lr, CUSTOMREAL lt, CUSTOMREAL lp) {
+    // smoothing kernels with Conjugate Gradient method
+    // lr,lt,lp: smoothing length in r, theta, phi direction
+
+    // smooth Ks
+    CG_smooth(grid, grid.Ks_descent_dir_loc, grid.Ks_descent_dir_loc, lr, lt, lp);
+    // smooth Keta
+    CG_smooth(grid, grid.Keta_descent_dir_loc, grid.Keta_descent_dir_loc, lr, lt, lp);
+    // smooth Kxi
+    CG_smooth(grid, grid.Kxi_descent_dir_loc, grid.Kxi_descent_dir_loc, lr, lt, lp);
+
+}
+
+
 
 
 // original method for smoothing kernels

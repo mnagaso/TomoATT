@@ -224,36 +224,47 @@ end_of_sub_iteration:
 inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
 
     int        subiter_count = 0;              // subiteration count
-    CUSTOMREAL q_k           = _0_CR;          // store p_k * grad(f_k)
-    CUSTOMREAL q_k_new       = _0_CR;          // store p_k * grad(f_k+1)
+    CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_k) (descent_direction * gradient)
+    CUSTOMREAL qp_new        = _0_CR;          // store p_k * grad(f_k)
     CUSTOMREAL v_obj_cur     = v_obj_inout;    // store objective function value
     CUSTOMREAL td            = _0_CR;          // wolfes right step
     CUSTOMREAL tg            = _0_CR;          // wolfes left step
-    CUSTOMREAL step_length     = step_length_init; // step size init is global variable
-    CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term
+    CUSTOMREAL step_length   = step_length_init; // step size init is global variable
+    CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term == q_t
     CUSTOMREAL v_obj_new     = v_obj_cur;      // objective function value at new model
+    CUSTOMREAL q_0           = _0_CR;          // initial total cost
+    CUSTOMREAL q_new         = _0_CR;          //  total current cost
     std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(10, 0.0);
 
     // smooth kernels and calculate descent direction
     calc_descent_direction(grid, i_inv, IP);
 
     // smooth descent direction
-    //smooth_descent_direction(grid);
-
-    // compute initial q_k for line search = initial_gradient * descent_direction
-    q_k = compute_q_k(grid);
+    smooth_descent_direction(grid);
 
     // regularization delta_chi -> delta_chi' = grad + coef * delta L(m)
     // add gradient of regularization term
     add_regularization_grad(grid);
+
     // add regularization term to objective function
     v_obj_reg = add_regularization_obj(grid);
     v_obj_new += v_obj_reg;
+
+    // store initial regularization term
+    if (regularization_weight > _0_CR)
+        q_0 = _2_CR * v_obj_reg / regularization_weight;
+    else
+        q_0 = _0_CR;
 
     // store initial gradient
     if (i_inv == 0) {
         store_model_and_gradient(grid, i_inv);
     }
+
+    // compute initial q_new for line search = initial_gradient * descent_direction
+    qp_new = compute_q_k(grid);
+    // store initial value
+    qp_0 = qp_new;
 
     // backup the initial model
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
@@ -315,13 +326,18 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         // add regularization term to objective function
         CUSTOMREAL v_obj_reg = add_regularization_obj(grid);
         v_obj_new += v_obj_reg;
+        if (regularization_weight > _0_CR)
+            q_new = _2_CR * v_obj_reg / regularization_weight;
+        else
+            q_new = _0_CR;
 
         // calculate q_k_new
-        q_k_new = compute_q_k(grid);
+        qp_new = compute_q_k(grid);
 
         // check if the current step size satisfies the wolfes conditions
         CUSTOMREAL store_step_length = step_length;
-        bool wolfe_cond_ok = check_wolfe_cond(grid, v_obj_cur, v_obj_new, q_k, q_k_new, td, tg, step_length);
+        bool wolfe_cond_ok = check_wolfe_cond(grid, v_obj_cur, v_obj_new, qp_0, qp_new, \
+                                                q_0, q_new, td, tg, step_length);
 
         // log out
         if(myrank == 0 && id_sim ==0)
@@ -329,15 +345,15 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
                      << std::setw(5)  << i_inv \
               << "," << std::setw(5)  << subiter_count \
               << "," << std::setw(15) << store_step_length \
-              << "," << std::setw(15) << (v_obj_new-v_obj_cur)/store_step_length \
+              << "," << std::setw(15) << qp_new \
               << "," << std::setw(15) << v_obj_new \
               << "," << std::setw(15) << v_obj_reg \
-              << "," << std::setw(15) << q_k_new \
-              << "," << std::setw(15) << q_k \
+              << "," << std::setw(15) << q_new \
+              << "," << std::setw(15) << q_0 \
               << "," << std::setw(15) << td \
               << "," << std::setw(15) << tg \
-              << "," << std::setw(15) << wolfe_c1*q_k \
-              << "," << std::setw(15) << wolfe_c2*q_k \
+              << "," << std::setw(15) << wolfe_c1*qp_0 \
+              << "," << std::setw(15) << wolfe_c2*qp_0 \
               << "," << std::setw(15) << wolfe_cond_ok << std::endl;
 
         if (wolfe_cond_ok) {
@@ -358,8 +374,6 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
             exit(1);
         } else {
             // wolfe conditions not satisfied
-
-            //v_obj_cur = v_obj_new;
             subiter_count++;
         }
     }
