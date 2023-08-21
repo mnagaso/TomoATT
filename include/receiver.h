@@ -14,7 +14,9 @@ public:
     void interpolate_and_store_arrival_times_at_rec_position(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
 
     // adjoint source
-    std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&, const std::string&);
+    void calculate_adjoint_source(InputParams&, const std::string&);
+    // objective function and residual
+    std::vector<CUSTOMREAL> calculate_obj_and_residual(InputParams&);
     // teleseismic source
     // CUSTOMREAL calculate_adjoint_source_teleseismic(InputParams&, const std::string&);
     // Gradient of traveltime

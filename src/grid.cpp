@@ -217,7 +217,7 @@ void Grid::init_decomposition(InputParams& IP) {
 
     // inversion setup
     // check if inversion grids are needed
-    if (IP.get_run_mode()==1){
+    if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
         inverse_flag = true;
         setup_inversion_grids(IP);
     } else {
@@ -1227,6 +1227,21 @@ void Grid::reinitialize_abcf(){
     }
 }
 
+void Grid::rejunenate_abcf(){
+    if (subdom_main) {
+        for (int k_r = 0; k_r < loc_K; k_r++) {
+            for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+                    // initialize arrays
+                    fac_a_loc[I2V(i_lon,j_lat,k_r)] = fac_a_loc[I2V(i_lon,j_lat,k_r)];
+                    fac_b_loc[I2V(i_lon,j_lat,k_r)] = _1_CR - _2_CR * xi_loc[I2V(i_lon,j_lat,k_r)];
+                    fac_c_loc[I2V(i_lon,j_lat,k_r)] = _1_CR + _2_CR * xi_loc[I2V(i_lon,j_lat,k_r)];
+                    fac_f_loc[I2V(i_lon,j_lat,k_r)] =       - _2_CR * eta_loc[I2V(i_lon,j_lat,k_r)];
+                }
+            }
+        }
+    }
+}
 
 void Grid::setup_factors(Source &src){
 

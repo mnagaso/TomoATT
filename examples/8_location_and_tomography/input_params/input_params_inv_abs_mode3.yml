@@ -140,9 +140,9 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 2 or
   tol_gradient: 0.0001  # threshold value for checking the convergence for each iteration
 
   # params keeped for current version of relocation but may not be required
-  ortime_local_search: true  # true: do local search for origin time; false: do not do local search for origin time
-  ref_ortime_change: 0.5  # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time.
-  step_length_ortime_rescale: 0.1  # step length for rescaling origin time
+  # ortime_local_search: true  # true: do local search for origin time; false: do not do local search for origin time
+  # ref_ortime_change: 0.5  # reference value for origin time change (unit: second). If the change of origin time is larger than ref_ortime_change, do local search for origin time.
+  # step_length_ortime_rescale: 0.1  # step length for rescaling origin time
 
 
   # more option for using different types of data is under development (following)
@@ -169,7 +169,7 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
     model_update_N_iter : 1
-    relocation_N_iter  : 0 
+    relocation_N_iter  : 1 
     max_loop : 40
 
 

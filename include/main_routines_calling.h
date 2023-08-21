@@ -143,7 +143,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // skip for the mode with sub-iteration
         if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
         } else {
-            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
+            bool is_read_time = false; 
+            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_read_time);
             v_obj = v_obj_misfit[0];
         }
 
@@ -422,6 +423,8 @@ inline void prepare_header_line_mode_3(InputParams &IP, std::ofstream &out_main)
 
 
             out_main << std::setw(8) << std::right << "# iter,";
+            out_main << std::setw(13) << std::right << " type,";
+            
             // if (optim_method == HALVE_STEPPING_MODE) 
             //     out_main << std::setw(8) << std::right << "subiter,";        (TODO in the future)
             std::string tmp = "obj(";
@@ -449,17 +452,17 @@ inline void prepare_header_line_mode_3(InputParams &IP, std::ofstream &out_main)
             tmp.append("),");
             out_main << std::setw(20) << tmp;
 
-            out_main << std::setw(20) << "misfit,";
+            out_main << std::setw(25) << "res(mean/std),";
 
-            out_main << std::setw(20) << "misfit_abs,";
+            out_main << std::setw(25) << "res_abs(mean/std),";
         
-            out_main << std::setw(20) << "misfit_cs_dif,";
+            out_main << std::setw(25) << "res_cs_dif(mean/std),";
 
-            out_main << std::setw(20) << "misfit_cr_dif,";
+            out_main << std::setw(25) << "res_cr_dif(mean/std),";
 
-            out_main << std::setw(20) << "misfit_tele,";
+            out_main << std::setw(25) << "res_tele(mean/std),";
 
-            out_main << std::setw(20) << "max_model_update," << std::endl;
+            out_main << std::setw(20) << "step_length," << std::endl;
 
         } else if (optim_method == LBFGS_MODE)
             out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_length," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
@@ -526,8 +529,10 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             int i_inv = i_loop * IP.get_model_update_N_iter() + one_loop_i_inv;
 
             if(myrank == 0 && id_sim ==0){
-                std::cout   << "loop " << i_loop << ", model update iteration " << one_loop_i_inv 
-                            << " ( the " << i_inv << "-th model update) starting ... " << std::endl;
+                std::cout   << std::endl; 
+                std::cout   << "loop " << i_loop+1 << ", model update iteration " << one_loop_i_inv+1 
+                            << " ( the " << i_inv+1 << "-th model update) starting ... " << std::endl;  
+                std::cout   << std::endl; 
             }
 
             old_v_obj = v_obj;
@@ -544,7 +549,12 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             // skip for the mode with sub-iteration
             if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
             } else {
-                v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode);
+                bool is_read_time;
+                if (i_loop > 0 && one_loop_i_inv == 0)
+                    is_read_time = true; 
+                else
+                    is_read_time = false; 
+                v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_read_time);
                 v_obj = v_obj_misfit[0];
             }
 
@@ -611,6 +621,12 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
         // stage 2, update earthquake locations 
         /////////////////////
 
+        if(myrank == 0 && id_sim ==0){
+            std::cout   << std::endl; 
+            std::cout   << "loop " << i_loop+1 << ", computing traveltime field for relocation" << std::endl;  
+            std::cout   << std::endl; 
+        }
+
         // calculate traveltime for each receiver (swapped from source) and write in output file
         calculate_traveltime_for_all_src_rec(IP, grid, io);
 
@@ -630,6 +646,13 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
         // iterate
         for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){
             int i_iter = i_loop * IP.get_model_update_N_iter() + one_loop_i_iter;
+
+            if(myrank == 0 && id_sim ==0){
+                std::cout   << std::endl; 
+                std::cout   << "loop " << i_loop+1 << ", relocation iteration " << one_loop_i_iter+1 
+                            << " ( the " << i_iter+1 << "-th relocation) starting ... " << std::endl;  
+                std::cout   << std::endl; 
+            }
 
             old_v_obj  = v_obj;
             v_obj      = 0.0;
@@ -666,22 +689,23 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             // output location information
             if(id_sim == 0 && myrank == 0){
-                // number of receiver which have been completed
-                int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
-
+            //     // number of receiver which have been completed
+            //     int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
+                std::cout << "objective function: "              << v_obj << std::endl;
                 // write objective function
-                std::cout << "iteration: " << i_iter << ", objective function: "              << v_obj
-                                                    << ", objective function old: "          << old_v_obj
-                                                    << ", norm grad of relocating: "         << v_obj_grad // BUG: strangely high when simultaneous run
-                                                    << ", average norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
-                                                    << ", v_obj/n_src: "                     << v_obj/nrec_total
-                                                    << ", diff_v/old_v_obj "                 << std::abs(v_obj-old_v_obj)/old_v_obj << std::endl;
-                std::cout << "Earthquakes require location: " << n_relocated << " / " << nrec_total << " completed." << std::endl;
+                // std::cout << "iteration: " << i_iter << ", objective function: "              << v_obj
+            //                                         << ", objective function old: "          << old_v_obj
+            //                                         << ", norm grad of relocating: "         << v_obj_grad // BUG: strangely high when simultaneous run
+            //                                         << ", average norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
+            //                                         << ", v_obj/n_src: "                     << v_obj/nrec_total
+            //                                         << ", diff_v/old_v_obj "                 << std::abs(v_obj-old_v_obj)/old_v_obj << std::endl;
+            //     std::cout << "Earthquakes require location: " << n_relocated << " / " << nrec_total << " completed." << std::endl;
             }
 
             // write objective functions
             if (myrank==0 && id_sim==0) {
-                out_main << std::setw(8) << std::right << i_iter + 1;
+                out_main << std::setw(5) << std::right << i_iter + 1 << ",";
+                out_main << std::setw(13) << "model update";
                 out_main << "," << std::setw(19) << std::right << v_obj;
                 out_main << "," << std::setw(19) << std::right << v_obj_abs;
                 out_main << "," << std::setw(19) << std::right << v_obj_cs;
@@ -695,6 +719,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
         }
  
+        grid.rejunenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
     }
 
     // close xdmf file

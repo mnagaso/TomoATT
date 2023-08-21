@@ -65,6 +65,7 @@ public:
     void setup_inv_grid_params(InputParams&);
 
     void reinitialize_abcf();                // reinitialize factors
+    void rejunenate_abcf();                // reinitialize factors
     void initialize_kernels();               // fill 0 to kernels
 
     //
