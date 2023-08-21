@@ -149,6 +149,9 @@ InputParams::InputParams(std::string& input_file){
             if (config["output_setting"]["output_in_process"])
                 getNodeValue(config["output_setting"], "output_in_process", output_in_process);
 
+            if (config["output_setting"]["output_in_process_data"])
+                getNodeValue(config["output_setting"], "output_in_process_data", output_in_process_data);
+
             if (config["output_setting"]["single_precision_output"])
                 getNodeValue(config["output_setting"], "single_precision_output", single_precision_output);
 
@@ -476,16 +479,16 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["inversion_strategy"], "inv_mode", inv_mode);
 
             // paramters for inv_mode == 0
-            if (config["inversoin_strategy"]["inv_mode_0"]){
+            if (config["inversion_strategy"]["inv_mode_0"]){
                 // model_update_N_iter
-                if (config["inversoin_strategy"]["inv_mode_0"]["model_update_N_iter"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "model_update_N_iter", model_update_N_iter);
+                if (config["inversion_strategy"]["inv_mode_0"]["model_update_N_iter"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "model_update_N_iter", model_update_N_iter);
                 // relocation_N_iter
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_N_iter"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_N_iter", relocation_N_iter);
+                if (config["inversion_strategy"]["inv_mode_0"]["relocation_N_iter"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "relocation_N_iter", relocation_N_iter);
                 // max_loop
-                if (config["inversoin_strategy"]["inv_mode_0"]["max_loop"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "max_loop", max_loop);
+                if (config["inversion_strategy"]["inv_mode_0"]["max_loop"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "max_loop", max_loop);
             }
         }
 
@@ -615,6 +618,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(verbose_output_level, 0);
     broadcast_bool_single(output_final_model, 0);
     broadcast_bool_single(output_in_process, 0);
+    broadcast_bool_single(output_in_process_data, 0);
     broadcast_bool_single(single_precision_output, 0);
     broadcast_i_single(output_format, 0);
 
@@ -834,6 +838,7 @@ void InputParams::write_params_to_file() {
     fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat or not.                     " << std::endl;
     fout << "  output_final_model:      " << output_final_model          << " # output merged final model or not.                                " << std::endl;
     fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
+    fout << "  output_in_process_data:  " << output_in_process_data      << " # output src_rec_file at each inv iteration or not.                       " << std::endl;
     fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
     fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, if no, only model parameters are out." << std::endl;
     int ff_flag=0;
@@ -1306,7 +1311,9 @@ void InputParams::prepare_src_map(){
             // |            |        r2          r1     |   s1          |
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
             do_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all);
-
+            int tmp = N_cr_dif_local_data;
+            N_cr_dif_local_data = N_cs_dif_local_data;
+            N_cs_dif_local_data = tmp;
         } else {
             // if we do not swap source and receiver, we need to process cr_dif to include the other source. After that, we have new data structure:
             // Before:
@@ -1770,7 +1777,7 @@ void InputParams::write_station_correction_file(int i_inv){
     }
 }
 
-void InputParams::write_src_rec_file(int i_inv) {
+void InputParams::write_src_rec_file(int i_inv, int i_iter) {
 
     if (src_rec_file_exist){
 
@@ -1791,6 +1798,8 @@ void InputParams::write_src_rec_file(int i_inv) {
             else if (run_mode == DO_INVERSION){
                 // write out source and receiver points with current inversion iteration number
                 src_rec_file_out = output_dir + "/src_rec_file_step_" + int2string_zero_fill(i_inv) +".dat";
+            } else if (run_mode == INV_RELOC){
+                src_rec_file_out = output_dir + "/src_rec_file_inv_" + int2string_zero_fill(i_inv) +"_reloc_" + int2string_zero_fill(i_iter)+".dat";
             } else if (run_mode == TELESEIS_PREPROCESS) {
                 src_rec_file_out = output_dir + "/src_rec_file_teleseis_pre.dat";
             } else if (run_mode == SRC_RELOCATION) {
@@ -2277,7 +2286,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
 
 }
 
-void InputParams::modift_swapped_source_location() {
+void InputParams::modify_swapped_source_location() {
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
         src_map_back[iter->first].lat   =   iter->second.lat;
         src_map_back[iter->first].lon   =   iter->second.lon;
@@ -2434,18 +2443,23 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
             // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
             if (rec_map.find(name_rec) != rec_map.end()){
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc);
-                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_abs);
-                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cr);
-                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cs);
+                for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
+                    allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_data[i]);
+                }
+                
+                // allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cr);
+                // allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cs);
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
                 dummy = 0;
-                allreduce_rec_map_var(dummy);
-                dummy = 0;
-                allreduce_rec_map_var(dummy);
-                dummy = 0;
-                allreduce_rec_map_var(dummy);
+                // allreduce_rec_map_var(dummy);
+                // dummy = 0;
+                // allreduce_rec_map_var(dummy);
+                for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
+                    dummy = 0;
+                    allreduce_rec_map_var(dummy);
+                }
             }
         }
     }

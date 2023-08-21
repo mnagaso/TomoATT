@@ -98,6 +98,7 @@ public:
     bool get_if_output_model_dat()        {return output_model_dat;};
     bool get_if_output_final_model()      {return output_final_model;};
     bool get_if_output_in_process()       {return output_in_process;};
+    bool get_if_output_in_process_data()       {return output_in_process_data;};
     bool get_if_single_precision_output() {return single_precision_output;};
     int  get_verbose_output_level()       {return verbose_output_level;}; // #TODO: modify codes for verbose_output_level > 1
 
@@ -129,10 +130,10 @@ public:
     void prepare_src_map();
 
     // (relocation) modify (swapped source) receiver's location and time
-    void modift_swapped_source_location();
+    void modify_swapped_source_location();
 
     // write out src_rec_file
-    void write_src_rec_file(int);
+    void write_src_rec_file(int,int);
 
     // write out station_correction_file
     void write_station_correction_file(int);
@@ -295,6 +296,7 @@ private:
     bool output_model_dat     = false; // output model_parameters_inv_0000.dat or not.
     bool output_final_model   = true;  // output merged final model or not.
     bool output_in_process    = true;  // output merged model at each inv iteration or not.
+    bool output_in_process_data = true;  // output src_rec_file at each inv iteration or not.
     int  verbose_output_level = 0;  // output verbose information or not.
 
     // inversion setting

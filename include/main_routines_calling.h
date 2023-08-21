@@ -50,13 +50,19 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
             }
             if (have_cs_dif){
                 tmp = "obj_cs_dif(";
-                tmp.append(std::to_string(IP.N_cs_dif_local_data));
+                if (IP.get_is_srcrec_swap())
+                    tmp.append(std::to_string(IP.N_cr_dif_local_data));
+                else
+                    tmp.append(std::to_string(IP.N_cs_dif_local_data));
                 tmp.append("),");
                 out_main << std::setw(20) << tmp;
             }
             if (have_cr_dif){
                 tmp = "obj_cr_dif(";
-                tmp.append(std::to_string(IP.N_cr_dif_local_data));
+                if (IP.get_is_srcrec_swap())
+                    tmp.append(std::to_string(IP.N_cs_dif_local_data));
+                else
+                    tmp.append(std::to_string(IP.N_cr_dif_local_data));
                 tmp.append("),");
                 out_main << std::setw(20) << tmp;
             }
@@ -104,9 +110,31 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     std::ofstream out_main; // close() is not mandatory
     prepare_header_line(IP, out_main);
 
-    if (subdom_main && id_sim==0 && IP.get_if_output_model_dat()==1) {
-        io.write_concerning_parameters(grid, 0, IP);
+
+    if (subdom_main && id_sim==0) {
+        //io.change_xdmf_obj(0); // change xmf file for next src
+        io.change_group_name_for_model();
+
+        // write out model info
+        io.write_vel(grid, 0);
+        io.write_xi( grid, 0);
+        io.write_eta(grid, 0);
+        //io.write_zeta(grid, i_inv); // TODO
+
+        if (IP.get_verbose_output_level()){
+            io.write_a(grid,   0);
+            io.write_b(grid,   0);
+            io.write_c(grid,   0);
+            io.write_f(grid,   0);
+            io.write_fun(grid, 0);
+        }
+
+        // output model_parameters_inv_0000.dat
+        if (IP.get_if_output_model_dat())
+            io.write_concerning_parameters(grid, 0, IP);
     }
+
+
 
     // output station correction file (only for teleseismic differential data)
     IP.write_station_correction_file(0);
@@ -161,8 +189,11 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         }
 
         // output src rec file with the result arrival times
-        if (i_inv == IP.get_max_iter_inv()-1 || i_inv==0)
-            IP.write_src_rec_file(i_inv);
+        if (IP.get_if_output_in_process_data()){
+            IP.write_src_rec_file(i_inv,0);
+        } else if (i_inv == IP.get_max_iter_inv()-1 || i_inv==0) {
+            IP.write_src_rec_file(i_inv,0);
+        }
 
         ///////////////
         // model update
@@ -320,9 +351,9 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
             v_obj      += iter->second.vobj_src_reloc;
             v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
-            v_obj_abs  += iter->second.vobj_src_reloc_abs;
-            v_obj_cr   += iter->second.vobj_src_reloc_cr;
-            v_obj_cs   += iter->second.vobj_src_reloc_cs;
+            v_obj_abs  += iter->second.vobj_src_reloc_data[0];
+            v_obj_cr   += iter->second.vobj_src_reloc_data[1];
+            v_obj_cs   += iter->second.vobj_src_reloc_data[2];
         }
 
         // reduce
@@ -401,9 +432,9 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
 
     // modify the receiver's location
-    IP.modift_swapped_source_location();
+    IP.modify_swapped_source_location();
     // write out new src_rec_file
-    IP.write_src_rec_file(0);
+    IP.write_src_rec_file(0,0);
     // close xdmf file
     io.finalize_data_output_file();
 
@@ -490,8 +521,30 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     std::ofstream out_main; // close() is not mandatory
     prepare_header_line_mode_3(IP, out_main);
 
-    if (subdom_main && id_sim==0 && IP.get_if_output_model_dat()==1) {
-        io.write_concerning_parameters(grid, 0, IP);
+    if (subdom_main && id_sim==0) {
+        // prepare inverstion iteration group in xdmf file
+        io.prepare_grid_inv_xdmf(0);
+
+        //io.change_xdmf_obj(0); // change xmf file for next src
+        io.change_group_name_for_model();
+
+        // write out model info
+        io.write_vel(grid, 0);
+        io.write_xi( grid, 0);
+        io.write_eta(grid, 0);
+        //io.write_zeta(grid, i_inv); // TODO
+
+        if (IP.get_verbose_output_level()){
+            io.write_a(grid,   0);
+            io.write_b(grid,   0);
+            io.write_c(grid,   0);
+            io.write_f(grid,   0);
+            io.write_fun(grid, 0);
+        }
+
+        // output model_parameters_inv_0000.dat
+        if (IP.get_if_output_model_dat())
+            io.write_concerning_parameters(grid, 0, IP);
     }
 
     // output station correction file (only for teleseismic differential data)
@@ -518,8 +571,10 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
     std::vector<CUSTOMREAL> v_obj_misfit;
 
-    for (int i_loop = 0; i_loop < IP.get_max_loop(); i_loop++){
+    int model_update_step = 0;
+    int relocation_step = 0;
 
+    for (int i_loop = 0; i_loop < IP.get_max_loop(); i_loop++){
         /////////////////////
         // stage 1, update model parameters 
         /////////////////////
@@ -610,6 +665,14 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             // writeout temporary xdmf file
             io.update_xdmf_file();
 
+            // write src rec files
+            if (IP.get_if_output_in_process_data()){
+                IP.write_src_rec_file(model_update_step,relocation_step);
+            } else if (i_inv == IP.get_max_loop() * IP.get_model_update_N_iter()-1 || i_inv==0) {
+                IP.write_src_rec_file(model_update_step,relocation_step);
+            }           
+            model_update_step += 1;
+
             // wait for all processes to finish
             synchronize_all_world();
         }   // end model update in one loop
@@ -642,6 +705,14 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
         CUSTOMREAL v_obj_abs      = 999999999.0;
         CUSTOMREAL v_obj_cr       = 999999999.0;
         CUSTOMREAL v_obj_cs       = 999999999.0;
+        CUSTOMREAL res            = 999999999.0;
+        CUSTOMREAL res_sq         = 999999999.0;  
+        CUSTOMREAL res_abs        = 999999999.0;
+        CUSTOMREAL res_abs_sq     = 999999999.0; 
+        CUSTOMREAL res_cs         = 999999999.0;
+        CUSTOMREAL res_cs_sq      = 999999999.0; 
+        CUSTOMREAL res_cr         = 999999999.0;
+        CUSTOMREAL res_cr_sq      = 999999999.0; 
 
         // iterate
         for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){
@@ -658,9 +729,16 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             v_obj      = 0.0;
             v_obj_grad = 0.0;
             v_obj_abs  = 0.0;
-            v_obj_cr   = 0.0;
             v_obj_cs   = 0.0;
-
+            v_obj_cr   = 0.0;
+            res        = 0.0;
+            res_sq     = 0.0;            
+            res_abs    = 0.0;
+            res_abs_sq = 0.0; 
+            res_cs     = 0.0;
+            res_cs_sq  = 0.0; 
+            res_cr     = 0.0;
+            res_cr_sq  = 0.0; 
             // determine which earthquake should be located
             IP.name_for_reloc.clear();
             for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
@@ -678,11 +756,19 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             // calculate sum of objective function and gradient
             for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
-                v_obj      += iter->second.vobj_src_reloc;
-                v_obj_grad += iter->second.vobj_grad_norm_src_reloc;
-                v_obj_abs  += iter->second.vobj_src_reloc_abs;
-                v_obj_cr   += iter->second.vobj_src_reloc_cr;
-                v_obj_cs   += iter->second.vobj_src_reloc_cs;
+                v_obj       += iter->second.vobj_src_reloc;
+                v_obj_grad  += iter->second.vobj_grad_norm_src_reloc;
+                v_obj_abs   += iter->second.vobj_src_reloc_data[0];
+                v_obj_cs    += iter->second.vobj_src_reloc_data[1];
+                v_obj_cr    += iter->second.vobj_src_reloc_data[2];
+                res         += iter->second.vobj_src_reloc_data[3] + iter->second.vobj_src_reloc_data[5] + iter->second.vobj_src_reloc_data[7];
+                res_sq      += iter->second.vobj_src_reloc_data[4] + iter->second.vobj_src_reloc_data[6] + iter->second.vobj_src_reloc_data[8]; 
+                res_abs     += iter->second.vobj_src_reloc_data[3];
+                res_abs_sq  += iter->second.vobj_src_reloc_data[4];
+                res_cs      += iter->second.vobj_src_reloc_data[5];
+                res_cs_sq   += iter->second.vobj_src_reloc_data[6];
+                res_cr      += iter->second.vobj_src_reloc_data[7];
+                res_cr_sq   += iter->second.vobj_src_reloc_data[8];
             }
 
             synchronize_all_world();
@@ -705,18 +791,76 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             // write objective functions
             if (myrank==0 && id_sim==0) {
                 out_main << std::setw(5) << std::right << i_iter + 1 << ",";
-                out_main << std::setw(13) << "model update";
+                out_main << std::setw(13) << "relocation";
                 out_main << "," << std::setw(19) << std::right << v_obj;
                 out_main << "," << std::setw(19) << std::right << v_obj_abs;
                 out_main << "," << std::setw(19) << std::right << v_obj_cs;
                 out_main << "," << std::setw(19) << std::right << v_obj_cr;
                 out_main << "," << std::setw(19) << std::right << 0.0;
+                CUSTOMREAL mean;
+                CUSTOMREAL std;
+                std::string tmp;
+                // res
+                
+                if (IP.N_data > 0){
+                    mean = res/IP.N_data;
+                    std  = sqrt(res_sq/IP.N_data - my_square(mean));
+                    tmp = std::to_string(mean);
+                    tmp.append("/");
+                    tmp.append(std::to_string(std));
+                    out_main << "," << std::setw(24) << tmp;
+                } else {
+                    out_main << "," << std::setw(24) << "0.0/0.0";
+                }
+                // res_abs
+                if (IP.N_abs_local_data > 0){
+                    mean = res_abs/IP.N_abs_local_data;
+                    std  = sqrt(res_abs_sq/IP.N_abs_local_data - my_square(mean));
+                    tmp = std::to_string(mean);
+                    tmp.append("/");
+                    tmp.append(std::to_string(std));
+                    out_main << "," << std::setw(24) << tmp;
+                } else {
+                    out_main << "," << std::setw(24) << "0.0/0.0";
+                }
+                // res_cs (swapped cr)
+                if (IP.N_cr_dif_local_data > 0){
+                    mean = res_cr/IP.N_cr_dif_local_data;
+                    std  = sqrt(res_cr_sq/IP.N_cr_dif_local_data - my_square(mean));
+                    tmp = std::to_string(mean);
+                    tmp.append("/");
+                    tmp.append(std::to_string(std));
+                    out_main << "," << std::setw(24) << tmp;
+                    
+                } else {
+                    out_main << "," << std::setw(24) << "0.0/0.0";
+                }
+                // res_cr (swapped cs)
+                if (IP.N_cs_dif_local_data > 0){
+                    mean = res_cs/IP.N_cs_dif_local_data;
+                    std  = sqrt(res_cs_sq/IP.N_cs_dif_local_data - my_square(mean));
+                    tmp = std::to_string(mean);
+                    tmp.append("/");
+                    tmp.append(std::to_string(std));
+                    out_main << "," << std::setw(24) << tmp;
+                } else {
+                    out_main << "," << std::setw(24) << "0.0/0.0";
+                } 
+                // res_tele
+                out_main << "," << std::setw(24) << "0.0/0.0";
                 out_main << "," << std::endl;
             }
 
+            // write out new src_rec_file
+            if (IP.get_if_output_in_process_data()){
+                IP.write_src_rec_file(model_update_step,relocation_step);
+            } else if (i_iter == IP.get_max_loop() * IP.get_relocation_N_iter()-1 || i_iter==0) {
+                IP.write_src_rec_file(model_update_step,relocation_step);
+            }   
             // modify the receiver's location for output
-            IP.modift_swapped_source_location();
+            IP.modify_swapped_source_location();
 
+            relocation_step += 1;
         }
  
         grid.rejunenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
