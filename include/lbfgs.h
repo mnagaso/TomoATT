@@ -6,6 +6,10 @@
 #include "grid.h"
 #include "mpi_funcs.h"
 
+inline CUSTOMREAL volume_domain = _0_CR;          // volume of the domain
+inline CUSTOMREAL weight_Tikonov = _0_CR;         // weight of the regularization term
+inline int        N_params = 3;                   // number of parameters to invert
+
 void store_model_and_gradient(Grid& grid, int i_inv) {
 
     if (subdom_main) {
@@ -233,12 +237,12 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
-                    //grid.Ks_descent_dir_loc[I2V(i,j,k)]   = - _1_CR * desc_wks_Ks[I2V(i,j,k)];
-                    //grid.Keta_descent_dir_loc[I2V(i,j,k)] = - _1_CR * desc_wks_Keta[I2V(i,j,k)];
-                    //grid.Kxi_descent_dir_loc[I2V(i,j,k)]  = - _1_CR * desc_wks_Kxi[I2V(i,j,k)];
-                    grid.Ks_descent_dir_loc[I2V(i,j,k)]   = desc_wks_Ks[I2V(i,j,k)];
-                    grid.Keta_descent_dir_loc[I2V(i,j,k)] = desc_wks_Keta[I2V(i,j,k)];
-                    grid.Kxi_descent_dir_loc[I2V(i,j,k)]  = desc_wks_Kxi[I2V(i,j,k)];
+                    grid.Ks_descent_dir_loc[I2V(i,j,k)]   = - _1_CR * desc_wks_Ks[I2V(i,j,k)];
+                    grid.Keta_descent_dir_loc[I2V(i,j,k)] = - _1_CR * desc_wks_Keta[I2V(i,j,k)];
+                    grid.Kxi_descent_dir_loc[I2V(i,j,k)]  = - _1_CR * desc_wks_Kxi[I2V(i,j,k)];
+                    //grid.Ks_descent_dir_loc[I2V(i,j,k)]   = desc_wks_Ks[I2V(i,j,k)];
+                    //grid.Keta_descent_dir_loc[I2V(i,j,k)] = desc_wks_Keta[I2V(i,j,k)];
+                    //grid.Kxi_descent_dir_loc[I2V(i,j,k)]  = desc_wks_Kxi[I2V(i,j,k)];
 
                 }
             }
@@ -335,7 +339,7 @@ inline void calc_laplacian_field(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr
 }
 
 // add 1/2 * L(m)^2 to the objective function
-inline CUSTOMREAL add_regularization_obj(Grid& grid) {
+inline CUSTOMREAL calculate_regularization_obj(Grid& grid) {
 
     CUSTOMREAL regularization_term = _0_CR;
 
@@ -351,59 +355,86 @@ inline CUSTOMREAL add_regularization_obj(Grid& grid) {
         allreduce_cr_single(tmp, regularization_term);
     }
 
-    synchronize_all_world();
+    return regularization_term;
 
-    return _0_5_CR * regularization_term * regularization_weight;
+}
 
+
+inline void init_regularization_penalty(Grid& grid) {
+    if (subdom_main) {
+        int ngrid = loc_I*loc_J*loc_K;
+
+        // initialize regularization penalties
+        for (int i = 0; i < ngrid; i++) {
+            grid.fun_regularization_penalty_loc[i]          = _0_CR;
+            grid.eta_regularization_penalty_loc[i]          = _0_CR;
+            grid.xi_regularization_penalty_loc[i]           = _0_CR;
+            grid.fun_gradient_regularization_penalty_loc[i] = _0_CR;
+            grid.eta_gradient_regularization_penalty_loc[i] = _0_CR;
+            grid.xi_gradient_regularization_penalty_loc[i]  = _0_CR;
+        }
+    }
+}
+
+inline void init_regulaization_penalty_with_one(Grid& grid) {
+    if (subdom_main) {
+        int ngrid = loc_I*loc_J*loc_K;
+
+        // initialize regularization penalties
+        for (int i = 0; i < ngrid; i++) {
+            grid.fun_regularization_penalty_loc[i]          = _1_CR;
+            grid.eta_regularization_penalty_loc[i]          = _1_CR;
+            grid.xi_regularization_penalty_loc[i]           = _1_CR;
+            grid.fun_gradient_regularization_penalty_loc[i] = _1_CR;
+            grid.eta_gradient_regularization_penalty_loc[i] = _1_CR;
+            grid.xi_gradient_regularization_penalty_loc[i]  = _1_CR;
+        }
+    }
+}
+
+
+inline void calculate_regularization_penalty(Grid& grid) {
+    if (subdom_main) {
+        init_regularization_penalty(grid);
+
+        // calculate LL(m) on fun (Ks)
+        calc_laplacian_field(grid, grid.fun_loc, grid.fun_regularization_penalty_loc);
+        calc_laplacian_field(grid, grid.fun_regularization_penalty_loc, grid.fun_gradient_regularization_penalty_loc);
+
+        // calculate LL(m) on eta (Keta)
+        calc_laplacian_field(grid, grid.eta_loc, grid.eta_regularization_penalty_loc);
+        calc_laplacian_field(grid, grid.eta_regularization_penalty_loc, grid.eta_gradient_regularization_penalty_loc);
+
+
+        // calculate LL(m) on xi (Kxi)
+        calc_laplacian_field(grid, grid.xi_loc, grid.xi_regularization_penalty_loc);
+        calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc);
+
+    }
 }
 
 
 // add grad(L(m)) to gradient
 inline void add_regularization_grad(Grid& grid) {
-    if (subdom_main) {
-        int ngrid = loc_I*loc_J*loc_K;
-
-        // initialize fun_regularization_penalty_loc, eta_regularization_penalty_loc, xi_regularization_penalty_loc
-        for (int i = 0; i < ngrid; i++) {
-            grid.fun_regularization_penalty_loc[i] = _0_CR;
-            grid.eta_regularization_penalty_loc[i] = _0_CR;
-            grid.xi_regularization_penalty_loc[i] = _0_CR;
-            grid.Ks_regularization_penalty_loc[i] = _0_CR;
-            grid.Keta_regularization_penalty_loc[i] = _0_CR;
-            grid.Kxi_regularization_penalty_loc[i] = _0_CR;
-        }
-
-        // calculate LL(m) on fun (Ks)
-        calc_laplacian_field(grid, grid.fun_loc, grid.fun_regularization_penalty_loc);
-        calc_laplacian_field(grid, grid.fun_regularization_penalty_loc, grid.Ks_regularization_penalty_loc);
-
-        // calculate LL(m) on eta (Keta)
-        calc_laplacian_field(grid, grid.eta_loc, grid.eta_regularization_penalty_loc);
-        calc_laplacian_field(grid, grid.eta_regularization_penalty_loc, grid.Keta_regularization_penalty_loc);
-
-
-        // calculate LL(m) on xi (Kxi)
-        calc_laplacian_field(grid, grid.xi_loc, grid.xi_regularization_penalty_loc);
-        calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.Kxi_regularization_penalty_loc);
+    if(subdom_main){
 
         // add LL(m) to gradient
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
 
-                    //grid.Ks_regularization_penalty_loc[I2V(i,j,k)]   /= Linf_Ks;
-                    //grid.Keta_regularization_penalty_loc[I2V(i,j,k)] /= Linf_Keta;
-                    //grid.Kxi_regularization_penalty_loc[I2V(i,j,k)]  /= Linf_Kxi;
+                    //grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)]   /= Linf_Ks;
+                    //grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)] /= Linf_Keta;
+                    //grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)]  /= Linf_Kxi;
 
-                    grid.Ks_update_loc[I2V(i,j,k)]   += regularization_weight * grid.Ks_regularization_penalty_loc[I2V(i,j,k)];
-                    grid.Keta_update_loc[I2V(i,j,k)] += regularization_weight * grid.Keta_regularization_penalty_loc[I2V(i,j,k)];
-                    grid.Kxi_update_loc[I2V(i,j,k)]  += regularization_weight * grid.Kxi_regularization_penalty_loc[I2V(i,j,k)];
+                    grid.Ks_update_loc[I2V(i,j,k)]   += weight_Tikonov * grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                    grid.Keta_update_loc[I2V(i,j,k)] += weight_Tikonov * grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                    grid.Kxi_update_loc[I2V(i,j,k)]  += weight_Tikonov * grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)];
                 }
             }
         }
 
     }
-
 }
 
 
@@ -435,6 +466,22 @@ void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) 
     // step size
     step_length = SC_VAL / max_val;
 
+}
+
+
+inline CUSTOMREAL compute_volume_domain(Grid& grid) {
+    CUSTOMREAL volume = _0_CR;
+
+    if (subdom_main) {
+        volume += calc_l2norm(grid.fun_regularization_penalty_loc, loc_I*loc_J*loc_K);
+        volume += calc_l2norm(grid.eta_regularization_penalty_loc, loc_I*loc_J*loc_K);
+        volume += calc_l2norm(grid.xi_regularization_penalty_loc, loc_I*loc_J*loc_K);
+    }
+
+    // reduce
+    allreduce_cr_single(volume, volume);
+
+    return volume;
 }
 
 

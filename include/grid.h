@@ -272,7 +272,7 @@ public:
     CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc;
     CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
     CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
-    CUSTOMREAL *Ks_regularization_penalty_loc, *Keta_regularization_penalty_loc, *Kxi_regularization_penalty_loc;
+    CUSTOMREAL *fun_gradient_regularization_penalty_loc, *eta_gradient_regularization_penalty_loc, *xi_gradient_regularization_penalty_loc;
     // tmp array for file IO
     CUSTOMREAL *vis_data;
 

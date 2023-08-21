@@ -11,6 +11,9 @@
 
 // K*_loc -> K*_update_loc
 void smooth_kernels(Grid& grid, InputParams& IP) {
+    // sum kernels among all simultaneous runs
+    sumup_kernels(grid);
+
     if (subdom_main){
         // initiaize update params
         for (int k = 0; k < loc_K; k++) {
@@ -85,14 +88,12 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
 
             // calculate the descent direction
             if (i_inv > 0) {
-                calculate_descent_direction_lbfgs(grid, i_inv);
-            // use gradient for the first iteration
-            } else {
-                // sum kernels among all simultaneous runs
-                sumup_kernels(grid);
                 // smooth kernels
                 smooth_kernels(grid, IP);
 
+                calculate_descent_direction_lbfgs(grid, i_inv);
+            // use gradient for the first iteration
+            } else {
                 int n_grid = loc_I*loc_J*loc_K;
 
                 // first time, descent direction = - precond * gradient
@@ -247,17 +248,14 @@ CUSTOMREAL compute_q_k(Grid& grid) {
 
 // check if the wolfe conditions are satisfied
 bool check_wolfe_cond(Grid& grid, \
-                    CUSTOMREAL f_k, CUSTOMREAL f_new, \
-                    CUSTOMREAL q_0, CUSTOMREAL q_new, \
-                    CUSTOMREAL qp_0, CUSTOMREAL qp_new, \
+                    CUSTOMREAL q_0, CUSTOMREAL q_t, \
+                    CUSTOMREAL qp_0, CUSTOMREAL qp_t, \
                     CUSTOMREAL& td, CUSTOMREAL& tg, CUSTOMREAL& step_length_sub) {
     /*
-    f_k : current obj
-    f_new : new obj
-    q_p0 : old grad * descent_dir
-    q_pnew : new grad * descent_dir
-    q_0 : initial grad * descent_dir
-    q_new : total current cost (squared L2 norm of gradient)
+    q_0 : initial cost function
+    q_t : current cost function
+    q_p0 : initial grad * descent_dir
+    q_pt : current grad * descent_dir
     td : right step size
     tg : left step size
     step_length_sub : current step size
@@ -266,12 +264,12 @@ bool check_wolfe_cond(Grid& grid, \
     bool step_accepted = false;
 
     // check  if the wolfe conditions are satisfied and update the step_length_sub
-    CUSTOMREAL qpt = (q_new - q_0) / step_length_sub;
+    CUSTOMREAL qpt = (q_t - q_0) / step_length_sub;
 
     if (subdom_main) {
         // good step size
         if (qpt   <= wolfe_c1*qp_0 \
-         && wolfe_c2*qp_0 <= qp_new \
+         && wolfe_c2*qp_0 <= qp_t \
          ){
             if (myrank==0)
                 std::cout << "Wolfe rules:  step accepted" << std::endl;
@@ -283,7 +281,7 @@ bool check_wolfe_cond(Grid& grid, \
                 if (myrank==0)
                     std::cout << "Wolfe rules:  right step size updated." << std::endl;
             }
-            if (qpt <= wolfe_c1*qp_0 && qp_new < wolfe_c2*qp_0) {
+            if (qpt <= wolfe_c1*qp_0 && qp_t < wolfe_c2*qp_0) {
                 tg = step_length_sub;
                 if (myrank==0)
                     std::cout << "Wolfe rules:  left step size updated." << std::endl;

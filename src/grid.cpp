@@ -578,9 +578,9 @@ void Grid::memory_allocation() {
             Ks_descent_dir_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Kxi_descent_dir_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Keta_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Ks_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            fun_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            xi_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            eta_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
@@ -600,9 +600,9 @@ void Grid::memory_allocation() {
                 fun_regularization_penalty_loc[i] = _0_CR;
                 xi_regularization_penalty_loc[i]  = _0_CR;
                 eta_regularization_penalty_loc[i] = _0_CR;
-                Ks_regularization_penalty_loc[i]   = _0_CR;
-                Kxi_regularization_penalty_loc[i]  = _0_CR;
-                Keta_regularization_penalty_loc[i] = _0_CR;
+                fun_gradient_regularization_penalty_loc[i]   = _0_CR;
+                xi_gradient_regularization_penalty_loc[i]  = _0_CR;
+                eta_gradient_regularization_penalty_loc[i] = _0_CR;
             }
         }
     } // end of if inverse_flag
@@ -859,9 +859,9 @@ void Grid::memory_deallocation() {
             free(fun_regularization_penalty_loc);
             free(xi_regularization_penalty_loc);
             free(eta_regularization_penalty_loc);
-            free(Ks_regularization_penalty_loc);
-            free(Kxi_regularization_penalty_loc);
-            free(Keta_regularization_penalty_loc);
+            free(fun_gradient_regularization_penalty_loc);
+            free(xi_gradient_regularization_penalty_loc);
+            free(eta_gradient_regularization_penalty_loc);
         }
     } // end if inverse_flag
 
