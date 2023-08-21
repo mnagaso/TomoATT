@@ -21,27 +21,10 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
         CUSTOMREAL src_lat = IP.get_src_lat(   name_sim_src);
         CUSTOMREAL src_r   = IP.get_src_radius(name_sim_src);
 
-
-        // std::cout << ", id_sim: " << id_sim
-        //           << ", id_subdomain: " << id_subdomain
-        //           << ", id_sim_src: " << id_sim_src
-        //           << ", subdom_main: " << subdom_main
-        //           << std::endl;
-
         CUSTOMREAL weight   = _1_CR;
-        // CUSTOMREAL * taper  = IP.get_depth_taper();
 
         // inner points
         for (int kkr = 1; kkr < nr-1; kkr++) {
-            // CUSTOMREAL depth = radius2depth(grid.r_loc_1d[kkr]);
-            // if (depth < taper[0]) {     // weight = 0;
-            //     weight = _0_CR;
-            // } else if (depth < taper[1]) {
-            //     weight = (_1_CR - std::cos(PI*(depth - taper[0])/(taper[1] - taper[0]))) / _2_CR;
-            // } else {
-            //     weight = _1_CR;
-            // }
-
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
                     // distance between the source and grid point

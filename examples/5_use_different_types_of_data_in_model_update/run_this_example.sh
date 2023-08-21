@@ -54,5 +54,3 @@ mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_pa
 
 # run for no swap no data
 mpirun -n 2 --allow-run-as-root ../../build/bin/TOMOATT -i input_params/input_params_swap_no_data.yml
-
-python compare_src_rec_obj.py
