@@ -324,8 +324,15 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     // compute descent direction
     calc_descent_direction(grid, i_inv, IP);
 
+    // max Ks_descent_direction
+    std::cout << "DEBUG: max Ks_descent_direction: " << *std::max_element(grid.Ks_descent_dir_loc,grid.Ks_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
+    std::cout << "DEBUG: max Keta_descent_direction: " << *std::max_element(grid.Keta_descent_dir_loc,grid.Keta_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
+    std::cout << "DEBUG: max Kxi_descent_direction: " << *std::max_element(grid.Kxi_descent_dir_loc,grid.Kxi_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
     // smooth descent direction
     smooth_descent_direction(grid);
+    std::cout << "DEBUG2: max Ks_descent_direction: " << *std::max_element(grid.Ks_descent_dir_loc,grid.Ks_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
+    std::cout << "DEBUG2: max Keta_descent_direction: " << *std::max_element(grid.Keta_descent_dir_loc,grid.Keta_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
+    std::cout << "DEBUG2: max Kxi_descent_direction: " << *std::max_element(grid.Kxi_descent_dir_loc,grid.Kxi_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
 
     // calc qp_0 = inital grad * descent direction
     qp_0 = compute_q_k(grid);
@@ -339,6 +346,8 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
             initial_guess_step(grid, step_length, 0.01);
         else if (i_inv == 1 && subiter_count == 0)
             initial_guess_step(grid, step_length, step_length*LBFGS_RELATIVE_step_length);
+
+        std::cout << "DEBUG: step_length: " << step_length << std::endl;
 
         //// Update model
         set_new_model(grid, step_length);

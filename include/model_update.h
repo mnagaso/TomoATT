@@ -59,7 +59,7 @@ void smooth_descent_direction(Grid& grid){
                 // grid based smoothing
                 smooth_descent_dir(grid);
             } else if (smooth_method == 1) {
-                // CG smoothing not implemented yet
+                // CG smoothing
                 smooth_descent_dir_CG(grid, smooth_lr, smooth_lt, smooth_lp);
             }
 
@@ -99,9 +99,9 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
                 // first time, descent direction = - precond * gradient
                 // inverse the gradient to fit the update scheme for LBFGS
                 for (int i = 0; i < n_grid; i++){
-                    grid.Ks_descent_dir_loc[i]   = - grid.Ks_update_loc[i];
-                    grid.Keta_descent_dir_loc[i] = - grid.Keta_update_loc[i];
-                    grid.Kxi_descent_dir_loc[i]  = - grid.Kxi_update_loc[i];
+                    grid.Ks_descent_dir_loc[i]   = - _1_CR* grid.Ks_update_loc[i];
+                    grid.Keta_descent_dir_loc[i] = - _1_CR* grid.Keta_update_loc[i];
+                    grid.Kxi_descent_dir_loc[i]  = - _1_CR* grid.Kxi_update_loc[i];
                 }
             }
         } else {
