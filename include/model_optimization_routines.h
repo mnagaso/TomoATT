@@ -246,7 +246,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         volume_domain = compute_volume_domain(grid);
 
         // weight_Tikonov = penalty_weight / volume_domain
-        weight_Tikonov = regularization_weight;// / volume_domain;
+        weight_Tikonov = regularization_weight / volume_domain;
         std::cout << "DEBUG: weight_Tikonov: " << weight_Tikonov << std::endl;
 
         // volume_domain /= N_params
@@ -266,6 +266,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
 
         // calc regularization penalties
         calculate_regularization_penalty(grid);
+
+        //// smooth calculated grad regularization penalty
+        //smooth_gradient_regularization(grid);
 
         // calc (update) obj_regl = squaredL2Norm(regularization_penalty)
         v_obj_reg = calculate_regularization_obj(grid);
@@ -381,6 +384,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         //// calculate regularization to grad
         calculate_regularization_penalty(grid);
 
+        //// smooth calculated grad regularization penalty
+        //smooth_gradient_regularization(grid);
+
         //// add regularization term to Qt (Qt += 0.5 * obj_regl )
         v_obj_reg = calculate_regularization_obj(grid);
         q_t += v_obj_reg;
@@ -388,7 +394,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         //// current grad += weight_Tikonov * gadient_regularization_penalty
         add_regularization_grad(grid);
 
-        //// Qpt = Inner product(crrent_grad * descent_direction)
+        //// Qpt = Inner product(current_grad * descent_direction)
         qp_t = compute_q_k(grid);
 
         //// check wolfe conditions

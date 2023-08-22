@@ -6,6 +6,7 @@
 #include "grid.h"
 #include "smooth.h"
 #include "smooth_descent_dir.h"
+#include "smooth_grad_regul.h"
 #include "lbfgs.h"
 
 
@@ -49,6 +50,25 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
 
     } // end if subdom_main
+}
+
+
+// smooth gradient regularization term
+void smooth_gradient_regularization(Grid& grid) {
+
+    if (subdom_main && id_sim==0){ // only id_sim==0 has values for these arrays
+        if (smooth_method == 0) {
+            // grid based smoothing
+            smooth_gradient_regularization_orig(grid);
+        } else if (smooth_method == 1) {
+            // CG smoothing
+            smooth_gradient_regularization_CG(grid, smooth_lr, smooth_lt, smooth_lp);
+        }
+
+        grid.send_recev_boundary_data(grid.fun_gradient_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.eta_gradient_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.xi_gradient_regularization_penalty_loc);
+    }
 }
 
 

@@ -381,6 +381,18 @@ inline void calculate_regularization_penalty(Grid& grid) {
         calc_laplacian_field(grid, grid.xi_loc, grid.xi_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc);
 
+        //
+        int n_grid = loc_I*loc_J*loc_K;
+
+        for (int i = 0; i < n_grid; i++){
+            grid.fun_regularization_penalty_loc[i] += grid.fun_loc[i] - grid.fun_regularization_penalty_loc[i];
+            grid.eta_regularization_penalty_loc[i] += grid.eta_loc[i] - grid.eta_regularization_penalty_loc[i];
+            grid.xi_regularization_penalty_loc[i]  += grid.xi_loc[i]  - grid.xi_regularization_penalty_loc[i];
+
+            grid.fun_gradient_regularization_penalty_loc[i] += grid.fun_loc[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i];
+            grid.eta_gradient_regularization_penalty_loc[i] += grid.eta_loc[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i];
+            grid.xi_gradient_regularization_penalty_loc[i]  += grid.xi_loc[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i];
+        }
     }
 }
 
