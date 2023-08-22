@@ -122,6 +122,9 @@ public:
     CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc,   false);}; // Ks_update
     CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc,  false);}; // Kxi_update
     CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc, false);}; // Keta_update
+    CUSTOMREAL* get_Ks_descent_dir() {return get_array_for_vis(Ks_descent_dir_loc, false);}; // Ks_descent_dir
+    CUSTOMREAL* get_Kxi_descent_dir(){return get_array_for_vis(Kxi_descent_dir_loc,false);}; // Kxi_descent_dir
+    CUSTOMREAL* get_Keta_descent_dir(){return get_array_for_vis(Keta_descent_dir_loc,false);}; // Keta_descent_dir
 
     // get physical parameters
     CUSTOMREAL get_r_min()       {return r_min;};

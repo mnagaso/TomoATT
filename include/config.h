@@ -188,7 +188,7 @@ inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
-inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 0.01; // relative step size for the second and later iteration
+inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 0.1; // relative step size for the second and later iteration
 
 // variables for test
 inline bool if_test = false;

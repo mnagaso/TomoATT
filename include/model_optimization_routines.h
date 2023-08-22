@@ -224,13 +224,13 @@ end_of_sub_iteration:
 inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
 
     int        subiter_count = 0;              // subiteration count
-    CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_k) (descent_direction * gradient)
+    //CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_k) (descent_direction * gradient)
     CUSTOMREAL qp_t          = _0_CR;          // store p_k * grad(f_k)
     CUSTOMREAL td            = _0_CR;          // wolfes right step
     CUSTOMREAL tg            = _0_CR;          // wolfes left step
     CUSTOMREAL step_length   = step_length_init; // step size init is global variable
     CUSTOMREAL v_obj_reg     = _0_CR;          // regularization term == q_t
-    CUSTOMREAL q_0           = _0_CR;          // initial cost function
+    //CUSTOMREAL q_0           = _0_CR;          // initial cost function
     CUSTOMREAL q_t           = _0_CR;          // current cost function
     std::vector<CUSTOMREAL> v_obj_misfit_new = std::vector<CUSTOMREAL>(10, 0.0);
 
@@ -246,7 +246,8 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         volume_domain = compute_volume_domain(grid);
 
         // weight_Tikonov = penalty_weight / volume_domain
-        weight_Tikonov = regularization_weight / volume_domain;
+        weight_Tikonov = regularization_weight;// / volume_domain;
+        std::cout << "DEBUG: weight_Tikonov: " << weight_Tikonov << std::endl;
 
         // volume_domain /= N_params
         volume_domain /= N_params;
@@ -254,7 +255,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         // calculate gradient (run onestep forward+adjoint) not necessary to do here. already done
         //v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
 
-        // Q0 = current obj
+        // Q0 = initial obj
         q_0 = v_obj_inout;
 
         // smooth gradient
@@ -264,10 +265,10 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         calculate_regularization_penalty(grid);
 
         // calc (update) obj_regl = squaredL2Norm(regularization_penalty)
-        v_obj_reg = calculate_regularization_obj(grid);
+        v_obj_reg = _0_5_CR * weight_Tikonov * calculate_regularization_obj(grid);
 
         // Q0 += 0.5*weight_Tiknov*obj_regl
-        q_0 += _0_5_CR * weight_Tikonov * v_obj_reg;
+        q_0 += v_obj_reg;
 
         // init_grad += weight_Tikonov * gadient_regularization_penalty
         add_regularization_grad(grid);
@@ -276,7 +277,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         store_model_and_gradient(grid, i_inv);
 
         // log out
-        if(myrank == 0 && id_sim ==0)
+        if(myrank == 0 && id_sim ==0) {
             out_main \
                      << std::setw(5)  << i_inv \
               << "," << std::setw(5)  << subiter_count \
@@ -291,8 +292,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
               << "," << std::setw(15) << wolfe_c1*qp_0 \
               << "," << std::setw(15) << wolfe_c2*qp_0 \
               << "," << std::setw(15) << "init" << std::endl;
-
-
+        }
     }
 
     // backup the initial model
@@ -309,9 +309,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         io.write_Kxi(grid, i_inv);
 
         // output descent direction
-        io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
+        io.write_Ks_descent_dir(grid, i_inv);
+        io.write_Keta_descent_dir(grid, i_inv);
+        io.write_Kxi_descent_dir(grid, i_inv);
     }
 
     // writeout temporary xdmf file
@@ -325,14 +325,8 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     calc_descent_direction(grid, i_inv, IP);
 
     // max Ks_descent_direction
-    std::cout << "DEBUG: max Ks_descent_direction: " << *std::max_element(grid.Ks_descent_dir_loc,grid.Ks_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
-    std::cout << "DEBUG: max Keta_descent_direction: " << *std::max_element(grid.Keta_descent_dir_loc,grid.Keta_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
-    std::cout << "DEBUG: max Kxi_descent_direction: " << *std::max_element(grid.Kxi_descent_dir_loc,grid.Kxi_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
     // smooth descent direction
     smooth_descent_direction(grid);
-    std::cout << "DEBUG2: max Ks_descent_direction: " << *std::max_element(grid.Ks_descent_dir_loc,grid.Ks_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
-    std::cout << "DEBUG2: max Keta_descent_direction: " << *std::max_element(grid.Keta_descent_dir_loc,grid.Keta_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
-    std::cout << "DEBUG2: max Kxi_descent_direction: " << *std::max_element(grid.Kxi_descent_dir_loc,grid.Kxi_descent_dir_loc+loc_I*loc_J*loc_K) << std::endl;
 
     // calc qp_0 = inital grad * descent direction
     qp_0 = compute_q_k(grid);
@@ -347,37 +341,6 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         else if (i_inv == 1 && subiter_count == 0)
             initial_guess_step(grid, step_length, step_length*LBFGS_RELATIVE_step_length);
 
-        std::cout << "DEBUG: step_length: " << step_length << std::endl;
-
-        //// Update model
-        set_new_model(grid, step_length);
-
-        //// calculate gradient (run onestep forward+adjoint)
-        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
-
-        //// Qt update (=current obj)
-        q_t = v_obj_misfit_new[0];
-
-        std::cout << "AAAA: " << q_t << std::endl;
-
-        //// smooth gradient
-        smooth_kernels(grid, IP);
-
-        //// calculate regularization to grad
-        calculate_regularization_penalty(grid);
-
-        //// add regularization term to Qt (Qt += 0.5 * obj_regl )
-        v_obj_reg = calculate_regularization_obj(grid);
-        q_t += _0_5_CR * weight_Tikonov * v_obj_reg;
-
-        //// current grad += weight_Tikonov * gadient_regularization_penalty
-        add_regularization_grad(grid);
-
-        //// Qpt = Inner product(crrent_grad * descent_direction)
-        qp_t = compute_q_k(grid);
-
-        //// check wolfe conditions
-        wolfe_cond_ok = check_wolfe_cond(grid, q_0, q_t, qp_0, qp_t, td, tg, step_length);
 
         // log out
         if(myrank == 0 && id_sim ==0)
@@ -396,7 +359,53 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
               << "," << std::setw(15) << wolfe_c2*qp_0 \
               << "," << std::setw(15) << wolfe_cond_ok << std::endl;
 
+
+        //// Update model
+        set_new_model(grid, step_length);
+
+        //// calculate gradient (run onestep forward+adjoint)
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
+
+        //// Qt update (=current obj)
+        q_t = v_obj_misfit_new[0];
+
+        //// smooth gradient
+        smooth_kernels(grid, IP);
+
+        //// calculate regularization to grad
+        calculate_regularization_penalty(grid);
+
+        //// add regularization term to Qt (Qt += 0.5 * obj_regl )
+        v_obj_reg = _0_5_CR * weight_Tikonov *  calculate_regularization_obj(grid);
+        q_t += v_obj_reg;
+
+        //// current grad += weight_Tikonov * gadient_regularization_penalty
+        add_regularization_grad(grid);
+
+        //// Qpt = Inner product(crrent_grad * descent_direction)
+        qp_t = compute_q_k(grid);
+
+        //// check wolfe conditions
+        wolfe_cond_ok = check_wolfe_cond(grid, q_0, q_t, qp_0, qp_t, td, tg, step_length);
+
         if (wolfe_cond_ok) {
+            // log out
+            if(myrank == 0 && id_sim ==0)
+                out_main \
+                         << std::setw(5)  << i_inv \
+                  << "," << std::setw(5)  << subiter_count \
+                  << "," << std::setw(15) << step_length \
+                  << "," << std::setw(15) << q_0 \
+                  << "," << std::setw(15) << q_t \
+                  << "," << std::setw(15) << v_obj_reg \
+                  << "," << std::setw(15) << qp_0 \
+                  << "," << std::setw(15) << qp_t \
+                  << "," << std::setw(15) << td \
+                  << "," << std::setw(15) << tg \
+                  << "," << std::setw(15) << wolfe_c1*qp_0 \
+                  << "," << std::setw(15) << wolfe_c2*qp_0 \
+                  << "," << std::setw(15) << wolfe_cond_ok << std::endl;
+
             goto end_of_subiteration;
         } else if (subiter_count > max_sub_iterations){
             // reached max subiter
@@ -418,6 +427,7 @@ end_of_subiteration:
 
     //// Q0=Qt
     q_0 = q_t;
+    qp_0 = qp_t;
 
     step_length_init = step_length; // use current step size for the next iteration
 

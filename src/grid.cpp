@@ -1141,7 +1141,7 @@ CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr, bool inverse_value) {
     //send_recev_boundary_data(arr);
     // add a routine for communication the boundary value
     // with the neighbors with line/point contact
-    send_recev_boundary_data_kosumi(arr);
+    //send_recev_boundary_data_kosumi(arr);
 
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {

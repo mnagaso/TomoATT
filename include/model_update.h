@@ -9,7 +9,9 @@
 #include "lbfgs.h"
 
 
-// K*_loc -> K*_update_loc
+// generate smoothed kernels (K*_update_loc) from the kernels (K*_loc)
+// before doing this, K*_loc should be summed up among all simultaneous runs (by calling sumup_kernels)
+// before doing this, K*_update_loc has no meaning (unavailable)
 void smooth_kernels(Grid& grid, InputParams& IP) {
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
@@ -94,14 +96,21 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
                 calculate_descent_direction_lbfgs(grid, i_inv);
             // use gradient for the first iteration
             } else {
+                // smooth kernels
+                //smooth_kernels(grid, IP);
+
                 int n_grid = loc_I*loc_J*loc_K;
 
                 // first time, descent direction = - precond * gradient
                 // inverse the gradient to fit the update scheme for LBFGS
                 for (int i = 0; i < n_grid; i++){
+                    //grid.Ks_descent_dir_loc[i]   = - _1_CR* grid.Ks_update_loc[i];
+                    //grid.Keta_descent_dir_loc[i] = - _1_CR* grid.Keta_update_loc[i];
+                    //grid.Kxi_descent_dir_loc[i]  = - _1_CR* grid.Kxi_update_loc[i];
                     grid.Ks_descent_dir_loc[i]   = - _1_CR* grid.Ks_update_loc[i];
                     grid.Keta_descent_dir_loc[i] = - _1_CR* grid.Keta_update_loc[i];
                     grid.Kxi_descent_dir_loc[i]  = - _1_CR* grid.Kxi_update_loc[i];
+
                 }
             }
         } else {
@@ -183,15 +192,16 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
         } else { // for LBFGS routine
 
             CUSTOMREAL step_length = step_length_new;
+            const CUSTOMREAL factor = - _1_CR;
 
             // update the model
             for (int k = 0; k < loc_K; k++) {
                 for (int j = 0; j < loc_J; j++) {
                     for (int i = 0; i < loc_I; i++) {
                         // update
-                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_length);
-                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_length;
-                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_length;
+                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - factor * grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_length);
+                        grid.xi_loc[I2V(i,j,k)]  -=          factor * grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_length;
+                        grid.eta_loc[I2V(i,j,k)] -=          factor * grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_length;
                         //grid.fun_loc[I2V(i,j,k)] += grid.Ks_descent_dir_loc[I2V(i,j,k)]  *step_length_new;
                         //grid.xi_loc[I2V(i,j,k)]  += grid.Kxi_descent_dir_loc[I2V(i,j,k)] *step_length_new;
                         //grid.eta_loc[I2V(i,j,k)] += grid.Keta_descent_dir_loc[I2V(i,j,k)]*step_length_new;

@@ -9,6 +9,9 @@
 inline CUSTOMREAL volume_domain = _0_CR;          // volume of the domain
 inline CUSTOMREAL weight_Tikonov = _0_CR;         // weight of the regularization term
 inline int        N_params = 3;                   // number of parameters to invert
+inline CUSTOMREAL q_0           = _0_CR;          // initial cost function
+inline CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_k) (descent_direction * gradient)
+
 
 void store_model_and_gradient(Grid& grid, int i_inv) {
 
@@ -71,7 +74,7 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         int imin = 0;
         int imax = 0;
         if (i_inv >= Mbfgs)
-            imax = Mbfgs-1;
+            imax = Mbfgs-2;
         else
             imax = i_inv-1;
 
@@ -405,7 +408,6 @@ inline void calculate_regularization_penalty(Grid& grid) {
         calc_laplacian_field(grid, grid.eta_loc, grid.eta_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.eta_regularization_penalty_loc, grid.eta_gradient_regularization_penalty_loc);
 
-
         // calculate LL(m) on xi (Kxi)
         calc_laplacian_field(grid, grid.xi_loc, grid.xi_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc);
@@ -479,7 +481,7 @@ inline CUSTOMREAL compute_volume_domain(Grid& grid) {
     }
 
     // reduce
-    allreduce_cr_single(volume, volume);
+    //allreduce_cr_single(volume, volume);
 
     return volume;
 }
