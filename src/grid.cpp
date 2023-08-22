@@ -569,40 +569,45 @@ void Grid::memory_allocation() {
             fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
             int n_total_loc_lbfgs = n_total_loc_grid_points * Mbfgs;
-            Ks_grad_store_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_grad_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_grad_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Ks_model_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_model_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_model_store_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Ks_descent_dir_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Kxi_descent_dir_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Keta_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            fun_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            xi_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            eta_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-
-
             // initialize
             for (int i = 0; i < n_total_loc_lbfgs; i++) {
-                Ks_grad_store_loc[i]    = _0_CR;
-                Kxi_grad_store_loc[i]   = _0_CR;
-                Keta_grad_store_loc[i]  = _0_CR;
-                Ks_model_store_loc[i]   = _0_CR;
-                Kxi_model_store_loc[i]  = _0_CR;
-                Keta_model_store_loc[i] = _0_CR;
                 Ks_descent_dir_loc[i]   = _0_CR;
                 Kxi_descent_dir_loc[i]  = _0_CR;
                 Keta_descent_dir_loc[i] = _0_CR;
-                fun_regularization_penalty_loc[i] = _0_CR;
-                xi_regularization_penalty_loc[i]  = _0_CR;
-                eta_regularization_penalty_loc[i] = _0_CR;
-                fun_gradient_regularization_penalty_loc[i]   = _0_CR;
-                xi_gradient_regularization_penalty_loc[i]  = _0_CR;
-                eta_gradient_regularization_penalty_loc[i] = _0_CR;
+            }
+
+            if (id_sim==0){
+                Ks_grad_store_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                Kxi_grad_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                Keta_grad_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                Ks_model_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                Kxi_model_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                Keta_model_store_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                fun_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                xi_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                eta_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+
+                // initialize
+                for (int i = 0; i < n_total_loc_lbfgs; i++) {
+                    Ks_grad_store_loc[i]    = _0_CR;
+                    Kxi_grad_store_loc[i]   = _0_CR;
+                    Keta_grad_store_loc[i]  = _0_CR;
+                    Ks_model_store_loc[i]   = _0_CR;
+                    Kxi_model_store_loc[i]  = _0_CR;
+                    Keta_model_store_loc[i] = _0_CR;
+                    fun_regularization_penalty_loc[i] = _0_CR;
+                    xi_regularization_penalty_loc[i]  = _0_CR;
+                    eta_regularization_penalty_loc[i] = _0_CR;
+                    fun_gradient_regularization_penalty_loc[i]   = _0_CR;
+                    xi_gradient_regularization_penalty_loc[i]  = _0_CR;
+                    eta_gradient_regularization_penalty_loc[i] = _0_CR;
+                }
             }
         }
     } // end of if inverse_flag
@@ -846,23 +851,25 @@ void Grid::memory_deallocation() {
             free(fun_loc_back);
             free(xi_loc_back);
             free(eta_loc_back);
-
-            free(Ks_grad_store_loc   );
-            free(Kxi_grad_store_loc  );
-            free(Keta_grad_store_loc );
-            free(Ks_model_store_loc  );
-            free(Kxi_model_store_loc );
-            free(Keta_model_store_loc);
             free(Ks_descent_dir_loc);
             free(Kxi_descent_dir_loc);
             free(Keta_descent_dir_loc);
-            free(fun_regularization_penalty_loc);
-            free(xi_regularization_penalty_loc);
-            free(eta_regularization_penalty_loc);
-            free(fun_gradient_regularization_penalty_loc);
-            free(xi_gradient_regularization_penalty_loc);
-            free(eta_gradient_regularization_penalty_loc);
-        }
+
+            if (id_sim==0){
+                free(Ks_grad_store_loc   );
+                free(Kxi_grad_store_loc  );
+                free(Keta_grad_store_loc );
+                free(Ks_model_store_loc  );
+                free(Kxi_model_store_loc );
+                free(Keta_model_store_loc);
+                free(fun_regularization_penalty_loc);
+                free(xi_regularization_penalty_loc);
+                free(eta_regularization_penalty_loc);
+                free(fun_gradient_regularization_penalty_loc);
+                free(xi_gradient_regularization_penalty_loc);
+                free(eta_gradient_regularization_penalty_loc);
+            }
+       }
     } // end if inverse_flag
 
     stdout_by_main("Memory deallocation done.");

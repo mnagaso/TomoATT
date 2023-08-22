@@ -13,22 +13,20 @@
 // before doing this, K*_loc should be summed up among all simultaneous runs (by calling sumup_kernels)
 // before doing this, K*_update_loc has no meaning (unavailable)
 void smooth_kernels(Grid& grid, InputParams& IP) {
-    // sum kernels among all simultaneous runs
-    sumup_kernels(grid);
 
     if (subdom_main){
-        // initiaize update params
-        for (int k = 0; k < loc_K; k++) {
-            for (int j = 0; j < loc_J; j++) {
-                for (int i = 0; i < loc_I; i++) {
-                    grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
-                    grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
-                    grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
+
+        if (id_sim==0){
+            // initiaize update params
+            for (int k = 0; k < loc_K; k++) {
+                for (int j = 0; j < loc_J; j++) {
+                    for (int i = 0; i < loc_I; i++) {
+                        grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
+                        grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
+                        grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
+                    }
                 }
             }
-        }
-
-        if (id_sim == 0) { // calculation of the update model is only done in the main simultaneous run
 
             if (smooth_method == 0) {
                 // grid based smoothing
@@ -50,7 +48,7 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
 
-    }
+    } // end if subdom_main
 }
 
 
@@ -90,15 +88,15 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
 
             // calculate the descent direction
             if (i_inv > 0) {
+                // sum kernels among all simultaneous runs
+                sumup_kernels(grid);
+
                 // smooth kernels
                 smooth_kernels(grid, IP);
 
                 calculate_descent_direction_lbfgs(grid, i_inv);
             // use gradient for the first iteration
             } else {
-                // smooth kernels
-                //smooth_kernels(grid, IP);
-
                 int n_grid = loc_I*loc_J*loc_K;
 
                 // first time, descent direction = - precond * gradient
@@ -191,6 +189,9 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
 
         } else { // for LBFGS routine
 
+            // here all the simultaneous runs have the same values used in this routine.
+            // thus we don't need to if(id_sim==0)
+
             CUSTOMREAL step_length = step_length_new;
             const CUSTOMREAL factor = - _1_CR;
 
@@ -223,7 +224,7 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
         grid.send_recev_boundary_data(grid.fac_c_loc);
         grid.send_recev_boundary_data(grid.fac_f_loc);
 
-    }
+    } // end if subdom_main
 }
 
 
@@ -233,7 +234,7 @@ CUSTOMREAL compute_q_k(Grid& grid) {
 
     CUSTOMREAL tmp_qk = _0_CR;
 
-    if (subdom_main) {
+    if (subdom_main && id_sim == 0) {
 
         // grad * descent_direction
         for (int k = 0; k < loc_K; k++) {
@@ -250,6 +251,10 @@ CUSTOMREAL compute_q_k(Grid& grid) {
         // add tmp_qk among all subdomain
         allreduce_cr_single(tmp_qk, tmp_qk);
     }
+
+    // share tmp_qk among all simultaneous runs
+    if (subdom_main)
+        broadcast_cr_single_inter_sim(tmp_qk,0);
 
     return tmp_qk;
 

@@ -258,14 +258,17 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         // Q0 = initial obj
         q_0 = v_obj_inout;
 
+        // sum kernels among all simultaneous runs
+        sumup_kernels(grid);
+
         // smooth gradient
         smooth_kernels(grid, IP);
 
-        // calc regularization to grad
+        // calc regularization penalties
         calculate_regularization_penalty(grid);
 
         // calc (update) obj_regl = squaredL2Norm(regularization_penalty)
-        v_obj_reg = _0_5_CR * weight_Tikonov * calculate_regularization_obj(grid);
+        v_obj_reg = calculate_regularization_obj(grid);
 
         // Q0 += 0.5*weight_Tiknov*obj_regl
         q_0 += v_obj_reg;
@@ -299,7 +302,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     if(subdom_main) grid.back_up_fun_xi_eta_bcf();
 
     // update the model with the initial step size
-    if (subdom_main && IP.get_verbose_output_level()) {
+    if (subdom_main && IP.get_verbose_output_level() && id_sim==0) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -315,7 +318,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     }
 
     // writeout temporary xdmf file
-    if (IP.get_verbose_output_level())
+    if (IP.get_verbose_output_level()&& id_sim==0)
         io.update_xdmf_file();
 
     //
@@ -369,6 +372,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         //// Qt update (=current obj)
         q_t = v_obj_misfit_new[0];
 
+        // sum kernels among all simultaneous runs
+        sumup_kernels(grid);
+
         //// smooth gradient
         smooth_kernels(grid, IP);
 
@@ -376,7 +382,7 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         calculate_regularization_penalty(grid);
 
         //// add regularization term to Qt (Qt += 0.5 * obj_regl )
-        v_obj_reg = _0_5_CR * weight_Tikonov *  calculate_regularization_obj(grid);
+        v_obj_reg = calculate_regularization_obj(grid);
         q_t += v_obj_reg;
 
         //// current grad += weight_Tikonov * gadient_regularization_penalty

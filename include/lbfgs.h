@@ -15,7 +15,7 @@ inline CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_
 
 void store_model_and_gradient(Grid& grid, int i_inv) {
 
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
 
         if (i_inv < Mbfgs){
             for (int k = 0; k < loc_K; k++) {
@@ -63,14 +63,14 @@ void store_model_and_gradient(Grid& grid, int i_inv) {
             }
         }
 
-   } // end subdom main
+   } // end subdom main and id_sim==0
 
 }
 
 
 void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
 
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
         int imin = 0;
         int imax = 0;
         if (i_inv >= Mbfgs)
@@ -251,47 +251,6 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
             }
         }
 
-//        // check minimum and maximum value in grid.Ks_descent_dir_loc
-//        CUSTOMREAL min_Ks_descent_dir_loc = 999999999999;
-//        CUSTOMREAL max_Ks_descent_dir_loc = -999999999999;
-//
-//        for (int k = 0; k < loc_K; k++) {
-//            for (int j = 0; j < loc_J; j++) {
-//                for (int i = 0; i < loc_I; i++) {
-//                    if (grid.Ks_descent_dir_loc[I2V(i,j,k)] < min_Ks_descent_dir_loc) {
-//                        min_Ks_descent_dir_loc = grid.Ks_descent_dir_loc[I2V(i,j,k)];
-//                    }
-//                    if (grid.Ks_descent_dir_loc[I2V(i,j,k)] > max_Ks_descent_dir_loc) {
-//                        max_Ks_descent_dir_loc = grid.Ks_descent_dir_loc[I2V(i,j,k)];
-//                    }
-//                }
-//            }
-//        }
-//
-//        std::cout << "min_Ks_descent_dir_loc = " << min_Ks_descent_dir_loc << std::endl;
-//        std::cout << "max_Ks_descent_dir_loc = " << max_Ks_descent_dir_loc << std::endl;
-
-//        CUSTOMREAL min_Ks_update_loc = grid.Ks_update_loc[0];
-//        CUSTOMREAL max_Ks_update_loc = grid.Ks_update_loc[0];
-//
-//        for (int k = 0; k < loc_K; k++) {
-//            for (int j = 0; j < loc_J; j++) {
-//                for (int i = 0; i < loc_I; i++) {
-//                    if (grid.Ks_update_loc[I2V(i,j,k)] < min_Ks_update_loc) {
-//                        min_Ks_update_loc = grid.Ks_update_loc[I2V(i,j,k)];
-//                    }
-//                    if (grid.Ks_update_loc[I2V(i,j,k)] > max_Ks_update_loc) {
-//                        max_Ks_update_loc = grid.Ks_update_loc[I2V(i,j,k)];
-//                    }
-//                }
-//            }
-//        }
-//
-//        // print
-//        if (myrank == 0) {
-//            std::cout << "min_Ks_update_loc = " << min_Ks_update_loc << std::endl;
-//            std::cout << "max_Ks_update_loc = " << max_Ks_update_loc << std::endl;
-//        }
 
         delete [] ak_store;
         delete [] pk_store;
@@ -307,6 +266,13 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
 
 
     } // end of subdom_main
+
+    // share with all simultaneous run
+    if (subdom_main){
+        broadcast_cr_inter_sim(grid.Ks_descent_dir_loc, loc_I*loc_J*loc_K, 0);
+        broadcast_cr_inter_sim(grid.Keta_descent_dir_loc, loc_I*loc_J*loc_K, 0);
+        broadcast_cr_inter_sim(grid.Kxi_descent_dir_loc, loc_I*loc_J*loc_K, 0);
+    }
 
 }
 
@@ -346,7 +312,7 @@ inline CUSTOMREAL calculate_regularization_obj(Grid& grid) {
 
     CUSTOMREAL regularization_term = _0_CR;
 
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
         int ngrid = loc_I*loc_J*loc_K;
 
         regularization_term += calc_l2norm(grid.fun_regularization_penalty_loc, ngrid);
@@ -358,13 +324,16 @@ inline CUSTOMREAL calculate_regularization_obj(Grid& grid) {
         allreduce_cr_single(tmp, regularization_term);
     }
 
-    return regularization_term;
+    // share retularization_term with all simultaneous run (may be unnecessary)
+    broadcast_cr_single_inter_sim(regularization_term, 0);
+
+    return _0_5_CR * weight_Tikonov * regularization_term;
 
 }
 
 
 inline void init_regularization_penalty(Grid& grid) {
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
         int ngrid = loc_I*loc_J*loc_K;
 
         // initialize regularization penalties
@@ -380,7 +349,7 @@ inline void init_regularization_penalty(Grid& grid) {
 }
 
 inline void init_regulaization_penalty_with_one(Grid& grid) {
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
         int ngrid = loc_I*loc_J*loc_K;
 
         // initialize regularization penalties
@@ -397,7 +366,7 @@ inline void init_regulaization_penalty_with_one(Grid& grid) {
 
 
 inline void calculate_regularization_penalty(Grid& grid) {
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
         init_regularization_penalty(grid);
 
         // calculate LL(m) on fun (Ks)
@@ -418,25 +387,31 @@ inline void calculate_regularization_penalty(Grid& grid) {
 
 // add grad(L(m)) to gradient
 inline void add_regularization_grad(Grid& grid) {
-    if(subdom_main){
+    if (subdom_main){
+        if(id_sim==0){
+            // add LL(m) to gradient
+            for (int k = 0; k < loc_K; k++) {
+                for (int j = 0; j < loc_J; j++) {
+                    for (int i = 0; i < loc_I; i++) {
 
-        // add LL(m) to gradient
-        for (int k = 0; k < loc_K; k++) {
-            for (int j = 0; j < loc_J; j++) {
-                for (int i = 0; i < loc_I; i++) {
+                        //grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)]   /= Linf_Ks;
+                        //grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)] /= Linf_Keta;
+                        //grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)]  /= Linf_Kxi;
 
-                    //grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)]   /= Linf_Ks;
-                    //grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)] /= Linf_Keta;
-                    //grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)]  /= Linf_Kxi;
-
-                    grid.Ks_update_loc[I2V(i,j,k)]   += weight_Tikonov * grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)];
-                    grid.Keta_update_loc[I2V(i,j,k)] += weight_Tikonov * grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)];
-                    grid.Kxi_update_loc[I2V(i,j,k)]  += weight_Tikonov * grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                        grid.Ks_update_loc[I2V(i,j,k)]   += weight_Tikonov * grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                        grid.Keta_update_loc[I2V(i,j,k)] += weight_Tikonov * grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                        grid.Kxi_update_loc[I2V(i,j,k)]  += weight_Tikonov * grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                    }
                 }
             }
-        }
+        }// end id_sim==0
 
-    }
+        // share with all simultaneous run (may be unnecessary)
+        broadcast_cr_inter_sim(grid.Ks_update_loc, loc_I*loc_J*loc_K, 0);
+        broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
+        broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
+
+    }// end subdom_main
 }
 
 
@@ -445,7 +420,7 @@ void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) 
     // find the max value in descent_direction
     CUSTOMREAL max_val = _0_CR;
 
-    if(subdom_main) {
+    if(subdom_main && id_sim==0) {
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
                 for (int i = 0; i < loc_I; i++) {
@@ -455,18 +430,20 @@ void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) 
                 }
             }
         }
-    }
 
-    // reduce
-    allreduce_cr_single_max(max_val, max_val);
+        // reduce
+        allreduce_cr_single_max(max_val, max_val);
 
-    // debug print max_val
-    if (subdom_main) {
+        // debug print max_val
         std::cout << "max_val: " << max_val << std::endl;
+
+        // step size
+        step_length = SC_VAL / max_val;
     }
 
-    // step size
-    step_length = SC_VAL / max_val;
+    // broadcast to all simultaneous run (may be unnecessary)
+    if (subdom_main)
+        broadcast_cr_single_inter_sim(step_length, 0);
 
 }
 
@@ -474,14 +451,17 @@ void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) 
 inline CUSTOMREAL compute_volume_domain(Grid& grid) {
     CUSTOMREAL volume = _0_CR;
 
-    if (subdom_main) {
+    if (subdom_main && id_sim==0) {
         volume += calc_l2norm(grid.fun_regularization_penalty_loc, loc_I*loc_J*loc_K);
         volume += calc_l2norm(grid.eta_regularization_penalty_loc, loc_I*loc_J*loc_K);
         volume += calc_l2norm(grid.xi_regularization_penalty_loc, loc_I*loc_J*loc_K);
+
+        // reduce
+        allreduce_cr_single(volume, volume);
     }
 
-    // reduce
-    //allreduce_cr_single(volume, volume);
+    // broadcast to all simultaneous run (may be unnecessary)
+    broadcast_cr_single_inter_sim(volume, 0);
 
     return volume;
 }
