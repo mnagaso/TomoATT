@@ -21,7 +21,7 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
     // rr = g_array * g_array (dot product)
 
     const int max_iter_cg = 1000;
-    const CUSTOMREAL xtol = 0.01;
+    const CUSTOMREAL xtol = 0.001;
     const bool use_scaling = true;
 
     // allocate memory
@@ -40,7 +40,8 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
         scaling_coeff = find_absmax(arr_in, loc_I*loc_J*loc_K);
         tmp = scaling_coeff;
         allreduce_cr_single_max(tmp, scaling_coeff);
-        if (scaling_coeff == _0_CR)
+        //if (scaling_coeff == _0_CR)
+        if (scaling_coeff < 0.0001)
             scaling_coeff = _1_CR;
     }
     // std out scaling factors

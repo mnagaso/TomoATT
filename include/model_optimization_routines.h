@@ -221,7 +221,7 @@ end_of_sub_iteration:
 
 
 // do model update
-inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
+inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
 
     int        subiter_count = 0;              // subiteration count
     //CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_k) (descent_direction * gradient)
@@ -423,8 +423,9 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
             // reached max subiter
             // exit
             std::cout << "reached max subiterations" << std::endl;
-            finalize_mpi();
-            exit(1);
+
+            return false;
+
         } else {
             // wolfe conditions not satisfied
             subiter_count++;
@@ -446,6 +447,8 @@ end_of_subiteration:
 
     if (myrank == 0)
         std::cout << "Wolfe conditions satisfied at iteration " << subiter_count << std::endl;
+
+    return true;
 
 }
 
