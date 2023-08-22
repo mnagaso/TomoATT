@@ -1,0 +1,1 @@
+ # iter,        obj(101776),     obj_abs(10413),   obj_cs_dif(1903),  obj_cr_dif(89460),             misfit,         misfit_abs,      misfit_cs_dif,      misfit_cr_dif,        step_length,

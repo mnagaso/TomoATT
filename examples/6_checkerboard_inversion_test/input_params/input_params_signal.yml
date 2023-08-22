@@ -25,7 +25,7 @@ parallel: # parameters for parallel computation
 output_setting:
   output_dir: OUTPUT_FILES/OUTPUT_FILES_signal # path to output director (default is ./OUTPUT_FILES/)
   output_source_field: false # output the calculated field of all sources
-  output_model_dat: false  # output model_parameters_inv_0000.dat or not.
+  output_model_dat: true  # output model_parameters_inv_0000.dat or not.
   output_final_model: true # output merged final model or not.
   output_in_process: true # output model at each inv iteration or not.
   single_precision_output: false # output results in single precision or not.
@@ -113,10 +113,10 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # -------------- global weight of different types of data (to balance the weight of different data) --------------
   global_weight:
     balance_data_weight: true # true: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)
-    abs_time_weight: 1.0 # weight of absolute traveltime data after balance,                       default: 1.0
-    cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data after balance,     default: 1.0
-    cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data after balance,   default: 1.0
-    teleseismic_weight: 1.0 # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)
+    abs_time_weight: 1.0 # weight of absolute traveltime data,                       default: 1.0
+    cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data,     default: 1.0
+    cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data,   default: 1.0
+    teleseismic_weight: 1.0 # weight of teleseismic data,                               default: 1.0  (exclude in this version)
 
   # -------------- inversion parameters (exclude in this version) --------------
   update_slowness: true   # update slowness (velocity) or not.              default: true
@@ -138,7 +138,6 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   max_change_dep_lat_lon_ortime: [5.0, 5.0, 5.0, 0.5]      # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second
   max_iterations: 100   # maximum number of iterations for relocation
   tol_gradient: 0.0001  # threshold value for checking the convergence for each iteration
-
 
   # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------

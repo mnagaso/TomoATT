@@ -15,17 +15,17 @@ source:
   swap_src_rec: true                # swap source and receiver (true or false)   (must swap for reloc)
 
 model:
-  init_model_path: models/model_ckb_N61_61_61.h5    # path to initial model file (ignored if init_model_type is '1d_*')
+  init_model_path: ../0_generate_files_for_TomoATT/models/model_ckb_N61_61_61.h5    # path to initial model file (ignored if init_model_type is '1d_*')
 
 parallel: # parameters for parallel computation
-  n_sims: 2          # number of simultaneous run
+  n_sims: 8          # number of simultaneous run
   ndiv_rtp: [1, 1, 1] # number of subdomains
   nproc_sub: 1       # number of subprocess used for each subdomain
 
 output_setting:
   output_dir: OUTPUT_FILES/OUTPUT_FILES_reloc_cr # path to output director (default is ./OUTPUT_FILES/)
   output_source_field: false # output the calculated field of all sources
-  output_model_dat: true  # output model_parameters_inv_0000.dat or not.
+  output_model_dat: false  # output model_parameters_inv_0000.dat or not.
   output_final_model: true # output merged final model or not.
   output_in_process: true # output model at each inv iteration or not.
   single_precision_output: false # output results in single precision or not.
@@ -112,11 +112,11 @@ model_update: # update model parameters (when run_mode : 1 and 3)
 
   # -------------- global weight of different types of data (to balance the weight of different data) --------------
   global_weight:
-    balance_data_weight: false # true: over the total weight of the each type of the data. no: use original weight (below weight for each type of data needs to be set)
-    abs_time_weight: 1.0 # weight of absolute traveltime data after balance,                       default: 1.0
-    cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data after balance,     default: 1.0
-    cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data after balance,   default: 1.0
-    teleseismic_weight: 1.0 # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)
+    balance_data_weight: false # true: over the total weight of the each type of the data. the obj of different data means the average data misfit; no: use original weight (below weight for each type of data needs to be set)
+    abs_time_weight: 1.0 # weight of absolute traveltime data,                       default: 1.0
+    cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data,     default: 1.0
+    cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data,   default: 1.0
+    teleseismic_weight: 1.0 # weight of teleseismic data,                               default: 1.0  (exclude in this version)
 
   # -------------- inversion parameters (exclude in this version) --------------
   update_slowness: true   # update slowness (velocity) or not.              default: true
@@ -138,8 +138,6 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 2 or
   max_change_dep_lat_lon_ortime: [15.0, 30.0, 30.0, 1.5]      # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second
   max_iterations: 200   # maximum number of iterations for relocation
   tol_gradient: 0.0001  # threshold value for checking the convergence for each iteration
-  # ortime_local_search: true  # true: do local search for origin time; false: do global search for origin time, the ortime items in <rescaling_dep_lat_lon_ortime> and <max_change_dep_lat_lon_ortime> are ignored
-  # the switch of ortime_local_search is not available. ortime is always searched locally.
 
   # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
@@ -152,9 +150,8 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 2 or
   cr_dif_time:
     use_cr_time: true  # 'true' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1]          # weight (wt) of residual.
-    azimuthal_weight: [10.0, 30.0, 1.0, 0.3]       # weight of azimuth (deg.) between two earthquakes.
+    azimuthal_weight: [10.0, 30.0, 1.0, 0.1]       # weight of azimuth (deg.) between two earthquakes.
 
-  # -------------- global weight of different types of data (to balance the weight of different data) --------------
   global_weight:
     balance_data_weight: false # true: over the total weight of the each type of the data; no: use original weight (below weight for each type of data needs to be set)
     abs_time_weight: 1.0 # weight of absolute traveltime data after balance,                       default: 1.0
@@ -168,14 +165,10 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
   inv_mode: 0     # 0 for update model parameters and relocation iteratively. (other options for future work)
 
   # for inv_mode : 0, parameters below are required
-  inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation
-    relocation_first: true   # true: do relocation first; false: do not relocation first.  default: true
-    relocation_first_iterations: 10  # maximum number of iterations for relocation in the beginning. default: 10
-    relocation_every_N_steps: 5      # subsequently, do relocation every N steps of updating model parameters. The iteration of relocation follows <max_iterations> in Section <relocation>
-    relocation_final: true   # true: do relocation finally; false: do not relocation finally.  default: true
-    relocation_final_iterations: 10  # maximum number of iterations for relocation in the beginning. default: 10
-
-
+  inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
+    model_update_N_iter : 1
+    relocation_N_iter  : 1 
+    max_loop : 40
 
 # --- parameters for core solver ---------------------------------------------------------
 # --- please do not change the following parameters unless you know what you are doing ---

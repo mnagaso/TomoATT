@@ -677,13 +677,13 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                 for(auto& data: it_rec->second){
                     // absolute traveltime
                    if(data.is_src_rec){
-                        data.weight = data.weight / total_abs_local_data_weight;
+                        data.weight = data.weight / total_abs_local_data_weight * (total_abs_local_data_weight + total_cr_dif_local_data_weight + total_cs_dif_local_data_weight);
                    // common receiver differential traveltime
                    } else if (data.is_src_pair){
-                        data.weight = data.weight / total_cr_dif_local_data_weight;
+                        data.weight = data.weight / total_cr_dif_local_data_weight * (total_abs_local_data_weight + total_cr_dif_local_data_weight + total_cs_dif_local_data_weight);
                    // common source differential traveltime
                    } else if (data.is_rec_pair){
-                        data.weight = data.weight / total_cs_dif_local_data_weight;
+                        data.weight = data.weight / total_cs_dif_local_data_weight * (total_abs_local_data_weight + total_cr_dif_local_data_weight + total_cs_dif_local_data_weight);
                    }
                 }
             }
@@ -705,15 +705,15 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                 for(auto& data: it_rec->second){
                     // absolute traveltime
                    if(data.is_src_rec){
-                       data.weight_reloc = data.weight_reloc / total_abs_local_data_weight_reloc;
+                       data.weight_reloc = data.weight_reloc / total_abs_local_data_weight_reloc * (total_abs_local_data_weight_reloc + total_cr_dif_local_data_weight_reloc + total_cs_dif_local_data_weight_reloc);
 
                    // common receiver differential traveltime
                    } else if (data.is_src_pair){
-                       data.weight_reloc = data.weight_reloc / total_cr_dif_local_data_weight_reloc;
+                       data.weight_reloc = data.weight_reloc / total_cr_dif_local_data_weight_reloc * (total_abs_local_data_weight_reloc + total_cr_dif_local_data_weight_reloc + total_cs_dif_local_data_weight_reloc);
 
                    // common source differential traveltime
                    } else if (data.is_rec_pair){
-                       data.weight_reloc = data.weight_reloc / total_cs_dif_local_data_weight_reloc;
+                       data.weight_reloc = data.weight_reloc / total_cs_dif_local_data_weight_reloc * (total_abs_local_data_weight_reloc + total_cr_dif_local_data_weight_reloc + total_cs_dif_local_data_weight_reloc);
                    }
                 }
             }

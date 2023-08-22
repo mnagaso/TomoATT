@@ -112,6 +112,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
 
     if (subdom_main && id_sim==0) {
+        io.prepare_grid_inv_xdmf(0);
+
         //io.change_xdmf_obj(0); // change xmf file for next src
         io.change_group_name_for_model();
 
