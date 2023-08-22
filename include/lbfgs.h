@@ -337,14 +337,12 @@ inline void init_regularization_penalty(Grid& grid) {
         int ngrid = loc_I*loc_J*loc_K;
 
         // initialize regularization penalties
-        for (int i = 0; i < ngrid; i++) {
-            grid.fun_regularization_penalty_loc[i]          = _0_CR;
-            grid.eta_regularization_penalty_loc[i]          = _0_CR;
-            grid.xi_regularization_penalty_loc[i]           = _0_CR;
-            grid.fun_gradient_regularization_penalty_loc[i] = _0_CR;
-            grid.eta_gradient_regularization_penalty_loc[i] = _0_CR;
-            grid.xi_gradient_regularization_penalty_loc[i]  = _0_CR;
-        }
+        std::fill(grid.fun_regularization_penalty_loc, grid.fun_regularization_penalty_loc + ngrid, _0_CR);
+        std::fill(grid.eta_regularization_penalty_loc, grid.eta_regularization_penalty_loc + ngrid, _0_CR);
+        std::fill(grid.xi_regularization_penalty_loc, grid.xi_regularization_penalty_loc + ngrid, _0_CR);
+        std::fill(grid.fun_gradient_regularization_penalty_loc, grid.fun_gradient_regularization_penalty_loc + ngrid, _0_CR);
+        std::fill(grid.eta_gradient_regularization_penalty_loc, grid.eta_gradient_regularization_penalty_loc + ngrid, _0_CR);
+        std::fill(grid.xi_gradient_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc + ngrid, _0_CR);
     }
 }
 
@@ -353,46 +351,59 @@ inline void init_regulaization_penalty_with_one(Grid& grid) {
         int ngrid = loc_I*loc_J*loc_K;
 
         // initialize regularization penalties
-        for (int i = 0; i < ngrid; i++) {
-            grid.fun_regularization_penalty_loc[i]          = _1_CR;
-            grid.eta_regularization_penalty_loc[i]          = _1_CR;
-            grid.xi_regularization_penalty_loc[i]           = _1_CR;
-            grid.fun_gradient_regularization_penalty_loc[i] = _1_CR;
-            grid.eta_gradient_regularization_penalty_loc[i] = _1_CR;
-            grid.xi_gradient_regularization_penalty_loc[i]  = _1_CR;
-        }
+        std::fill(grid.fun_regularization_penalty_loc, grid.fun_regularization_penalty_loc + ngrid, _1_CR);
+        std::fill(grid.eta_regularization_penalty_loc, grid.eta_regularization_penalty_loc + ngrid, _1_CR);
+        std::fill(grid.xi_regularization_penalty_loc, grid.xi_regularization_penalty_loc + ngrid, _1_CR);
+        std::fill(grid.fun_gradient_regularization_penalty_loc, grid.fun_gradient_regularization_penalty_loc + ngrid, _1_CR);
+        std::fill(grid.eta_gradient_regularization_penalty_loc, grid.eta_gradient_regularization_penalty_loc + ngrid, _1_CR);
+        std::fill(grid.xi_gradient_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc + ngrid, _1_CR);
     }
 }
 
 
 inline void calculate_regularization_penalty(Grid& grid) {
     if (subdom_main && id_sim==0) {
+        int n_grid = loc_I*loc_J*loc_K;
+
+        CUSTOMREAL* tmp_fun = new CUSTOMREAL[n_grid];
+        CUSTOMREAL* tmp_eta = new CUSTOMREAL[n_grid];
+        CUSTOMREAL* tmp_xi  = new CUSTOMREAL[n_grid];
+
+        for (int i = 0; i < n_grid; i++) {
+            tmp_fun[i] = grid.fun_loc[i] - grid.fun_prior_loc[i];
+            tmp_eta[i] = grid.eta_loc[i] - grid.eta_prior_loc[i];
+            tmp_xi[i]  = grid.xi_loc[i]  - grid.xi_prior_loc[i];
+        }
+
         init_regularization_penalty(grid);
 
         // calculate LL(m) on fun (Ks)
-        calc_laplacian_field(grid, grid.fun_loc, grid.fun_regularization_penalty_loc);
+        calc_laplacian_field(grid, tmp_fun, grid.fun_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.fun_regularization_penalty_loc, grid.fun_gradient_regularization_penalty_loc);
 
         // calculate LL(m) on eta (Keta)
-        calc_laplacian_field(grid, grid.eta_loc, grid.eta_regularization_penalty_loc);
+        calc_laplacian_field(grid, tmp_eta, grid.eta_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.eta_regularization_penalty_loc, grid.eta_gradient_regularization_penalty_loc);
 
         // calculate LL(m) on xi (Kxi)
-        calc_laplacian_field(grid, grid.xi_loc, grid.xi_regularization_penalty_loc);
+        calc_laplacian_field(grid, tmp_xi, grid.xi_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc);
 
         //
-        int n_grid = loc_I*loc_J*loc_K;
 
         for (int i = 0; i < n_grid; i++){
-            grid.fun_regularization_penalty_loc[i] += grid.fun_loc[i] - grid.fun_regularization_penalty_loc[i];
-            grid.eta_regularization_penalty_loc[i] += grid.eta_loc[i] - grid.eta_regularization_penalty_loc[i];
-            grid.xi_regularization_penalty_loc[i]  += grid.xi_loc[i]  - grid.xi_regularization_penalty_loc[i];
+            grid.fun_regularization_penalty_loc[i] += tmp_fun[i] - grid.fun_regularization_penalty_loc[i];
+            grid.eta_regularization_penalty_loc[i] += tmp_eta[i] - grid.eta_regularization_penalty_loc[i];
+            grid.xi_regularization_penalty_loc[i]  += tmp_xi[i]  - grid.xi_regularization_penalty_loc[i];
 
-            grid.fun_gradient_regularization_penalty_loc[i] += grid.fun_loc[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i];
-            grid.eta_gradient_regularization_penalty_loc[i] += grid.eta_loc[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i];
-            grid.xi_gradient_regularization_penalty_loc[i]  += grid.xi_loc[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i];
+            grid.fun_gradient_regularization_penalty_loc[i] += tmp_fun[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i];
+            grid.eta_gradient_regularization_penalty_loc[i] += tmp_eta[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i];
+            grid.xi_gradient_regularization_penalty_loc[i]  += tmp_xi[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i];
         }
+
+        delete [] tmp_fun;
+        delete [] tmp_eta;
+        delete [] tmp_xi;
     }
 }
 

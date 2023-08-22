@@ -1445,7 +1445,7 @@ void Grid::tau2tau_old() {
 
 // copy the T values to tau_old
 void Grid::T2tau_old() {
-    std::copy(T_loc, T_loc+loc_I*loc_J*loc_K, tau_old_loc)
+    std::copy(T_loc, T_loc+loc_I*loc_J*loc_K, tau_old_loc);
 }
 
 
