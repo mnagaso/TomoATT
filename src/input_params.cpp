@@ -1787,7 +1787,7 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
         gather_all_arrival_times_to_main();
 
         // gather tau_opt info
-        if (run_mode == SRC_RELOCATION)
+        if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC)
             gather_rec_info_to_main();
 
         // write only by the main processor of subdomain && the first id of subdoumains
@@ -1966,7 +1966,7 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
             ofs.close();
 
             // only for source relocation, output relocated observational data for tomography
-            if (run_mode == SRC_RELOCATION) {
+            if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC) {
                 src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
 
                 // open file
@@ -2056,7 +2056,7 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                                 << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
                                 << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
                                 << data.phase << " "
-                                << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time_obs << " "
+                                << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time_obs  << " "
                                 << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
                                 << std::endl;
 
@@ -2334,87 +2334,87 @@ void InputParams::allreduce_rec_map_var(T& var){
 //
 // communication for unevenly distributed receiver map
 //
-void InputParams::allreduce_rec_map_tau_opt(){
-    if(subdom_main){
-        // send total number of rec_map_all.size() to all processors
-        int n_rec_all;
-        std::vector<std::string> name_rec_all;
-        if (id_sim == 0){
-            n_rec_all = rec_map_all.size();
-            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
-                name_rec_all.push_back(iter->first);
-            }
-        }
+// void InputParams::allreduce_rec_map_tau_opt(){
+//     if(subdom_main){
+//         // send total number of rec_map_all.size() to all processors
+//         int n_rec_all;
+//         std::vector<std::string> name_rec_all;
+//         if (id_sim == 0){
+//             n_rec_all = rec_map_all.size();
+//             for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+//                 name_rec_all.push_back(iter->first);
+//             }
+//         }
 
-        // broadcast n_rec_all to all processors
-        broadcast_i_single_inter_sim(n_rec_all,0);
+//         // broadcast n_rec_all to all processors
+//         broadcast_i_single_inter_sim(n_rec_all,0);
 
-        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
-            // broadcast name_rec_all[i_rec] to all processors
-            std::string name_rec;
-            if (id_sim == 0)
-                name_rec = name_rec_all[i_rec];
+//         for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
+//             // broadcast name_rec_all[i_rec] to all processors
+//             std::string name_rec;
+//             if (id_sim == 0)
+//                 name_rec = name_rec_all[i_rec];
 
-            broadcast_str_inter_sim(name_rec,0);
+//             broadcast_str_inter_sim(name_rec,0);
 
-            // check if the tau_opt of rec_map_all[name_rec] is needed
-            bool is_stop = false;
-            if (rec_map.find(name_rec) != rec_map.end()){
-                is_stop = rec_map[name_rec].is_stop;
-            }
+//             // check if the tau_opt of rec_map_all[name_rec] is needed
+//             bool is_stop = false;
+//             if (rec_map.find(name_rec) != rec_map.end()){
+//                 is_stop = rec_map[name_rec].is_stop;
+//             }
 
-            // allreduce
-            allreduce_bool_single_inplace_sim(is_stop);
+//             // allreduce
+//             allreduce_bool_single_inplace_sim(is_stop);
 
-            // stop allreduce of tau_opt if is_stop is true (no further addition of tau_opt is needed)
-            if (is_stop)
-                continue;
+//             // stop allreduce of tau_opt if is_stop is true (no further addition of tau_opt is needed)
+//             if (is_stop)
+//                 continue;
 
-            // allreduce the tau_opt of rec_map_all[name_rec] to all processors
-            if (rec_map.find(name_rec) != rec_map.end()){
-                allreduce_rec_map_var(rec_map[name_rec].tau_opt);
-            } else {
-                CUSTOMREAL dummy = 0;
-                allreduce_rec_map_var(dummy);
-            }
-        }
-    }
-}
+//             // allreduce the tau_opt of rec_map_all[name_rec] to all processors
+//             if (rec_map.find(name_rec) != rec_map.end()){
+//                 allreduce_rec_map_var(rec_map[name_rec].tau_opt);
+//             } else {
+//                 CUSTOMREAL dummy = 0;
+//                 allreduce_rec_map_var(dummy);
+//             }
+//         }
+//     }
+// }
 
 
-void InputParams::allreduce_rec_map_sum_weight(){
-    if(subdom_main){
-        // send total number of rec_map_all.size() to all processors
-        int n_rec_all;
-        std::vector<std::string> name_rec_all;
-        if (id_sim == 0){
-            n_rec_all = rec_map_all.size();
-            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
-                name_rec_all.push_back(iter->first);
-            }
-        }
+// void InputParams::allreduce_rec_map_sum_weight(){
+//     if(subdom_main){
+//         // send total number of rec_map_all.size() to all processors
+//         int n_rec_all;
+//         std::vector<std::string> name_rec_all;
+//         if (id_sim == 0){
+//             n_rec_all = rec_map_all.size();
+//             for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+//                 name_rec_all.push_back(iter->first);
+//             }
+//         }
 
-        // broadcast n_rec_all to all processors
-        broadcast_i_single_inter_sim(n_rec_all,0);
+//         // broadcast n_rec_all to all processors
+//         broadcast_i_single_inter_sim(n_rec_all,0);
 
-        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
-            // broadcast name_rec_all[i_rec] to all processors
-            std::string name_rec;
-            if (id_sim == 0)
-                name_rec = name_rec_all[i_rec];
+//         for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
+//             // broadcast name_rec_all[i_rec] to all processors
+//             std::string name_rec;
+//             if (id_sim == 0)
+//                 name_rec = name_rec_all[i_rec];
 
-            broadcast_str_inter_sim(name_rec,0);
+//             broadcast_str_inter_sim(name_rec,0);
 
-            // allreduce the sum_weight of rec_map_all[name_rec] to all processors
-            if (rec_map.find(name_rec) != rec_map.end()){
-                allreduce_rec_map_var(rec_map[name_rec].sum_weight);
-            } else {
-                CUSTOMREAL dummy = 0;
-                allreduce_rec_map_var(dummy);
-            }
-        }
-    }
-}
+//             // allreduce the sum_weight of rec_map_all[name_rec] to all processors
+//             if (rec_map.find(name_rec) != rec_map.end()){
+//                 allreduce_rec_map_var(rec_map[name_rec].sum_weight);
+//             } else {
+//                 CUSTOMREAL dummy = 0;
+//                 allreduce_rec_map_var(dummy);
+//             }
+//         }
+//     }
+// }
 
 
 void InputParams::allreduce_rec_map_vobj_src_reloc(){

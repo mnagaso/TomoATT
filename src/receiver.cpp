@@ -774,19 +774,19 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
 }
 
 
-void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
-    if (subdom_main) {
+// void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
+//     if (subdom_main) {
 
-        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
-            if (IP.rec_map[iter->first].is_stop) continue; // keep the completed tau_opt
+//         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
+//             if (IP.rec_map[iter->first].is_stop) continue; // keep the completed tau_opt
 
-            iter->second.tau_opt /= iter->second.sum_weight;
+//             iter->second.tau_opt /= iter->second.sum_weight;
 
-            //std::cout << "DEBUG1: id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
-        }
-    }
-    //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
-}
+//             //std::cout << "DEBUG1: id_sim" << id_sim << ", name: " << iter->first << ", ortime: " << iter->second.tau_opt <<std::endl;
+//         }
+//     }
+//     //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
+// }
 
 void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
@@ -800,7 +800,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                     if (data.is_src_rec){     // abs data && we use it
                         std::string name_rec = data.name_rec;
 
-                        if (IP.rec_map[name_rec].is_stop) continue;     // if this receiver (swapped source) is already located
+                        // if (IP.rec_map[name_rec].is_stop) continue;     // if this receiver (swapped source) is already located
 
                         // assign obj
                         if (IP.get_use_abs_reloc())
@@ -820,7 +820,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                         std::string name_rec1 = data.name_rec_pair[0];
                         std::string name_rec2 = data.name_rec_pair[1];
 
-                        if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;
+                        // if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;
 
                         // assign obj (0.5 is added here because we assign this misfit to two receivers (swapped earthquake))
                         if(!IP.rec_map[name_rec1].is_stop){
@@ -850,7 +850,7 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                     } else if (data.is_src_pair) {  // we only record the obj of this kind of data
                         std::string name_rec = data.name_rec;
 
-                        if(IP.rec_map[name_rec].is_stop) continue;
+                        // if(IP.rec_map[name_rec].is_stop) continue;
 
                         // assign obj (0.5 is added here because there are two receiver (swapped earthquake) have this data. It will be counted twice)
                         

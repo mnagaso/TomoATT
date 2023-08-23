@@ -275,10 +275,10 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     if(myrank == 0 && id_sim ==0){
         out_main.open(output_dir + "/objective_function_reloc.txt");
 
-        bool have_abs    = ( IP.data_type.find("abs")    != IP.data_type.end() );
-        bool have_cs_dif = ( IP.data_type.find("cs_dif") != IP.data_type.end() );
-        bool have_cr_dif = ( IP.data_type.find("cr_dif") != IP.data_type.end() );
-        bool have_tele   = ( IP.data_type.find("tele")   != IP.data_type.end() );
+        // bool have_abs    = ( IP.data_type.find("abs")    != IP.data_type.end() );
+        // bool have_cs_dif = ( IP.data_type.find("cs_dif") != IP.data_type.end() );
+        // bool have_cr_dif = ( IP.data_type.find("cr_dif") != IP.data_type.end() );
+        // bool have_tele   = ( IP.data_type.find("tele")   != IP.data_type.end() );
 
         out_main << std::setw(8) << std::right << "# iter,";
         out_main << std::setw(16) << std::right << "N_reloc,";
@@ -288,30 +288,27 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         tmp.append(std::to_string(IP.N_data));
         tmp.append("),");
         out_main << std::setw(20) << tmp;
-        if (have_abs){
-            tmp = "obj_abs(";
-            tmp.append(std::to_string(IP.N_abs_local_data));
-            tmp.append("),");
-            out_main << std::setw(20) << tmp;
-        }
-        if (have_cs_dif){
-            tmp = "obj_cs_dif(";
-            tmp.append(std::to_string(IP.N_cs_dif_local_data));
-            tmp.append("),");
-            out_main << std::setw(20) << tmp;
-        }
-        if (have_cr_dif){
-            tmp = "obj_cr_dif(";
-            tmp.append(std::to_string(IP.N_cr_dif_local_data));
-            tmp.append("),");
-            out_main << std::setw(20) << tmp;
-        }
-        if (have_tele){
-            tmp = "obj_tele(";
-            tmp.append(std::to_string(IP.N_teleseismic_data));
-            tmp.append("),");
-            out_main << std::setw(20) << tmp;
-        }
+
+        tmp = "obj_abs(";
+        tmp.append(std::to_string(IP.N_abs_local_data));
+        tmp.append("),");
+        out_main << std::setw(20) << tmp;
+
+        tmp = "obj_cs_dif(";
+        tmp.append(std::to_string(IP.N_cs_dif_local_data));
+        tmp.append("),");
+        out_main << std::setw(20) << tmp;
+
+        tmp = "obj_cr_dif(";
+        tmp.append(std::to_string(IP.N_cr_dif_local_data));
+        tmp.append("),");
+        out_main << std::setw(20) << tmp;
+
+        tmp = "obj_tele(";
+        tmp.append(std::to_string(IP.N_teleseismic_data));
+        tmp.append("),");
+        out_main << std::setw(20) << tmp;
+        
         out_main << std::endl;
     }
 
@@ -471,12 +468,18 @@ inline void prepare_header_line_mode_3(InputParams &IP, std::ofstream &out_main)
             out_main << std::setw(20) << tmp;
             
             tmp = "obj_cs_dif(";
-            tmp.append(std::to_string(IP.N_cs_dif_local_data));
+            if (IP.get_is_srcrec_swap())
+                tmp.append(std::to_string(IP.N_cr_dif_local_data));
+            else
+                tmp.append(std::to_string(IP.N_cs_dif_local_data));
             tmp.append("),");
             out_main << std::setw(20) << tmp;
         
             tmp = "obj_cr_dif(";
-            tmp.append(std::to_string(IP.N_cr_dif_local_data));
+            if (IP.get_is_srcrec_swap())
+                tmp.append(std::to_string(IP.N_cs_dif_local_data));
+            else
+                tmp.append(std::to_string(IP.N_cr_dif_local_data));
             tmp.append("),");
             out_main << std::setw(20) << tmp;
 
@@ -718,7 +721,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
         // iterate
         for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){
-            int i_iter = i_loop * IP.get_model_update_N_iter() + one_loop_i_iter;
+            int i_iter = i_loop * IP.get_relocation_N_iter() + one_loop_i_iter;
 
             if(myrank == 0 && id_sim ==0){
                 std::cout   << std::endl; 
