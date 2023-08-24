@@ -284,10 +284,9 @@ inline void calc_laplacian_field(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr
         //CUSTOMREAL lt = 1.0;
         //CUSTOMREAL lp = 1.0;
 
-        CUSTOMREAL lr = smooth_lr;
-        CUSTOMREAL lt = smooth_lt;
-        CUSTOMREAL lp = smooth_lp;
-
+        CUSTOMREAL lr = regul_lp;
+        CUSTOMREAL lt = regul_lt;
+        CUSTOMREAL lp = regul_lp;
 
         // calculate L(m)
         for (int k = 1; k < loc_K-1; k++) {
@@ -392,13 +391,14 @@ inline void calculate_regularization_penalty(Grid& grid) {
         //
 
         for (int i = 0; i < n_grid; i++){
-            grid.fun_regularization_penalty_loc[i] += tmp_fun[i] - grid.fun_regularization_penalty_loc[i];
-            grid.eta_regularization_penalty_loc[i] += tmp_eta[i] - grid.eta_regularization_penalty_loc[i];
-            grid.xi_regularization_penalty_loc[i]  += tmp_xi[i]  - grid.xi_regularization_penalty_loc[i];
+            // calculate gradient_regularization_penalty first for avoiding using overwrited value in regularization_penalty
+            grid.fun_gradient_regularization_penalty_loc[i] = tmp_fun[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i];
+            grid.eta_gradient_regularization_penalty_loc[i] = tmp_eta[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i];
+            grid.xi_gradient_regularization_penalty_loc[i]  = tmp_xi[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i];
 
-            grid.fun_gradient_regularization_penalty_loc[i] += tmp_fun[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i];
-            grid.eta_gradient_regularization_penalty_loc[i] += tmp_eta[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i];
-            grid.xi_gradient_regularization_penalty_loc[i]  += tmp_xi[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i];
+            grid.fun_regularization_penalty_loc[i] = tmp_fun[i] - grid.fun_regularization_penalty_loc[i];
+            grid.eta_regularization_penalty_loc[i] = tmp_eta[i] - grid.eta_regularization_penalty_loc[i];
+            grid.xi_regularization_penalty_loc[i]  = tmp_xi[i]  - grid.xi_regularization_penalty_loc[i];
         }
 
         delete [] tmp_fun;

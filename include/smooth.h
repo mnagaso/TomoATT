@@ -41,7 +41,7 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
         tmp = scaling_coeff;
         allreduce_cr_single_max(tmp, scaling_coeff);
         //if (scaling_coeff == _0_CR)
-        if (scaling_coeff < 0.0001)
+        if (isZero(scaling_coeff))
             scaling_coeff = _1_CR;
     }
     // std out scaling factors

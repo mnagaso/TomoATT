@@ -230,6 +230,12 @@ InputParams::InputParams(std::string& input_file){
                 if (config["model_update"]["optim_method_1_2"]["regularization_weight"]) {
                     getNodeValue(config["model_update"]["optim_method_1_2"], "regularization_weight", regularization_weight);
                 }
+                // regularization laplacian weights
+                if (config["model_update"]["optim_method_1_2"]["coefs_regulalization_rtp"]) {
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lr, 0);
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lt, 1);
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lp, 2);
+                }
             }
 
             // smoothing
@@ -627,6 +633,9 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(step_length_init_sc, 0);
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_cr_single(regularization_weight, 0);
+    broadcast_cr_single(regul_lr, 0);
+    broadcast_cr_single(regul_lt, 0);
+    broadcast_cr_single(regul_lp, 0);
     broadcast_i_single(smooth_method, 0);
     broadcast_cr_single(smooth_lr, 0);
     broadcast_cr_single(smooth_lt, 0);
@@ -878,6 +887,8 @@ void InputParams::write_params_to_file() {
     fout << "  optim_method_1_2:" << std::endl;
     fout << "    max_sub_iterations: "    << max_sub_iterations << " # maximum number of each sub-iteration" << std::endl;
     fout << "    regularization_weight: " << regularization_weight << " # weight value for regularization (lbfgs mode only)" << std::endl;
+
+    fout << "    coefs_regulalization_rtp: [" << regul_lr << ", " << regul_lt << ", " << regul_lp << "] # regularization coefficients for rtp (lbfgs mode only)" << std::endl;
     fout << std::endl;
 
     fout << "  # smoothing" << std::endl;
