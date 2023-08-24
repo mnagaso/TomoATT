@@ -28,7 +28,7 @@ public:
     // Gradient of objective function
     void calculate_grad_obj_src_reloc(InputParams&, const std::string&);
     // objective function
-    void calculate_obj_reloc(InputParams&, int);
+    std::vector<CUSTOMREAL> calculate_obj_reloc(InputParams&, int);
     // update source location
     void update_source_location(InputParams&, Grid&);
 

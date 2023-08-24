@@ -69,6 +69,10 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
             tmp.append("/");
             tmp.append(std::to_string(std));
             out_main << "," << std::setw(24) << tmp;
+            // std::cout   << ", v_misfit_inout[5]: " << v_misfit_inout[5] 
+            //                     << ", v_misfit_inout[6]: " << v_misfit_inout[6] 
+            //                     << ", N_data: " << IP.N_data
+            //                     << std::endl;
         } else {
             out_main << "," << std::setw(24) << "0.0/0.0";
         }

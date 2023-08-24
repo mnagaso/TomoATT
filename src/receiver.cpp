@@ -281,7 +281,6 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             continue;   // if we do not use abs data, ignore to consider the total obj
 
                         obj     += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
-
                     } else if (data.is_src_pair) {  
                     
                         std::string name_src1 = data.name_src_pair[0];
@@ -788,7 +787,26 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
 //     //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 // }
 
-void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
+std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
+
+    CUSTOMREAL obj           = 0.0;
+    CUSTOMREAL obj_abs       = 0.0;
+    CUSTOMREAL obj_cs_dif    = 0.0;
+    CUSTOMREAL obj_cr_dif    = 0.0;
+    CUSTOMREAL obj_tele      = 0.0;
+    CUSTOMREAL res           = 0.0;
+    CUSTOMREAL res_sq        = 0.0;
+    CUSTOMREAL res_abs       = 0.0;
+    CUSTOMREAL res_abs_sq    = 0.0;
+    CUSTOMREAL res_cs_dif    = 0.0;
+    CUSTOMREAL res_cs_dif_sq = 0.0;
+    CUSTOMREAL res_cr_dif    = 0.0;
+    CUSTOMREAL res_cr_dif_sq = 0.0;
+    CUSTOMREAL res_tele      = 0.0;
+    CUSTOMREAL res_tele_sq   = 0.0;
+
+    // sum obj_residual from all sources
+    std::vector<CUSTOMREAL> obj_residual;
 
     if (subdom_main) {
 
@@ -803,16 +821,19 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                         // if (IP.rec_map[name_rec].is_stop) continue;     // if this receiver (swapped source) is already located
 
                         // assign obj
-                        if (IP.get_use_abs_reloc())
+                        if (IP.get_use_abs_reloc()){
                             IP.rec_map[name_rec].vobj_src_reloc     += data.weight_reloc * my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
-                        
+                            obj                                     += data.weight_reloc * my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
+                        }
                         // assign obj
-                        IP.rec_map[name_rec].vobj_src_reloc_data[0] += data.weight_reloc * my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
+                        obj_abs                                     += data.weight_reloc * my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
 
                         // assign residual
-                        IP.rec_map[name_rec].vobj_src_reloc_data[3] +=          (data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
-                        IP.rec_map[name_rec].vobj_src_reloc_data[4] += my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
-                        
+                        res                                         +=          (data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
+                        res_sq                                      += my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
+
+                        res_abs                                     +=          (data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
+                        res_abs_sq                                  += my_square(data.travel_time - data.travel_time_obs + IP.rec_map[name_rec].tau_opt);
 
                     // case 2: common receiver (swapped source) double difference (double source, or double swapped receiver) for reloc
                     } else if (data.is_rec_pair ) {  // common receiver data (swapped common source)
@@ -824,27 +845,29 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
                         // assign obj (0.5 is added here because we assign this misfit to two receivers (swapped earthquake))
                         if(!IP.rec_map[name_rec1].is_stop){
-                            if (IP.get_use_cr_reloc())
-                                IP.rec_map[name_rec1].vobj_src_reloc            += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            
+                            if (IP.get_use_cr_reloc()){
+                                IP.rec_map[name_rec1].vobj_src_reloc+= 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                                obj                                 += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            }
                             // assign obj
-                            IP.rec_map[name_rec1].vobj_src_reloc_data[2]    += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            obj_cs_dif                              += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             
                             // assign residual
-                            IP.rec_map[name_rec1].vobj_src_reloc_data[5]    += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            IP.rec_map[name_rec1].vobj_src_reloc_data[6]    += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             
                         }
                         if(!IP.rec_map[name_rec2].is_stop){
-                            if (IP.get_use_cr_reloc())
-                                IP.rec_map[name_rec2].vobj_src_reloc            += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            
+                            if (IP.get_use_cr_reloc()){
+                                IP.rec_map[name_rec2].vobj_src_reloc+= 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                                obj                                 += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            }
                             // assign obj
-                            IP.rec_map[name_rec2].vobj_src_reloc_data[2]    += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            obj_cs_dif                              += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         
                             // assign residual
-                            IP.rec_map[name_rec2].vobj_src_reloc_data[5]    += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            IP.rec_map[name_rec2].vobj_src_reloc_data[6]    += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         
                         }
                     } else if (data.is_src_pair) {  // we only record the obj of this kind of data
@@ -855,11 +878,11 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
                         // assign obj (0.5 is added here because there are two receiver (swapped earthquake) have this data. It will be counted twice)
                         
                         // assign obj
-                        IP.rec_map[name_rec].vobj_src_reloc_data[1] += 0.5 * data.weight_reloc * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
+                        obj_cr_dif                                  += 0.5 * data.weight_reloc * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
 
                         // assign residual
-                        IP.rec_map[name_rec].vobj_src_reloc_data[7] += 0.5 *          (data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
-                        IP.rec_map[name_rec].vobj_src_reloc_data[8] += 0.5 * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
+                        res_cr_dif                                  += 0.5 *          (data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
+                        res_cr_dif_sq                               += 0.5 * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
 
                     } else {    // unsupported data (swapped common receiver, or others)
                         continue;
@@ -871,6 +894,30 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
 
         // sum the obj from all sources (swapped receivers)
         IP.allreduce_rec_map_vobj_src_reloc();
+
+        
+        broadcast_cr_single_sub(obj,0);
+        broadcast_cr_single_sub(obj_abs,0);
+        broadcast_cr_single_sub(obj_cs_dif,0);
+        broadcast_cr_single_sub(obj_cr_dif,0);
+        broadcast_cr_single_sub(obj_tele,0);
+        broadcast_cr_single_sub(res,0);
+        broadcast_cr_single_sub(res_sq,0);
+        broadcast_cr_single_sub(res_abs,0);
+        broadcast_cr_single_sub(res_abs_sq,0);
+        broadcast_cr_single_sub(res_cs_dif,0);
+        broadcast_cr_single_sub(res_cs_dif_sq,0);
+        broadcast_cr_single_sub(res_cr_dif,0);
+        broadcast_cr_single_sub(res_cr_dif_sq,0);
+        broadcast_cr_single_sub(res_tele,0);
+        broadcast_cr_single_sub(res_tele_sq,0);
+
+        obj_residual = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs_dif, res_cs_dif_sq, res_cr_dif, res_cr_dif_sq, res_tele, res_tele_sq};
+
+        for(int i = 0; i < (int)obj_residual.size(); i++){
+            allreduce_cr_sim_single_inplace(obj_residual[i]);
+        }
+
 
         //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 
@@ -888,6 +935,8 @@ void Receiver::calculate_obj_reloc(InputParams& IP, int i_iter){
         }
 
     }
+
+    return obj_residual;
 }
 
 
@@ -1111,9 +1160,9 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 IP.rec_map[name_rec].change_tau += update_ortime_s;
 
 
-                if (IP.rec_map[name_rec].step_length_max < TOL_step_length){
-                    IP.rec_map[name_rec].is_stop = true;
-                }
+                // if (IP.rec_map[name_rec].step_length_max < TOL_step_length){
+                //     IP.rec_map[name_rec].is_stop = true;
+                // }
 
 
                 // detect nan and inf then exit the program

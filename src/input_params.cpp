@@ -2443,23 +2443,23 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
             // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
             if (rec_map.find(name_rec) != rec_map.end()){
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc);
-                for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
-                    allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_data[i]);
-                }
+                // for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
+                //     allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_data[i]);
+                // }
                 
                 // allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cr);
                 // allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cs);
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
-                dummy = 0;
+                // dummy = 0;
                 // allreduce_rec_map_var(dummy);
                 // dummy = 0;
                 // allreduce_rec_map_var(dummy);
-                for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
-                    dummy = 0;
-                    allreduce_rec_map_var(dummy);
-                }
+                // for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
+                //     dummy = 0;
+                //     allreduce_rec_map_var(dummy);
+                // }
             }
         }
     }

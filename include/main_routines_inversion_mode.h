@@ -68,7 +68,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode, bool is_read_time){
 
     // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele
-    std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(20, 0.0);
+    // std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(20, 0.0);
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)

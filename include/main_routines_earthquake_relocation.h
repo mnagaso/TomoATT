@@ -91,7 +91,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 }
 
 
-void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, int i_iter){
+std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, int i_iter){
 
     Receiver recs; // here the source is swapped to receiver
     // initialize source parameters (obj, kernel, )
@@ -129,12 +129,14 @@ void calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils
     IP.gather_traveltimes_and_calc_syn_diff();
 
     // compute the objective function
-    recs.calculate_obj_reloc(IP, i_iter);
+    std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_reloc(IP, i_iter);
 
     // sum grad_tau and grad_chi_k of all simulation groups
     IP.allreduce_rec_map_grad_src();
 
     //synchronize_all_world(); // not necessary here because allreduce is already synchronizing communication
+
+    return obj_residual;
 }
 
 
