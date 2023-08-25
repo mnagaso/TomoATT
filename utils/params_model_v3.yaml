@@ -78,12 +78,13 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)
   optim_method_1_2:
     max_sub_iterations: 10     # maximum number of each sub-iteration
-    regularization_weight: 100 # weight value for regularization (lbfgs mode only)
+    regularization_weight: 0.01 # weight value for regularization (lbfgs mode only)
+    coefs_regulalization_rtp: [1.0, 1.0, 1.0] # coefficients for regularization on each direction(lbfgs mode only)
 
   # smoothing
   smoothing:
     smooth_method: 0        # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)
-    l_smooth_rtp: [1, 1, 1] # smoothing coefficients for laplacian smoothing
+    l_smooth_rtp: [100, 100, 100] # smoothing coefficients for laplacian smoothing
 
   # parameters for smooth method 0 (multigrid model parametrization)
   n_inversion_grid: 5 # number of inversion grid sets
