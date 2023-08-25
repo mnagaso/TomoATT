@@ -16,27 +16,38 @@ if __name__ == "__main__":
     list_regl = [] # regularization term
     list_coef = [] # regularization coefficient
 
-    # read only the second row of the files
+    # find the last row which has 1 for the last column
     for file in list_obj_files:
         with open(file, 'r') as f:
-            lines = f.readlines()
-            print(lines[2].strip())
+            try:
+                lines = f.readlines()
+                obj_line= 2
+                for i, line in enumerate(lines):
+                    if line.strip().split(",")[-1] == "1":
+                        break
+                    else:
+                        obj_line = i
 
-            # split the line
-            line = lines[2].strip().split(",")
+                # split the line
+                line = lines[obj_line].strip().split(",")
 
-            # append the values
-            lambda_val = float(file.split("_")[-1].rstrip(".txt"))
-            list_fit.append(float(line[3])-float(line[5]))
-            list_regl.append(float(line[5]))
-            list_coef.append(lambda_val)
-
+                # append the values
+                lambda_val = float(file.split("_")[-1].rstrip(".txt"))
+                obj = float(line[3])
+                term_regl_tmp = float(line[5]) #/ obj
+                term_regl = term_regl_tmp*2/lambda_val
+                term_fit = (obj-term_regl_tmp) #/ obj
+                list_fit.append(term_fit)
+                list_regl.append(term_regl)
+                list_coef.append(lambda_val)
+            except:
+                print("Error reading file: ", file)
 
     # plot the L-curve
     plt.figure()
     plt.loglog(list_fit, list_regl, 'o-')
     plt.xlabel("residual norm (||Ax_i-b||^2)")
-    plt.ylabel("solution norm (0.5*lambda*||x_i-x_0||^2)")
+    plt.ylabel("solution norm (||x_i-x_0||^2)")
     # add the regularization coefficient
     for i in range(len(list_coef)):
         if i == 0:
