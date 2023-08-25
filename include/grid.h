@@ -312,6 +312,9 @@ public:
     CUSTOMREAL *r_loc_inv;
     CUSTOMREAL *t_loc_inv;
     CUSTOMREAL *p_loc_inv;
+    CUSTOMREAL *r_loc_inv_ani;
+    CUSTOMREAL *t_loc_inv_ani;
+    CUSTOMREAL *p_loc_inv_ani;
     CUSTOMREAL *Ks_loc;
     CUSTOMREAL *Kxi_loc;
     CUSTOMREAL *Keta_loc;

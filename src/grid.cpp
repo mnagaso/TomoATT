@@ -328,6 +328,7 @@ void Grid::setup_inversion_grids(InputParams& IP) {
 
     n_inv_grids = IP.get_n_inversion_grid();
 
+    // inversion grid for velocity
     if(IP.get_type_invgrid_dep() == 0){
         ngrid_k_inv = IP.get_n_inv_r();
     } else if (IP.get_type_invgrid_dep() == 1) {
@@ -358,6 +359,29 @@ void Grid::setup_inversion_grids(InputParams& IP) {
     n_inv_I_loc = ngrid_i_inv;
     n_inv_J_loc = ngrid_j_inv;
     n_inv_K_loc = ngrid_k_inv;
+
+    // inversion grid for anisotropy (optional)
+    if(IP.get_invgrid_ani()){
+        ngrid_k_inv_ani = IP.get_n_inv_r_flex_ani();
+    } else {
+        ngrid_k_inv_ani = ngrid_k_inv;
+    }
+
+    if(IP.get_invgrid_ani()){
+        ngrid_j_inv_ani = IP.get_n_inv_t_flex_ani();
+    } else {
+        ngrid_j_inv_ani = ngrid_j_inv;
+    }
+
+    if(IP.get_invgrid_ani()){
+        ngrid_i_inv_ani = IP.get_n_inv_p_flex_ani();
+    } else {
+        ngrid_i_inv_ani = ngrid_i_inv;
+    }
+
+    n_inv_I_loc_ani = ngrid_i_inv_ani;
+    n_inv_J_loc_ani = ngrid_j_inv_ani;
+    n_inv_K_loc_ani = ngrid_k_inv_ani;
 
 }
 
@@ -536,18 +560,29 @@ void Grid::memory_allocation() {
     // arrays for inversion
     if (inverse_flag) {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
+        int n_total_loc_inv_grid_ani = n_inv_I_loc_ani * n_inv_J_loc_ani * n_inv_K_loc_ani;
+        
         r_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_K_loc * n_inv_grids);
         t_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_J_loc * n_inv_grids);
         p_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_I_loc * n_inv_grids);
+
+        r_loc_inv_ani   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_K_loc_ani * n_inv_grids);
+        t_loc_inv_ani   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_J_loc_ani * n_inv_grids);
+        p_loc_inv_ani   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_I_loc_ani * n_inv_grids);
+
         Ks_loc          = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kxi_loc         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
+        // Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
+        // Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
+        Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
+        Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+
+
         if (sub_nprocs <= 1)
             Tadj_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
@@ -1035,6 +1070,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 void Grid::setup_inv_grid_params(InputParams& IP) {
 
     // inversion grid for depth
+        // velocity
     if(IP.get_type_invgrid_dep() == 0){     // uniform inversion grid for depth
         CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
         CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
@@ -1043,9 +1079,13 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         // shift of each set of inversion grid
         dinv_lr = dinv_r/n_inv_grids;
 
+        // for (int l = 0; l < n_inv_grids; l++) {
+        //     for (int k = 0; k < n_inv_K_loc; k++)
+        //         r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
+        // }
         for (int l = 0; l < n_inv_grids; l++) {
             for (int k = 0; k < n_inv_K_loc; k++)
-                r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
+                r_loc_inv[I2V_INV_GRIDS_1DK(n_inv_K_loc - 1 - k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
         }
     } else {            // flexibly designed inversion grid for depth
         CUSTOMREAL* dep_inv = IP.get_dep_inv();
@@ -1056,12 +1096,35 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             else
                 dinv_lr = (depth2radius(dep_inv[n_inv_K_loc-1]) - depth2radius(dep_inv[n_inv_K_loc-2]))/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++)
+            for (int l = 0; l < n_inv_grids; l++){
                 r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = depth2radius(dep_inv[k]) + l*dinv_lr;
+            }
+        }
+    }
+        // anisotropy
+    if(IP.get_invgrid_ani()){
+        CUSTOMREAL* dep_inv_ani = IP.get_dep_inv_ani();
+
+        for (int k = 0; k < n_inv_K_loc_ani; k++){
+            if(k < n_inv_K_loc_ani - 1)
+                dinv_lr = (depth2radius(dep_inv_ani[k+1]) - depth2radius(dep_inv_ani[k]))/n_inv_grids;
+            else
+                dinv_lr = (depth2radius(dep_inv_ani[n_inv_K_loc_ani-1]) - depth2radius(dep_inv_ani[n_inv_K_loc_ani-2]))/n_inv_grids;
+
+            for (int l = 0; l < n_inv_grids; l++){
+                r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)] = depth2radius(dep_inv_ani[k]) + l*dinv_lr;
+            }
+        }
+    } else {
+        // use the same inversion grid of velocity for anisotropy
+        for (int k = 0; k < n_inv_K_loc_ani; k++){
+            for (int l = 0; l < n_inv_grids; l++)
+                r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)] = r_loc_inv[I2V_INV_GRIDS_1DK(k,l)];
         }
     }
 
     // inversion grid for latitude
+        // velocity
     if(IP.get_type_invgrid_lat() == 0){     // uniform inversion grid for latitude
         CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
         CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
@@ -1087,8 +1150,29 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_inv[j]*DEG2RAD - l*dinv_lt;
         }
     }
+        // anisotropy
+    if(IP.get_invgrid_ani()){
+        CUSTOMREAL* lat_inv_ani = IP.get_lat_inv_ani();
+
+        for (int j = 0; j < n_inv_J_loc_ani; j++){
+            if(j < n_inv_J_loc_ani - 1)
+                dinv_lt = (lat_inv_ani[j+1] - lat_inv_ani[j])*DEG2RAD/n_inv_grids;
+            else
+                dinv_lt = (lat_inv_ani[n_inv_J_loc_ani-1] - lat_inv_ani[n_inv_J_loc_ani-2])*DEG2RAD/n_inv_grids;
+
+            for (int l = 0; l < n_inv_grids; l++)
+                t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)] = lat_inv_ani[j]*DEG2RAD - l*dinv_lt;
+        }
+    } else {
+        // use the same inversion grid of velocity for anisotropy
+        for (int j = 0; j < n_inv_J_loc_ani; j++){
+            for (int l = 0; l < n_inv_grids; l++)
+                t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)] = t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)];
+        }
+    }
 
     // inversion grid for longitude
+        // velocity
     if(IP.get_type_invgrid_lon() == 0){     // uniform inversion grid for longitude
         CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
         CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
@@ -1115,6 +1199,26 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         }
     }
 
+        // anisotropy
+    if(IP.get_invgrid_ani()){
+        CUSTOMREAL* lon_inv_ani = IP.get_lon_inv_ani();
+
+        for (int i = 0; i < n_inv_I_loc_ani; i++){
+            if(i < n_inv_I_loc_ani - 1)
+                dinv_lp = (lon_inv_ani[i+1] - lon_inv_ani[i])*DEG2RAD/n_inv_grids;
+            else
+                dinv_lp = (lon_inv_ani[n_inv_I_loc_ani-1] - lon_inv_ani[n_inv_I_loc_ani-2])*DEG2RAD/n_inv_grids;
+
+            for (int l = 0; l < n_inv_grids; l++)
+                p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)] = lon_inv_ani[i]*DEG2RAD - l*dinv_lp;
+        }
+    } else {
+        // use the same inversion grid of velocity for anisotropy
+        for (int i = 0; i < n_inv_I_loc_ani; i++){
+            for (int l = 0; l < n_inv_grids; l++)
+                p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)] = p_loc_inv[I2V_INV_GRIDS_1DI(i,l)];
+        }
+    }
 
 }
 
@@ -2299,6 +2403,7 @@ void Grid::write_inversion_grid_file(){
     ofs.open(inversion_grid_file_out);
 
     if(subdom_main && id_subdomain == 0){       // main processor of subdomain && the first id of subdoumains
+        // inversion grid of velocity
         for(int l = 0; l < n_inv_grids; l++){
             ofs << l << " " << ngrid_k_inv << " " << ngrid_j_inv << " " << ngrid_i_inv << std::endl;    // number of ivnersion grid
             // inversion grid of depth
@@ -2315,6 +2420,25 @@ void Grid::write_inversion_grid_file(){
                     << p_loc_inv[I2V_INV_GRIDS_1DI(i,l)]*RAD2DEG << " ";
             ofs << std::endl;
         }
+        // inversion grid of anisotropy
+        for(int l = 0; l < n_inv_grids; l++){
+            ofs << l << " " << ngrid_k_inv_ani << " " << ngrid_j_inv_ani << " " << ngrid_i_inv_ani << std::endl;    // number of ivnersion grid
+            // inversion grid of depth
+            for(int k =0; k < ngrid_k_inv_ani; k++)
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                    << radius2depth(r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)]) << " ";
+            ofs << std::endl;
+            for(int j =0; j < ngrid_j_inv_ani; j++)
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                    << t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)]*RAD2DEG << " ";
+            ofs << std::endl;
+            for(int i =0; i < ngrid_i_inv_ani; i++)
+                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                    << p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)]*RAD2DEG << " ";
+            ofs << std::endl;
+        }
     }
+
+
 
 }

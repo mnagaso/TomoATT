@@ -24,6 +24,7 @@ inline int loc_I_vis, loc_J_vis, loc_K_vis;
 inline int loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost;
 inline int n_inv_grids;
 inline int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc;
+inline int n_inv_I_loc_ani, n_inv_J_loc_ani, n_inv_K_loc_ani;
 
 // 3d indices to 1d index
 #define I2V(A,B,C) ((C)*loc_I*loc_J + (B)*loc_I + A)
@@ -38,6 +39,12 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 #define I2V_INV_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc + (A))
 #define I2V_INV_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc + (A))
 #define I2V_INV_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc + (A))
+
+#define I2V_INV_ANI_GRIDS(A,B,C,D) ((D)*n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani + (C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
+#define I2V_INV_ANI_KNL(A,B,C)     ((C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
+#define I2V_INV_ANI_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc_ani + (A))
 
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
 //#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
@@ -130,6 +137,9 @@ inline int ngrid_k     = 0; // number of grid points in k direction
 inline int ngrid_i_inv = 0; // number of inversion grid points in i direction
 inline int ngrid_j_inv = 0; // number of inversion grid points in j direction
 inline int ngrid_k_inv = 0; // number of inversion grid points in k direction
+inline int ngrid_i_inv_ani = 0; // number of inversion grid points in i direction for anisotropy
+inline int ngrid_j_inv_ani = 0; // number of inversion grid points in j direction for anisotropy
+inline int ngrid_k_inv_ani = 0; // number of inversion grid points in k direction for anisotropy
 
 // mpi parameters
 inline int      world_nprocs;     // total number of processes (all groups)

@@ -312,6 +312,35 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex_read = true;
             }
 
+            // inversion grid for anisotropy
+            if (config["model_update"]["invgrid_ani"]) {
+                getNodeValue(config["model_update"], "invgrid_ani", invgrid_ani);
+            }
+            if (config["model_update"]["dep_inv_ani"]) {
+                n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
+                dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+                for (int i = 0; i < n_inv_r_flex_ani; i++){
+                    getNodeValue(config["model_update"], "dep_inv_ani", dep_inv_ani[i], i);
+                }
+                n_inv_r_flex_ani_read = true;
+            }
+            if (config["model_update"]["lat_inv_ani"]) {
+                n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
+                lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+                for (int i = 0; i < n_inv_t_flex_ani; i++){
+                    getNodeValue(config["model_update"], "lat_inv_ani", lat_inv_ani[i], i);
+                }
+                n_inv_t_flex_ani_read = true;
+            }
+            if (config["model_update"]["lon_inv_ani"]) {
+                n_inv_p_flex_ani = config["model_update"]["lon_inv_ani"].size();
+                lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+                for (int i = 0; i < n_inv_p_flex_ani; i++){
+                    getNodeValue(config["model_update"], "lon_inv_ani", lon_inv_ani[i], i);
+                }
+                n_inv_p_flex_ani_read = true;
+            }
+
 
             // station correction (now only for teleseismic data)
             if (config["model_update"]["use_sta_correction"]){
@@ -554,6 +583,14 @@ InputParams::InputParams(std::string& input_file){
         if (!n_inv_p_flex_read)
             lon_inv = new CUSTOMREAL[n_inv_p_flex];
 
+        // allocate dummy arrays for flex inv grid
+        if (!n_inv_r_flex_ani_read)
+            dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+        if (!n_inv_t_flex_ani_read)
+            lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+        if (!n_inv_p_flex_ani_read)
+            lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+
         // write parameter file to output directory
         write_params_to_file();
 
@@ -661,6 +698,19 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr(lat_inv,n_inv_t_flex, 0);
     broadcast_cr(lon_inv,n_inv_p_flex, 0);
 
+    broadcast_bool_single(invgrid_ani, 0);
+    broadcast_i_single(n_inv_r_flex_ani, 0);
+    broadcast_i_single(n_inv_t_flex_ani, 0);
+    broadcast_i_single(n_inv_p_flex_ani, 0);
+    if (world_rank != 0) {
+        dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+        lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+        lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+    }
+    broadcast_cr(dep_inv_ani,n_inv_r_flex_ani, 0);
+    broadcast_cr(lat_inv_ani,n_inv_t_flex_ani, 0);
+    broadcast_cr(lon_inv_ani,n_inv_p_flex_ani, 0);
+
     broadcast_bool_single(use_sta_correction, 0);
     broadcast_bool_single(sta_correction_file_exist, 0);
     broadcast_str(sta_correction_file, 0);
@@ -758,6 +808,10 @@ InputParams::~InputParams(){
     delete [] dep_inv;
     delete [] lat_inv;
     delete [] lon_inv;
+
+    delete [] dep_inv_ani;
+    delete [] lat_inv_ani;
+    delete [] lon_inv_ani;
 
     // clear all src, rec, data
     src_map.clear();

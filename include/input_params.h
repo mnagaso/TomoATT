@@ -86,6 +86,17 @@ public:
     CUSTOMREAL* get_lat_inv()     {return lat_inv;};
     CUSTOMREAL* get_lon_inv()     {return lon_inv;};
 
+    bool        get_invgrid_ani()     {return invgrid_ani;};
+    int         get_n_inv_r_flex_ani(){return n_inv_r_flex_ani;};
+    int         get_n_inv_t_flex_ani(){return n_inv_t_flex_ani;};
+    int         get_n_inv_p_flex_ani(){return n_inv_p_flex_ani;};
+    CUSTOMREAL* get_dep_inv_ani()     {return dep_inv_ani;};
+    CUSTOMREAL* get_lat_inv_ani()     {return lat_inv_ani;};
+    CUSTOMREAL* get_lon_inv_ani()     {return lon_inv_ani;};
+
+    // invgrid for ani
+
+
     int  get_max_iter_inv() {return max_iter_inv;};
 
     int  get_model_update_N_iter()  {return model_update_N_iter;};
@@ -243,6 +254,12 @@ private:
     CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;            // flexibly designed inversion grid
     int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1; // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
+
+    bool invgrid_ani;   // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
+    CUSTOMREAL *dep_inv_ani, *lat_inv_ani, *lon_inv_ani;            // flexibly designed inversion grid
+    int n_inv_r_flex_ani=1, n_inv_t_flex_ani=1, n_inv_p_flex_ani=1; // number of flexibly designed inversion grid in r, t, p direction
+    bool n_inv_r_flex_ani_read = false, n_inv_t_flex_ani_read = false, n_inv_p_flex_ani_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
+
 
     // date usage setting and weights
     bool use_abs = false; // use absolute travel time or not
