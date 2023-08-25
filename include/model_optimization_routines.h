@@ -245,12 +245,16 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         // calculate volume_domain = SquaredL2Norm(regularization_penalty)
         volume_domain = compute_volume_domain(grid);
 
-        // weight_Tikonov = penalty_weight / volume_domain
-        weight_Tikonov = regularization_weight / volume_domain;
-        std::cout << "DEBUG: weight_Tikonov: " << weight_Tikonov << std::endl;
-
         // volume_domain /= N_params
         volume_domain /= N_params;
+
+        // weight_Tikonov = penalty_weight / volume_domain
+        weight_Tikonov = regularization_weight / volume_domain;
+        weight_Tikonov_ani = regularization_weight;
+        std::cout << "DEBUG: weight_Tikonov: " << weight_Tikonov << std::endl;
+
+        // calculate damp_weights
+        compute_damp_weights(grid);
 
         // calculate gradient (run onestep forward+adjoint) not necessary to do here. already done
         //v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
@@ -327,10 +331,17 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     //
     // iteration
     //
+    if (i_inv > 0) {
+        // sum kernels among all simultaneous runs
+        sumup_kernels(grid);
+
+        // smooth kernels
+        smooth_kernels(grid, IP);
+    }
+
     // compute descent direction
     calc_descent_direction(grid, i_inv, IP);
 
-    // max Ks_descent_direction
     // smooth descent direction
     smooth_descent_direction(grid);
 
@@ -399,6 +410,30 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
 
         //// check wolfe conditions
         wolfe_cond_ok = check_wolfe_cond(grid, q_0, q_t, qp_0, qp_t, td, tg, step_length);
+
+        // update the model with the initial step size
+        if (subdom_main && IP.get_verbose_output_level() && id_sim==0) {
+            // store kernel only in the first src datafile
+            io.change_group_name_for_model();
+
+            // gradient
+            io.write_Ks_update(grid, i_inv*100+subiter_count);
+            io.write_Keta_update(grid, i_inv*100+subiter_count);
+            io.write_Kxi_update(grid, i_inv*100+subiter_count);
+
+            // output descent direction
+            io.write_Ks_descent_dir(grid, i_inv*100+subiter_count);
+            io.write_Keta_descent_dir(grid, i_inv*100+subiter_count);
+            io.write_Kxi_descent_dir(grid, i_inv*100+subiter_count);
+
+        }
+
+        // writeout temporary xdmf file
+        if (IP.get_verbose_output_level()&& id_sim==0)
+            io.update_xdmf_file();
+
+
+
 
         if (wolfe_cond_ok) {
             // log out

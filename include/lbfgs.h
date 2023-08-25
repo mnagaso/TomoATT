@@ -6,11 +6,15 @@
 #include "grid.h"
 #include "mpi_funcs.h"
 
-inline CUSTOMREAL volume_domain = _0_CR;          // volume of the domain
-inline CUSTOMREAL weight_Tikonov = _0_CR;         // weight of the regularization term
-inline int        N_params = 3;                   // number of parameters to invert
-inline CUSTOMREAL q_0           = _0_CR;          // initial cost function
-inline CUSTOMREAL qp_0          = _0_CR;          // store initial p_k * grad(f_k) (descent_direction * gradient)
+inline CUSTOMREAL volume_domain      = _0_CR;     // volume of the domain
+inline CUSTOMREAL weight_Tikonov     = _0_CR;     // weight of the regularization term
+inline CUSTOMREAL weight_Tikonov_ani = _0_CR;     // weight of the regularization term for anisotropic regularization
+inline int        N_params           = 3;         // number of parameters to invert
+inline CUSTOMREAL q_0                = _0_CR;     // initial cost function
+inline CUSTOMREAL qp_0               = _0_CR;     // store initial p_k * grad(f_k) (descent_direction * gradient)
+inline int        damp_weight_fun    = _1_CR;     // damp weights for fun
+inline int        damp_weight_eta    = _1_CR;     // damp weights for eta
+inline int        damp_weight_xi     = _1_CR;     // damp weights for xi
 
 
 void store_model_and_gradient(Grid& grid, int i_inv) {
@@ -314,9 +318,9 @@ inline CUSTOMREAL calculate_regularization_obj(Grid& grid) {
     if (subdom_main && id_sim==0) {
         int ngrid = loc_I*loc_J*loc_K;
 
-        regularization_term += calc_l2norm(grid.fun_regularization_penalty_loc, ngrid);
-        regularization_term += calc_l2norm(grid.eta_regularization_penalty_loc, ngrid);
-        regularization_term += calc_l2norm(grid.xi_regularization_penalty_loc, ngrid);
+        regularization_term += weight_Tikonov     * calc_l2norm(grid.fun_regularization_penalty_loc, ngrid);
+        regularization_term += weight_Tikonov_ani * calc_l2norm(grid.eta_regularization_penalty_loc, ngrid);
+        regularization_term += weight_Tikonov_ani * calc_l2norm(grid.xi_regularization_penalty_loc, ngrid);
 
         // gather from all subdomain
         CUSTOMREAL tmp = regularization_term;
@@ -326,7 +330,7 @@ inline CUSTOMREAL calculate_regularization_obj(Grid& grid) {
     // share retularization_term with all simultaneous run (may be unnecessary)
     broadcast_cr_single_inter_sim(regularization_term, 0);
 
-    return _0_5_CR * weight_Tikonov * regularization_term;
+    return _0_5_CR * regularization_term;
 
 }
 
@@ -388,17 +392,15 @@ inline void calculate_regularization_penalty(Grid& grid) {
         calc_laplacian_field(grid, tmp_xi, grid.xi_regularization_penalty_loc);
         calc_laplacian_field(grid, grid.xi_regularization_penalty_loc, grid.xi_gradient_regularization_penalty_loc);
 
-        //
-
         for (int i = 0; i < n_grid; i++){
             // calculate gradient_regularization_penalty first for avoiding using overwrited value in regularization_penalty
-            grid.fun_gradient_regularization_penalty_loc[i] = tmp_fun[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i];
-            grid.eta_gradient_regularization_penalty_loc[i] = tmp_eta[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i];
-            grid.xi_gradient_regularization_penalty_loc[i]  = tmp_xi[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i];
+            grid.fun_gradient_regularization_penalty_loc[i] = damp_weight_fun*damp_weight_fun*(tmp_fun[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i]);
+            grid.eta_gradient_regularization_penalty_loc[i] = damp_weight_eta*damp_weight_eta*(tmp_eta[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i]);
+            grid.xi_gradient_regularization_penalty_loc[i]  = damp_weight_xi *damp_weight_xi *(tmp_xi[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i]);
 
-            grid.fun_regularization_penalty_loc[i] = tmp_fun[i] - grid.fun_regularization_penalty_loc[i];
-            grid.eta_regularization_penalty_loc[i] = tmp_eta[i] - grid.eta_regularization_penalty_loc[i];
-            grid.xi_regularization_penalty_loc[i]  = tmp_xi[i]  - grid.xi_regularization_penalty_loc[i];
+            grid.fun_regularization_penalty_loc[i] = damp_weight_fun*(tmp_fun[i] - grid.fun_regularization_penalty_loc[i]);
+            grid.eta_regularization_penalty_loc[i] = damp_weight_eta*(tmp_eta[i] - grid.eta_regularization_penalty_loc[i]);
+            grid.xi_regularization_penalty_loc[i]  = damp_weight_xi *(tmp_xi[i]  - grid.xi_regularization_penalty_loc[i]);
         }
 
         delete [] tmp_fun;
@@ -421,9 +423,9 @@ inline void add_regularization_grad(Grid& grid) {
                         //grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)] /= Linf_Keta;
                         //grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)]  /= Linf_Kxi;
 
-                        grid.Ks_update_loc[I2V(i,j,k)]   += weight_Tikonov * grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)];
-                        grid.Keta_update_loc[I2V(i,j,k)] += weight_Tikonov * grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)];
-                        grid.Kxi_update_loc[I2V(i,j,k)]  += weight_Tikonov * grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                        grid.Ks_update_loc[I2V(i,j,k)]   += weight_Tikonov     * grid.fun_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                        grid.Keta_update_loc[I2V(i,j,k)] += weight_Tikonov_ani * grid.eta_gradient_regularization_penalty_loc[I2V(i,j,k)];
+                        grid.Kxi_update_loc[I2V(i,j,k)]  += weight_Tikonov_ani * grid.xi_gradient_regularization_penalty_loc[I2V(i,j,k)];
                     }
                 }
             }
@@ -489,5 +491,25 @@ inline CUSTOMREAL compute_volume_domain(Grid& grid) {
     return volume;
 }
 
+
+inline void compute_damp_weights(const Grid& grid) {
+    // (size/sum)**2
+
+    if(subdom_main){
+        CUSTOMREAL sum_fun = std::accumulate(grid.fun_prior_loc, grid.fun_prior_loc + loc_I*loc_J*loc_K, _0_CR);
+        //CUSTOMREAL sum_eta = std::accumulate(grid.eta_prior_loc, grid.eta_prior_loc + loc_I*loc_J*loc_K, _0_CR); // do not use
+        //CUSTOMREAL sum_xi  = std::accumulate(grid.xi_prior_loc, grid.xi_prior_loc + loc_I*loc_J*loc_K, _0_CR);
+
+        allreduce_cr_single(sum_fun, sum_fun);
+
+        damp_weight_fun = (volume_domain / sum_fun)*(volume_domain / sum_fun);
+        //damp_weight_eta = (volume / sum_eta)*(volume / sum_eta);
+        //damp_weight_xi  = (volume / sum_xi)*(volume / sum_xi);
+        damp_weight_eta = _1_CR;
+        damp_weight_xi  = _1_CR;
+
+    }
+
+}
 
 #endif

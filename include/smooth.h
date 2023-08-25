@@ -84,7 +84,6 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
 
                     // scaling
                     Ap[I2V(i,j,k)] = -Ap[I2V(i,j,k)]*scaling_A;
-
                 }
             }
         }

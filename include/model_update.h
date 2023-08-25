@@ -108,12 +108,6 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
 
             // calculate the descent direction
             if (i_inv > 0) {
-                // sum kernels among all simultaneous runs
-                sumup_kernels(grid);
-
-                // smooth kernels
-                smooth_kernels(grid, IP);
-
                 calculate_descent_direction_lbfgs(grid, i_inv);
             // use gradient for the first iteration
             } else {
