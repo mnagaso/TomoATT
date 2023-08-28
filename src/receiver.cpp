@@ -550,9 +550,9 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
             iter->second.sum_weight                 = _0_CR;    // what does it mean?
             iter->second.vobj_src_reloc_old         = iter->second.vobj_src_reloc;
             iter->second.vobj_src_reloc             = _0_CR;
-            for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
-                iter->second.vobj_src_reloc_data[i] = _0_CR;
-            }
+            // for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
+            //     iter->second.vobj_src_reloc_data[i] = _0_CR;
+            // }
             // iter->second.vobj_src_reloc_abs         = _0_CR;
             // iter->second.vobj_src_reloc_cr          = _0_CR;
             // iter->second.vobj_src_reloc_cs          = _0_CR;
@@ -983,6 +983,8 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                     IP.rec_map[name_rec].grad_chi_i += (syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.DTi * data.weight_reloc * local_weight;
                     IP.rec_map[name_rec].grad_tau   += (syn_time - obs_time + IP.rec_map[name_rec].tau_opt)            * data.weight_reloc * local_weight;
 
+                    // count the data
+                    IP.rec_map[name_rec].Ndata      += 1;
                 // case 2: common receiver (swapped source) double difference (double source, or double swapped receiver) for reloc
                 } else if (data.is_rec_pair && IP.get_use_cr_reloc()) {  // common receiver data (swapped common source) and we use it.
                     std::string name_rec1 = data.name_rec_pair[0];
@@ -1024,12 +1026,14 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                         IP.rec_map[name_rec1].grad_chi_j += (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.DTj_pair[0] * data.weight_reloc * local_weight;
                         IP.rec_map[name_rec1].grad_chi_i += (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.DTi_pair[0] * data.weight_reloc * local_weight;
                         IP.rec_map[name_rec1].grad_tau   += (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt)                    * data.weight_reloc * local_weight;
+                        IP.rec_map[name_rec1].Ndata      += 1;
                     }
                     if(!IP.rec_map[name_rec2].is_stop){
                         IP.rec_map[name_rec2].grad_chi_k -= (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.DTk_pair[1] * data.weight_reloc * local_weight;
                         IP.rec_map[name_rec2].grad_chi_j -= (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.DTj_pair[1] * data.weight_reloc * local_weight;
                         IP.rec_map[name_rec2].grad_chi_i -= (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.DTi_pair[1] * data.weight_reloc * local_weight;
                         IP.rec_map[name_rec2].grad_tau   -= (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt)                    * data.weight_reloc * local_weight;
+                        IP.rec_map[name_rec2].Ndata      += 1;
                     }
 
                 } else {    // unsupported data (swapped common receiver, or others)
@@ -1048,8 +1052,10 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
 
             std::string name_rec = iter->first;
 
-            if (IP.rec_map[name_rec].is_stop){
+            if (IP.rec_map[name_rec].is_stop){      // do not relocation
                 // do nothing
+            } else if (IP.rec_map[name_rec].Ndata < min_Ndata_reloc) {
+                IP.rec_map[name_rec].is_stop = true;
             } else {
                 // Here grad_dep_km is the kernel of obj with respect to the depth (unit is km) * rescaling_dep. The same for lat,lon,ortime
                 CUSTOMREAL grad_dep_km = 0.0;

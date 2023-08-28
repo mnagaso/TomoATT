@@ -1624,6 +1624,9 @@ void InputParams::gather_rec_info_to_main(){
             // assigne tau_opt to rec_map_all from its own rec_map
             for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
                 rec_map_all[iter->first].tau_opt = iter->second.tau_opt;
+                rec_map_all[iter->first].dep = iter->second.dep;
+                rec_map_all[iter->first].lat = iter->second.lat;
+                rec_map_all[iter->first].lon = iter->second.lon;
             }
 
             // make a list of receiver names
@@ -1643,19 +1646,32 @@ void InputParams::gather_rec_info_to_main(){
 
             int        rec_counter = 0;
             CUSTOMREAL tau_tmp=0.0;
+            CUSTOMREAL dep_tmp=0.0;
+            CUSTOMREAL lat_tmp=0.0;
+            CUSTOMREAL lon_tmp=0.0;
+            
             // copy value if rec_map[name_rec] exists
             if (rec_map.find(name_rec) != rec_map.end()){
                 tau_tmp = rec_map[name_rec].tau_opt;
+                dep_tmp = rec_map[name_rec].dep;
+                lat_tmp = rec_map[name_rec].lat;
+                lon_tmp = rec_map[name_rec].lon;
                 rec_counter = 1;
             }
 
             // reduce counter and tau_tmp
             allreduce_rec_map_var(rec_counter);
             allreduce_rec_map_var(tau_tmp);
+            allreduce_rec_map_var(dep_tmp);
+            allreduce_rec_map_var(lat_tmp);
+            allreduce_rec_map_var(lon_tmp);
 
             // assign tau_opt to rec_map_all
             if (rec_counter > 0){
                 rec_map_all[name_rec].tau_opt = tau_tmp / (CUSTOMREAL)rec_counter;
+                rec_map_all[name_rec].dep = dep_tmp / (CUSTOMREAL)rec_counter;
+                rec_map_all[name_rec].lat = lat_tmp / (CUSTOMREAL)rec_counter;
+                rec_map_all[name_rec].lon = lon_tmp / (CUSTOMREAL)rec_counter;
             }
 
        }
@@ -1840,9 +1856,20 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
         // gather all arrival time info to the main process (need to call even n_sim=1)
         gather_all_arrival_times_to_main();
 
-        // gather tau_opt info
-        if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC)
+        // gather tau_opt, lat, lon, dep info
+        if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC){
             gather_rec_info_to_main();
+
+            // modify the source location and ortime
+            for(auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                src_map_back[iter->first].lat   =   iter->second.lat;
+                src_map_back[iter->first].lon   =   iter->second.lon;
+                src_map_back[iter->first].dep   =   iter->second.dep;
+                src_map_back[iter->first].sec   =   iter->second.sec + iter->second.tau_opt;
+            }
+        }
+            
+
 
         // write only by the main processor of subdomain && the first id of subdoumains
         if (world_rank == 0 && subdom_main && id_subdomain==0){
@@ -2549,6 +2576,7 @@ void InputParams::allreduce_rec_map_grad_src(){
                 allreduce_rec_map_var(rec_map[name_rec].grad_chi_j);
                 allreduce_rec_map_var(rec_map[name_rec].grad_chi_k);
                 allreduce_rec_map_var(rec_map[name_rec].grad_tau);
+                allreduce_rec_map_var(rec_map[name_rec].Ndata);
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
@@ -2558,6 +2586,8 @@ void InputParams::allreduce_rec_map_grad_src(){
                 allreduce_rec_map_var(dummy);
                 dummy = 0;
                 allreduce_rec_map_var(dummy);
+                int dummy_int = 0;
+                allreduce_rec_map_var(dummy_int);
             }
         }
     }

@@ -319,11 +319,12 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         // v_obj_grad = 0.0;
 
         // determine which earthquake should be located
-        IP.name_for_reloc.clear();
-        for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            if (!iter->second.is_stop)
-                IP.name_for_reloc.push_back(iter->first);
-        }
+        // not correct. Because IP.name_for_reloc is the earthquake on the first processor to be located
+        // IP.name_for_reloc.clear();
+        // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+        //     if (!iter->second.is_stop)
+        //         IP.name_for_reloc.push_back(iter->first);
+        // }
 
         // calculate gradient of objective function at sources
         v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_iter);
@@ -336,14 +337,15 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
 
         // check convergence
-        int count_loc = 0;
+        // int count_loc = 0;
         bool finished = false;
 
         if (subdom_main && id_subdomain==0) {
-            if (IP.name_for_reloc.size() == 0){
-                std::cout << "Finished relocation because all receivers have been located." << std::endl;
-                finished = true;
-            }
+            // not correct. Because IP.name_for_reloc.size() is the number of earthquake on the first processor to be located
+            // if (IP.name_for_reloc.size() == 0){
+            //     std::cout << "Finished relocation because all receivers have been located." << std::endl;
+            //     finished = true;
+            // }
 
             if (i_iter >= N_ITER_MAX_SRC_RELOC){
                 std::cout << "Finished relocation because iteration number exceeds the maximum " << N_ITER_MAX_SRC_RELOC << std::endl;
@@ -362,7 +364,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         // output location information
         if(id_sim == 0 && myrank == 0){
             // number of receiver which have been completed
-            int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
+            // int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
 
             // write objective function
             std::cout << "iteration: " << i_iter << ", objective function: "              << v_obj << std::endl;
@@ -371,17 +373,17 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
             //                                      << ", average norm grad of relocating: " << v_obj_grad/IP.name_for_reloc.size()
             //                                      << ", v_obj/n_src: "                     << v_obj/nrec_total
             //                                      << ", diff_v/v_obj_old "                 << std::abs(v_obj-v_obj_old)/v_obj_old << std::endl;
-            std::cout << "Earthquakes require location: " << n_relocated << " / " << nrec_total << " completed." << std::endl;
+            // std::cout << "Earthquakes require location: " << n_relocated << " / " << nrec_total << " completed." << std::endl;
 
             // the last 10 sources under location
-            if (nrec_total - count_loc < 10){
-                std::cout << "Last 10 sources under location. names: ";
-                for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
-                    std::cout << IP.name_for_reloc[i] << ", ";
-                }
-                std::cout << std::endl;
-            }
-            std::cout << std::endl;
+            // if (nrec_total - count_loc < 10){
+            //     std::cout << "Last 10 sources under location. names: ";
+            //     for (int i = 0; i < (int)IP.name_for_reloc.size(); i++){
+            //         std::cout << IP.name_for_reloc[i] << ", ";
+            //     }
+            //     std::cout << std::endl;
+            // }
+            // std::cout << std::endl;
         }
 
         // write objective functions
@@ -457,7 +459,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     }
 
 
-    // modify the receiver's location
+    // modify the receiver's location   (something wrong, the location of source is modified only if the source is contained in this processor )
     IP.modify_swapped_source_location();
     // write out new src_rec_file
     IP.write_src_rec_file(0,0);
@@ -682,11 +684,11 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             v_obj      = 0.0;
 
             // determine which earthquake should be located
-            IP.name_for_reloc.clear();
-            for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-                if (!iter->second.is_stop)
-                    IP.name_for_reloc.push_back(iter->first);
-            }
+            // IP.name_for_reloc.clear();
+            // for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+            //     if (!iter->second.is_stop)
+            //         IP.name_for_reloc.push_back(iter->first);
+            // }
 
             // calculate gradient of objective function at sources
             v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_iter);

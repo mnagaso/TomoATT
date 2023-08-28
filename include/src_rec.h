@@ -61,12 +61,13 @@ public:
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
     // obj_abs, obj_cs, obj_cr, res_abs_mean, res_abs_std, res_cs_mean, res_cs_std, res_cr_mean, res_cr_std, 
-    std::vector<CUSTOMREAL> vobj_src_reloc_data      = std::vector<CUSTOMREAL>(SIZE_OF_OBJ_VECTOR); 
+    // std::vector<CUSTOMREAL> vobj_src_reloc_data      = std::vector<CUSTOMREAL>(SIZE_OF_OBJ_VECTOR); 
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
     CUSTOMREAL change_dep = 0.0;
     CUSTOMREAL change_lat = 0.0;
     CUSTOMREAL change_lon = 0.0;
     CUSTOMREAL change_tau = 0.0;
+    int        Ndata      = 0.0;
 };
 
 class DataInfo {

@@ -271,6 +271,7 @@ inline CUSTOMREAL       max_change_lat              = 1.0;
 inline CUSTOMREAL       max_change_lon              = 1.0;
 inline CUSTOMREAL       max_change_ortime           = 0.5;
 inline bool             ortime_local_search         = true;
+inline const int        min_Ndata_reloc             = 4;    // if an earthquake is recorded by less than <min_Ndata> times, relocation is not allowed.
 
 // inversion strategy parameters
 inline int inv_mode                     = 0;
