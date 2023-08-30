@@ -6,6 +6,21 @@
 #include "../../include/utils.h"
 
 
+void calc_inversed_laplacian(CUSTOMREAL* d, CUSTOMREAL* Ap,
+                             const int i, const int j, const int k,
+                             const CUSTOMREAL lr, const CUSTOMREAL lt, const CUSTOMREAL lp,
+                             const CUSTOMREAL dr, const CUSTOMREAL dt, const CUSTOMREAL dp) {
+    // calculate inversed laplacian operator
+    CUSTOMREAL termx = _0_CR, termy = _0_CR, termz = _0_CR;
+
+    termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+d[I2V(i-1,j,k)]+d[I2V(i+1,j,k)]));
+    termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j-1,k)]+d[I2V(i,j+1,k)]));
+    termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j,k-1)]+d[I2V(i,j,k+1)]));
+
+    Ap[I2V(i,j,k)] = termx+termy+termz;
+}
+
+
 void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREAL lt, CUSTOMREAL lp) {
     // arr: array to be smoothed
     // lr: smooth length on r
@@ -20,14 +35,16 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
     // pAp = d_array*Ap
     // rr = g_array * g_array (dot product)
 
-    const int max_iter_cg = 300;
+    const int max_iter_cg = 1000;
     const CUSTOMREAL xtol = 0.001;
     const bool use_scaling = true;
 
+    CUSTOMREAL dr=1, dt=1, dp=1;
+
     // allocate memory
     CUSTOMREAL* x_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
-    CUSTOMREAL* g_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
-    CUSTOMREAL* d_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
+    CUSTOMREAL* r_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
+    CUSTOMREAL* p_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
     CUSTOMREAL* Ap = new CUSTOMREAL[loc_I*loc_J*loc_K];
     CUSTOMREAL pAp=_0_CR, rr_0=_0_CR, rr=_0_CR, rr_new=_0_CR, aa=_0_CR, bb=_0_CR, tmp=_0_CR;
 
@@ -53,14 +70,14 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
 
     // array initialization
     for (int i=0; i<loc_I*loc_J*loc_K; i++) {
-        x_array[i] = _0_CR;
-        g_array[i] = arr_in[i]/scaling_coeff;
-        d_array[i] = arr_in[i]/scaling_coeff;
+        x_array[i] = _0_CR;                   ///x
+        r_array[i] = arr_in[i]/scaling_coeff; // r
+        p_array[i] = r_array[i];              // p
         Ap[i] = _0_CR;
     }
 
     // initial rr
-    rr = dot_product(g_array, g_array, loc_I*loc_J*loc_K);
+    rr = dot_product(r_array, r_array, loc_I*loc_J*loc_K);
     //tmp = rr;
     // sum all rr among all processors
     //allreduce_cr_single(tmp, rr);
@@ -75,16 +92,20 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
                 for (int i = 1; i < loc_I-1; i++) {
                     //scaling_coeff = std::max(scaling_coeff, std::abs(arr[I2V(i,j,k)]));
 
-                    Ap[I2V(i,j,k)] = (
-                        - _2_CR * (lr+lt+lp) * d_array[I2V(i,j,k)] \
-                        + lr * (d_array[I2V(i,j,k+1)] + d_array[I2V(i,j,k-1)]) \
-                        + lt * (d_array[I2V(i,j+1,k)] + d_array[I2V(i,j-1,k)]) \
-                        + lp * (d_array[I2V(i+1,j,k)] + d_array[I2V(i-1,j,k)]) \
-                    );
+                    // calculate inversed laplacian operator
+                    calc_inversed_laplacian(p_array,Ap,i,j,k,lr,lt,lp,dr,dt,dp);
+
+
+                    //Ap[I2V(i,j,k)] = (
+                    //    - _2_CR * (lr+lt+lp) * d_array[I2V(i,j,k)] \
+                    //    + lr * (d_array[I2V(i,j,k+1)] + d_array[I2V(i,j,k-1)]) \
+                    //    + lt * (d_array[I2V(i,j+1,k)] + d_array[I2V(i,j-1,k)]) \
+                    //    + lp * (d_array[I2V(i+1,j,k)] + d_array[I2V(i-1,j,k)]) \
+                    //);
 
                     // scaling
                     Ap[I2V(i,j,k)] = Ap[I2V(i,j,k)]*scaling_A;
-                    //Ap[I2V(i,j,k)] = (d_array[I2V(i,j,k)]+Ap[I2V(i,j,k)])*scaling_A;
+                    //Ap[I2V(i,j,k)] = (p_array[I2V(i,j,k)]*Ap[I2V(i,j,k)])*scaling_A;
                 }
             }
         }
@@ -93,26 +114,26 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
         //grid.send_recev_boundary_data(Ap);
 
         // calculate pAp
-        pAp = dot_product(d_array, Ap, loc_I*loc_J*loc_K);
+        pAp = dot_product(p_array, Ap, loc_I*loc_J*loc_K);
         //tmp = pAp;
         // sum all pAp among all processors
         //allreduce_cr_single(tmp, pAp);
 
         // compute step length
-        aa = rr / pAp;
+        aa = rr / pAp / 7;
 
         // update x_array (model)
         for (int i=0; i<loc_I*loc_J*loc_K; i++) {
-            x_array[i] += aa * d_array[i];
+            x_array[i] += aa * p_array[i];
         }
 
-        // update g_array (gradient)
+        // update r_array (gradient)
         for (int i=0; i<loc_I*loc_J*loc_K; i++) {
-            g_array[i] -= aa * Ap[i];
+            r_array[i] -= aa * Ap[i];
         }
 
         // update rr
-        rr_new = dot_product(g_array, g_array, loc_I*loc_J*loc_K);
+        rr_new = dot_product(r_array, r_array, loc_I*loc_J*loc_K);
         //tmp = rr_new;
         // sum all rr among all processors
         //allreduce_cr_single(tmp, rr_new);
@@ -120,11 +141,11 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
         // update d_array (descent direction)
         bb = rr_new / rr;
         for (int i=0; i<loc_I*loc_J*loc_K; i++) {
-            d_array[i] = g_array[i] + bb * d_array[i];
+            p_array[i] = r_array[i] + bb * p_array[i];
         }
 
         //if (myrank == 0 && iter%100==0){//} && if_verbose) {
-        if (iter%100==0){//} && if_verbose) {
+        if (iter%1==0){//} && if_verbose) {
             std::cout << "iter: " << iter << " rr: " << rr << " rr_new: " << rr_new << " rr/rr_0: " << rr/rr_0 << " pAp: " << pAp << " aa: " << aa << " bb: " << bb << std::endl;
         }
 
@@ -147,8 +168,8 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
 
     // deallocate
     delete[] x_array;
-    delete[] g_array;
-    delete[] d_array;
+    delete[] r_array;
+    delete[] p_array;
     delete[] Ap;
 
 }
