@@ -120,7 +120,7 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
         //allreduce_cr_single(tmp, pAp);
 
         // compute step length
-        aa = rr / pAp / 7;
+        aa = rr / pAp;
 
         // update x_array (model)
         for (int i=0; i<loc_I*loc_J*loc_K; i++) {
