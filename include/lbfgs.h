@@ -397,11 +397,23 @@ inline void calculate_regularization_penalty(Grid& grid) {
             grid.fun_gradient_regularization_penalty_loc[i] = damp_weight_fun*damp_weight_fun*(tmp_fun[i] - _2_CR * grid.fun_regularization_penalty_loc[i] + grid.fun_gradient_regularization_penalty_loc[i]);
             grid.eta_gradient_regularization_penalty_loc[i] = damp_weight_eta*damp_weight_eta*(tmp_eta[i] - _2_CR * grid.eta_regularization_penalty_loc[i] + grid.eta_gradient_regularization_penalty_loc[i]);
             grid.xi_gradient_regularization_penalty_loc[i]  = damp_weight_xi *damp_weight_xi *(tmp_xi[i]  - _2_CR * grid.xi_regularization_penalty_loc[i]  + grid.xi_gradient_regularization_penalty_loc[i]);
+        }
+
+        grid.send_recev_boundary_data(grid.fun_gradient_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.eta_gradient_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.xi_gradient_regularization_penalty_loc);
+
+        for (int i = 0; i < n_grid; i++){
+            // calculate gradient_regularization_penalty first for avoiding using overwrited value in regularization_penalty
 
             grid.fun_regularization_penalty_loc[i] = damp_weight_fun*(tmp_fun[i] - grid.fun_regularization_penalty_loc[i]);
             grid.eta_regularization_penalty_loc[i] = damp_weight_eta*(tmp_eta[i] - grid.eta_regularization_penalty_loc[i]);
             grid.xi_regularization_penalty_loc[i]  = damp_weight_xi *(tmp_xi[i]  - grid.xi_regularization_penalty_loc[i]);
         }
+
+        grid.send_recev_boundary_data(grid.fun_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.eta_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.xi_regularization_penalty_loc);
 
         delete [] tmp_fun;
         delete [] tmp_eta;
@@ -429,7 +441,13 @@ inline void add_regularization_grad(Grid& grid) {
                     }
                 }
             }
+
+            grid.send_recev_boundary_data(grid.Ks_update_loc);
+            grid.send_recev_boundary_data(grid.Keta_update_loc);
+            grid.send_recev_boundary_data(grid.Kxi_update_loc);
+
         }// end id_sim==0
+
 
         // share with all simultaneous run (may be unnecessary)
         broadcast_cr_inter_sim(grid.Ks_update_loc, loc_I*loc_J*loc_K, 0);
@@ -443,7 +461,8 @@ inline void add_regularization_grad(Grid& grid) {
 // compute initial guess for step length to try for line search
 void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) {
     // find the max value in descent_direction
-    CUSTOMREAL max_val = _0_CR;
+    CUSTOMREAL max_val = _0_CR, max_val_all = _0_CR;
+    const CUSTOMREAL max_relative_pert = 0.02;
 
     if(subdom_main && id_sim==0) {
         for (int k = 0; k < loc_K; k++) {
@@ -457,13 +476,13 @@ void initial_guess_step(Grid& grid, CUSTOMREAL& step_length, CUSTOMREAL SC_VAL) 
         }
 
         // reduce
-        allreduce_cr_single_max(max_val, max_val);
+        allreduce_cr_single_max(max_val, max_val_all);
 
         // debug print max_val
-        std::cout << "max_val: " << max_val << std::endl;
+        std::cout << "max_val: " << max_val_all << std::endl;
 
         // step size
-        step_length = SC_VAL / max_val;
+        step_length = max_relative_pert / SC_VAL / max_val_all;
     }
 
     // broadcast to all simultaneous run (may be unnecessary)

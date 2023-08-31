@@ -354,10 +354,9 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
 
         //// initial guess for isub = 0
         if (i_inv == 0 && subiter_count == 0)
-            initial_guess_step(grid, step_length, 0.01);
+            initial_guess_step(grid, step_length, 1.0);
         else if (i_inv == 1 && subiter_count == 0)
-            initial_guess_step(grid, step_length, step_length*LBFGS_RELATIVE_step_length);
-
+            initial_guess_step(grid, step_length, LBFGS_RELATIVE_step_length);
 
         // log out
         if(myrank == 0 && id_sim ==0)
@@ -376,6 +375,7 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
               << "," << std::setw(15) << wolfe_c2*qp_0 \
               << "," << std::setw(15) << wolfe_cond_ok << std::endl;
 
+        std::cout << "DEBUG STEPLENGTH: " << step_length << std::endl;
 
         //// Update model
         set_new_model(grid, step_length);

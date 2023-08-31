@@ -47,7 +47,7 @@ run_mode: 1
 #          model update parameters setting        #
 ###################################################
 model_update: # update model parameters (when run_mode : 1 and 3)
-  max_iterations: 30 # maximum number of inversion iterations
+  max_iterations: 20 # maximum number of inversion iterations
   optim_method: 2   # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
 
   # common parameters for all optim methods
@@ -62,12 +62,12 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   optim_method_1_2:
     max_sub_iterations: 5       # maximum number of each sub-iteration
     regularization_weight: 0.00001 # weight value for regularization (lbfgs mode only)
-    coefs_regulalization_rtp: [1.0, 1.0, 1.0] # coefficients for regularization on each direction(lbfgs mode only)
+    coefs_regulalization_rtp: [0.01,1,1] # coefficients for regularization on each direction(lbfgs mode only)
 
   # smoothing
   smoothing:
     smooth_method: 1        # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)
-    l_smooth_rtp: [1000,1000,1000] # smoothing coefficients for laplacian smoothing
+    l_smooth_rtp: [0.01,0.5,0.5] # smoothing coefficients for laplacian smoothing
 
   # parameters for smooth method 0 (multigrid model parametrization)
   n_inversion_grid: 5 # number of inversion grid sets
