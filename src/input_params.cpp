@@ -237,8 +237,8 @@ InputParams::InputParams(std::string& input_file){
                     getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lp, 2);
 
                     // convert degree to radian
-                    //regul_lt = regul_lt * DEG2RAD;
-                    //regul_lp = regul_lp * DEG2RAD;
+                    regul_lt = regul_lt * DEG2RAD;
+                    regul_lp = regul_lp * DEG2RAD;
                 }
             }
 

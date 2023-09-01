@@ -13,9 +13,29 @@ void calc_inversed_laplacian(CUSTOMREAL* d, CUSTOMREAL* Ap,
     // calculate inversed laplacian operator
     CUSTOMREAL termx = _0_CR, termy = _0_CR, termz = _0_CR;
 
-    termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+d[I2V(i-1,j,k)]+d[I2V(i+1,j,k)]));
-    termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j-1,k)]+d[I2V(i,j+1,k)]));
-    termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j,k-1)]+d[I2V(i,j,k+1)]));
+    if (i==0) {
+        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+2*d[I2V(i+1,j,k)]));
+    } else if (i==loc_I-1) {
+        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+2*d[I2V(i-1,j,k)]));
+    } else {
+        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+d[I2V(i-1,j,k)]+d[I2V(i+1,j,k)]));
+    }
+
+    if (j==0) {
+        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+2*d[I2V(i,j+1,k)]));
+    } else if (j==loc_J-1) {
+        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+2*d[I2V(i,j-1,k)]));
+    } else {
+        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j-1,k)]+d[I2V(i,j+1,k)]));
+    }
+
+    if (k==0) {
+        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+2*d[I2V(i,j,k+1)]));
+    } else if (k==loc_K-1) {
+        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+2*d[I2V(i,j,k-1)]));
+    } else {
+        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j,k-1)]+d[I2V(i,j,k+1)]));
+    }
 
     Ap[I2V(i,j,k)] = termx+termy+termz;
 }
@@ -39,7 +59,7 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
     const CUSTOMREAL xtol = 0.001;
     const bool use_scaling = true;
 
-    CUSTOMREAL dr=1, dt=1, dp=1;
+    CUSTOMREAL dr=1, dt=100, dp=100;
 
     // allocate memory
     CUSTOMREAL* x_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
@@ -52,7 +72,7 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
 
     if (use_scaling) {
         // calculate scaling factor
-        scaling_A = std::sqrt(_1_CR / (_8_CR * PI * lr * lt * lp));
+        //scaling_A = std::sqrt(_1_CR / (_8_CR * PI * lr * lt * lp));
         // scaling coefficient for gradient
         scaling_coeff = find_absmax(arr_in, loc_I*loc_J*loc_K);
         //tmp = scaling_coeff;
@@ -87,9 +107,9 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
     for (int iter=0; iter<max_iter_cg; iter++) {
 
         // calculate laplacian
-        for (int k = 1; k < loc_K-1; k++) {
-            for (int j = 1; j < loc_J-1; j++) {
-                for (int i = 1; i < loc_I-1; i++) {
+        for (int k = 0; k < loc_K; k++) {
+            for (int j = 0; j < loc_J; j++) {
+                for (int i = 0; i < loc_I; i++) {
                     //scaling_coeff = std::max(scaling_coeff, std::abs(arr[I2V(i,j,k)]));
 
                     // calculate inversed laplacian operator
@@ -109,6 +129,7 @@ void CG_smooth(CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREA
                 }
             }
         }
+
 
         // get the values on the boundaries
         //grid.send_recev_boundary_data(Ap);

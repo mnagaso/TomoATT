@@ -359,23 +359,23 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
             initial_guess_step(grid, step_length, LBFGS_RELATIVE_step_length);
 
         // log out
-        if(myrank == 0 && id_sim ==0)
-            out_main \
-                     << std::setw(5)  << i_inv \
-              << "," << std::setw(5)  << subiter_count \
-              << "," << std::setw(15) << step_length \
-              << "," << std::setw(15) << q_0 \
-              << "," << std::setw(15) << q_t \
-              << "," << std::setw(15) << v_obj_reg \
-              << "," << std::setw(15) << qp_0 \
-              << "," << std::setw(15) << qp_t \
-              << "," << std::setw(15) << td \
-              << "," << std::setw(15) << tg \
-              << "," << std::setw(15) << wolfe_c1*qp_0 \
-              << "," << std::setw(15) << wolfe_c2*qp_0 \
-              << "," << std::setw(15) << wolfe_cond_ok << std::endl;
+        //if(myrank == 0 && id_sim ==0)
+        //    out_main \
+        //             << std::setw(5)  << i_inv \
+        //      << "," << std::setw(5)  << subiter_count \
+        //      << "," << std::setw(15) << step_length \
+        //      << "," << std::setw(15) << q_0 \
+        //      << "," << std::setw(15) << q_t \
+        //      << "," << std::setw(15) << v_obj_reg \
+        //      << "," << std::setw(15) << qp_0 \
+        //      << "," << std::setw(15) << qp_t \
+        //      << "," << std::setw(15) << td \
+        //      << "," << std::setw(15) << tg \
+        //      << "," << std::setw(15) << wolfe_c1*qp_0 \
+        //      << "," << std::setw(15) << wolfe_c2*qp_0 \
+        //      << "," << std::setw(15) << wolfe_cond_ok << std::endl;
 
-        std::cout << "DEBUG STEPLENGTH: " << step_length << std::endl;
+        //std::cout << "DEBUG STEPLENGTH: " << step_length << std::endl;
 
         //// Update model
         set_new_model(grid, step_length);
