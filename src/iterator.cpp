@@ -1926,6 +1926,12 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
     CUSTOMREAL c2m = (c2 - std::abs(c2))/_2_CR;
     CUSTOMREAL c2p = (c2 + std::abs(c2))/_2_CR;
 
+    // avoid oscillation on boundary
+    if (kkr == 1 && grid.k_first() && a1p > 0 ){
+        a1m = -a1p;
+        a1p = 0;
+    }
+
     // coe
     CUSTOMREAL coe = (a2p-a1m)/dr + (b2p-b1m)/dt + (c2p-c1m)/dp;
 
@@ -3009,29 +3015,82 @@ void Iterator::calculate_boundary_nodes_tele(Grid& grid, int& iip, int& jjt, int
 }
 
 void Iterator::calculate_boundary_nodes_tele_adj(Grid& grid, int& iip, int& jjt, int& kkr){
+
+    int valence = 0;
+    CUSTOMREAL tmp = _0_CR;
+
     // West
-    if (iip == 0 && grid.i_first())
-        grid.tau_loc[I2V(0,jjt,kkr)] = _0_CR;
+    if (iip == 0 && grid.i_first()) {
+        if (!grid.is_changed[I2V(0,jjt,kkr)]) {
+            if (grid.tau_loc[I2V(2,jjt,kkr)] >= 0)
+                tmp += std::max(_0_CR, _2_CR*grid.tau_loc[I2V(1,jjt,kkr)] - grid.tau_loc[I2V(2,jjt,kkr)]);
+            else
+                tmp += std::min(_0_CR, _2_CR*grid.tau_loc[I2V(1,jjt,kkr)] - grid.tau_loc[I2V(2,jjt,kkr)]);
+            valence++;
+        } else {
+            grid.tau_loc[I2V(0,jjt,kkr)] = _0_CR;
+        }
+    }
 
     // East
-    if (iip == np-1 && grid.i_last())
-        grid.tau_loc[I2V(np-1,jjt,kkr)] = _0_CR;
+    if (iip == np-1 && grid.i_last()) {
+        if (!grid.is_changed[I2V(np-1,jjt,kkr)]) {
+            if (grid.tau_loc[I2V(np-3,jjt,kkr)] >= 0)
+                tmp += std::max(_0_CR, _2_CR*grid.tau_loc[I2V(np-2,jjt,kkr)] - grid.tau_loc[I2V(np-3,jjt,kkr)]);
+            else
+                tmp += std::min(_0_CR, _2_CR*grid.tau_loc[I2V(np-2,jjt,kkr)] - grid.tau_loc[I2V(np-3,jjt,kkr)]);
+            valence++;
+        } else {
+            grid.tau_loc[I2V(np-1,jjt,kkr)] = _0_CR;
+        }
+    }
 
     // South
-    if (jjt == 0 && grid.j_first())
-        grid.tau_loc[I2V(iip,0,kkr)] = _0_CR;
+    if (jjt == 0 && grid.j_first()) {
+        if (!grid.is_changed[I2V(iip,0,kkr)]) {
+            if (grid.tau_loc[I2V(iip,2,kkr)] >= 0)
+                tmp += std::max(_0_CR, _2_CR*grid.tau_loc[I2V(iip,1,kkr)] - grid.tau_loc[I2V(iip,2,kkr)]);
+            else
+                tmp += std::min(_0_CR, _2_CR*grid.tau_loc[I2V(iip,1,kkr)] - grid.tau_loc[I2V(iip,2,kkr)]);
+            valence++;
+        } else {
+            grid.tau_loc[I2V(iip,0,kkr)] = _0_CR;
+        }
+    }
 
     // North
-    if (jjt == nt-1 && grid.j_last())
-        grid.tau_loc[I2V(iip,nt-1,kkr)] = _0_CR;
+    if (jjt == nt-1 && grid.j_last()) {
+        if (!grid.is_changed[I2V(iip,nt-1,kkr)]) {
+            if (grid.tau_loc[I2V(iip,nt-3,kkr)] >= 0)
+                tmp += std::max(_0_CR, _2_CR*grid.tau_loc[I2V(iip,nt-2,kkr)] - grid.tau_loc[I2V(iip,nt-3,kkr)]);
+            else
+                tmp += std::min(_0_CR, _2_CR*grid.tau_loc[I2V(iip,nt-2,kkr)] - grid.tau_loc[I2V(iip,nt-3,kkr)]);
+            valence++;
+        } else {
+            grid.tau_loc[I2V(iip,nt-1,kkr)] = _0_CR;
+        }
+    }
 
     // Bottom
-    if (kkr == 0 && grid.k_first())
-        grid.tau_loc[I2V(iip,jjt,0)] = _0_CR;
+    if (kkr == 0 && grid.k_first()) {
+        if (!grid.is_changed[I2V(iip,jjt,0)]) {
+            if (grid.tau_loc[I2V(iip,jjt,2)] >= 0)
+                tmp += std::max(_0_CR, _2_CR*grid.tau_loc[I2V(iip,jjt,1)] - grid.tau_loc[I2V(iip,jjt,2)]);
+            else
+                tmp += std::min(_0_CR, _2_CR*grid.tau_loc[I2V(iip,jjt,1)] - grid.tau_loc[I2V(iip,jjt,2)]);
+            valence++;
+        } else {
+            grid.tau_loc[I2V(iip,jjt,0)] = _0_CR;
+        }
+    }
 
     // Top
     if (kkr == nr-1 && grid.k_last())
         grid.tau_loc[I2V(iip,jjt,nr-1)] = _0_CR;
+
+    if (!grid.is_changed[I2V(iip,jjt,kkr)]) {
+        grid.tau_loc[I2V(iip,jjt,kkr)] = tmp / valence;
+    }
 
 }
 
