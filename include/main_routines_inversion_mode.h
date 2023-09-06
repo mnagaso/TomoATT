@@ -31,7 +31,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         // check if this source is common receiver data
 
         if (myrank == 0)
-            std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
+            std::cout << "calculating the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
 
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
@@ -155,7 +155,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                 //  case 2. is_read_time == true, but we compute teleseismic data;
 
                 if (myrank == 0){
-                    std::cout << "calculateing source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+                    std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
                             << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                             << std::endl;
