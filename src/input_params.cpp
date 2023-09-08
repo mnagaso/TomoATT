@@ -1003,6 +1003,10 @@ void InputParams::write_params_to_file() {
     }
     fout << std::endl;
 
+    fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)" << std::endl;
+    fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
+    fout << std::endl;
+
     fout << "  # path to station correction file" << std::endl;
     fout << "  use_sta_correction: " << use_sta_correction << std::endl;
     if (sta_correction_file_exist)
