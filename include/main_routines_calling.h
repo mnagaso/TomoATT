@@ -141,7 +141,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     // objective function for all src
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
-    std::vector<CUSTOMREAL> v_obj_misfit;
+    std::vector<CUSTOMREAL> v_obj_misfit(10, 0.0);
 
     for (int i_inv = 0; i_inv < IP.get_max_iter_inv(); i_inv++) {
 
@@ -275,7 +275,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         out_main << std::setw(8) << std::right << "# iter,";
         out_main << std::setw(16) << std::right << "N_reloc,";
         out_main << std::setw(16) << std::right << "N_located,";
-        
+
         std::string tmp = "obj(";
         tmp.append(std::to_string(IP.N_data));
         tmp.append("),");
@@ -473,8 +473,6 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 }
 
 
-
-
 // run earthquake relocation mode
 inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
@@ -540,14 +538,14 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     /////////////////////
 
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
-    std::vector<CUSTOMREAL> v_obj_misfit;
+    std::vector<CUSTOMREAL> v_obj_misfit(10, 0.0);
 
     int model_update_step = 0;
     int relocation_step = 0;
 
     for (int i_loop = 0; i_loop < IP.get_max_loop(); i_loop++){
         /////////////////////
-        // stage 1, update model parameters 
+        // stage 1, update model parameters
         /////////////////////
 
         for (int one_loop_i_inv = 0; one_loop_i_inv < IP.get_model_update_N_iter(); one_loop_i_inv++){
@@ -555,7 +553,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             int i_inv = i_loop * IP.get_model_update_N_iter() + one_loop_i_inv;
 
             if(myrank == 0 && id_sim ==0){
-                std::cout   << std::endl; 
+                std::cout   << std::endl;
                 std::cout   << "loop " << i_loop+1 << ", model update iteration " << one_loop_i_inv+1 
                             << " ( the " << i_inv+1 << "-th model update) starting ... " << std::endl;  
                 std::cout   << std::endl; 
@@ -634,8 +632,8 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 // output model_parameters_inv_0000.dat
                 if (IP.get_if_output_model_dat() \
                 && (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop()*IP.get_model_update_N_iter() - 2))
-                    io.write_concerning_parameters(grid, i_inv + 1, IP);         
-            }  
+                    io.write_concerning_parameters(grid, i_inv + 1, IP);
+            }
 
             // writeout temporary xdmf file
             io.update_xdmf_file();
@@ -656,7 +654,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
 
         /////////////////////
-        // stage 2, update earthquake locations 
+        // stage 2, update earthquake locations
         /////////////////////
 
         if(myrank == 0 && id_sim ==0){
@@ -668,7 +666,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
         // calculate traveltime for each receiver (swapped from source) and write in output file
         calculate_traveltime_for_all_src_rec(IP, grid, io);
 
-        
+
 
         // initilize all earthquakes
         for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
@@ -787,8 +785,9 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             relocation_step += 1;
         }
- 
+        
         grid.rejunenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
+
     }
 
     // close xdmf file
