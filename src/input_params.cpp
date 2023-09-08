@@ -1683,23 +1683,28 @@ void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, std::s
     // check if this src is teleseismic source
     if (src.is_out_of_region){
         // North boundary
-        if (j_last)
-            src.arr_times_bound_N = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
+        if (j_last) {
+            src.arr_times_bound_N = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND); if (src.arr_times_bound_N == NULL) {std::cerr << "Error: memory allocation failed" << std::endl; exit(1);}
+        }
         // South boundary
-        if (j_first)
-            src.arr_times_bound_S = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
+        if (j_first) {
+            src.arr_times_bound_S = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND); if (src.arr_times_bound_S == NULL) {std::cerr << "Error: memory allocation failed" << std::endl; exit(1);}
+        }
         // East boundary
-        if (i_last)
-            src.arr_times_bound_E = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
+        if (i_last) {
+            src.arr_times_bound_E = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND); if (src.arr_times_bound_E == NULL) {std::cerr << "Error: memory allocation failed" << std::endl; exit(1);}
+        }
         // West boundary
-        if (i_first)
-            src.arr_times_bound_W = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
+        if (i_first) {
+            src.arr_times_bound_W = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND); if (src.arr_times_bound_W == NULL) {std::cerr << "Error: memory allocation failed" << std::endl; exit(1);}
+        }
         // Bottom boundary
-        if (k_first)
-            src.arr_times_bound_Bot = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*np*N_LAYER_SRC_BOUND);
+        if (k_first) {
+            src.arr_times_bound_Bot = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*np*N_LAYER_SRC_BOUND); if (src.arr_times_bound_Bot == NULL) {std::cerr << "Error: memory allocation failed" << std::endl; exit(1);}
+        }
 
         // boundary source flag
-        src.is_bound_src = (bool*)malloc(sizeof(bool)*5);
+        src.is_bound_src = (bool*)malloc(sizeof(bool)*5); if (src.is_bound_src == NULL) {std::cerr << "Error: memory allocation failed" << std::endl; exit(1);}
     }
 
 }

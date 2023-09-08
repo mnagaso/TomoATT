@@ -371,33 +371,34 @@ void Grid::memory_allocation() {
 #ifdef USE_CUDA
         if(use_gpu)
             cudaMallocHost((void**)&tau_loc, n_total_loc_grid_points * sizeof(CUSTOMREAL));
-        else
-            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        else {
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (tau_loc == NULL) {std::cout << "memory allocation for tau_loc failed" << std::endl; exit(1);}
+        }
 #else
-            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+            tau_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (tau_loc == NULL) {std::cout << "memory allocation for tau_loc failed" << std::endl; exit(1);}
 #endif
 
-        xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        T_loc       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        tau_old_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (xi_loc == NULL) {std::cout << "memory allocation for xi_loc failed" << std::endl; exit(1);}
+        eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (eta_loc == NULL) {std::cout << "memory allocation for eta_loc failed" << std::endl; exit(1);}
+        zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (zeta_loc == NULL) {std::cout << "memory allocation for zeta_loc failed" << std::endl; exit(1);}
+        T_loc       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (T_loc == NULL) {std::cout << "memory allocation for T_loc failed" << std::endl; exit(1);}
+        tau_old_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (tau_old_loc == NULL) {std::cout << "memory allocation for tau_old_loc failed" << std::endl; exit(1);}
 
-        T0r_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        T0t_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        T0p_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        T0v_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        fac_a_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        fac_b_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        fac_c_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        fac_f_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        fun_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        is_changed  = (bool *)       malloc(sizeof(bool)       * n_total_loc_grid_points);
+        T0r_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (T0r_loc == NULL) {std::cout << "memory allocation for T0r_loc failed" << std::endl; exit(1);}
+        T0t_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (T0t_loc == NULL) {std::cout << "memory allocation for T0t_loc failed" << std::endl; exit(1);}
+        T0p_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (T0p_loc == NULL) {std::cout << "memory allocation for T0p_loc failed" << std::endl; exit(1);}
+        T0v_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (T0v_loc == NULL) {std::cout << "memory allocation for T0v_loc failed" << std::endl; exit(1);}
+        fac_a_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_a_loc == NULL) {std::cout << "memory allocation for fac_a_loc failed" << std::endl; exit(1);}
+        fac_b_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_b_loc == NULL) {std::cout << "memory allocation for fac_b_loc failed" << std::endl; exit(1);}
+        fac_c_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_c_loc == NULL) {std::cout << "memory allocation for fac_c_loc failed" << std::endl; exit(1);}
+        fac_f_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_f_loc == NULL) {std::cout << "memory allocation for fac_f_loc failed" << std::endl; exit(1);}
+        fun_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fun_loc == NULL) {std::cout << "memory allocation for fun_loc failed" << std::endl; exit(1);}
+        is_changed  = (bool *)       malloc(sizeof(bool)       * n_total_loc_grid_points); if (is_changed == NULL) {std::cout << "memory allocation for is_changed failed" << std::endl; exit(1);}
 
         // 1d arrays
-        p_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_I);
-        t_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_J);
-        r_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_K);
+        p_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_I); if (p_loc_1d == NULL) {std::cout << "memory allocation for p_loc_1d failed" << std::endl; exit(1);}
+        t_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_J); if (t_loc_1d == NULL) {std::cout << "memory allocation for t_loc_1d failed" << std::endl; exit(1);}
+        r_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_K); if (r_loc_1d == NULL) {std::cout << "memory allocation for r_loc_1d failed" << std::endl; exit(1);}
     }
 
     if (if_test)
@@ -405,115 +406,115 @@ void Grid::memory_allocation() {
 
     // ghost layer arrays
     if (neighbors_id[0] != -1) {
-        bin_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i);
-        bin_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i);
+        bin_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i); if (bin_s == NULL) {std::cout << "memory allocation for bin_s failed" << std::endl; exit(1);}
+        bin_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i); if (bin_r == NULL) {std::cout << "memory allocation for bin_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id[1] != -1) {
-        bip_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i);
-        bip_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i);
+        bip_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i); if (bip_s == NULL) {std::cout << "memory allocation for bip_s failed" << std::endl; exit(1);}
+        bip_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_i); if (bip_r == NULL) {std::cout << "memory allocation for bip_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id[2] != -1) {
-        bjn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j);
-        bjn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j);
+        bjn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j); if (bjn_s == NULL) {std::cout << "memory allocation for bjn_s failed" << std::endl; exit(1);}
+        bjn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j); if (bjn_r == NULL) {std::cout << "memory allocation for bjn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id[3] != -1) {
-        bjp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j);
-        bjp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j);
+        bjp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j); if (bjp_s == NULL) {std::cout << "memory allocation for bjp_s failed" << std::endl; exit(1);}
+        bjp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_j); if (bjp_r == NULL) {std::cout << "memory allocation for bjp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id[4] != -1) {
-        bkn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k);
-        bkn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k);
+        bkn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k); if (bkn_s == NULL) {std::cout << "memory allocation for bkn_s failed" << std::endl; exit(1);}
+        bkn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k); if (bkn_r == NULL) {std::cout << "memory allocation for bkn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id[5] != -1) {
-        bkp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k);
-        bkp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k);
+        bkp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k); if (bkp_s == NULL) {std::cout << "memory allocation for bkp_s failed" << std::endl; exit(1);}
+        bkp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *n_ghost_layers*n_grid_bound_k); if (bkp_r == NULL) {std::cout << "memory allocation for bkp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ij[0] != -1) {
-        bij_nn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
-        bij_nn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
+        bij_nn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_nn_s == NULL) {std::cout << "memory allocation for bij_nn_s failed" << std::endl; exit(1);}
+        bij_nn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_nn_r == NULL) {std::cout << "memory allocation for bij_nn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ij[1] != -1) {
-        bij_np_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
-        bij_np_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
+        bij_np_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_np_s == NULL) {std::cout << "memory allocation for bij_np_s failed" << std::endl; exit(1);}
+        bij_np_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_np_r == NULL) {std::cout << "memory allocation for bij_np_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ij[2] != -1) {
-        bij_pn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
-        bij_pn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
+        bij_pn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_pn_s == NULL) {std::cout << "memory allocation for bij_pn_s failed" << std::endl; exit(1);}
+        bij_pn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_pn_r == NULL) {std::cout << "memory allocation for bij_pn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ij[3] != -1) {
-        bij_pp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
-        bij_pp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis);
+        bij_pp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_pp_s == NULL) {std::cout << "memory allocation for bij_pp_s failed" << std::endl; exit(1);}
+        bij_pp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_K_vis); if (bij_pp_r == NULL) {std::cout << "memory allocation for bij_pp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_jk[0] != -1) {
-        bjk_nn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
-        bjk_nn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
+        bjk_nn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_nn_s == NULL) {std::cout << "memory allocation for bjk_nn_s failed" << std::endl; exit(1);}
+        bjk_nn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_nn_r == NULL) {std::cout << "memory allocation for bjk_nn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_jk[1] != -1) {
-        bjk_np_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
-        bjk_np_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
+        bjk_np_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_np_s == NULL) {std::cout << "memory allocation for bjk_np_s failed" << std::endl; exit(1);}
+        bjk_np_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_np_r == NULL) {std::cout << "memory allocation for bjk_np_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_jk[2] != -1) {
-        bjk_pn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
-        bjk_pn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
+        bjk_pn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_pn_s == NULL) {std::cout << "memory allocation for bjk_pn_s failed" << std::endl; exit(1);}
+        bjk_pn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_pn_r == NULL) {std::cout << "memory allocation for bjk_pn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_jk[3] != -1) {
-        bjk_pp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
-        bjk_pp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis);
+        bjk_pp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_pp_s == NULL) {std::cout << "memory allocation for bjk_pp_s failed" << std::endl; exit(1);}
+        bjk_pp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_I_vis); if (bjk_pp_r == NULL) {std::cout << "memory allocation for bjk_pp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ik[0] != -1) {
-        bik_nn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
-        bik_nn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
+        bik_nn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_nn_s == NULL) {std::cout << "memory allocation for bik_nn_s failed" << std::endl; exit(1);}
+        bik_nn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_nn_r == NULL) {std::cout << "memory allocation for bik_nn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ik[1] != -1) {
-        bik_np_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
-        bik_np_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
+        bik_np_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_np_s == NULL) {std::cout << "memory allocation for bik_np_s failed" << std::endl; exit(1);}
+        bik_np_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_np_r == NULL) {std::cout << "memory allocation for bik_np_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ik[2] != -1) {
-        bik_pn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
-        bik_pn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
+        bik_pn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_pn_s == NULL) {std::cout << "memory allocation for bik_pn_s failed" << std::endl; exit(1);}
+        bik_pn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_pn_r == NULL) {std::cout << "memory allocation for bik_pn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ik[3] != -1) {
-        bik_pp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
-        bik_pp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis);
+        bik_pp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_pp_s == NULL) {std::cout << "memory allocation for bik_pp_s failed" << std::endl; exit(1);}
+        bik_pp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *loc_J_vis); if (bik_pp_r == NULL) {std::cout << "memory allocation for bik_pp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[0] != -1) {
-        bijk_nnn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_nnn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_nnn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_nnn_s == NULL) {std::cout << "memory allocation for bijk_nnn_s failed" << std::endl; exit(1);}
+        bijk_nnn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_nnn_r == NULL) {std::cout << "memory allocation for bijk_nnn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[1] != -1) {
-        bijk_nnp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_nnp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_nnp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_nnp_s == NULL) {std::cout << "memory allocation for bijk_nnp_s failed" << std::endl; exit(1);}
+        bijk_nnp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_nnp_r == NULL) {std::cout << "memory allocation for bijk_nnp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[2] != -1) {
-        bijk_npn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_npn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_npn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_npn_s == NULL) {std::cout << "memory allocation for bijk_npn_s failed" << std::endl; exit(1);}
+        bijk_npn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_npn_r == NULL) {std::cout << "memory allocation for bijk_npn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[3] != -1) {
-        bijk_npp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_npp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_npp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_npp_s == NULL) {std::cout << "memory allocation for bijk_npp_s failed" << std::endl; exit(1);}
+        bijk_npp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_npp_r == NULL) {std::cout << "memory allocation for bijk_npp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[4] != -1) {
-        bijk_pnn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_pnn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_pnn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_pnn_s == NULL) {std::cout << "memory allocation for bijk_pnn_s failed" << std::endl; exit(1);}
+        bijk_pnn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_pnn_r == NULL) {std::cout << "memory allocation for bijk_pnn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[5] != -1) {
-        bijk_pnp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_pnp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_pnp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_pnp_s == NULL) {std::cout << "memory allocation for bijk_pnp_s failed" << std::endl; exit(1);}
+        bijk_pnp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_pnp_r == NULL) {std::cout << "memory allocation for bijk_pnp_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[6] != -1) {
-        bijk_ppn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_ppn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_ppn_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_ppn_s == NULL) {std::cout << "memory allocation for bijk_ppn_s failed" << std::endl; exit(1);}
+        bijk_ppn_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_ppn_r == NULL) {std::cout << "memory allocation for bijk_ppn_r failed" << std::endl; exit(1);}
     }
     if (neighbors_id_ijk[7] != -1) {
-        bijk_ppp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
-        bijk_ppp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1);
+        bijk_ppp_s = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_ppp_s == NULL) {std::cout << "memory allocation for bijk_ppp_s failed" << std::endl; exit(1);}
+        bijk_ppp_r = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *1); if (bijk_ppp_r == NULL) {std::cout << "memory allocation for bijk_ppp_r failed" << std::endl; exit(1);}
     }
 
     // array for mpi request
-    mpi_reqs = (MPI_Request *) malloc(sizeof(MPI_Request) * 6);
+    mpi_reqs = (MPI_Request *) malloc(sizeof(MPI_Request) * 6); if (mpi_reqs == NULL) {std::cout << "memory allocation for mpi_reqs failed" << std::endl; exit(1);}
     for (int i = 0; i < 6; i++)
         mpi_reqs[i] = MPI_REQUEST_NULL;
-    mpi_reqs_kosumi = (MPI_Request *) malloc(sizeof(MPI_Request) * 20);
+    mpi_reqs_kosumi = (MPI_Request *) malloc(sizeof(MPI_Request) * 20); if (mpi_reqs_kosumi == NULL) {std::cout << "memory allocation for mpi_reqs_kosumi failed" << std::endl; exit(1);}
     for (int i = 0; i < 20; i++)
         mpi_reqs_kosumi[i] = MPI_REQUEST_NULL;
 
@@ -523,67 +524,68 @@ void Grid::memory_allocation() {
     // arrays for data output
     int nnodes_loc_vis =  loc_I_vis    *  loc_J_vis    *  loc_K_vis;
     int nelms_loc_vis  = (loc_I_vis-1) * (loc_J_vis-1) * (loc_K_vis-1);
-    x_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis);
-    y_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis);
-    z_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis);
-    p_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis);
-    t_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis);
-    r_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis);
-    elms_conn    = (int *) malloc(sizeof(int *) *nelms_loc_vis*9);
-    my_proc_dump = (int *) malloc(sizeof(int *) *nnodes_loc_vis); // DEBUG
-    vis_data     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *nnodes_loc_vis); // temp array for visuzulization
+    x_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis); if (x_loc_3d == NULL) {std::cout << "memory allocation for x_loc_3d failed" << std::endl; exit(1);}
+    y_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis); if (y_loc_3d == NULL) {std::cout << "memory allocation for y_loc_3d failed" << std::endl; exit(1);}
+    z_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis); if (z_loc_3d == NULL) {std::cout << "memory allocation for z_loc_3d failed" << std::endl; exit(1);}
+    p_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis); if (p_loc_3d == NULL) {std::cout << "memory allocation for p_loc_3d failed" << std::endl; exit(1);}
+    t_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis); if (t_loc_3d == NULL) {std::cout << "memory allocation for t_loc_3d failed" << std::endl; exit(1);}
+    r_loc_3d     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL *) *nnodes_loc_vis); if (r_loc_3d == NULL) {std::cout << "memory allocation for r_loc_3d failed" << std::endl; exit(1);}
+    elms_conn    = (int *) malloc(sizeof(int *) *nelms_loc_vis*9); if (elms_conn == NULL) {std::cout << "memory allocation for elms_conn failed" << std::endl; exit(1);}
+    my_proc_dump = (int *) malloc(sizeof(int *) *nnodes_loc_vis); if (my_proc_dump == NULL) {std::cout << "memory allocation for my_proc_dump failed" << std::endl; exit(1);}
+    vis_data     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) *nnodes_loc_vis); if (vis_data == NULL) {std::cout << "memory allocation for vis_data failed" << std::endl; exit(1);} // temp array for visuzulization
 
     // arrays for inversion
     if (inverse_flag) {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
-        r_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_K_loc * n_inv_grids);
-        t_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_J_loc * n_inv_grids);
-        p_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_I_loc * n_inv_grids);
-        Ks_loc          = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Kxi_loc         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        if (sub_nprocs <= 1)
-            Tadj_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        r_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_K_loc * n_inv_grids); if (r_loc_inv == NULL) {std::cout << "memory allocation for r_loc_inv failed" << std::endl; exit(1);}
+        t_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_J_loc * n_inv_grids); if (t_loc_inv == NULL) {std::cout << "memory allocation for t_loc_inv failed" << std::endl; exit(1);}
+        p_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_I_loc * n_inv_grids); if (p_loc_inv == NULL) {std::cout << "memory allocation for p_loc_inv failed" << std::endl; exit(1);}
+        Ks_loc          = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Ks_loc == NULL) {std::cout << "memory allocation for Ks_loc failed" << std::endl; exit(1);}
+        Kxi_loc         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Kxi_loc == NULL) {std::cout << "memory allocation for Kxi_loc failed" << std::endl; exit(1);}
+        Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Keta_loc == NULL) {std::cout << "memory allocation for Keta_loc failed" << std::endl; exit(1);}
+        Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid); if (Ks_inv_loc == NULL) {std::cout << "memory allocation for Ks_inv_loc failed" << std::endl; exit(1);}
+        Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid); if (Kxi_inv_loc == NULL) {std::cout << "memory allocation for Kxi_inv_loc failed" << std::endl; exit(1);}
+        Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid); if (Keta_inv_loc == NULL) {std::cout << "memory allocation for Keta_inv_loc failed" << std::endl; exit(1);}
+        Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Ks_update_loc == NULL) {std::cout << "memory allocation for Ks_update_loc failed" << std::endl; exit(1);}
+        Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Kxi_update_loc == NULL) {std::cout << "memory allocation for Kxi_update_loc failed" << std::endl; exit(1);}
+        Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Keta_update_loc == NULL) {std::cout << "memory allocation for Keta_update_loc failed" << std::endl; exit(1);}
+        if (sub_nprocs <= 1) {
+            Tadj_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (Tadj_loc == NULL) {std::cout << "memory allocation for Tadj_loc failed" << std::endl; exit(1);}
+        }
 
         if (optim_method==HALVE_STEPPING_MODE) {
-            fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            fac_f_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+            fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_b_loc_back == NULL) {std::cout << "memory allocation for fac_b_loc_back failed" << std::endl; exit(1);}
+            fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_c_loc_back == NULL) {std::cout << "memory allocation for fac_c_loc_back failed" << std::endl; exit(1);}
+            fac_f_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_f_loc_back == NULL) {std::cout << "memory allocation for fac_f_loc_back failed" << std::endl; exit(1);}
+            xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (xi_loc_back == NULL) {std::cout << "memory allocation for xi_loc_back failed" << std::endl; exit(1);}
+            eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (eta_loc_back == NULL) {std::cout << "memory allocation for eta_loc_back failed" << std::endl; exit(1);}
+            fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fun_loc_back == NULL) {std::cout << "memory allocation for fun_loc_back failed" << std::endl; exit(1);}
         }
 
         if (optim_method==LBFGS_MODE) {
-            fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            fac_f_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-            fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+            fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_b_loc_back == NULL) {std::cout << "memory allocation for fac_b_loc_back failed" << std::endl; exit(1);}
+            fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_c_loc_back == NULL) {std::cout << "memory allocation for fac_c_loc_back failed" << std::endl; exit(1);}
+            fac_f_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fac_f_loc_back == NULL) {std::cout << "memory allocation for fac_f_loc_back failed" << std::endl; exit(1);}
+            xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (xi_loc_back == NULL) {std::cout << "memory allocation for xi_loc_back failed" << std::endl; exit(1);}
+            eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (eta_loc_back == NULL) {std::cout << "memory allocation for eta_loc_back failed" << std::endl; exit(1);}
+            fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points); if (fun_loc_back == NULL) {std::cout << "memory allocation for fun_loc_back failed" << std::endl; exit(1);}
 
             int n_total_loc_lbfgs = n_total_loc_grid_points * Mbfgs;
-            Ks_grad_store_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_grad_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_grad_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Ks_model_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_model_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_model_store_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Ks_descent_dir_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_descent_dir_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Ks_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Kxi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            Keta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
-            eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+            Ks_grad_store_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Ks_grad_store_loc == NULL) {std::cout << "memory allocation for Ks_grad_store_loc failed" << std::endl; exit(1);}
+            Kxi_grad_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Kxi_grad_store_loc == NULL) {std::cout << "memory allocation for Kxi_grad_store_loc failed" << std::endl; exit(1);}
+            Keta_grad_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Keta_grad_store_loc == NULL) {std::cout << "memory allocation for Keta_grad_store_loc failed" << std::endl; exit(1);}
+            Ks_model_store_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Ks_model_store_loc == NULL) {std::cout << "memory allocation for Ks_model_store_loc failed" << std::endl; exit(1);}
+            Kxi_model_store_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Kxi_model_store_loc == NULL) {std::cout << "memory allocation for Kxi_model_store_loc failed" << std::endl; exit(1);}
+            Keta_model_store_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Keta_model_store_loc == NULL) {std::cout << "memory allocation for Keta_model_store_loc failed" << std::endl; exit(1);}
+            Ks_descent_dir_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Ks_descent_dir_loc == NULL) {std::cout << "memory allocation for Ks_descent_dir_loc failed" << std::endl; exit(1);}
+            Kxi_descent_dir_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Kxi_descent_dir_loc == NULL) {std::cout << "memory allocation for Kxi_descent_dir_loc failed" << std::endl; exit(1);}
+            Keta_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Keta_descent_dir_loc == NULL) {std::cout << "memory allocation for Keta_descent_dir_loc failed" << std::endl; exit(1);}
+            Ks_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Ks_regularization_penalty_loc == NULL) {std::cout << "memory allocation for Ks_regularization_penalty_loc failed" << std::endl; exit(1);}
+            Kxi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Kxi_regularization_penalty_loc == NULL) {std::cout << "memory allocation for Kxi_regularization_penalty_loc failed" << std::endl; exit(1);}
+            Keta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (Keta_regularization_penalty_loc == NULL) {std::cout << "memory allocation for Keta_regularization_penalty_loc failed" << std::endl; exit(1);}
+            fun_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (fun_regularization_penalty_loc == NULL) {std::cout << "memory allocation for fun_regularization_penalty_loc failed" << std::endl; exit(1);}
+            xi_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (xi_regularization_penalty_loc == NULL) {std::cout << "memory allocation for xi_regularization_penalty_loc failed" << std::endl; exit(1);}
+            eta_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs); if (eta_regularization_penalty_loc == NULL) {std::cout << "memory allocation for eta_regularization_penalty_loc failed" << std::endl; exit(1);}
 
 
             // initialize
