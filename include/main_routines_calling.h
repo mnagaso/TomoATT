@@ -141,7 +141,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     // objective function for all src
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
-    std::vector<CUSTOMREAL> v_obj_misfit(10, 0.0);
+    std::vector<CUSTOMREAL> v_obj_misfit(20, 0.0);
 
     for (int i_inv = 0; i_inv < IP.get_max_iter_inv(); i_inv++) {
 
@@ -538,7 +538,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     /////////////////////
 
     CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
-    std::vector<CUSTOMREAL> v_obj_misfit(10, 0.0);
+    std::vector<CUSTOMREAL> v_obj_misfit(20, 0.0);
 
     int model_update_step = 0;
     int relocation_step = 0;
