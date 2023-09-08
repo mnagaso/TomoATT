@@ -10,8 +10,9 @@ Receiver::~Receiver() {
 
 void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
-        // get receiver positions from input parameters
-        //std::vector<std::string> name_receivers = IP.get_rec_names(name_sim_src);
+        // share the traveltime values on the corner points of the subdomains for interpolation
+        // this is not necessary for sweeping (as the stencil is closs shape)
+        grid.send_recev_boundary_data_kosumi(grid.T_loc);
 
         // calculate the travel time of the receiver by interpolation
         for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
@@ -239,8 +240,6 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
     CUSTOMREAL res_tele      = 0.0;
     CUSTOMREAL res_tele_sq   = 0.0;
 
-    // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs, res_cs_sq, res_cr, res_cr_sq, res_tele, res_tele_sq
-    // std::vector<CUSTOMREAL> obj_residual = std::vector<CUSTOMREAL>(SIZE_OF_OBJ_VECTOR);
     std::vector<CUSTOMREAL> obj_residual;
     for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
@@ -550,12 +549,7 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
             iter->second.sum_weight                 = _0_CR;    // what does it mean?
             iter->second.vobj_src_reloc_old         = iter->second.vobj_src_reloc;
             iter->second.vobj_src_reloc             = _0_CR;
-            // for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
-            //     iter->second.vobj_src_reloc_data[i] = _0_CR;
-            // }
-            // iter->second.vobj_src_reloc_abs         = _0_CR;
-            // iter->second.vobj_src_reloc_cr          = _0_CR;
-            // iter->second.vobj_src_reloc_cs          = _0_CR;
+
             iter->second.vobj_grad_norm_src_reloc   = _0_CR;
         }
 

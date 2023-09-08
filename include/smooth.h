@@ -332,6 +332,75 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
             } // end for j
         } // end for k
 
+        // rescale the kernel:  kernel -> kernel / (volume of the inversion grid)
+        if (IP.get_invgrid_volume_rescale()){
+            CUSTOMREAL volume_r = 1.0;
+            CUSTOMREAL volume_t = 1.0;
+            CUSTOMREAL volume_p = 1.0;
+            CUSTOMREAL volume   = 1.0;
+            for (int ii_invr = 0; ii_invr < n_inv_K_loc; ii_invr++){
+                if (ii_invr == 0)
+                    volume_r = abs(grid.r_loc_inv[I2V_INV_GRIDS_1DK(1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(0,i_grid)]);
+                else if (ii_invr == n_inv_K_loc - 1)
+                    volume_r = abs(grid.r_loc_inv[I2V_INV_GRIDS_1DK(n_inv_K_loc-1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(n_inv_K_loc-2,i_grid)]);
+                else
+                    volume_r = abs(grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr-1,i_grid)]);
+
+                for (int ii_invt = 0; ii_invt < n_inv_J_loc; ii_invt++){
+                    if (ii_invt == 0)
+                        volume_t = abs(grid.t_loc_inv[I2V_INV_GRIDS_1DJ(1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(0,i_grid)]);
+                    else if (ii_invt == n_inv_J_loc - 1)
+                        volume_t = abs(grid.t_loc_inv[I2V_INV_GRIDS_1DJ(n_inv_J_loc-1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(n_inv_J_loc-2,i_grid)]);
+                    else
+                        volume_t = abs(grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt-1,i_grid)]);
+
+                    for (int ii_invp = 0; ii_invp < n_inv_I_loc; ii_invp++){
+                        if (ii_invp == 0)
+                            volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(0,i_grid)]);  
+                        else if (ii_invp == n_inv_I_loc - 1)
+                            volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(n_inv_I_loc-1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(n_inv_I_loc-2,i_grid)]);
+                        else
+                            volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp-1,i_grid)]);
+                        
+                        volume = volume_r * volume_t * volume_p;
+                        grid.Ks_inv_loc[    I2V_INV_KNL(ii_invp,ii_invt,ii_invr)]   *= volume;
+                    }
+                }
+            }
+
+            for (int ii_invr = 0; ii_invr < n_inv_K_loc_ani; ii_invr++){
+                if (ii_invr == 0)
+                    volume_r = abs(grid.r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(1,i_grid)] - grid.r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(0,i_grid)]);
+                else if (ii_invr == n_inv_K_loc_ani - 1)
+                    volume_r = abs(grid.r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(n_inv_K_loc_ani-1,i_grid)] - grid.r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(n_inv_K_loc_ani-2,i_grid)]);
+                else
+                    volume_r = abs(grid.r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(ii_invr+1,i_grid)] - grid.r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(ii_invr-1,i_grid)]);
+
+                for (int ii_invt = 0; ii_invt < n_inv_J_loc_ani; ii_invt++){
+                    if (ii_invt == 0)
+                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(1,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(0,i_grid)]);
+                    else if (ii_invt == n_inv_J_loc_ani - 1)
+                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(n_inv_J_loc_ani-1,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(n_inv_J_loc_ani-2,i_grid)]);
+                    else
+                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt-1,i_grid)]);
+
+                    for (int ii_invp = 0; ii_invp < n_inv_I_loc_ani; ii_invp++){
+                        if (ii_invp == 0)
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(0,i_grid)]);  
+                        else if (ii_invp == n_inv_I_loc_ani - 1)
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-2,i_grid)]);
+                        else
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp-1,i_grid)]);
+                        
+                        volume = volume_r * volume_t * volume_p;
+                        grid.Keta_inv_loc[  I2V_INV_KNL(ii_invp,ii_invt,ii_invr)]   *= volume;
+                        grid.Kxi_inv_loc[   I2V_INV_KNL(ii_invp,ii_invt,ii_invr)]   *= volume;
+                    }
+                }
+            }
+        }
+
+
         // sum over all sub-domains
         allreduce_cr_inplace(grid.Ks_inv_loc,   n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
         allreduce_cr_inplace(grid.Keta_inv_loc, n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani);

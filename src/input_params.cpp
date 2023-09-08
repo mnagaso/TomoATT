@@ -341,6 +341,9 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex_ani_read = true;
             }
 
+            if (config["model_update"]["invgrid_volume_rescale"]) {
+                getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
+            }
 
             // station correction (now only for teleseismic data)
             if (config["model_update"]["use_sta_correction"]){
@@ -710,6 +713,8 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr(dep_inv_ani,n_inv_r_flex_ani, 0);
     broadcast_cr(lat_inv_ani,n_inv_t_flex_ani, 0);
     broadcast_cr(lon_inv_ani,n_inv_p_flex_ani, 0);
+
+    broadcast_bool_single(invgrid_volume_rescale, 0);
 
     broadcast_bool_single(use_sta_correction, 0);
     broadcast_bool_single(sta_correction_file_exist, 0);
@@ -2524,23 +2529,11 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
             // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
             if (rec_map.find(name_rec) != rec_map.end()){
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc);
-                // for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
-                //     allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_data[i]);
-                // }
-                
-                // allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cr);
-                // allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cs);
+
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
-                // dummy = 0;
-                // allreduce_rec_map_var(dummy);
-                // dummy = 0;
-                // allreduce_rec_map_var(dummy);
-                // for (int i = 0; i < SIZE_OF_OBJ_VECTOR; i++){
-                //     dummy = 0;
-                //     allreduce_rec_map_var(dummy);
-                // }
+
             }
         }
     }

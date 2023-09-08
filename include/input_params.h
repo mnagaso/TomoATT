@@ -96,6 +96,7 @@ public:
 
     // invgrid for ani
 
+    bool get_invgrid_volume_rescale()   {return invgrid_volume_rescale;}
 
     int  get_max_iter_inv() {return max_iter_inv;};
 
@@ -260,6 +261,7 @@ private:
     int n_inv_r_flex_ani=1, n_inv_t_flex_ani=1, n_inv_p_flex_ani=1; // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_ani_read = false, n_inv_t_flex_ani_read = false, n_inv_p_flex_ani_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
+    bool invgrid_volume_rescale = false;    // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh) 
 
     // date usage setting and weights
     bool use_abs = false; // use absolute travel time or not

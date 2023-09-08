@@ -216,8 +216,6 @@ inline int nsrc_total = 0;
 // flag if common receiver double difference data is used
 inline bool src_pair_exists = false;
 
-// the size of the vector for storing objective function and residual
-inline const int        SIZE_OF_OBJ_VECTOR = 20;
 
 // weight of different typs of data
 inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
