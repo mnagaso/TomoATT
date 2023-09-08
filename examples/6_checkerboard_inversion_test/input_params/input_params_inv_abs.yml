@@ -74,7 +74,7 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   n_inversion_grid: 5 # number of inversion grid sets
 
   # inversion grid type
-  type_invgrid_dep: 0 # 0: uniform inversion grid, 1: flexible grid
+  type_invgrid_dep: 1 # 0: uniform inversion grid, 1: flexible grid
   type_invgrid_lat: 0 # 0: uniform inversion grid, 1: flexible grid
   type_invgrid_lon: 0 # 0: uniform inversion grid, 1: flexible grid
 
@@ -88,6 +88,9 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   dep_inv: [-7.0, -3.0, 0.0, 3.0, 7.0, 12.0, 18.0, 25.0, 33.0, 42.0, 52.0, 63.0] # depth in km (Radius of the earth is defined in config.h/R_earth)
   lat_inv: [0.0, 1.0] # latitude in degree (ignored if type_lat_inv : 0)
   lon_inv: [0.0, 1.0] # longitude in degree (ignored if type_lon_inv : 0)
+
+  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
+  invgrid_volume_rescale: true
 
   # path to station correction file
   use_sta_correction: false
