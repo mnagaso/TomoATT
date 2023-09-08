@@ -45,6 +45,7 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
     }
 }
 
+
 void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& name_sim_src) {
 
     // rec.adjoint_source = 0
