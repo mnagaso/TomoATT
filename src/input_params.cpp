@@ -2057,7 +2057,12 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
 
             // only for source relocation, output relocated observational data for tomography
             if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC) {
-                src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
+                // src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
+
+                if (run_mode == INV_RELOC)
+                    src_rec_file_out = output_dir + "/src_rec_file_inv_" + int2string_zero_fill(i_inv) +"_reloc_" + int2string_zero_fill(i_iter)+"_obs.dat";
+                else if (run_mode == SRC_RELOCATION)
+                    src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
 
                 // open file
                 ofs.open(src_rec_file_out);
