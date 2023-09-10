@@ -67,14 +67,11 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
 inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode, bool is_read_time){
 
-    // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele
-    // std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(20, 0.0);
-
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)
         grid.initialize_kernels();
-    
+
     // reinitialize factors
     grid.reinitialize_abcf();
 
@@ -160,8 +157,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                             << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                             << std::endl;
-                }         
-                // solve travel time field on grid.T_loc      
+                }
+                // solve travel time field on grid.T_loc
                 It->run_iteration_forward(IP, grid, io, first_init);
             }
         } else {
@@ -249,12 +246,11 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         IP.gather_traveltimes_and_calc_syn_diff();
     }
 
-    // compute all residual and obj 
+    // compute all residual and obj
     Receiver recs;
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
 
     // return current objective function value
-    // return v_obj_misfit;
     return obj_residual;
 }
 

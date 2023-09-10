@@ -561,7 +561,7 @@ void Grid::memory_allocation() {
     if (inverse_flag) {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
         int n_total_loc_inv_grid_ani = n_inv_I_loc_ani * n_inv_J_loc_ani * n_inv_K_loc_ani;
-        
+
         r_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_K_loc * n_inv_grids);
         t_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_J_loc * n_inv_grids);
         p_loc_inv       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_inv_I_loc * n_inv_grids);
@@ -574,8 +574,6 @@ void Grid::memory_allocation() {
         Kxi_loc         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        // Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
-        // Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
         Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -855,6 +853,9 @@ void Grid::memory_deallocation() {
         free(r_loc_inv);
         free(p_loc_inv);
         free(t_loc_inv);
+        free(r_loc_inv_ani);
+        free(p_loc_inv_ani);
+        free(t_loc_inv_ani);
         free(Ks_loc);
         free(Kxi_loc);
         free(Keta_loc);
@@ -1070,7 +1071,7 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 void Grid::setup_inv_grid_params(InputParams& IP) {
 
     // inversion grid for depth
-        // velocity
+    // velocity
     if(IP.get_type_invgrid_dep() == 0){     // uniform inversion grid for depth
         CUSTOMREAL r_min_inv   = depth2radius(IP.get_max_dep_inv()); // convert from depth to radius
         CUSTOMREAL r_max_inv   = depth2radius(IP.get_min_dep_inv()); // convert from depth to radius
@@ -1079,10 +1080,6 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         // shift of each set of inversion grid
         dinv_lr = dinv_r/n_inv_grids;
 
-        // for (int l = 0; l < n_inv_grids; l++) {
-        //     for (int k = 0; k < n_inv_K_loc; k++)
-        //         r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
-        // }
         for (int l = 0; l < n_inv_grids; l++) {
             for (int k = 0; k < n_inv_K_loc; k++)
                 r_loc_inv[I2V_INV_GRIDS_1DK(n_inv_K_loc - 1 - k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
@@ -1101,7 +1098,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             }
         }
     }
-        // anisotropy
+    // anisotropy
     if(IP.get_invgrid_ani()){
         CUSTOMREAL* dep_inv_ani = IP.get_dep_inv_ani();
 
@@ -1124,7 +1121,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
     }
 
     // inversion grid for latitude
-        // velocity
+    // velocity
     if(IP.get_type_invgrid_lat() == 0){     // uniform inversion grid for latitude
         CUSTOMREAL lat_min_inv = IP.get_min_lat_inv();
         CUSTOMREAL lat_max_inv = IP.get_max_lat_inv();
@@ -1150,7 +1147,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_inv[j]*DEG2RAD - l*dinv_lt;
         }
     }
-        // anisotropy
+    // anisotropy
     if(IP.get_invgrid_ani()){
         CUSTOMREAL* lat_inv_ani = IP.get_lat_inv_ani();
 
@@ -1172,7 +1169,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
     }
 
     // inversion grid for longitude
-        // velocity
+    // velocity
     if(IP.get_type_invgrid_lon() == 0){     // uniform inversion grid for longitude
         CUSTOMREAL lon_min_inv = IP.get_min_lon_inv();
         CUSTOMREAL lon_max_inv = IP.get_max_lon_inv();
@@ -1314,7 +1311,6 @@ void Grid::get_array_for_3d_output(const CUSTOMREAL *arr_in, CUSTOMREAL* arr_out
 }
 
 
-
 void Grid::reinitialize_abcf(){
     if (subdom_main) {
         for (int k_r = 0; k_r < loc_K; k_r++) {
@@ -1331,6 +1327,7 @@ void Grid::reinitialize_abcf(){
     }
 }
 
+
 void Grid::rejunenate_abcf(){
     if (subdom_main) {
         for (int k_r = 0; k_r < loc_K; k_r++) {
@@ -1346,6 +1343,7 @@ void Grid::rejunenate_abcf(){
         }
     }
 }
+
 
 void Grid::setup_factors(Source &src){
 
@@ -1447,8 +1445,6 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
     // std::cout << "p_loc_1d (lon): " << p_loc_1d[25]*RAD2DEG << ", id_i: " << 25
     //           << "t_loc_1d (lat): " << t_loc_1d[29]*RAD2DEG << ", id_j: " << 29
     //           << "r_loc_1d (r): " << r_loc_1d[41] << ", id_k: " << 41 <<  std::endl;
-
-
 
     // warning if source node is not found
     if( n_source_node > 0 && if_verbose )

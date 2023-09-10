@@ -64,9 +64,9 @@ public:
     void setup_inversion_grids(InputParams&);
     void setup_inv_grid_params(InputParams&);
 
-    void reinitialize_abcf();                // reinitialize factors
-    void rejunenate_abcf();                // reinitialize factors
-    void initialize_kernels();               // fill 0 to kernels
+    void reinitialize_abcf();   // reinitialize factors
+    void rejunenate_abcf();     // reinitialize factors for earthquake relocation
+    void initialize_kernels();  // fill 0 to kernels
 
     //
     // getters

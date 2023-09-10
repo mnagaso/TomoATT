@@ -95,24 +95,23 @@ public:
     CUSTOMREAL* get_lon_inv_ani()     {return lon_inv_ani;};
 
     // invgrid for ani
-
-    bool get_invgrid_volume_rescale()   {return invgrid_volume_rescale;}
+    bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
 
     int  get_max_iter_inv() {return max_iter_inv;};
 
-    int  get_model_update_N_iter()  {return model_update_N_iter;};
-    int  get_relocation_N_iter()    {return relocation_N_iter;};
-    int  get_max_loop()             {return max_loop;};
+    int  get_model_update_N_iter(){return model_update_N_iter;};
+    int  get_relocation_N_iter()  {return relocation_N_iter;};
+    int  get_max_loop()           {return max_loop;};
 
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
-    bool get_if_output_source_field()     {return output_source_field;};
-    bool get_if_output_model_dat()        {return output_model_dat;};
-    bool get_if_output_final_model()      {return output_final_model;};
-    bool get_if_output_in_process()       {return output_in_process;};
-    bool get_if_output_in_process_data()       {return output_in_process_data;};
-    bool get_if_single_precision_output() {return single_precision_output;};
-    int  get_verbose_output_level()       {return verbose_output_level;}; // #TODO: modify codes for verbose_output_level > 1
+    bool get_if_output_source_field()    {return output_source_field;};
+    bool get_if_output_model_dat()       {return output_model_dat;};
+    bool get_if_output_final_model()     {return output_final_model;};
+    bool get_if_output_in_process()      {return output_in_process;};
+    bool get_if_output_in_process_data() {return output_in_process_data;};
+    bool get_if_single_precision_output(){return single_precision_output;};
+    int  get_verbose_output_level()      {return verbose_output_level;}; // #TODO: modify codes for verbose_output_level > 1
 
     bool get_update_slowness()        {return update_slowness;};
     bool get_update_azi_ani()         {return update_azi_ani;};
@@ -208,8 +207,6 @@ public:
     template <typename T>
     void allreduce_rec_map_var(T&);
 
-    // void allreduce_rec_map_tau_opt();
-    // void allreduce_rec_map_sum_weight();
     void allreduce_rec_map_vobj_src_reloc();
     void allreduce_rec_map_grad_src();
 
@@ -239,8 +236,8 @@ private:
     std::string model_1d_name;   // name of 1d model for teleseismic tomography
 
     // inversion
-    int run_mode=0;                                     // do inversion or not (0: no, 1: yes)
-    int n_inversion_grid=1;                             // number of inversion grid
+    int run_mode=0;                                                 // do inversion or not (0: no, 1: yes)
+    int n_inversion_grid=1;                                         // number of inversion grid
     int type_invgrid_dep=0, type_invgrid_lat=0, type_invgrid_lon=0; // uniform or flexible inversion grid (0: uniform, 1: flexible)
     // type = 0: uniform inversion grid
     int n_inv_r=1, n_inv_t=1, n_inv_p=1; // number of inversion grid in r, t, p direction
@@ -252,16 +249,16 @@ private:
     CUSTOMREAL min_lon_inv=-99999; // minimum longitude
     CUSTOMREAL max_lon_inv=-99999; // maximum longitude
     // type = 1: flexible inversion grid
-    CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;            // flexibly designed inversion grid
-    int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1; // number of flexibly designed inversion grid in r, t, p direction
+    CUSTOMREAL *dep_inv, *lat_inv, *lon_inv;                                              // flexibly designed inversion grid
+    int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1;                                   // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
-    bool invgrid_ani;   // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
-    CUSTOMREAL *dep_inv_ani, *lat_inv_ani, *lon_inv_ani;            // flexibly designed inversion grid
-    int n_inv_r_flex_ani=1, n_inv_t_flex_ani=1, n_inv_p_flex_ani=1; // number of flexibly designed inversion grid in r, t, p direction
+    bool invgrid_ani;                                                                                 // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
+    CUSTOMREAL *dep_inv_ani, *lat_inv_ani, *lon_inv_ani;                                              // flexibly designed inversion grid
+    int n_inv_r_flex_ani=1, n_inv_t_flex_ani=1, n_inv_p_flex_ani=1;                                   // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_ani_read = false, n_inv_t_flex_ani_read = false, n_inv_p_flex_ani_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
-    bool invgrid_volume_rescale = false;    // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh) 
+    bool invgrid_volume_rescale = false;    // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
 
     // date usage setting and weights
     bool use_abs = false; // use absolute travel time or not
@@ -311,12 +308,12 @@ private:
     void check_contradictions();
 
     // output setting
-    bool output_source_field  = false; // output out_data_sim_X.h or not.
-    bool output_model_dat     = false; // output model_parameters_inv_0000.dat or not.
-    bool output_final_model   = true;  // output merged final model or not.
-    bool output_in_process    = true;  // output merged model at each inv iteration or not.
+    bool output_source_field    = false; // output out_data_sim_X.h or not.
+    bool output_model_dat       = false; // output model_parameters_inv_0000.dat or not.
+    bool output_final_model     = true;  // output merged final model or not.
+    bool output_in_process      = true;  // output merged model at each inv iteration or not.
     bool output_in_process_data = true;  // output src_rec_file at each inv iteration or not.
-    int  verbose_output_level = 0;  // output verbose information or not.
+    int  verbose_output_level   = 0;     // output verbose information or not.
 
     // inversion setting
     bool update_slowness = true;  // update slowness (velocity) or not.
