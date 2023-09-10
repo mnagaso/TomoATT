@@ -258,46 +258,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
     calculate_traveltime_for_all_src_rec(IP, grid, io);
 
     // prepare output for iteration status
-<<<<<<< HEAD
     std::ofstream out_main; // close() is not mandatory
     prepare_header_line(IP, out_main);
-=======
-    std::ofstream out_main;
-    if(myrank == 0 && id_sim ==0){
-        out_main.open(output_dir + "/objective_function_reloc.txt");
-
-        out_main << std::setw(8) << std::right << "# iter,";
-        out_main << std::setw(16) << std::right << "N_reloc,";
-        out_main << std::setw(16) << std::right << "N_located,";
-
-        std::string tmp = "obj(";
-        tmp.append(std::to_string(IP.N_data));
-        tmp.append("),");
-        out_main << std::setw(20) << tmp;
-
-        tmp = "obj_abs(";
-        tmp.append(std::to_string(IP.N_abs_local_data));
-        tmp.append("),");
-        out_main << std::setw(20) << tmp;
-
-        tmp = "obj_cs_dif(";
-        tmp.append(std::to_string(IP.N_cs_dif_local_data));
-        tmp.append("),");
-        out_main << std::setw(20) << tmp;
-
-        tmp = "obj_cr_dif(";
-        tmp.append(std::to_string(IP.N_cr_dif_local_data));
-        tmp.append("),");
-        out_main << std::setw(20) << tmp;
-
-        tmp = "obj_tele(";
-        tmp.append(std::to_string(IP.N_teleseismic_data));
-        tmp.append("),");
-        out_main << std::setw(20) << tmp;
-
-        out_main << std::endl;
-    }
->>>>>>> cab12569f2bb51449d68c2c8fb88cefd2ca1ae1f
 
     // objective function and its gradient
     CUSTOMREAL v_obj      = 999999999.0;
@@ -340,21 +302,12 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // output location information
         if(id_sim == 0 && myrank == 0){
-<<<<<<< HEAD
-            // number of receiver which have been completed
-            // int n_relocated = IP.rec_map.size() - IP.name_for_reloc.size();
-=======
->>>>>>> cab12569f2bb51449d68c2c8fb88cefd2ca1ae1f
             // write objective function
             std::cout << "iteration: " << i_iter << ", objective function: "              << v_obj << std::endl;
         }
 
         // write objective functions
         write_objective_function(IP, i_iter, v_obj_misfit, out_main);
-<<<<<<< HEAD
- 
-=======
->>>>>>> cab12569f2bb51449d68c2c8fb88cefd2ca1ae1f
         if (finished)
             break;
 
@@ -605,10 +558,6 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             // write objective functions
             write_objective_function(IP, i_iter, v_obj_misfit, out_main);
-<<<<<<< HEAD
-         
-=======
->>>>>>> cab12569f2bb51449d68c2c8fb88cefd2ca1ae1f
 
             // write out new src_rec_file
             if (IP.get_if_output_in_process_data()){
