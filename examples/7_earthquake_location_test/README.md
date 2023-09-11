@@ -1,14 +1,14 @@
-# Forward modeling test 
+# relocation test 
 
 This is an example to test earthquake location in the checkerboard model using absolute traveltime and common receiver differential traveltime data.
 
-1. Run all cells of `make_test_model.ipynb` or python script `make_test_mode.py` for creating necessary input files: 
-    - source, receiver file (src_rec_config.dat)
-    - model with a mesh (models/model_init_N61_61_61.h5 and models/model_ckb_N61_61_61.h5)
+1. this example use the model file and src_rec_file in `0_generate_files_for_TomoATT`
+    - `0_generate_files_for_TomoATT/models/model_ckb_N61_61_61.h5`
+    - `0_generate_files_for_TomoATT/src_rec_files/src_rec_config.dat`
 
-You can check the distribution of earthquakes (star) and stations (triangle) in img/src_rec.jpg
+You can check the distribution of earthquakes (star) and stations (triangle) in `0_generate_files_for_TomoATT/img/src_rec.jpg`
 
-![](img/src_rec.jpg)
+![](../0_generate_files_for_TomoATT/img/src_rec.jpg)
 
 2. then run TOMOATT forward with `input_params/input_params_signal.yml` to compute traveltime data in checkerboard model
 ``` bash
@@ -30,12 +30,12 @@ mpirun --oversubscribe -n 2 ../../build/bin/TOMOATT -i input_params/input_params
 mpirun --oversubscribe -n 2 ../../build/bin/TOMOATT -i input_params/input_params_reloc_abs_cr.yml
 ```
 
-3. finally, you can run `compare_location_result.ipynb` or `compare_location_result.py` to show the location result and evaluate the location error. 
+3. finally, you can run `compare_location_result.ipynb` or `compare_location_result.py` to evaluate the location quantitatively
 ``` bash
 python  compare_location_result.py
 ```
 
-You can get the location result as below in img
+and run `plot_location_result.ipynb` or `plot_location_result.py` show the location result in `img`:
 
 location using absolute traveltime data:
 ![](img/reloc_abs.jpg)

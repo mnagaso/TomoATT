@@ -14,17 +14,17 @@ public:
     void interpolate_and_store_arrival_times_at_rec_position(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
 
     // adjoint source
-    std::vector<CUSTOMREAL> calculate_adjoint_source(InputParams&, const std::string&);
+    void calculate_adjoint_source(InputParams&, const std::string&);
+    // objective function and residual
+    std::vector<CUSTOMREAL> calculate_obj_and_residual(InputParams&);
     // Gradient of traveltime
     void calculate_T_gradient(InputParams&, Grid&, const std::string&);
     // initialize variables for source relocation
     void init_vars_src_reloc(InputParams&);
-    // divide optimal origin time by summed weight
-    void divide_optimal_origin_time_by_summed_weight(InputParams&);
     // Gradient of objective function
     void calculate_grad_obj_src_reloc(InputParams&, const std::string&);
     // objective function
-    void calculate_obj_reloc(InputParams&, int);
+    std::vector<CUSTOMREAL> calculate_obj_reloc(InputParams&, int);
     // update source location
     void update_source_location(InputParams&, Grid&);
 
