@@ -435,6 +435,11 @@ InputParams::InputParams(std::string& input_file){
         // relocatoin
         //
         if (config["relocation"]) {
+            // the minimum number of data for relocation
+            if (config["relocation"]["min_Ndata"]) {
+                getNodeValue(config["relocation"], "min_Ndata", min_Ndata_reloc);
+            }
+
             // step size of relocation
             if (config["relocation"]["step_length"]) {
                 getNodeValue(config["relocation"], "step_length", step_length_src_reloc);
@@ -741,6 +746,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(update_rad_ani, 0);
     broadcast_cr(depth_taper,2,0);
 
+    broadcast_i_single(min_Ndata_reloc, 0);
     broadcast_cr_single(step_length_src_reloc, 0);
     broadcast_cr_single(step_length_decay_src_reloc, 0);
     broadcast_cr_single(rescaling_dep, 0);
@@ -1097,7 +1103,8 @@ void InputParams::write_params_to_file() {
     fout << "#################################################" << std::endl;
     fout << "#          relocation parameters setting        #" << std::endl;
     fout << "#################################################" << std::endl;
-    fout << "relocation: # update earthquake hypocenter and origin time (when run_mode : 1)" << std::endl;
+    fout << "relocation: # update earthquake hypocenter and origin time (when run_mode : 2 and 3)" << std::endl;
+    fout << "  min_Ndata: " << min_Ndata_reloc << " # if the number of data of the earthquake is less than <min_Ndata>, the earthquake will not be relocated.  defaut value: 4 " << std::endl;
     fout << std::endl;
 
     fout << "  # relocation_strategy" << std::endl;

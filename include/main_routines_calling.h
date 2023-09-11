@@ -230,7 +230,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         }
 
-        write_objective_function(IP, i_inv, v_obj_misfit, out_main);
+        write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
 
         // writeout temporary xdmf file
         io.update_xdmf_file();
@@ -307,7 +307,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         }
 
         // write objective functions
-        write_objective_function(IP, i_iter, v_obj_misfit, out_main);
+        write_objective_function(IP, i_iter, v_obj_misfit, out_main, "relocation");
         if (finished)
             break;
 
@@ -458,7 +458,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
 
             // output objective function
-            write_objective_function(IP, i_inv, v_obj_misfit, out_main);
+            write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
 
 
             // output updated model
@@ -557,7 +557,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             }
 
             // write objective functions
-            write_objective_function(IP, i_iter, v_obj_misfit, out_main);
+            write_objective_function(IP, i_iter, v_obj_misfit, out_main, "relocation");
 
             // write out new src_rec_file
             if (IP.get_if_output_in_process_data()){

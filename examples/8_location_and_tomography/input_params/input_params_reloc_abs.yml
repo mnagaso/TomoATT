@@ -131,6 +131,7 @@ model_update: # update model parameters (when run_mode : 1 and 3)
 #          relocation parameters setting        #
 #################################################
 relocation: # update earthquake hypocenter and origin time (when run_mode : 2 or 3)
+  min_Ndata: 4    # if the number of data of the earthquake is less than <min_Ndata>, the earthquake will not be relocated.  defaut value: 4 
 
   # relocation_strategy
   step_length: 0.02   # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
