@@ -149,6 +149,9 @@ InputParams::InputParams(std::string& input_file){
             if (config["output_setting"]["output_in_process"])
                 getNodeValue(config["output_setting"], "output_in_process", output_in_process);
 
+            if (config["output_setting"]["output_in_process_data"])
+                getNodeValue(config["output_setting"], "output_in_process_data", output_in_process_data);
+
             if (config["output_setting"]["single_precision_output"])
                 getNodeValue(config["output_setting"], "single_precision_output", single_precision_output);
 
@@ -213,10 +216,6 @@ InputParams::InputParams(std::string& input_file){
                 // step length decay
                 if (config["model_update"]["optim_method_0"]["step_length_decay"]) {
                     getNodeValue(config["model_update"]["optim_method_0"], "step_length_decay", step_length_decay);
-                }
-                // step length sc
-                if (config["model_update"]["optim_method_0"]["step_length_sc"]) {
-                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_sc", step_length_init_sc);
                 }
             }
 
@@ -323,6 +322,38 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex_read = true;
             }
 
+            // inversion grid for anisotropy
+            if (config["model_update"]["invgrid_ani"]) {
+                getNodeValue(config["model_update"], "invgrid_ani", invgrid_ani);
+            }
+            if (config["model_update"]["dep_inv_ani"]) {
+                n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
+                dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+                for (int i = 0; i < n_inv_r_flex_ani; i++){
+                    getNodeValue(config["model_update"], "dep_inv_ani", dep_inv_ani[i], i);
+                }
+                n_inv_r_flex_ani_read = true;
+            }
+            if (config["model_update"]["lat_inv_ani"]) {
+                n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
+                lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+                for (int i = 0; i < n_inv_t_flex_ani; i++){
+                    getNodeValue(config["model_update"], "lat_inv_ani", lat_inv_ani[i], i);
+                }
+                n_inv_t_flex_ani_read = true;
+            }
+            if (config["model_update"]["lon_inv_ani"]) {
+                n_inv_p_flex_ani = config["model_update"]["lon_inv_ani"].size();
+                lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+                for (int i = 0; i < n_inv_p_flex_ani; i++){
+                    getNodeValue(config["model_update"], "lon_inv_ani", lon_inv_ani[i], i);
+                }
+                n_inv_p_flex_ani_read = true;
+            }
+
+            if (config["model_update"]["invgrid_volume_rescale"]) {
+                getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
+            }
 
             // station correction (now only for teleseismic data)
             if (config["model_update"]["use_sta_correction"]){
@@ -414,6 +445,11 @@ InputParams::InputParams(std::string& input_file){
         // relocatoin
         //
         if (config["relocation"]) {
+            // the minimum number of data for relocation
+            if (config["relocation"]["min_Ndata"]) {
+                getNodeValue(config["relocation"], "min_Ndata", min_Ndata_reloc);
+            }
+
             // step size of relocation
             if (config["relocation"]["step_length"]) {
                 getNodeValue(config["relocation"], "step_length", step_length_src_reloc);
@@ -490,16 +526,16 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["inversion_strategy"], "inv_mode", inv_mode);
 
             // paramters for inv_mode == 0
-            if (config["inversoin_strategy"]["inv_mode_0"]){
+            if (config["inversion_strategy"]["inv_mode_0"]){
                 // model_update_N_iter
-                if (config["inversoin_strategy"]["inv_mode_0"]["model_update_N_iter"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "model_update_N_iter", model_update_N_iter);
+                if (config["inversion_strategy"]["inv_mode_0"]["model_update_N_iter"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "model_update_N_iter", model_update_N_iter);
                 // relocation_N_iter
-                if (config["inversoin_strategy"]["inv_mode_0"]["relocation_N_iter"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "relocation_N_iter", relocation_N_iter);
+                if (config["inversion_strategy"]["inv_mode_0"]["relocation_N_iter"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "relocation_N_iter", relocation_N_iter);
                 // max_loop
-                if (config["inversoin_strategy"]["inv_mode_0"]["max_loop"])
-                    getNodeValue(config["inversoin_strategy"]["inv_mode_0"], "max_loop", max_loop);
+                if (config["inversion_strategy"]["inv_mode_0"]["max_loop"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "max_loop", max_loop);
             }
         }
 
@@ -565,6 +601,14 @@ InputParams::InputParams(std::string& input_file){
         if (!n_inv_p_flex_read)
             lon_inv = new CUSTOMREAL[n_inv_p_flex];
 
+        // allocate dummy arrays for flex inv grid
+        if (!n_inv_r_flex_ani_read)
+            dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+        if (!n_inv_t_flex_ani_read)
+            lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+        if (!n_inv_p_flex_ani_read)
+            lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+
         // write parameter file to output directory
         write_params_to_file();
 
@@ -629,6 +673,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(verbose_output_level, 0);
     broadcast_bool_single(output_final_model, 0);
     broadcast_bool_single(output_in_process, 0);
+    broadcast_bool_single(output_in_process_data, 0);
     broadcast_bool_single(single_precision_output, 0);
     broadcast_i_single(output_format, 0);
 
@@ -674,6 +719,21 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr(lat_inv,n_inv_t_flex, 0);
     broadcast_cr(lon_inv,n_inv_p_flex, 0);
 
+    broadcast_bool_single(invgrid_ani, 0);
+    broadcast_i_single(n_inv_r_flex_ani, 0);
+    broadcast_i_single(n_inv_t_flex_ani, 0);
+    broadcast_i_single(n_inv_p_flex_ani, 0);
+    if (world_rank != 0) {
+        dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+        lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+        lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+    }
+    broadcast_cr(dep_inv_ani,n_inv_r_flex_ani, 0);
+    broadcast_cr(lat_inv_ani,n_inv_t_flex_ani, 0);
+    broadcast_cr(lon_inv_ani,n_inv_p_flex_ani, 0);
+
+    broadcast_bool_single(invgrid_volume_rescale, 0);
+
     broadcast_bool_single(use_sta_correction, 0);
     broadcast_bool_single(sta_correction_file_exist, 0);
     broadcast_str(sta_correction_file, 0);
@@ -699,6 +759,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(update_rad_ani, 0);
     broadcast_cr(depth_taper,2,0);
 
+    broadcast_i_single(min_Ndata_reloc, 0);
     broadcast_cr_single(step_length_src_reloc, 0);
     broadcast_cr_single(step_length_decay_src_reloc, 0);
     broadcast_cr_single(rescaling_dep, 0);
@@ -772,6 +833,10 @@ InputParams::~InputParams(){
     delete [] lat_inv;
     delete [] lon_inv;
 
+    delete [] dep_inv_ani;
+    delete [] lat_inv_ani;
+    delete [] lon_inv_ani;
+
     // clear all src, rec, data
     src_map.clear();
     src_map_tele.clear();
@@ -836,9 +901,9 @@ void InputParams::write_params_to_file() {
     fout << "#            parallel computation settings      #" << std::endl;
     fout << "#################################################" << std::endl;
     fout << "parallel: # parameters for parallel computation" << std::endl;
-    fout << "  n_sims: "    << n_sims << " # number of simultanoues runs" << std::endl;
-    fout << "  ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction" << std::endl;
-    fout << "  nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization" << std::endl;
+    fout << "  n_sims: "    << n_sims << " # number of simultanoues runs (parallel the sources)" << std::endl;
+    fout << "  ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction (parallel the computional domain)" << std::endl;
+    fout << "  nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization (parallel the fast sweep method)" << std::endl;
     fout << "  use_gpu: "   << use_gpu << " # true if use gpu (EXPERIMENTAL)" << std::endl;
     fout << std::endl;
 
@@ -848,9 +913,10 @@ void InputParams::write_params_to_file() {
     fout << "output_setting:" << std::endl;
     fout << "  output_dir: "              << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
     fout << "  output_source_field:     " << output_source_field         << " # output the calculated field of all sources                       " << std::endl;
-    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat or not.                     " << std::endl;
-    fout << "  output_final_model:      " << output_final_model          << " # output merged final model or not.                                " << std::endl;
+    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat (data in text format) or not.                     " << std::endl;
+    fout << "  output_final_model:      " << output_final_model          << " # output merged final model (final_model.h5) or not.                                " << std::endl;
     fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
+    fout << "  output_in_process_data:  " << output_in_process_data      << " # output src_rec_file at each inv iteration or not.                       " << std::endl;
     fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
     fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, if no, only model parameters are out." << std::endl;
     int ff_flag=0;
@@ -872,7 +938,7 @@ void InputParams::write_params_to_file() {
     fout << "# 0 for forward simulation only,"                  << std::endl;
     fout << "# 1 for inversion"                                 << std::endl;
     fout << "# 2 for earthquake relocation"                     << std::endl;
-    fout << "# 3 for inversion+earthquake relocation"           << std::endl;
+    fout << "# 3 for inversion + earthquake relocation"           << std::endl;
     fout << "run_mode: " << run_mode << std::endl;
     fout << std::endl;
 
@@ -889,7 +955,6 @@ void InputParams::write_params_to_file() {
     fout << "  # parameters for optim_method 0 (gradient_descent)" << std::endl;
     fout << "  optim_method_0:" << std::endl;
     fout << "    step_length_decay: " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
-    fout << "    step_length_sc: "    << step_length_init_sc << " # ..."  << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
@@ -906,6 +971,7 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
 
     fout << "  # parameters for smooth method 0 (multigrid model parametrization)" << std::endl;
+    fout << "  # inversion grid can be viewed in OUTPUT_FILES/inversion_grid.txt" << std::endl;
     fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
     fout << std::endl;
 
@@ -958,16 +1024,67 @@ void InputParams::write_params_to_file() {
     }
     fout << std::endl;
 
-    fout << "  # path to station correction file" << std::endl;
+    fout << "  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)" << std::endl;
+    fout << "  invgrid_ani: " << invgrid_ani << std::endl;
+    fout << "  # settings for flexible inversion grid for anisotropy (only flexible grid input is provided)" << std::endl;
+    if (n_inv_r_flex_ani_read){
+        fout << "  dep_inv_ani: [";
+        for (int i = 0; i < n_inv_r_flex_ani; i++){
+            fout << dep_inv_ani[i];
+            if (i != n_inv_r_flex_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  dep_inv_ani: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_t_flex_ani_read){
+        fout << "  lat_inv_ani: [";
+        for (int i = 0; i < n_inv_t_flex_ani; i++){
+            fout << lat_inv_ani[i];
+            if (i != n_inv_t_flex_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  lat_inv_ani: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_p_flex_ani_read){
+        fout << "  lon_inv_ani: [";
+        for (int i = 0; i < n_inv_p_flex_ani; i++){
+            fout << lon_inv_ani[i];
+            if (i != n_inv_p_flex_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  lon_inv_ani: " << "[1, 1, 1]" << std::endl;
+    }
+    std::cout << std::endl;
+
+    fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
+    fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
+    fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
+    fout << std::endl;
+
+    fout << "  # path to station correction file (under development)" << std::endl;
     fout << "  use_sta_correction: " << use_sta_correction << std::endl;
     if (sta_correction_file_exist)
         fout << "  sta_correction_file: " << sta_correction_file;
     else
         fout << "#  sta_correction_file: " << "dummy_sta_correction_file";
     fout << "  # station correction file path" << std::endl;
+    fout << "  step_length_sc: " << step_length_init_sc << " step length relate to the update of station correction terms" << std::endl;
     fout << std::endl;
 
     fout << std::endl;
+
+    fout << "  # In the following data subsection, XXX_weight means a weight is assigned to the data, influencing the objective function and gradient" << std::endl;
+    fout << "  # XXX_weight : [d1,d2,w1,w2] means: " << std::endl;
+    fout << "  # if       XXX < d1, weight = w1 " << std::endl;
+    fout << "  # if d1 <= XXX < d2, weight = w1 + (XXX-d1)/(d2-d1)*(w2-w1),  (linear interpolation) " << std::endl;
+    fout << "  # if d2 <= XXX     , weight = w2 " << std::endl;
+    fout << "  # You can easily set w1 = w2 = 1.0 to normalize the weight related to XXX." << std::endl;
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
     fout << "  abs_time:" << std::endl;
@@ -978,14 +1095,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "] # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})" << std::endl;
     fout << "    distance_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << distance_weight_abs[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
+    fout << "] # XXX is epicenter distance (km) between the source and receiver related to the data" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using common source differential traveltime data --------------" << std::endl;
@@ -997,14 +1114,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight (wt) of residual." << std::endl;
+    fout << "] # XXX is the common source differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{n,j} - t^{syn}_{n,i} + t^{syn}_{n,j})." << std::endl;
     fout << "    azimuthal_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cs[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight of azimuth between two stations." << std::endl;
+    fout << "] # XXX is the azimuth difference between two separate stations related to the common source." << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
@@ -1016,14 +1133,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight (wt) of residual." << std::endl;
+    fout << "] # XXX is the common receiver differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{m,i} - t^{syn}_{n,i} + t^{syn}_{m,i})" << std::endl;
     fout << "    azimuthal_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cr[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight of azimuth between two earthquakes." << std::endl;
+    fout << "] # XXX is the azimuth difference between two separate sources related to the common receiver." << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- global weight of different types of data (to balance the weight of different data) --------------" << std::endl;
@@ -1035,20 +1152,26 @@ void InputParams::write_params_to_file() {
     fout << "    teleseismic_weight: " << teleseismic_weight << " # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)" << std::endl;
     fout << std::endl;
 
-    fout << "  # -------------- inversion parameters (exclude in this version) --------------" << std::endl;
+    fout << "  # -------------- inversion parameters --------------" << std::endl;
     fout << "  update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
     fout << "  update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
-    fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
+    // fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
     fout << std::endl;
 
-    fout << "  # -------------- for teleseismic inversion (exclude in this version) --------------" << std::endl;
-    fout << "  depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf" << std::endl;
+    fout << "  # -------------- for teleseismic inversion (under development) --------------" << std::endl;
+    fout << "  # depth_taper : [d1,d2] means: " << std::endl;
+    fout << "  # if       XXX < d1, kernel <- kernel * 0.0 " << std::endl;
+    fout << "  # if d1 <= XXX < d2, kernel <- kernel * (XXX-d1)/(d2-d1),  (linear interpolation) " << std::endl;
+    fout << "  # if d2 <= XXX     , kernel <- kernel * 1.0 " << std::endl;
+    fout << "  # You can easily set d1 = -200, d1 = -100 to remove this taper." << std::endl;
+    fout << "  depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]"  << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
     fout << "#          relocation parameters setting        #" << std::endl;
     fout << "#################################################" << std::endl;
-    fout << "relocation: # update earthquake hypocenter and origin time (when run_mode : 1)" << std::endl;
+    fout << "relocation: # update earthquake hypocenter and origin time (when run_mode : 2 and 3)" << std::endl;
+    fout << "  min_Ndata: " << min_Ndata_reloc << " # if the number of data of the earthquake is less than <min_Ndata>, the earthquake will not be relocated.  defaut value: 4 " << std::endl;
     fout << std::endl;
 
     fout << "  # relocation_strategy" << std::endl;
@@ -1063,7 +1186,7 @@ void InputParams::write_params_to_file() {
     fout << max_change_dep << ", " << max_change_lat << ", " << max_change_lon << ", " << max_change_ortime;
     fout << "]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second" << std::endl;
     fout << "  max_iterations : " << N_ITER_MAX_SRC_RELOC <<" # maximum number of iterations for relocation" << std::endl;
-    fout << "  tol_gradient : " << TOL_SRC_RELOC << " # threshold value for checking the convergence for each iteration" << std::endl;
+    fout << "  tol_gradient : " << TOL_SRC_RELOC << " # if the norm of gradient is smaller than the tolerance, the iteration of relocation terminates" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
@@ -1075,14 +1198,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]      # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "]      # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})" << std::endl;
     fout << "    distance_weight : [";
     for (int i = 0; i < n_weight; i++){
         fout << distance_weight_abs_reloc[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]      # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
+    fout << "]      # XXX is epicenter distance (km) between the source and receiver related to the data" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
@@ -1094,14 +1217,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]    # weight (wt) of residual." << std::endl;
+    fout << "]    # XXX is the common receiver differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{m,i} - t^{syn}_{n,i} + t^{syn}_{m,i})" << std::endl;
     fout << "    azimuthal_weight : [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cr_reloc[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]    # weight of azimuth (deg.) between two earthquakes." << std::endl;
+    fout << "]    # XXX is the azimuth difference between two separate sources related to the common receiver." << std::endl;
     fout << std::endl;
 
     fout << std::endl;
@@ -1325,7 +1448,9 @@ void InputParams::prepare_src_map(){
             // |            |        r2          r1     |   s1          |
             stdout_by_main("Swapping src and rec. This may take few minutes for a large dataset (only regional events will be processed)\n");
             do_swap_src_rec(src_map_all, rec_map_all, data_map_all, src_id2name_all);
-
+            int tmp = N_cr_dif_local_data;
+            N_cr_dif_local_data = N_cs_dif_local_data;
+            N_cs_dif_local_data = tmp;
         } else {
             // if we do not swap source and receiver, we need to process cr_dif to include the other source. After that, we have new data structure:
             // Before:
@@ -1582,6 +1707,9 @@ void InputParams::gather_rec_info_to_main(){
             // assigne tau_opt to rec_map_all from its own rec_map
             for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
                 rec_map_all[iter->first].tau_opt = iter->second.tau_opt;
+                rec_map_all[iter->first].dep = iter->second.dep;
+                rec_map_all[iter->first].lat = iter->second.lat;
+                rec_map_all[iter->first].lon = iter->second.lon;
             }
 
             // make a list of receiver names
@@ -1601,19 +1729,32 @@ void InputParams::gather_rec_info_to_main(){
 
             int        rec_counter = 0;
             CUSTOMREAL tau_tmp=0.0;
+            CUSTOMREAL dep_tmp=0.0;
+            CUSTOMREAL lat_tmp=0.0;
+            CUSTOMREAL lon_tmp=0.0;
+
             // copy value if rec_map[name_rec] exists
             if (rec_map.find(name_rec) != rec_map.end()){
                 tau_tmp = rec_map[name_rec].tau_opt;
+                dep_tmp = rec_map[name_rec].dep;
+                lat_tmp = rec_map[name_rec].lat;
+                lon_tmp = rec_map[name_rec].lon;
                 rec_counter = 1;
             }
 
             // reduce counter and tau_tmp
             allreduce_rec_map_var(rec_counter);
             allreduce_rec_map_var(tau_tmp);
+            allreduce_rec_map_var(dep_tmp);
+            allreduce_rec_map_var(lat_tmp);
+            allreduce_rec_map_var(lon_tmp);
 
             // assign tau_opt to rec_map_all
             if (rec_counter > 0){
                 rec_map_all[name_rec].tau_opt = tau_tmp / (CUSTOMREAL)rec_counter;
+                rec_map_all[name_rec].dep = dep_tmp / (CUSTOMREAL)rec_counter;
+                rec_map_all[name_rec].lat = lat_tmp / (CUSTOMREAL)rec_counter;
+                rec_map_all[name_rec].lon = lon_tmp / (CUSTOMREAL)rec_counter;
             }
 
        }
@@ -1789,7 +1930,7 @@ void InputParams::write_station_correction_file(int i_inv){
     }
 }
 
-void InputParams::write_src_rec_file(int i_inv) {
+void InputParams::write_src_rec_file(int i_inv, int i_iter) {
 
     if (src_rec_file_exist){
 
@@ -1798,9 +1939,20 @@ void InputParams::write_src_rec_file(int i_inv) {
         // gather all arrival time info to the main process (need to call even n_sim=1)
         gather_all_arrival_times_to_main();
 
-        // gather tau_opt info
-        if (run_mode == SRC_RELOCATION)
+        // gather tau_opt, lat, lon, dep info
+        if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC){
             gather_rec_info_to_main();
+
+            // modify the source location and ortime
+            for(auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                src_map_back[iter->first].lat   =   iter->second.lat;
+                src_map_back[iter->first].lon   =   iter->second.lon;
+                src_map_back[iter->first].dep   =   iter->second.dep;
+                src_map_back[iter->first].sec   =   iter->second.sec + iter->second.tau_opt;
+            }
+        }
+
+
 
         // write only by the main processor of subdomain && the first id of subdoumains
         if (world_rank == 0 && subdom_main && id_subdomain==0){
@@ -1810,6 +1962,8 @@ void InputParams::write_src_rec_file(int i_inv) {
             else if (run_mode == DO_INVERSION){
                 // write out source and receiver points with current inversion iteration number
                 src_rec_file_out = output_dir + "/src_rec_file_step_" + int2string_zero_fill(i_inv) +".dat";
+            } else if (run_mode == INV_RELOC){
+                src_rec_file_out = output_dir + "/src_rec_file_inv_" + int2string_zero_fill(i_inv) +"_reloc_" + int2string_zero_fill(i_iter)+".dat";
             } else if (run_mode == TELESEIS_PREPROCESS) {
                 src_rec_file_out = output_dir + "/src_rec_file_teleseis_pre.dat";
             } else if (run_mode == SRC_RELOCATION) {
@@ -1976,8 +2130,13 @@ void InputParams::write_src_rec_file(int i_inv) {
             ofs.close();
 
             // only for source relocation, output relocated observational data for tomography
-            if (run_mode == SRC_RELOCATION) {
-                src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
+            if (run_mode == SRC_RELOCATION || run_mode == INV_RELOC) {
+                // src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
+
+                if (run_mode == INV_RELOC)
+                    src_rec_file_out = output_dir + "/src_rec_file_inv_" + int2string_zero_fill(i_inv) +"_reloc_" + int2string_zero_fill(i_iter)+"_obs.dat";
+                else if (run_mode == SRC_RELOCATION)
+                    src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
 
                 // open file
                 ofs.open(src_rec_file_out);
@@ -2066,7 +2225,7 @@ void InputParams::write_src_rec_file(int i_inv) {
                                 << std::fixed << std::setprecision(4) << std::setw(9) << rec.lon << " "
                                 << std::fixed << std::setprecision(4) << std::setw(9) << -1.0*rec.dep*1000.0 << " "
                                 << data.phase << " "
-                                << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time_obs << " "
+                                << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << travel_time_obs  << " "
                                 << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << data.data_weight
                                 << std::endl;
 
@@ -2296,7 +2455,7 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
 
 }
 
-void InputParams::modift_swapped_source_location() {
+void InputParams::modify_swapped_source_location() {
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
         src_map_back[iter->first].lat   =   iter->second.lat;
         src_map_back[iter->first].lon   =   iter->second.lon;
@@ -2341,92 +2500,6 @@ void InputParams::allreduce_rec_map_var(T& var){
 }
 
 
-//
-// communication for unevenly distributed receiver map
-//
-void InputParams::allreduce_rec_map_tau_opt(){
-    if(subdom_main){
-        // send total number of rec_map_all.size() to all processors
-        int n_rec_all;
-        std::vector<std::string> name_rec_all;
-        if (id_sim == 0){
-            n_rec_all = rec_map_all.size();
-            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
-                name_rec_all.push_back(iter->first);
-            }
-        }
-
-        // broadcast n_rec_all to all processors
-        broadcast_i_single_inter_sim(n_rec_all,0);
-
-        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
-            // broadcast name_rec_all[i_rec] to all processors
-            std::string name_rec;
-            if (id_sim == 0)
-                name_rec = name_rec_all[i_rec];
-
-            broadcast_str_inter_sim(name_rec,0);
-
-            // check if the tau_opt of rec_map_all[name_rec] is needed
-            bool is_stop = false;
-            if (rec_map.find(name_rec) != rec_map.end()){
-                is_stop = rec_map[name_rec].is_stop;
-            }
-
-            // allreduce
-            allreduce_bool_single_inplace_sim(is_stop);
-
-            // stop allreduce of tau_opt if is_stop is true (no further addition of tau_opt is needed)
-            if (is_stop)
-                continue;
-
-            // allreduce the tau_opt of rec_map_all[name_rec] to all processors
-            if (rec_map.find(name_rec) != rec_map.end()){
-                allreduce_rec_map_var(rec_map[name_rec].tau_opt);
-            } else {
-                CUSTOMREAL dummy = 0;
-                allreduce_rec_map_var(dummy);
-            }
-        }
-    }
-}
-
-
-void InputParams::allreduce_rec_map_sum_weight(){
-    if(subdom_main){
-        // send total number of rec_map_all.size() to all processors
-        int n_rec_all;
-        std::vector<std::string> name_rec_all;
-        if (id_sim == 0){
-            n_rec_all = rec_map_all.size();
-            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
-                name_rec_all.push_back(iter->first);
-            }
-        }
-
-        // broadcast n_rec_all to all processors
-        broadcast_i_single_inter_sim(n_rec_all,0);
-
-        for (int i_rec = 0; i_rec < n_rec_all; i_rec++){
-            // broadcast name_rec_all[i_rec] to all processors
-            std::string name_rec;
-            if (id_sim == 0)
-                name_rec = name_rec_all[i_rec];
-
-            broadcast_str_inter_sim(name_rec,0);
-
-            // allreduce the sum_weight of rec_map_all[name_rec] to all processors
-            if (rec_map.find(name_rec) != rec_map.end()){
-                allreduce_rec_map_var(rec_map[name_rec].sum_weight);
-            } else {
-                CUSTOMREAL dummy = 0;
-                allreduce_rec_map_var(dummy);
-            }
-        }
-    }
-}
-
-
 void InputParams::allreduce_rec_map_vobj_src_reloc(){
     if(subdom_main){
         // send total number of rec_map_all.size() to all processors
@@ -2453,18 +2526,11 @@ void InputParams::allreduce_rec_map_vobj_src_reloc(){
             // allreduce the vobj_src_reloc of rec_map_all[name_rec] to all processors
             if (rec_map.find(name_rec) != rec_map.end()){
                 allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc);
-                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_abs);
-                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cr);
-                allreduce_rec_map_var(rec_map[name_rec].vobj_src_reloc_cs);
+
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
-                dummy = 0;
-                allreduce_rec_map_var(dummy);
-                dummy = 0;
-                allreduce_rec_map_var(dummy);
-                dummy = 0;
-                allreduce_rec_map_var(dummy);
+
             }
         }
     }
@@ -2500,6 +2566,7 @@ void InputParams::allreduce_rec_map_grad_src(){
                 allreduce_rec_map_var(rec_map[name_rec].grad_chi_j);
                 allreduce_rec_map_var(rec_map[name_rec].grad_chi_k);
                 allreduce_rec_map_var(rec_map[name_rec].grad_tau);
+                allreduce_rec_map_var(rec_map[name_rec].Ndata);
             } else {
                 CUSTOMREAL dummy = 0;
                 allreduce_rec_map_var(dummy);
@@ -2509,6 +2576,8 @@ void InputParams::allreduce_rec_map_grad_src(){
                 allreduce_rec_map_var(dummy);
                 dummy = 0;
                 allreduce_rec_map_var(dummy);
+                int dummy_int = 0;
+                allreduce_rec_map_var(dummy_int);
             }
         }
     }
