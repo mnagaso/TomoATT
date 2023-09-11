@@ -547,6 +547,7 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
             iter->second.grad_chi_i                 = _0_CR;
             iter->second.grad_chi_j                 = _0_CR;
             iter->second.grad_chi_k                 = _0_CR;
+            iter->second.Ndata                      = 0;
             iter->second.sum_weight                 = _0_CR;    // what does it mean?
             iter->second.vobj_src_reloc_old         = iter->second.vobj_src_reloc;
             iter->second.vobj_src_reloc             = _0_CR;
