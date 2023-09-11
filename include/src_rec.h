@@ -60,14 +60,13 @@ public:
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
-    CUSTOMREAL vobj_src_reloc_abs       = 0.0;
-    CUSTOMREAL vobj_src_reloc_cr        = 0.0;
-    CUSTOMREAL vobj_src_reloc_cs        = 0.0;
+
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
     CUSTOMREAL change_dep = 0.0;
     CUSTOMREAL change_lat = 0.0;
     CUSTOMREAL change_lon = 0.0;
     CUSTOMREAL change_tau = 0.0;
+    int        Ndata      = 0.0;
 };
 
 class DataInfo {

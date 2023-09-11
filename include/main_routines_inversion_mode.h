@@ -31,7 +31,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         // check if this source is common receiver data
 
         if (myrank == 0)
-            std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
+            std::cout << "calculating the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
 
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
@@ -65,10 +65,8 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
 
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
-inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode){
+inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode, bool is_read_time){
 
-    // obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, misfit, misfit_abs, misfit_cs_dif, misfit_cr_dif, misfit_tele
-    std::vector<CUSTOMREAL> v_obj_misfit = std::vector<CUSTOMREAL>(10, 0.0);
 
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)
@@ -104,13 +102,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         io.set_id_src(id_sim_src);
         io.set_name_src(name_sim_src);
 
-        if (myrank == 0){
-            // std::cout << "calculateing the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", forward modeling starting..." << std::endl;
-            std::cout << "calculateing source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
-                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                    << std::endl;
-        }
         // set group name to be used for output in h5
         // TODO set id_sim_src and name_sim_src with this function
         io.change_group_name_for_source();
@@ -146,7 +137,30 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         if (!hybrid_stencil_order){
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-            It->run_iteration_forward(IP, grid, io, first_init);
+            // we can choose to read traveltime field from the computed traveltime field if (is_read_time == true and is_teleseismic == false)
+            if ((is_read_time) && (!is_teleseismic)) {
+                if (myrank == 0){
+                    std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+                            << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                            << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                            << std::endl;
+                }
+                // load travel time field on grid.T_loc
+                io.read_T(grid);
+            } else {
+                // We need to compute traveltime field, including such cases:
+                //  case 1. is_read_time == false;
+                //  case 2. is_read_time == true, but we compute teleseismic data;
+
+                if (myrank == 0){
+                    std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+                            << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                            << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                            << std::endl;
+                }
+                // solve travel time field on grid.T_loc
+                It->run_iteration_forward(IP, grid, io, first_init);
+            }
         } else {
             // hybrid stencil mode
             std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
@@ -187,7 +201,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // calculate the arrival times at each receivers
         Receiver recs;
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
-
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
@@ -195,10 +208,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
 
             // calculate adjoint source
-            std::vector<CUSTOMREAL> v_obj_misfit_event = recs.calculate_adjoint_source(IP, name_sim_src);
-            for(int i = 0; i < (int)v_obj_misfit_event.size(); i++){
-                v_obj_misfit[i] += v_obj_misfit_event[i];
-            }
+            recs.calculate_adjoint_source(IP, name_sim_src);
+
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
 
@@ -227,12 +238,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // synchronize all processes
     synchronize_all_world();
 
-    // allreduce sum_adj_src
-    for(int i = 0; i < (int)v_obj_misfit.size(); i++){
-        allreduce_cr_sim_single_inplace(v_obj_misfit[i]);
-    }
-
-
     // gather all the traveltime to the main process and distribute to all processes
     // for calculating the synthetic common receiver differential traveltime
     if ( IP.get_run_mode()==ONLY_FORWARD ||                 // case 1. if we are doing forward modeling, traveltime is not prepared for computing cr_dif data. Now we need to compute it
@@ -241,8 +246,12 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         IP.gather_traveltimes_and_calc_syn_diff();
     }
 
+    // compute all residual and obj
+    Receiver recs;
+    std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
+
     // return current objective function value
-    return v_obj_misfit;
+    return obj_residual;
 }
 
 

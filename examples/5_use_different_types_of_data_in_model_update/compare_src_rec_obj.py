@@ -17,7 +17,7 @@ def read_src_rec_file(filename):
     cc = 0
     for info in doc_input:
         tmp=info.split()
-        if(cc == 0):    # ev info line            
+        if(cc == 0):    # ev info line
             ndata = int(tmp[11])
             cc = cc + 1
             tmp_ev_time = []
@@ -50,14 +50,16 @@ def read_obj_file(filename):
 
         if(iline == 0):
             continue
-            
+
         tmp=info.split(",")
         obj = []
-        for i in range(9):
+
+        # from id 2 to 7
+        for i in range(2,7):
             obj.append(float(tmp[i]))
-        
+
         all_obj.append(obj)
-    
+
     return all_obj
 
 # %%

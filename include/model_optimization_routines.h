@@ -24,7 +24,7 @@
 
 // do model update by gradient descent
 inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
-                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, std::vector<CUSTOMREAL>& v_misfit_inout, bool& first_src, std::ofstream& out_main) {
+                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
 
     // change stepsize
     if (i_inv > 0 && v_obj_inout < old_v_obj) {
@@ -36,53 +36,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
         step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
     }
-    // output objective function
-    if (myrank==0 && id_sim==0) {
-        out_main << std::setw(5) << i_inv;
-        out_main << "," << std::setw(19) << v_misfit_inout[0];
-        if( IP.data_type.find("abs") != IP.data_type.end())
-            out_main << "," << std::setw(19) << v_misfit_inout[1];
-        if( IP.data_type.find("cs_dif") != IP.data_type.end()){
-            if (IP.get_is_srcrec_swap())
-                out_main << "," << std::setw(19) << v_misfit_inout[3];
-            else
-                out_main << "," << std::setw(19) << v_misfit_inout[2];
-        }
-        if( IP.data_type.find("cr_dif") != IP.data_type.end()){
-            if (IP.get_is_srcrec_swap())
-                out_main << "," << std::setw(19) << v_misfit_inout[2];
-            else
-                out_main << "," << std::setw(19) << v_misfit_inout[3];
-        }
-        if( IP.data_type.find("tele") != IP.data_type.end()){
-            if (IP.get_is_srcrec_swap())
-                out_main << "," << std::setw(19) << v_misfit_inout[4];
-            else
-                out_main << "," << std::setw(19) << v_misfit_inout[4];
-        }
-        out_main << "," << std::setw(19) << v_misfit_inout[5];
-        if( IP.data_type.find("abs") != IP.data_type.end())
-            out_main << "," << std::setw(19) << v_misfit_inout[6];
-        if( IP.data_type.find("cs_dif") != IP.data_type.end()){
-            if (IP.get_is_srcrec_swap())
-                out_main << "," << std::setw(19) << v_misfit_inout[8];
-            else
-                out_main << "," << std::setw(19) << v_misfit_inout[7];
-        }
-        if( IP.data_type.find("cr_dif") != IP.data_type.end()){
-            if (IP.get_is_srcrec_swap())
-                out_main << "," << std::setw(19) << v_misfit_inout[7];
-            else
-                out_main << "," << std::setw(19) << v_misfit_inout[8];
-        }
-        if( IP.data_type.find("tele") != IP.data_type.end()){
-            if (IP.get_is_srcrec_swap())
-                out_main << "," << std::setw(19) << v_misfit_inout[9];
-            else
-                out_main << "," << std::setw(19) << v_misfit_inout[9];
-        }
-        out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
-    }
+    
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
 
@@ -116,9 +70,117 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         io.update_xdmf_file();
 
     synchronize_all_world();
+}
 
 
+inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUSTOMREAL>& v_misfit_inout, std::ofstream& out_main, std::string type) {
+    // output objective function
+    if (myrank==0 && id_sim==0) {
+        out_main << std::setw(5) << i_inv << ",";
+        out_main << std::setw(13) << type;
+        out_main << "," << std::setw(19) << v_misfit_inout[0];
+        // if( IP.data_type.find("abs") != IP.data_type.end())
+        out_main << "," << std::setw(19) << v_misfit_inout[1];
+        // if( IP.data_type.find("cs_dif") != IP.data_type.end()){
+        if (IP.get_is_srcrec_swap())
+            out_main << "," << std::setw(19) << v_misfit_inout[3];
+        else
+            out_main << "," << std::setw(19) << v_misfit_inout[2];
+        // }
+        // if( IP.data_type.find("cr_dif") != IP.data_type.end()){
+        if (IP.get_is_srcrec_swap())
+            out_main << "," << std::setw(19) << v_misfit_inout[2];
+        else
+            out_main << "," << std::setw(19) << v_misfit_inout[3];
+        // }
+        // if( IP.data_type.find("tele") != IP.data_type.end()){
+        out_main << "," << std::setw(19) << v_misfit_inout[4];
+        // }
+        // res
+        CUSTOMREAL mean;
+        CUSTOMREAL std;
+        std::string tmp;
+        if (IP.N_data > 0) {
+            mean = v_misfit_inout[5]/IP.N_data;
+            std  = sqrt(v_misfit_inout[6]/IP.N_data - my_square(mean));
+            tmp = std::to_string(mean);
+            tmp.append("/");
+            tmp.append(std::to_string(std));
+            out_main << "," << std::setw(24) << tmp;
+            // std::cout   << ", v_misfit_inout[5]: " << v_misfit_inout[5] 
+            //                     << ", v_misfit_inout[6]: " << v_misfit_inout[6] 
+            //                     << ", N_data: " << IP.N_data
+            //                     << std::endl;
+        } else {
+            out_main << "," << std::setw(24) << "0.0/0.0";
+        }
+        // res_abs
+        if (IP.N_abs_local_data > 0) {
+            mean = v_misfit_inout[7]/IP.N_abs_local_data;
+            std  = sqrt(v_misfit_inout[8]/IP.N_abs_local_data - my_square(mean));
+            tmp = std::to_string(mean);
+            tmp.append("/");
+            tmp.append(std::to_string(std));
+            out_main << "," << std::setw(24) << tmp;
+        } else {
+            out_main << "," << std::setw(24) << "0.0/0.0";
+        }
+        if (IP.get_is_srcrec_swap()){
+            if (IP.N_cr_dif_local_data > 0) {
+                mean = v_misfit_inout[11]/IP.N_cr_dif_local_data;
+                std  = sqrt(v_misfit_inout[12]/IP.N_cr_dif_local_data - my_square(mean));
+                tmp = std::to_string(mean);
+                tmp.append("/");
+                tmp.append(std::to_string(std));
+                out_main << "," << std::setw(24) << tmp;
+            } else {
+                out_main << "," << std::setw(24) << "0.0/0.0";
+            }
+            if (IP.N_cs_dif_local_data > 0) {
+                mean = v_misfit_inout[9]/IP.N_cs_dif_local_data;
+                std  = sqrt(v_misfit_inout[10]/IP.N_cs_dif_local_data - my_square(mean));
+                tmp = std::to_string(mean);
+                tmp.append("/");
+                tmp.append(std::to_string(std));
+                out_main << "," << std::setw(24) << tmp;
+            } else {
+                out_main << "," << std::setw(24) << "0.0/0.0";
+            }
+        } else {
+            if (IP.N_cs_dif_local_data > 0) {
+                mean = v_misfit_inout[9]/IP.N_cs_dif_local_data;
+                std  = sqrt(v_misfit_inout[10]/IP.N_cs_dif_local_data - my_square(mean));
+                tmp = std::to_string(mean);
+                tmp.append("/");
+                tmp.append(std::to_string(std));
+                out_main << "," << std::setw(24) << tmp;
+            } else {
+                out_main << "," << std::setw(24) << "0.0/0.0";
+            }
+            if (IP.N_cr_dif_local_data > 0) {
+                mean = v_misfit_inout[11]/IP.N_cr_dif_local_data;
+                std  = sqrt(v_misfit_inout[12]/IP.N_cr_dif_local_data - my_square(mean));
+                tmp = std::to_string(mean);
+                tmp.append("/");
+                tmp.append(std::to_string(std));
+                out_main << "," << std::setw(24) << tmp;
+            } else {
+                out_main << "," << std::setw(24) << "0.0/0.0";
+            }
+        }
 
+        if (IP.N_teleseismic_data > 0) {
+            mean = v_misfit_inout[13]/IP.N_teleseismic_data;
+            std  = sqrt(v_misfit_inout[14]/IP.N_teleseismic_data - my_square(mean));
+            tmp = std::to_string(mean);
+            tmp.append("/");
+            tmp.append(std::to_string(std));
+            out_main << "," << std::setw(24) << tmp;
+        } else {
+            out_main << "," << std::setw(24) << "0.0/0.0";
+        }
+        out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
+    }
 }
 
 
@@ -168,7 +230,9 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     // loop till
     while (sub_iter_count < max_sub_iterations) {
         // check the new objective function value
-        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
+        // v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
+        bool is_read_time = false;
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true, is_read_time); // run simulations with line search mode
         v_obj_new = v_obj_misfit_new[0];
         // if the new objective function value is larger than the old one, make the step width to be half of the previous one
         diff_obj = v_obj_new - v_obj_old;
@@ -301,7 +365,8 @@ inline void model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         set_new_model(grid, step_length, init_bfgs);
 
         // check current objective function value
-        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
+        bool is_read_time = false;
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true, is_read_time);
         v_obj_new = v_obj_misfit_new[0];
 
         // update gradient

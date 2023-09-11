@@ -24,6 +24,7 @@ inline int loc_I_vis, loc_J_vis, loc_K_vis;
 inline int loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost;
 inline int n_inv_grids;
 inline int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc;
+inline int n_inv_I_loc_ani, n_inv_J_loc_ani, n_inv_K_loc_ani;
 
 // 3d indices to 1d index
 #define I2V(A,B,C) ((C)*loc_I*loc_J + (B)*loc_I + A)
@@ -38,6 +39,12 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 #define I2V_INV_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc + (A))
 #define I2V_INV_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc + (A))
 #define I2V_INV_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc + (A))
+
+#define I2V_INV_ANI_GRIDS(A,B,C,D) ((D)*n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani + (C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
+#define I2V_INV_ANI_KNL(A,B,C)     ((C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
+#define I2V_INV_ANI_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc_ani + (A))
 
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
 //#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
@@ -130,6 +137,9 @@ inline int ngrid_k     = 0; // number of grid points in k direction
 inline int ngrid_i_inv = 0; // number of inversion grid points in i direction
 inline int ngrid_j_inv = 0; // number of inversion grid points in j direction
 inline int ngrid_k_inv = 0; // number of inversion grid points in k direction
+inline int ngrid_i_inv_ani = 0; // number of inversion grid points in i direction for anisotropy
+inline int ngrid_j_inv_ani = 0; // number of inversion grid points in j direction for anisotropy
+inline int ngrid_k_inv_ani = 0; // number of inversion grid points in k direction for anisotropy
 
 // mpi parameters
 inline int      world_nprocs;     // total number of processes (all groups)
@@ -206,6 +216,7 @@ inline int nsrc_total = 0;
 // flag if common receiver double difference data is used
 inline bool src_pair_exists = false;
 
+
 // weight of different typs of data
 inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
 inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
@@ -248,7 +259,7 @@ inline CUSTOMREAL       step_length_src_reloc       = 2.0;  // step length for s
 inline CUSTOMREAL       step_length_decay_src_reloc = 0.9;
 inline int              N_ITER_MAX_SRC_RELOC        = 501;  // max iteration for source location
 inline CUSTOMREAL       TOL_SRC_RELOC               = 1e-3; // threshold of the norm of gradient for stopping single earthquake location
-inline const CUSTOMREAL TOL_step_length             = 1e-2; // threshold of the max step size for stopping single earthquake location
+inline const CUSTOMREAL TOL_step_length             = 1e-4; // threshold of the max step size for stopping single earthquake location
 inline CUSTOMREAL       rescaling_dep               = 10.0;
 inline CUSTOMREAL       rescaling_lat               = 1.0;
 inline CUSTOMREAL       rescaling_lon               = 1.0;
@@ -258,6 +269,7 @@ inline CUSTOMREAL       max_change_lat              = 1.0;
 inline CUSTOMREAL       max_change_lon              = 1.0;
 inline CUSTOMREAL       max_change_ortime           = 0.5;
 inline bool             ortime_local_search         = true;
+inline int              min_Ndata_reloc             = 4;    // if an earthquake is recorded by less than <min_Ndata> times, relocation is not allowed.
 
 // inversion strategy parameters
 inline int inv_mode                     = 0;

@@ -763,7 +763,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
                     << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
                     << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " ";
-                    if (IP.get_run_mode() == 1) {
+                    if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
                         fout << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
                         // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
                         << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks_update" << " ";
@@ -785,7 +785,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
             std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
             std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
             std::vector<CUSTOMREAL> Ks, Ks_update;
-            if (IP.get_run_mode() == 1) {
+            if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
                 //std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
                 Ks = get_grid_data(grid.get_Ks());
                 Ks_update = get_grid_data(grid.get_Ks_update());
@@ -805,7 +805,7 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
                             << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
                             << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " ";
 
-                            if (IP.get_run_mode() == 1) {
+                            if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
                                 fout << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
                                 // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
                                 << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " ";
@@ -1478,7 +1478,6 @@ void IO_utils::read_data_h5(Grid& grid, CUSTOMREAL* arr, std::string h5_group_na
     h5_close_group_collective();
     // close file
     h5_close_file_collective();
-
 }
 
 
@@ -1648,7 +1647,7 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
             // close dataspace
             H5Sclose(space_id);
         }
-
+        
         delete[] dims_h5;
     }
 
