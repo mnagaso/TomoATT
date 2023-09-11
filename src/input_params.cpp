@@ -217,10 +217,6 @@ InputParams::InputParams(std::string& input_file){
                 if (config["model_update"]["optim_method_0"]["step_length_decay"]) {
                     getNodeValue(config["model_update"]["optim_method_0"], "step_length_decay", step_length_decay);
                 }
-                // step length sc
-                if (config["model_update"]["optim_method_0"]["step_length_sc"]) {
-                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_sc", step_length_init_sc);
-                }
             }
 
             // parameters for optim_method == 1 or 2
@@ -888,9 +884,9 @@ void InputParams::write_params_to_file() {
     fout << "#            parallel computation settings      #" << std::endl;
     fout << "#################################################" << std::endl;
     fout << "parallel: # parameters for parallel computation" << std::endl;
-    fout << "  n_sims: "    << n_sims << " # number of simultanoues runs" << std::endl;
-    fout << "  ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction" << std::endl;
-    fout << "  nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization" << std::endl;
+    fout << "  n_sims: "    << n_sims << " # number of simultanoues runs (parallel the sources)" << std::endl;
+    fout << "  ndiv_rtp: [" << ndiv_k << ", " << ndiv_j << ", " << ndiv_i << "] # number of subdivision on each direction (parallel the computional domain)" << std::endl;
+    fout << "  nproc_sub: " << n_subprocs << " # number of processors for sweep parallelization (parallel the fast sweep method)" << std::endl;
     fout << "  use_gpu: "   << use_gpu << " # true if use gpu (EXPERIMENTAL)" << std::endl;
     fout << std::endl;
 
@@ -900,8 +896,8 @@ void InputParams::write_params_to_file() {
     fout << "output_setting:" << std::endl;
     fout << "  output_dir: "              << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
     fout << "  output_source_field:     " << output_source_field         << " # output the calculated field of all sources                       " << std::endl;
-    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat or not.                     " << std::endl;
-    fout << "  output_final_model:      " << output_final_model          << " # output merged final model or not.                                " << std::endl;
+    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat (data in text format) or not.                     " << std::endl;
+    fout << "  output_final_model:      " << output_final_model          << " # output merged final model (final_model.h5) or not.                                " << std::endl;
     fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
     fout << "  output_in_process_data:  " << output_in_process_data      << " # output src_rec_file at each inv iteration or not.                       " << std::endl;
     fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
@@ -925,7 +921,7 @@ void InputParams::write_params_to_file() {
     fout << "# 0 for forward simulation only,"                  << std::endl;
     fout << "# 1 for inversion"                                 << std::endl;
     fout << "# 2 for earthquake relocation"                     << std::endl;
-    fout << "# 3 for inversion+earthquake relocation"           << std::endl;
+    fout << "# 3 for inversion + earthquake relocation"           << std::endl;
     fout << "run_mode: " << run_mode << std::endl;
     fout << std::endl;
 
@@ -942,7 +938,6 @@ void InputParams::write_params_to_file() {
     fout << "  # parameters for optim_method 0 (gradient_descent)" << std::endl;
     fout << "  optim_method_0:" << std::endl;
     fout << "    step_length_decay: " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
-    fout << "    step_length_sc: "    << step_length_init_sc << " # ..."  << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
@@ -957,6 +952,7 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
 
     fout << "  # parameters for smooth method 0 (multigrid model parametrization)" << std::endl;
+    fout << "  # inversion grid can be viewed in OUTPUT_FILES/inversion_grid.txt" << std::endl;
     fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
     fout << std::endl;
 
@@ -1009,20 +1005,67 @@ void InputParams::write_params_to_file() {
     }
     fout << std::endl;
 
-    fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)" << std::endl;
+    fout << "  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)" << std::endl;
+    fout << "  invgrid_ani: " << invgrid_ani << std::endl;
+    fout << "  # settings for flexible inversion grid for anisotropy (only flexible grid input is provided)" << std::endl;
+    if (n_inv_r_flex_ani_read){
+        fout << "  dep_inv_ani: [";
+        for (int i = 0; i < n_inv_r_flex_ani; i++){
+            fout << dep_inv_ani[i];
+            if (i != n_inv_r_flex_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  dep_inv_ani: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_t_flex_ani_read){
+        fout << "  lat_inv_ani: [";
+        for (int i = 0; i < n_inv_t_flex_ani; i++){
+            fout << lat_inv_ani[i];
+            if (i != n_inv_t_flex_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  lat_inv_ani: " << "[1, 1, 1]" << std::endl;
+    }
+    if (n_inv_p_flex_ani_read){
+        fout << "  lon_inv_ani: [";
+        for (int i = 0; i < n_inv_p_flex_ani; i++){
+            fout << lon_inv_ani[i];
+            if (i != n_inv_p_flex_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  lon_inv_ani: " << "[1, 1, 1]" << std::endl;
+    }
+    std::cout << std::endl;
+
+    fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
+    fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
     fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
     fout << std::endl;
 
-    fout << "  # path to station correction file" << std::endl;
+    fout << "  # path to station correction file (under development)" << std::endl;
     fout << "  use_sta_correction: " << use_sta_correction << std::endl;
     if (sta_correction_file_exist)
         fout << "  sta_correction_file: " << sta_correction_file;
     else
         fout << "#  sta_correction_file: " << "dummy_sta_correction_file";
     fout << "  # station correction file path" << std::endl;
+    fout << "  step_length_sc: " << step_length_init_sc << " step length relate to the update of station correction terms" << std::endl;
     fout << std::endl;
 
     fout << std::endl;
+
+    fout << "  # In the following data subsection, XXX_weight means a weight is assigned to the data, influencing the objective function and gradient" << std::endl;
+    fout << "  # XXX_weight : [d1,d2,w1,w2] means: " << std::endl;
+    fout << "  # if       XXX < d1, weight = w1 " << std::endl;
+    fout << "  # if d1 <= XXX < d2, weight = w1 + (XXX-d1)/(d2-d1)*(w2-w1),  (linear interpolation) " << std::endl;
+    fout << "  # if d2 <= XXX     , weight = w2 " << std::endl;
+    fout << "  # You can easily set w1 = w2 = 1.0 to normalize the weight related to XXX." << std::endl;
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
     fout << "  abs_time:" << std::endl;
@@ -1033,14 +1076,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "] # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})" << std::endl;
     fout << "    distance_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << distance_weight_abs[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
+    fout << "] # XXX is epicenter distance (km) between the source and receiver related to the data" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using common source differential traveltime data --------------" << std::endl;
@@ -1052,14 +1095,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight (wt) of residual." << std::endl;
+    fout << "] # XXX is the common source differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{n,j} - t^{syn}_{n,i} + t^{syn}_{n,j})." << std::endl;
     fout << "    azimuthal_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cs[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight of azimuth between two stations." << std::endl;
+    fout << "] # XXX is the azimuth difference between two separate stations related to the common source." << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
@@ -1071,14 +1114,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight (wt) of residual." << std::endl;
+    fout << "] # XXX is the common receiver differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{m,i} - t^{syn}_{n,i} + t^{syn}_{m,i})" << std::endl;
     fout << "    azimuthal_weight: [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cr[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "] # weight of azimuth between two earthquakes." << std::endl;
+    fout << "] # XXX is the azimuth difference between two separate sources related to the common receiver." << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- global weight of different types of data (to balance the weight of different data) --------------" << std::endl;
@@ -1090,14 +1133,19 @@ void InputParams::write_params_to_file() {
     fout << "    teleseismic_weight: " << teleseismic_weight << " # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)" << std::endl;
     fout << std::endl;
 
-    fout << "  # -------------- inversion parameters (exclude in this version) --------------" << std::endl;
+    fout << "  # -------------- inversion parameters --------------" << std::endl;
     fout << "  update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
     fout << "  update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
-    fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
+    // fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
     fout << std::endl;
 
-    fout << "  # -------------- for teleseismic inversion (exclude in this version) --------------" << std::endl;
-    fout << "  depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf" << std::endl;
+    fout << "  # -------------- for teleseismic inversion (under development) --------------" << std::endl;
+    fout << "  # depth_taper : [d1,d2] means: " << std::endl;
+    fout << "  # if       XXX < d1, kernel <- kernel * 0.0 " << std::endl;
+    fout << "  # if d1 <= XXX < d2, kernel <- kernel * (XXX-d1)/(d2-d1),  (linear interpolation) " << std::endl;
+    fout << "  # if d2 <= XXX     , kernel <- kernel * 1.0 " << std::endl;
+    fout << "  # You can easily set d1 = -200, d1 = -100 to remove this taper." << std::endl;
+    fout << "  depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]"  << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
@@ -1119,7 +1167,7 @@ void InputParams::write_params_to_file() {
     fout << max_change_dep << ", " << max_change_lat << ", " << max_change_lon << ", " << max_change_ortime;
     fout << "]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second" << std::endl;
     fout << "  max_iterations : " << N_ITER_MAX_SRC_RELOC <<" # maximum number of iterations for relocation" << std::endl;
-    fout << "  tol_gradient : " << TOL_SRC_RELOC << " # threshold value for checking the convergence for each iteration" << std::endl;
+    fout << "  tol_gradient : " << TOL_SRC_RELOC << " # if the norm of gradient is smaller than the tolerance, the iteration of relocation terminates" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
@@ -1131,14 +1179,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]      # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between." << std::endl;
+    fout << "]      # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})" << std::endl;
     fout << "    distance_weight : [";
     for (int i = 0; i < n_weight; i++){
         fout << distance_weight_abs_reloc[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]      # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between." << std::endl;
+    fout << "]      # XXX is epicenter distance (km) between the source and receiver related to the data" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
@@ -1150,14 +1198,14 @@ void InputParams::write_params_to_file() {
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]    # weight (wt) of residual." << std::endl;
+    fout << "]    # XXX is the common receiver differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{m,i} - t^{syn}_{n,i} + t^{syn}_{m,i})" << std::endl;
     fout << "    azimuthal_weight : [";
     for (int i = 0; i < n_weight; i++){
         fout << azimuthal_weight_cr_reloc[i];
         if (i != n_weight-1)
             fout << ", ";
     }
-    fout << "]    # weight of azimuth (deg.) between two earthquakes." << std::endl;
+    fout << "]    # XXX is the azimuth difference between two separate sources related to the common receiver." << std::endl;
     fout << std::endl;
 
     fout << std::endl;
