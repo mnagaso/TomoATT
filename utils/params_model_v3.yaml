@@ -44,6 +44,7 @@ output_setting:
   output_model_dat: false        # output model_parameters_inv_0000.dat or not.
   output_final_model: true       # output merged final model or not.
   output_in_process: true        # output model at each inv iteration or not.
+  output_in_process_data:  false # output src_rec_file at each inv iteration or not.
   single_precision_output: false # output results in single precision or not.
   verbose_output_level: 0        # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
   output_file_format: 0          # in/output file format, if 0: HDF5, if 1: ASCII
@@ -73,7 +74,6 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # parameters for optim_method 0 (grad_descent)
   optim_method_0:
     step_length_decay: 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
-    step_length_sc: 0.001  # ... # use it also ?
 
   # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)
   optim_method_1_2:
@@ -104,71 +104,103 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   dep_inv: [-10.0, -7.5, -5.0, -2.5, 0.0, 2.5, 5.0, 7.5, 10.0] # depth in km (Radius of the earth is defined in config.h/R_earth)
   lat_inv: [0.0, 1.0] # latitude in degree (ignored if type_lat_inv : 0)
   lon_inv: [0.0, 1.0] # longitude in degree (ignored if type_lon_inv : 0)
+  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)
+  invgrid_ani: false
+  # settings for flexible inversion grid for anisotropy (only flexible grid input is provided)
+#  dep_inv_ani: [1, 1, 1]
+#  lat_inv_ani: [1, 1, 1]
+#  lon_inv_ani: [1, 1, 1]
+  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh),
+  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced
+  invgrid_volume_rescale: false
+
+  # path to station correction file (under development)
+  use_sta_correction: false
+#  sta_correction_file: dummy_sta_correction_file  # station correction file path
+  #step_length_sc: 0.001 step length relate to the update of station correction terms
 
   # path to station correction file
-  use_sta_correction: false
-  sta_correction_file: dummy_sta_correction_file # station correction file path
+  #use_sta_correction: false
+  #sta_correction_file: dummy_sta_correction_file # station correction file path
 
+
+  # In the following data subsection, XXX_weight means a weight is assigned to the data, influencing the objective function and gradient
+  # XXX_weight : [d1,d2,w1,w2] means:
+  # if       XXX < d1, weight = w1
+  # if d1 <= XXX < d2, weight = w1 + (XXX-d1)/(d2-d1)*(w2-w1),  (linear interpolation)
+  # if d2 <= XXX     , weight = w2
+  # You can easily set w1 = w2 = 1.0 to normalize the weight related to XXX.
   # -------------- using absolute traveltime data --------------
   abs_time:
-    use_abs_time: true # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
-    distance_weight: [50.0, 150.0, 1.0, 0.1] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
+    use_abs_time: false # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    residual_weight: [0, 0, 0, 0] # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})
+    distance_weight: [0, 0, 0, 0] # XXX is epicenter distance (km) between the source and receiver related to the data
 
   # -------------- using common source differential traveltime data --------------
   cs_dif_time:
-    use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual.
-    azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two stations.
+    use_cs_time: false # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    residual_weight: [0, 0, 0, 0] # XXX is the common source differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{n,j} - t^{syn}_{n,i} + t^{syn}_{n,j}).
+    azimuthal_weight: [0, 0, 0, 0] # XXX is the azimuth difference between two separate stations related to the common source.
 
   # -------------- using common receiver differential traveltime data --------------
   cr_dif_time:
-    use_cr_time: true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual.
-    azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two earthquakes.
+    use_cr_time: false # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    residual_weight: [0, 0, 0, 0] # XXX is the common receiver differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{m,i} - t^{syn}_{n,i} + t^{syn}_{m,i})
+    azimuthal_weight: [0, 0, 0, 0] # XXX is the azimuth difference between two separate sources related to the common receiver.
 
   # -------------- global weight of different types of data (to balance the weight of different data) --------------
   global_weight:
-    balance_data_weight: true     # true: over the total weight of the each type of the data. the obj of different data means the average data misfit; false: use original weight (below weight for each type of data needs to be set)
-    abs_time_weight: 1.0          # weight of absolute traveltime data,                       default: 1.0
-    cs_dif_time_local_weight: 1.0 # weight of common source differential traveltime data,     default: 1.0
-    cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data,   default: 1.0
-    teleseismic_weight: 1.0       # weight of teleseismic data,                               default: 1.0  (exclude in this version)
+    balance_data_weight: false # yes: over the total weight of the each type of the data. no: use original weight (below weight for each type of data needs to be set)
+    abs_time_weight: 1 # weight of absolute traveltime data after balance,                       default: 1.0
+    cs_dif_time_local_weight: 1 # weight of common source differential traveltime data after balance,     default: 1.0
+    cr_dif_time_local_weight: 1 # weight of common receiver differential traveltime data after balance,   default: 1.0
+    teleseismic_weight: 1 # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)
 
-  # -------------- inversion parameters (exclude in this version) --------------
+  # -------------- inversion parameters --------------
   update_slowness : true  # update slowness (velocity) or not.              default: true
   update_azi_ani  : false # update azimuthal anisotropy (xi, eta) or not.   default: false
-  update_rad_ani  : false # update radial anisotropy (in future) or not.    default: false
+  #update_rad_ani  : false # update radial anisotropy (in future) or not.    default: false
 
-  # -------------- for teleseismic inversion (exclude in this version) --------------
-  depth_taper : [-200.0, -100.0]  # kernel weight : depth.  -->  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
+  # -------------- for teleseismic inversion (under development) --------------
+  # depth_taper : [d1,d2] means:
+  # if       XXX < d1, kernel <- kernel * 0.0
+  # if d1 <= XXX < d2, kernel <- kernel * (XXX-d1)/(d2-d1),  (linear interpolation)
+  # if d2 <= XXX     , kernel <- kernel * 1.0
+  # You can easily set d1 = -200, d1 = -100 to remove this taper.
+  depth_taper : [-1e+07, -1e+07]
 
 #################################################
 #          relocation parameters setting        #
 #################################################
-relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
+relocation: # update earthquake hypocenter and origin time (when run_mode : 2 and 3)
+  min_Ndata: 4 # if the number of data of the earthquake is less than <min_Ndata>, the earthquake will not be relocated.  defaut value: 4
 
   # relocation_strategy
   step_length : 0.01      # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
   step_length_decay : 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
-  rescaling_dep_lat_lon_ortime  : [10.0, 10.0, 10.0, 1.0]  # The perturbation is related to <rescaling_dep_lat_lon_ortime>. Unit: km,km,km,second
-  max_change_dep_lat_lon_ortime : [5.0, 5.0, 5.0, 0.5]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second
-  max_iterations : 100  # maximum number of iterations for relocation
-  tol_gradient : 0.0001 # threshold value for checking the convergence for each iteration
+  rescaling_dep_lat_lon_ortime  : [10, 1, 1, 0.5]  # The perturbation is related to <rescaling_dep_lat_lon_ortime>. Unit: km,km,km,second
+  max_change_dep_lat_lon_ortime : [10, 1, 1, 0.5]     # the change of dep,lat,lon,ortime do not exceed max_change. Unit: km,km,km,second
+  max_iterations : 501 # maximum number of iterations for relocation
+  tol_gradient : 0.001 # if the norm of gradient is smaller than the tolerance, the iteration of relocation terminates
 
-  # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
   abs_time:
-    use_abs_time : true  # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight : [1.0,  3.0,   1.0, 0.1]      # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
-    distance_weight : [50.0, 150.0, 1.0, 0.1]      # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
+    use_abs_time : false # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
+    residual_weight : [0, 0, 0, 0]      # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})
+    distance_weight : [0, 0, 0, 0]      # XXX is epicenter distance (km) between the source and receiver related to the data
 
   # -------------- using common receiver differential traveltime data --------------
   cr_dif_time:
-    use_cr_time : true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight  : [1.0,   3.0,   1.0, 0.1]    # weight (wt) of residual.
-    azimuthal_weight : [10.0, 30.0,   1.0, 0.1]    # weight of azimuth (deg.) between two earthquakes.
+    use_cr_time : false # 'yes' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
+    residual_weight  : [0, 0, 0, 0]    # XXX is the common receiver differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{m,i} - t^{syn}_{n,i} + t^{syn}_{m,i})
+    azimuthal_weight : [0, 0, 0, 0]    # XXX is the azimuth difference between two separate sources related to the common receiver.
 
+
+  # -------------- global weight of different types of data (to balance the weight of different data) --------------
+  global_weight:
+    balance_data_weight: false # yes: over the total weight of the each type of the data. no: use original weight (below weight for each type of data needs to be set)
+    abs_time_local_weight: 1 # weight of absolute traveltime data for relocation after balance,     default: 1.0
+    cr_dif_time_local_weight: 1 # weight of common receiver differential traveltime data for relocation after balance,   default: 1.0
 
 ####################################################################
 #          inversion strategy for tomography and relocation        #
@@ -178,10 +210,10 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
   inv_mode : 0    # 0 for update model parameters and relocation iteratively. (other options for future work)
 
   # for inv_mode : 0, parameters below are required
-  inv_mode_0: # Fristly, do relocation; Subsequently, do relocation every N steps; Finally, do relocation
-    model_update_N_iter: 1 # update model parameters every N steps
-    relocation_N_iter: 1    # relocation every N steps
-    max_lop: 10             # maximum number of iterations for tomography
+  inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
+    model_update_N_iter : 1
+    relocation_N_iter : 1
+    max_loop : 10
 
 
 # --- parameters for core solver ---------------------------------------------------------
