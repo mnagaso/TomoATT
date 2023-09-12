@@ -1236,24 +1236,6 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         }
     }
 
-    // debug on r_loc_inv
-    if (myrank==0) {
-        for (int k = 0; k < n_inv_K_loc; k++) {
-            for (int l = 0; l < n_inv_grids; l++) {
-                std::cout << "r_loc_inv[" << k << "," << l << "] = " << r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] << std::endl;
-            }
-        }
-    }
-
-    // debug on r_loc_inv_ani
-    if (myrank==0) {
-        for (int k = 0; k < n_inv_K_loc_ani; k++) {
-            for (int l = 0; l < n_inv_grids; l++) {
-                std::cout << "r_loc_inv_ani[" << k << "," << l << "] = " << r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)] << std::endl;
-            }
-        }
-    }
-
 }
 
 

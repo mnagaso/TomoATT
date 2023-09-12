@@ -280,8 +280,6 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                 }
             }
 
-            std::cout << "r_glob, r_r, r_r_ani = " << r_glob << " " << r_r << " " << r_r_ani << std::endl;
-
             // continue if r is out of the inversion grid
             if (r_r < _0_CR || r_r_ani < _0_CR) continue;
 
@@ -456,11 +454,6 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                 }
             }
         }
-
-        // debug
-        std::cout << "rank: " << myrank << " i_grid: " << i_grid << " Ks_inv_loc: " << grid.Ks_inv_loc[0] << std::endl;
-        std::cout << "rank: " << myrank << " i_grid: " << i_grid << " Keta_inv_loc: " << grid.Keta_inv_loc[0] << std::endl;
-        std::cout << "rank: " << myrank << " i_grid: " << i_grid << " Kxi_inv_loc: " << grid.Kxi_inv_loc[0] << std::endl;
 
         // sum over all sub-domains
         allreduce_cr_inplace(grid.Ks_inv_loc,   n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
