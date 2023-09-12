@@ -249,33 +249,5 @@ inline std::string int2string_zero_fill(int i) {
 }
 
 
-inline bool in_between(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c){
-    // check if a is between b and c
-    // b can be larger than c or vice versa
-    if (b < c){
-        if (a >= b && a <= c)
-            return true;
-        else
-            return false;
-    } else {
-        if (a >= c && a <= b)
-            return true;
-        else
-            return false;
-    }
-}
-
-
-inline CUSTOMREAL calc_ratio_between(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c){
-    // calculate ratio of a between b and c
-    // b can be larger than c or vice versa
-    if (b < c){
-        return (a - b) / (c - b);
-    } else {
-        return (a - c) / (b - c);
-    }
-}
-
-
 
 #endif // UTILS_H
