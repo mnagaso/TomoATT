@@ -22,6 +22,7 @@
 #include "model_update.h"
 #include "lbfgs.h"
 
+
 // prepare header line of objective_funciton.txt
 inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
     // prepare output for iteration status
@@ -60,11 +61,6 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
             tmp.append("),");
             out_main << std::setw(20) << tmp;
 
-            tmp = "obj_tele(";
-            tmp.append(std::to_string(IP.N_teleseismic_data));
-            tmp.append("),");
-            out_main << std::setw(20) << tmp;
-
             out_main << std::setw(25) << "res(mean/std),";
 
             out_main << std::setw(25) << "res_abs(mean/std),";
@@ -72,8 +68,6 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
             out_main << std::setw(25) << "res_cs_dif(mean/std),";
 
             out_main << std::setw(25) << "res_cr_dif(mean/std),";
-
-            out_main << std::setw(25) << "res_tele(mean/std),";
 
             out_main << std::setw(20) << "step_length," << std::endl;
 

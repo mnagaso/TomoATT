@@ -19,7 +19,6 @@
 #include "grid.h"
 #include "config.h"
 #include "input_params.h"
-#include "eikonal_solver_2d.h"
 
 
 class IO_utils {

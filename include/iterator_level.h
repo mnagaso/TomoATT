@@ -12,13 +12,6 @@ protected:
     virtual void do_sweep(int, Grid&, InputParams&) {}; // do sweeping
 };
 
-class Iterator_level_tele : public Iterator {
-public:
-    Iterator_level_tele(InputParams& , Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
-protected:
-    void do_sweep_adj(int, Grid&, InputParams&) override ; // do sweeping for adjoint routine
-    virtual void do_sweep(int, Grid&, InputParams&) {}; // do sweeping
-};
 
 class Iterator_level_1st_order : public Iterator_level {
 public:
@@ -41,18 +34,5 @@ private:
 //     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
 // }
 
-class Iterator_level_1st_order_tele : public Iterator_level_tele {
-public:
-    Iterator_level_1st_order_tele(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
-private:
-    void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
-};
-
-class Iterator_level_3rd_order_tele : public Iterator_level_tele {
-public:
-    Iterator_level_3rd_order_tele(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
-private:
-    void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
-};
 
 #endif // ITERATOR_LEVEL_H

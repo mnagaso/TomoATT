@@ -875,8 +875,6 @@ void InputParams::write_params_to_file() {
     if (model_1d_name.size() > 0)
         fout << "  model_1d_name: " << model_1d_name;
     else
-        fout << "#   model_1d_name: " << "dummy_model_1d_name";
-    fout << " # 1D model name used in teleseismic 2D solver (iasp91, ak135, user_defined is available), defined in include/1d_model.h" << std::endl;
     fout << std::endl;
 
 
@@ -1017,7 +1015,7 @@ void InputParams::write_params_to_file() {
         }
         fout << "]" << std::endl;
     } else {
-        fout << "#  dep_inv_ani: " << "[1, 1, 1]" << std::endl;
+        fout << "  # dep_inv_ani: " << "[1, 1, 1]" << std::endl;
     }
     if (n_inv_t_flex_ani_read){
         fout << "  lat_inv_ani: [";
@@ -1028,7 +1026,7 @@ void InputParams::write_params_to_file() {
         }
         fout << "]" << std::endl;
     } else {
-        fout << "#  lat_inv_ani: " << "[1, 1, 1]" << std::endl;
+        fout << "  # lat_inv_ani: " << "[1, 1, 1]" << std::endl;
     }
     if (n_inv_p_flex_ani_read){
         fout << "  lon_inv_ani: [";
@@ -1039,7 +1037,7 @@ void InputParams::write_params_to_file() {
         }
         fout << "]" << std::endl;
     } else {
-        fout << "#  lon_inv_ani: " << "[1, 1, 1]" << std::endl;
+        fout << "  # lon_inv_ani: " << "[1, 1, 1]" << std::endl;
     }
     std::cout << std::endl;
 
@@ -1048,17 +1046,6 @@ void InputParams::write_params_to_file() {
     fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
     fout << std::endl;
 
-    fout << "  # path to station correction file (under development)" << std::endl;
-    fout << "  use_sta_correction: " << use_sta_correction << std::endl;
-    if (sta_correction_file_exist)
-        fout << "  sta_correction_file: " << sta_correction_file;
-    else
-        fout << "#  sta_correction_file: " << "dummy_sta_correction_file";
-    fout << "  # station correction file path" << std::endl;
-    fout << "  step_length_sc: " << step_length_init_sc << " step length relate to the update of station correction terms" << std::endl;
-    fout << std::endl;
-
-    fout << std::endl;
 
     fout << "  # In the following data subsection, XXX_weight means a weight is assigned to the data, influencing the objective function and gradient" << std::endl;
     fout << "  # XXX_weight : [d1,d2,w1,w2] means: " << std::endl;
@@ -1130,22 +1117,12 @@ void InputParams::write_params_to_file() {
     fout << "    abs_time_weight: " << abs_time_local_weight  << " # weight of absolute traveltime data after balance,                       default: 1.0" << std::endl;
     fout << "    cs_dif_time_local_weight: " << cs_dif_time_local_weight << " # weight of common source differential traveltime data after balance,     default: 1.0" << std::endl;
     fout << "    cr_dif_time_local_weight: " << cr_dif_time_local_weight << " # weight of common receiver differential traveltime data after balance,   default: 1.0" << std::endl;
-    fout << "    teleseismic_weight: " << teleseismic_weight << " # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- inversion parameters --------------" << std::endl;
     fout << "  update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
     fout << "  update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
     // fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
-    fout << std::endl;
-
-    fout << "  # -------------- for teleseismic inversion (under development) --------------" << std::endl;
-    fout << "  # depth_taper : [d1,d2] means: " << std::endl;
-    fout << "  # if       XXX < d1, kernel <- kernel * 0.0 " << std::endl;
-    fout << "  # if d1 <= XXX < d2, kernel <- kernel * (XXX-d1)/(d2-d1),  (linear interpolation) " << std::endl;
-    fout << "  # if d2 <= XXX     , kernel <- kernel * 1.0 " << std::endl;
-    fout << "  # You can easily set d1 = -200, d1 = -100 to remove this taper." << std::endl;
-    fout << "  depth_taper : [" << depth_taper[0] << ", " << depth_taper[1] << "]"  << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;

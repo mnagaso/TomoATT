@@ -126,6 +126,12 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // get is_teleseismic flag
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
+        if (is_teleseismic){
+            std::cout << "teleseismic source (out of study region) found: " << name_sim_src 
+                      << ", which is not supported in TomoATT local version. Please use TomoATT teleseismic version to invert teleseismic data." <<std::endl;
+            continue;
+        }
+
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic, name_sim_src);
 

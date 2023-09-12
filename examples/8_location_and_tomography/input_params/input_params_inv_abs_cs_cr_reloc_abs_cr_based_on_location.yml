@@ -13,14 +13,14 @@ domain:
 #            traveltime data file path          #
 #################################################
 source:
-  src_rec_file: src_rec_obs.dat # source receiver file path
+  src_rec_file: OUTPUT_FILES/OUTPUT_FILES_reloc_abs/src_rec_file_inv_0000_reloc_0199_obs.dat # source receiver file path
   swap_src_rec: true # swap source and receiver
 
 #################################################
 #            initial model file path            #
 #################################################
 model:
-  init_model_path: ../0_generate_files_for_TomoATT/models/model_ckb_N61_61_61.h5 # path to initial model file 
+  init_model_path: ../0_generate_files_for_TomoATT/models/model_init_N61_61_61.h5 # path to initial model file 
 
 #################################################
 #            parallel computation settings      #
@@ -35,7 +35,7 @@ parallel: # parameters for parallel computation
 #            output file setting           #
 ############################################
 output_setting:
-  output_dir: OUTPUT_FILES/OUTPUT_FILES_reloc_cr # path to output director (default is ./OUTPUT_FILES/)
+  output_dir: OUTPUT_FILES/OUTPUT_FILES_inv_abs_cs_reloc_abs_cr_based_on_location # path to output director (default is ./OUTPUT_FILES/)
   output_source_field:     false # output the calculated field of all sources                       
   output_model_dat:        false # output model_parameters_inv_0000.dat (data in text format) or not.                     
   output_final_model:      true # output merged final model (final_model.h5) or not.                                
@@ -53,7 +53,7 @@ output_setting:
 # 1 for inversion
 # 2 for earthquake relocation
 # 3 for inversion + earthquake relocation
-run_mode: 2
+run_mode: 3
 
 ###################################################
 #          model update parameters setting        #
@@ -123,7 +123,7 @@ model_update:
 
   # -------------- using common source differential traveltime data --------------
   cs_dif_time:
-    use_cs_time: false # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
     residual_weight: [1, 5, 1, 0.1] # XXX is the common source differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{n,j} - t^{syn}_{n,i} + t^{syn}_{n,j}).
     azimuthal_weight: [15, 30, 1, 0.1] # XXX is the azimuth difference between two separate stations related to the common source.
 
@@ -160,7 +160,7 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 2 an
 
   # -------------- using absolute traveltime data --------------
   abs_time:
-    use_abs_time : false # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
+    use_abs_time : true # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
     residual_weight : [1, 3, 1, 0.1]      # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})
     distance_weight : [50, 150, 1, 0.3]      # XXX is epicenter distance (km) between the source and receiver related to the data
 
@@ -186,9 +186,9 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
 
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
-    model_update_N_iter : 1
-    relocation_N_iter : 1
-    max_loop : 40
+    model_update_N_iter : 4
+    relocation_N_iter : 20
+    max_loop : 10
 
 calculation:
    convergence_tolerance: 1e-05 # threshold value for checking the convergence for each forward/adjoint run

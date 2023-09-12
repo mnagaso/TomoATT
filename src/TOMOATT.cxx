@@ -13,7 +13,6 @@
 #include "kernel.h"
 #include "model_update.h"
 #include "main_routines_calling.h"
-#include "eikonal_solver_2d.h"
 
 #ifdef USE_CUDA
 #include "cuda_initialize.cuh"
@@ -79,10 +78,19 @@ int main(int argc, char *argv[])
         io.write_grid(grid);
     }
 
-    // preapre teleseismic boundary conditions (do nothinng if no teleseismic source is defined)
-    prepare_teleseismic_boundary_conditions(IP, grid, io);      // not ready for new version of src rec data
-
+    // check teleseismic sources
+    if (subdom_main) {
+       for (int i_src = 0; i_src < (int)IP.src_id2name_2d.size(); i_src++){
+            std::string name_sim_src = IP.src_id2name_2d[i_src];
+            // get source info
+            SrcRecInfo& src = IP.src_map_2d[name_sim_src];
+            if (src.is_out_of_region){
+                std::cout << "teleseismic source (out of study region) found: " << name_sim_src << ", which is not supported in TomoATT local version. Please use TomoATT teleseismic version to invert teleseismic data."  << std::endl;
+            }
+        }
+    }
     synchronize_all_world();
+
 
     //
     // run main calculation routines depending on specified mode
