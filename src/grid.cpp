@@ -1215,7 +1215,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         }
     }
 
-        // anisotropy
+    // anisotropy
     if(IP.get_invgrid_ani()){
         CUSTOMREAL* lon_inv_ani = IP.get_lon_inv_ani();
 
@@ -1233,6 +1233,24 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         for (int i = 0; i < n_inv_I_loc_ani; i++){
             for (int l = 0; l < n_inv_grids; l++)
                 p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)] = p_loc_inv[I2V_INV_GRIDS_1DI(i,l)];
+        }
+    }
+
+    // debug on r_loc_inv
+    if (myrank==0) {
+        for (int k = 0; k < n_inv_K_loc; k++) {
+            for (int l = 0; l < n_inv_grids; l++) {
+                std::cout << "r_loc_inv[" << k << "," << l << "] = " << r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] << std::endl;
+            }
+        }
+    }
+
+    // debug on r_loc_inv_ani
+    if (myrank==0) {
+        for (int k = 0; k < n_inv_K_loc_ani; k++) {
+            for (int l = 0; l < n_inv_grids; l++) {
+                std::cout << "r_loc_inv_ani[" << k << "," << l << "] = " << r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)] << std::endl;
+            }
         }
     }
 
