@@ -1472,6 +1472,7 @@ void InputParams::prepare_src_map(){
         // src_map  = src_map_all  + src_map_tele
         // rec_map  = rec_map_all  + rec_map_tele
         // data_map = data_map_all + data_map_tele
+        // *_map_tele will be empty after this function
         merge_region_and_tele_src(src_map_all,  rec_map_all,  data_map_all,
                                   src_map_tele, rec_map_tele, data_map_tele);
 
@@ -1517,7 +1518,7 @@ void InputParams::prepare_src_map(){
         generate_src_map_with_common_receiver(data_map, src_map_comm_rec, src_id2name_comm_rec);
 
         // prepare source list for teleseismic source
-        prepare_src_map_for_2d_solver(src_map_tele, src_id2name_2d, src_map_2d);
+        prepare_src_map_for_2d_solver(src_map, src_id2name_2d, src_map_2d);
 
         synchronize_all_world();
 

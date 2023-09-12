@@ -194,7 +194,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     data.data_weight = src_weight * rec_weight;
                     data.weight      = data.data_weight * abs_time_local_weight;
-                    data.weight_reloc= data.data_weight * abs_time_local_weight_reloc;                    
+                    data.weight_reloc= data.data_weight * abs_time_local_weight_reloc;
                     data.phase       = tokens[6];
 
                     data.is_src_rec      = true;
@@ -598,7 +598,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                     } else {
                         total_abs_local_data_weight         += data.data_weight;
                         total_abs_local_data_weight_reloc   += data.data_weight;
-                        
+
                         data_map[name_src][name_rec].push_back(data);
                         rec_map[name_rec]            = rec_map_back[name_rec];
                         data_type["abs"]             = 1;
@@ -617,7 +617,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                         data.weight                              = data.data_weight * teleseismic_weight;
                         total_teleseismic_data_weight_reloc     += data.data_weight;
                         data.weight_reloc                        = data.data_weight * teleseismic_weight_reloc;
-                        
+
                         data_map_tele[name_src1][name_rec].push_back(data);
                         rec_map_tele[name_rec]             = rec_map_back[name_rec];
                         data_type["tele"]                  = 1;
@@ -1067,13 +1067,36 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
                                std::map<std::string, SrcRecInfo> &rec_map_tele,
                                std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map_tele){
     if(src_map_tele.size() > 0) {
-        for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++)
+        for (auto iter = src_map_tele.cbegin(); iter != src_map_tele.cend();){
             src_map[iter->first] = iter->second;
+            // erase pushed data
+            src_map_tele.erase(iter++);
+        }
 
-        for (auto iter = rec_map_tele.begin(); iter != rec_map_tele.end(); iter++)
+        for (auto iter = rec_map_tele.cbegin(); iter != rec_map_tele.cend();){
             rec_map[iter->first] = iter->second;
+            // erase pushed data
+            rec_map_tele.erase(iter++);
+        }
 
-        data_map.insert(data_map_tele.begin(), data_map_tele.end());
+        //data_map.insert(data_map_tele.begin(), data_map_tele.end());
+        // instead of insert, we use manual loop to avoid unefficent memory allocation
+        for (auto iter = data_map_tele.cbegin(); iter != data_map_tele.cend();){
+            for (auto iter2 = iter->second.cbegin(); iter2 != iter->second.cend();){
+                if (data_map[iter->first][iter2->first].size()==0) {
+                    data_map[iter->first][iter2->first] = iter2->second;
+                    // erase pushed data
+                    data_map_tele[iter->first].erase(iter2++);
+                } else {
+                    data_map[iter->first][iter2->first].insert(data_map[iter->first][iter2->first].end(), iter2->second.begin(), iter2->second.end());
+                    // erase pushed data
+                    data_map_tele[iter->first].erase(iter2++);
+                }
+
+            }
+            // erase pushed data
+            data_map_tele.erase(iter++);
+        }
     }
 
     // give new event id (accourding to the name)
@@ -1250,7 +1273,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
 }
 
 
-void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map_tele, \
+void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map, \
                                    std::vector<std::string>& src_id2name_2d, \
                                    std::map<std::string, SrcRecInfo>& src_map_2d) {
     // src_map_tele: map of teleseismic src objects, (only the main process has the information.)
@@ -1263,7 +1286,12 @@ void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map_te
     // at first, make a depth-unique source list in the main process from src_map_tele
     if (id_sim==0 && subdom_main) {
 
-        for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++){
+        for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
+
+            // skip if this is not a teleseismic source
+            if (!iter->second.is_out_of_region)
+                continue;
+
             std::string tmp_name = iter->second.name;
 
             // check if there is no element in tmp_src_map_unique with the same iter->second.depth
