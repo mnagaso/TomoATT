@@ -78,9 +78,9 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
             out_main << std::setw(20) << "step_length," << std::endl;
 
         } else if (optim_method == LBFGS_MODE)
-            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_length," << std::setw(16) << "qpt," << std::setw(16) << "v_obj_new," \
-                     << std::setw(16) << "v_obj_reg," << std::setw(16) << "q_new,"  << std::setw(16) << "q_k,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
-                     << std::setw(16) << "c1*q_k,"    << std::setw(16) << "c2*q_k," << std::setw(6)  << "step ok,"    << std::endl;
+            out_main << std::setw(6)  << "it,"        << std::setw(6)  << "subit,"  << std::setw(16) << "step_length," << std::setw(16) << "q_0," << std::setw(16) << "q_t," \
+                     << std::setw(16) << "v_obj_reg," << std::setw(16) << "qp_0,"  << std::setw(16) << "qp_t,"       << std::setw(16) << "td,"  << std::setw(16) << "tg," \
+                     << std::setw(16) << "c1*qp_0,"    << std::setw(16) << "c2*qp_0," << std::setw(6)  << "step ok,"    << std::endl;
 
     }
 }
@@ -197,6 +197,13 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
                 model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+            else if (optim_method == LBFGS_MODE) {
+                bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                if (!found_next_step)
+                    goto end_of_inversion;
+            }
+
+
         }
 
         // output station correction file (only for teleseismic differential data)
@@ -239,6 +246,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         synchronize_all_world();
 
     } // end loop inverse
+
+end_of_inversion:
 
     // close xdmf file
     io.finalize_data_output_file();
@@ -456,6 +465,12 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
                 model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+            else if (optim_method == LBFGS_MODE) {
+                bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
+
+                if (!found_next_step)
+                    break;
+            }
 
             // output objective function
             write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");

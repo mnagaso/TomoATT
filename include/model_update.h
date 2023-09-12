@@ -6,24 +6,28 @@
 #include "grid.h"
 #include "smooth.h"
 #include "smooth_descent_dir.h"
+#include "smooth_grad_regul.h"
 #include "lbfgs.h"
 
 
-// K*_loc -> K*_update_loc
+// generate smoothed kernels (K*_update_loc) from the kernels (K*_loc)
+// before doing this, K*_loc should be summed up among all simultaneous runs (by calling sumup_kernels)
+// before doing this, K*_update_loc has no meaning (unavailable)
 void smooth_kernels(Grid& grid, InputParams& IP) {
+
     if (subdom_main){
-        // initiaize update params
-        for (int k = 0; k < loc_K; k++) {
-            for (int j = 0; j < loc_J; j++) {
-                for (int i = 0; i < loc_I; i++) {
-                    grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
-                    grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
-                    grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
+
+        if (id_sim==0){
+            // initiaize update params
+            for (int k = 0; k < loc_K; k++) {
+                for (int j = 0; j < loc_J; j++) {
+                    for (int i = 0; i < loc_I; i++) {
+                        grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
+                        grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
+                        grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
+                    }
                 }
             }
-        }
-
-        if (id_sim == 0) { // calculation of the update model is only done in the main simultaneous run
 
             if (smooth_method == 0) {
                 // grid based smoothing
@@ -45,6 +49,25 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
 
+    } // end if subdom_main
+}
+
+
+// smooth gradient regularization term
+void smooth_gradient_regularization(Grid& grid) {
+
+    if (subdom_main && id_sim==0){ // only id_sim==0 has values for these arrays
+        if (smooth_method == 0) {
+            // grid based smoothing
+            smooth_gradient_regularization_orig(grid);
+        } else if (smooth_method == 1) {
+            // CG smoothing
+            smooth_gradient_regularization_CG(grid, smooth_lr, smooth_lt, smooth_lp);
+        }
+
+        grid.send_recev_boundary_data(grid.fun_gradient_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.eta_gradient_regularization_penalty_loc);
+        grid.send_recev_boundary_data(grid.xi_gradient_regularization_penalty_loc);
     }
 }
 
@@ -56,8 +79,8 @@ void smooth_descent_direction(Grid& grid){
                 // grid based smoothing
                 smooth_descent_dir(grid);
             } else if (smooth_method == 1) {
-                // CG smoothing not implemented yet
-                smooth_descent_dir(grid);
+                // CG smoothing
+                smooth_descent_dir_CG(grid, smooth_lr, smooth_lt, smooth_lp);
             }
 
             // shared values on the boundary
@@ -88,25 +111,24 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
                 calculate_descent_direction_lbfgs(grid, i_inv);
             // use gradient for the first iteration
             } else {
-                // sum kernels among all simultaneous runs
-                sumup_kernels(grid);
-                // smooth kernels
-                smooth_kernels(grid, IP);
-
                 int n_grid = loc_I*loc_J*loc_K;
-                std::memcpy(grid.Ks_descent_dir_loc,   grid.Ks_update_loc,   n_grid*sizeof(CUSTOMREAL));
-                std::memcpy(grid.Keta_descent_dir_loc, grid.Keta_update_loc, n_grid*sizeof(CUSTOMREAL));
-                std::memcpy(grid.Kxi_descent_dir_loc,  grid.Kxi_update_loc,  n_grid*sizeof(CUSTOMREAL));
 
-
+                // first time, descent direction = - precond * gradient
                 // inverse the gradient to fit the update scheme for LBFGS
                 for (int i = 0; i < n_grid; i++){
-                    grid.Ks_descent_dir_loc[i]   = - grid.Ks_update_loc[i];
-                    grid.Keta_descent_dir_loc[i] = - grid.Keta_update_loc[i];
-                    grid.Kxi_descent_dir_loc[i]  = - grid.Kxi_update_loc[i];
+                    grid.Ks_descent_dir_loc[i]   = - _1_CR* grid.Ks_update_loc[i];
+                    grid.Keta_descent_dir_loc[i] = - _1_CR* grid.Keta_update_loc[i];
+                    grid.Kxi_descent_dir_loc[i]  = - _1_CR* grid.Kxi_update_loc[i];
+                    //grid.Ks_descent_dir_loc[i]   = - _1_CR* grid.Ks_loc[i];
+                    //grid.Keta_descent_dir_loc[i] = - _1_CR* grid.Keta_loc[i];
+                    //grid.Kxi_descent_dir_loc[i]  = - _1_CR* grid.Kxi_loc[i];
+
                 }
             }
-
+        } else {
+            // return error
+            std::cout << "Error: optim_method is not set to LBFGS_MODE (=2)" << std::endl;
+            exit(1);
         }
 
 
@@ -181,53 +203,20 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
 
         } else { // for LBFGS routine
 
+            // here all the simultaneous runs have the same values used in this routine.
+            // thus we don't need to if(id_sim==0)
 
-//            // get the scaling factor
-//            CUSTOMREAL Linf_Ks = _0_CR, Linf_Keta = _0_CR, Linf_Kxi = _0_CR;
-//            CUSTOMREAL Linf_all = _0_CR;
-//            for (int k = 0; k < loc_K; k++) {
-//                for (int j = 0; j < loc_J; j++) {
-//                    for (int i = 0; i < loc_I; i++) {
-//                        Linf_Ks   = std::max(Linf_Ks,   std::abs(grid.Ks_descent_dir_loc[I2V(i,j,k)]));
-//                        Linf_Keta = std::max(Linf_Keta, std::abs(grid.Keta_descent_dir_loc[I2V(i,j,k)]));
-//                        Linf_Kxi  = std::max(Linf_Kxi,  std::abs(grid.Kxi_descent_dir_loc[I2V(i,j,k)]));
-//                    }
-//                }
-//            }
-//
-//            // get the maximum scaling factor among subdomains
-//            CUSTOMREAL Linf_tmp;
-//            allreduce_cr_single_max(Linf_Ks, Linf_tmp);   Linf_Ks   = Linf_tmp;
-//            allreduce_cr_single_max(Linf_Keta, Linf_tmp); Linf_Keta = Linf_tmp;
-//            allreduce_cr_single_max(Linf_Kxi, Linf_tmp);  Linf_Kxi  = Linf_tmp;
-//
-//            Linf_all = std::max(Linf_Ks, std::max(Linf_Keta, Linf_Kxi));
-//            Linf_Ks = Linf_all;
-//            Linf_Keta = Linf_all;
-//            Linf_Kxi = Linf_all;
-//
-//
-//            if (myrank == 0 && id_sim == 0)
-//                //std::cout << "Scaling factor for all kernels: " << Linf_all << std::endl;
-//                std::cout << "Scaling factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
-
-
-            CUSTOMREAL step_length;
-            if (init_bfgs) {
-                step_length = -_1_CR * step_length_new;
-            } else {
-                step_length = step_length_new;
-            }
-
+            CUSTOMREAL step_length = step_length_new;
+            const CUSTOMREAL factor = - _1_CR;
 
             // update the model
             for (int k = 0; k < loc_K; k++) {
                 for (int j = 0; j < loc_J; j++) {
                     for (int i = 0; i < loc_I; i++) {
                         // update
-                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_length);
-                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_length;
-                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_length;
+                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - factor * grid.Ks_descent_dir_loc[I2V(i,j,k)]   * step_length);
+                        grid.xi_loc[I2V(i,j,k)]  -=          factor * grid.Kxi_descent_dir_loc[I2V(i,j,k) ] * step_length;
+                        grid.eta_loc[I2V(i,j,k)] -=          factor * grid.Keta_descent_dir_loc[I2V(i,j,k)] * step_length;
                         //grid.fun_loc[I2V(i,j,k)] += grid.Ks_descent_dir_loc[I2V(i,j,k)]  *step_length_new;
                         //grid.xi_loc[I2V(i,j,k)]  += grid.Kxi_descent_dir_loc[I2V(i,j,k)] *step_length_new;
                         //grid.eta_loc[I2V(i,j,k)] += grid.Keta_descent_dir_loc[I2V(i,j,k)]*step_length_new;
@@ -249,7 +238,7 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
         grid.send_recev_boundary_data(grid.fac_c_loc);
         grid.send_recev_boundary_data(grid.fac_f_loc);
 
-    }
+    } // end if subdom_main
 }
 
 
@@ -259,7 +248,7 @@ CUSTOMREAL compute_q_k(Grid& grid) {
 
     CUSTOMREAL tmp_qk = _0_CR;
 
-    if (subdom_main) {
+    if (subdom_main && id_sim == 0) {
 
         // grad * descent_direction
         for (int k = 0; k < loc_K; k++) {
@@ -269,10 +258,6 @@ CUSTOMREAL compute_q_k(Grid& grid) {
                     tmp_qk += grid.Ks_update_loc[I2V(i,j,k)]   * grid.Ks_descent_dir_loc[I2V(i,j,k)]
                             + grid.Keta_update_loc[I2V(i,j,k)] * grid.Keta_descent_dir_loc[I2V(i,j,k)]
                             + grid.Kxi_update_loc[I2V(i,j,k)]  * grid.Kxi_descent_dir_loc[I2V(i,j,k)];
-                    //tmp_qk += grid.Ks_loc[I2V(i,j,k)]
-                    //        + grid.Keta_loc[I2V(i,j,k)]
-                    //        + grid.Kxi_loc[I2V(i,j,k)];
-
                 }
             }
         }
@@ -281,6 +266,10 @@ CUSTOMREAL compute_q_k(Grid& grid) {
         allreduce_cr_single(tmp_qk, tmp_qk);
     }
 
+    // share tmp_qk among all simultaneous runs
+    if (subdom_main)
+        broadcast_cr_single_inter_sim(tmp_qk,0);
+
     return tmp_qk;
 
 }
@@ -288,32 +277,40 @@ CUSTOMREAL compute_q_k(Grid& grid) {
 
 // check if the wolfe conditions are satisfied
 bool check_wolfe_cond(Grid& grid, \
-                    CUSTOMREAL f_k, CUSTOMREAL f_new, \
-                    CUSTOMREAL q_k, CUSTOMREAL q_new, \
+                    CUSTOMREAL q_0, CUSTOMREAL q_t, \
+                    CUSTOMREAL qp_0, CUSTOMREAL qp_t, \
                     CUSTOMREAL& td, CUSTOMREAL& tg, CUSTOMREAL& step_length_sub) {
+    /*
+    q_0 : initial cost function
+    q_t : current cost function
+    q_p0 : initial grad * descent_dir
+    q_pt : current grad * descent_dir
+    td : right step size
+    tg : left step size
+    step_length_sub : current step size
+    */
 
     bool step_accepted = false;
 
     // check  if the wolfe conditions are satisfied and update the step_length_sub
-    CUSTOMREAL qpt = (f_new - f_k) / step_length_sub;
+    CUSTOMREAL qpt = (q_t - q_0) / step_length_sub;
 
     if (subdom_main) {
         // good step size
-        if (qpt   <= wolfe_c1*q_k \
-         && -q_new <= -wolfe_c2*q_k \
+        if (qpt   <= wolfe_c1*qp_0 \
+         && wolfe_c2*qp_0 <= qp_t \
          ){
             if (myrank==0)
                 std::cout << "Wolfe rules:  step accepted" << std::endl;
             step_accepted = true;
         } else {
             // modify the stepsize
-
-            if (wolfe_c1*q_k < qpt) {
+            if (wolfe_c1*qp_0 < qpt) {
                 td = step_length_sub;
                 if (myrank==0)
                     std::cout << "Wolfe rules:  right step size updated." << std::endl;
             }
-            if (qpt <= wolfe_c1*q_k && q_new < wolfe_c2*q_k) {
+            if (qpt <= wolfe_c1*qp_0 && qp_t < wolfe_c2*qp_0) {
                 tg = step_length_sub;
                 if (myrank==0)
                     std::cout << "Wolfe rules:  left step size updated." << std::endl;

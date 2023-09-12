@@ -229,6 +229,16 @@ InputParams::InputParams(std::string& input_file){
                 if (config["model_update"]["optim_method_1_2"]["regularization_weight"]) {
                     getNodeValue(config["model_update"]["optim_method_1_2"], "regularization_weight", regularization_weight);
                 }
+                // regularization laplacian weights
+                if (config["model_update"]["optim_method_1_2"]["coefs_regulalization_rtp"]) {
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lr, 0);
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lt, 1);
+                    getNodeValue(config["model_update"]["optim_method_1_2"], "coefs_regulalization_rtp", regul_lp, 2);
+
+                    // convert degree to radian
+                    regul_lt = regul_lt * DEG2RAD;
+                    regul_lp = regul_lp * DEG2RAD;
+                }
             }
 
             // smoothing
@@ -245,6 +255,10 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["model_update"]["smoothing"], "l_smooth_rtp", smooth_lr, 0);
                 getNodeValue(config["model_update"]["smoothing"], "l_smooth_rtp", smooth_lt, 1);
                 getNodeValue(config["model_update"]["smoothing"], "l_smooth_rtp", smooth_lp, 2);
+
+                // convert degree to radian
+                smooth_lt = smooth_lt * DEG2RAD;
+                smooth_lp = smooth_lp * DEG2RAD;
             }
             // n_inversion_grid
             if (config["model_update"]["n_inversion_grid"]) {
@@ -672,6 +686,9 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(step_length_init_sc, 0);
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_cr_single(regularization_weight, 0);
+    broadcast_cr_single(regul_lr, 0);
+    broadcast_cr_single(regul_lt, 0);
+    broadcast_cr_single(regul_lp, 0);
     broadcast_i_single(smooth_method, 0);
     broadcast_cr_single(smooth_lr, 0);
     broadcast_cr_single(smooth_lt, 0);
@@ -943,6 +960,8 @@ void InputParams::write_params_to_file() {
     fout << "  optim_method_1_2:" << std::endl;
     fout << "    max_sub_iterations: "    << max_sub_iterations << " # maximum number of each sub-iteration" << std::endl;
     fout << "    regularization_weight: " << regularization_weight << " # weight value for regularization (lbfgs mode only)" << std::endl;
+
+    fout << "    coefs_regulalization_rtp: [" << regul_lr << ", " << regul_lt << ", " << regul_lp << "] # regularization coefficients for rtp (lbfgs mode only)" << std::endl;
     fout << std::endl;
 
     fout << "  # smoothing" << std::endl;
@@ -1453,6 +1472,7 @@ void InputParams::prepare_src_map(){
         // src_map  = src_map_all  + src_map_tele
         // rec_map  = rec_map_all  + rec_map_tele
         // data_map = data_map_all + data_map_tele
+        // *_map_tele will be empty after this function
         merge_region_and_tele_src(src_map_all,  rec_map_all,  data_map_all,
                                   src_map_tele, rec_map_tele, data_map_tele);
 
@@ -1498,7 +1518,7 @@ void InputParams::prepare_src_map(){
         generate_src_map_with_common_receiver(data_map, src_map_comm_rec, src_id2name_comm_rec);
 
         // prepare source list for teleseismic source
-        prepare_src_map_for_2d_solver(src_map_tele, src_id2name_2d, src_map_2d);
+        prepare_src_map_for_2d_solver(src_map, src_id2name_2d, src_map_2d);
 
         synchronize_all_world();
 
