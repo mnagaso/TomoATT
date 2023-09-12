@@ -15,7 +15,10 @@ build*
 
 external_libs/hdf5*
 external_libs/openmpi*
-external_libs/local_mpi_hdf5*
+external_libs/local_mpi_hdf5
+external_libs/local_mpi_hdf5_intel
+external_libs/local_mpi_hdf5_clang
+
 
 base_proj
 
