@@ -50,6 +50,8 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
 
     } // end if subdom_main
+
+    synchronize_all_world();
 }
 
 
@@ -166,13 +168,15 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
 
             CUSTOMREAL Linf_all = _0_CR;
             Linf_all = std::max(Linf_Ks, std::max(Linf_Keta, Linf_Kxi));
+
+            // if (myrank == 0 && id_sim == 0)
+            //    std::cout << "Scaling factor for all kernels: " << Linf_all << std::endl;
+            //    std::cout << "Scaling factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
+
+
             Linf_Ks = Linf_all;
             Linf_Keta = Linf_all;
             Linf_Kxi = Linf_all;
-
-            // if (myrank == 0 && id_sim == 0)
-                // std::cout << "Scaling factor for all kernels: " << Linf_all << std::endl;
-                // std::cout << "Scaling factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
 
             // update the model
             for (int k = 0; k < loc_K; k++) {

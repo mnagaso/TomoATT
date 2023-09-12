@@ -219,7 +219,7 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
     // necessary params
     CUSTOMREAL r_r, r_t, r_p;
     CUSTOMREAL r_r_ani, r_t_ani, r_p_ani;
-    
+
     int kdr = 0, jdt = 0, idp = 0;
     int kdr_ani = 0, jdt_ani = 0, idp_ani = 0;
 
@@ -399,12 +399,12 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc; ii_invp++){
                         if (ii_invp == 0)
-                            volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(0,i_grid)]);  
+                            volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(0,i_grid)]);
                         else if (ii_invp == n_inv_I_loc - 1)
                             volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(n_inv_I_loc-1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(n_inv_I_loc-2,i_grid)]);
                         else
                             volume_p = abs(grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp-1,i_grid)]);
-                        
+
                         volume = volume_r * volume_t * volume_p;
                         grid.Ks_inv_loc[    I2V_INV_KNL(ii_invp,ii_invt,ii_invr)]   /= volume;
                     }
@@ -429,12 +429,12 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc_ani; ii_invp++){
                         if (ii_invp == 0)
-                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(0,i_grid)]);  
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(0,i_grid)]);
                         else if (ii_invp == n_inv_I_loc_ani - 1)
                             volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-2,i_grid)]);
                         else
                             volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp-1,i_grid)]);
-                        
+
                         volume = volume_r * volume_t * volume_p;
                         // std::cout   << "ii_invr: " << ii_invr
                         //             << "ii_invt: " << ii_invt
@@ -444,14 +444,13 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                         //             << "volume_p: " << volume_p
                         //             << "volume: " << volume
                         //             << std::endl;
-                                    
+
                         grid.Keta_inv_loc[  I2V_INV_ANI_KNL(ii_invp,ii_invt,ii_invr)]   /= volume;
                         grid.Kxi_inv_loc[   I2V_INV_ANI_KNL(ii_invp,ii_invt,ii_invr)]   /= volume;
                     }
                 }
             }
         }
-
 
         // sum over all sub-domains
         allreduce_cr_inplace(grid.Ks_inv_loc,   n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
