@@ -18,7 +18,7 @@ model:
 
 parallel: # parameters for parallel computation
   n_sims: 1           # number of simultaneous run
-  ndiv_rtp: [2, 1, 1] # number of subdomains
+  ndiv_rtp: [1, 1, 1] # number of subdomains
   nproc_sub: 2        # number of subprocess used for each subdomain
 
 output_setting:
