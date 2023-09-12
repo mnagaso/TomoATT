@@ -445,7 +445,7 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         set_new_model(grid, step_length);
 
         //// calculate gradient (run onestep forward+adjoint)
-        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true);
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true, false);
 
         //// Qt update (=current obj)
         q_t = v_obj_misfit_new[0];
