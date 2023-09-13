@@ -165,6 +165,10 @@ inline int      id_sim           = 0; // simultaneous run id  (not equal to src 
 inline int      id_subdomain     = 0; // subdomain id
 inline bool     subdom_main      = false; // true if this process is main process in subdomain
 
+// flags for explaining the process's role
+inline bool proc_read_srcrec = false;  // true if this process is reading source file
+inline bool proc_store_srcrec = false; // true if this process is storing srcrec file
+
 // MNMN stop using these global variable for avoiding misleadings during the sources' iteration loop
 //inline int      id_sim_src       = 0; // id of current target source
 //inline std::string name_sim_src  = "unknown";   //name of current target source

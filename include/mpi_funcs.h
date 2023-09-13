@@ -63,6 +63,7 @@ inline void broadcast_bool_inter_and_intra_sim(bool&, int);
 inline void broadcast_i_single(int&, int);
 inline void broadcast_i_single_inter_sim(int&, int);
 inline void broadcast_i_single_sub(int&, int);
+inline void broadcast_i_single_intra_sim(int&, int);
 inline void broadcast_i_single_inter_and_intra_sim(int&, int);
 inline void broadcast_f_single(float&, int);
 inline void broadcast_cr(CUSTOMREAL* , int, int);
@@ -669,6 +670,11 @@ inline void broadcast_i_single(int& value, int root){
 inline void broadcast_i_single_inter_sim(int& value, int root){
     int count = 1;
     MPI_Bcast(&value, count, MPI_INT, root, inter_sim_comm);
+}
+
+inline void broadcast_i_single_intra_sim(int& value, int root){
+    broadcast_i_single(value, root);           // broadcast among subdomain group
+    broadcast_i_single_sub(value, root);       // broadcast within subdomain group
 }
 
 inline void broadcast_i_single_inter_and_intra_sim(int& value, int root){

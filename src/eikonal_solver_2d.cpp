@@ -13,12 +13,17 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
     // - src_map_2d
     // for 2D eikonal solver runs
 
+    // in the current implentation, we only run the 2d solver with the proc_store_srcrec process
+    // thus all the processes assigned to subdomain and sweep parallelization will not used.
+    // For efficiency, it is strongly recommended to use pre-run mode of teleseismic source calculation,
+    // with no domain decomposition and sweep parallelization.
+
     //
     // pre calculation of 2d travel time fields
     //
-    if (subdom_main) {
+    if (proc_store_srcrec) {
 
-       for (int i_src = 0; i_src < (int)IP.src_id2name_2d.size(); i_src++){
+       for (int i_src = 0; i_src < IP.n_src_2d_this_sim_group; i_src++){
 
             std::string name_sim_src = IP.src_id2name_2d[i_src];
 
@@ -36,34 +41,39 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 
     synchronize_all_world();
 
+    // boundary travel time data should not be loaded here because the memory requirement will be
+    // too large for large scale simulations.
+    // instead, we load the boundary travel time data at the initialization of the iterator class.
+
     //
     // load travel times on the boundary
     //
-    if (subdom_main) {
-       for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    //if (proc_store_srcrec) {
+    //   for (int i_src = 0; i_src < IP.n_src_2d_this_sim_group; i_src++){
 
-            std::string name_sim_src = IP.src_id2name[i_src];
+    //        std::string name_sim_src = IP.src_id2name[i_src];
 
-            // get source info
-            SrcRecInfo& src = IP.get_src_point(name_sim_src);
+    //        // get source info
+    //        SrcRecInfo& src = IP.get_src_point(name_sim_src);
 
-            // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-            if (src.is_out_of_region){
+    //        // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
+    //        if (src.is_out_of_region){
 
-                // allocate memory for teleseismic boundary source condition
-                IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, name_sim_src, \
-                    grid.i_first(), grid.i_last(), grid.j_first(), grid.j_last(), grid.k_first());
+    //            // allocate memory for teleseismic boundary source condition
+    //            IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, name_sim_src, \
+    //                grid.i_first(), grid.i_last(), grid.j_first(), grid.j_last(), grid.k_first());
 
-                // load 2d travel time field
-                load_2d_traveltime(IP, src, grid, io);
+    //            // load 2d travel time field
+    //            load_2d_traveltime(IP, src, grid, io);
 
-                if_teleseismic_event_exists = true;
+    //            if_teleseismic_event_exists = true;
 
-            }
-        }
-    }
+    //        }
+    //    }
+    //}
 
-    synchronize_all_world();
+    if (IP.n_src_2d_this_sim_group > 0)
+        if_teleseismic_event_exists = true;
 
     if (myrank==0 && if_teleseismic_event_exists)
         std::cout << "done preparing teleseismic boundary conditions" << std::endl;
@@ -112,11 +122,11 @@ PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
         std::abs(epicentral_distance_2d[3]),
     });
 
-    activated_boundaries[0] = true; // N
-    activated_boundaries[1] = true; // E
-    activated_boundaries[2] = true; // W
-    activated_boundaries[3] = true; // S
-    activated_boundaries[4] = true; // Bot
+    //activated_boundaries[0] = true; // N
+    //activated_boundaries[1] = true; // E
+    //activated_boundaries[2] = true; // W
+    //activated_boundaries[3] = true; // S
+    //activated_boundaries[4] = true; // Bot
 
     // grid setup
     nr_2d = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
@@ -244,14 +254,14 @@ PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
 void PlainGrid::allocate_arrays(){
     azimuth_2d             = new CUSTOMREAL[4];
     epicentral_distance_2d = new CUSTOMREAL[4];
-    activated_boundaries   = new bool[5];
+    //activated_boundaries   = new bool[5];
 }
 
 
 void PlainGrid::deallocate_arrays(){
     delete[] azimuth_2d;
     delete[] epicentral_distance_2d;
-    delete[] activated_boundaries;
+    //delete[] activated_boundaries;
     delete[] r_2d;
     delete[] t_2d;
     delete[] fun_2d;
@@ -671,12 +681,16 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
                 // North boundary
                 if (grid.j_last()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(loc_J-1-l), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_N[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    //src.arr_times_bound_N[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(i, loc_J-1-l, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(i, loc_J-1-l, k)] = false;
                 }
                 // South boundary
                 if (grid.j_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(l), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_S[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    //src.arr_times_bound_S[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(i, l, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(i, l, k)] = false;
                 }
             }
         }
@@ -686,12 +700,16 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
                 // East boundary
                 if (grid.i_last()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(loc_I-1-l), tmp_dist);
-                    src.arr_times_bound_E[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    //src.arr_times_bound_E[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(loc_I-1-l, j, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(loc_I-1-l, j, k)] = false;
                 }
                 // West boundary
                 if (grid.i_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(l), tmp_dist);
-                    src.arr_times_bound_W[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    //src.arr_times_bound_W[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(l, j, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(l, j, k)] = false;
                 }
             }
         }
@@ -701,18 +719,19 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
                 // Bottom boundary
                 if (grid.k_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_Bot[IJ2V(i,j,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
+                    //src.arr_times_bound_Bot[IJ2V(i,j,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
+                    grid.T_loc[I2V(i, j, l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
                 }
             }
         }
     }
 
     // copy boundary source flags into the source object
-    src.is_bound_src[0] = plain_grid.activated_boundaries[0];
-    src.is_bound_src[1] = plain_grid.activated_boundaries[1];
-    src.is_bound_src[2] = plain_grid.activated_boundaries[2];
-    src.is_bound_src[3] = plain_grid.activated_boundaries[3];
-    src.is_bound_src[4] = plain_grid.activated_boundaries[4];
+    //src.is_bound_src[0] = plain_grid.activated_boundaries[0];
+    //src.is_bound_src[1] = plain_grid.activated_boundaries[1];
+    //src.is_bound_src[2] = plain_grid.activated_boundaries[2];
+    //src.is_bound_src[3] = plain_grid.activated_boundaries[3];
+    //src.is_bound_src[4] = plain_grid.activated_boundaries[4];
 
 }
 

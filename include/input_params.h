@@ -48,6 +48,10 @@ public:
     SrcRecInfo&                 get_rec_point(const std::string&);          // return receivers for the current source
     std::vector<std::string>    get_rec_names(const std::string&);          // return SrcRec object
 
+    std::string                 get_src_name(const int&);                   // return source name from in-sim_group id
+    int                         get_src_id(const std::string&);             // return src global id from src name
+
+
     CUSTOMREAL get_conv_tol()                    {return conv_tol;};
     void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
     CUSTOMREAL get_max_iter()                    {return max_iter;};
@@ -151,6 +155,10 @@ public:
 
     // station correction
     void station_correction_update( CUSTOMREAL );
+
+    int n_src_this_sim_group = 0;          // number of sources in this simultaneous group
+    int n_src_comm_rec_this_sim_group = 0; // number of sources with common receiver in this simultaneous group
+    int n_src_2d_this_sim_group = 0;       // number of sources assigned for 2d solver in this simultaneous group
 
     std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group

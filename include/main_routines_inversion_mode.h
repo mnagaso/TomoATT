@@ -23,7 +23,7 @@
 
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
 
-    for (int i_src = 0; i_src < (int)IP.src_id2name_comm_rec.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_comm_rec_this_sim_group; i_src++){
 
         std::string name_sim_src = IP.src_id2name_comm_rec[i_src];
         int         id_sim_src   = IP.src_map_comm_rec[name_sim_src].id; // global source id
@@ -93,10 +93,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //
 
      // iterate over sources
-    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
-        const std::string name_sim_src = IP.src_id2name[i_src];
-        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
+        const std::string name_sim_src = IP.get_src_name(i_src);
+        const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);

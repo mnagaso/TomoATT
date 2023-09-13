@@ -35,7 +35,7 @@ public:
     // epicentral distance
     CUSTOMREAL *epicentral_distance_2d;
     // activated boundaries
-    bool *activated_boundaries;
+    //bool *activated_boundaries;
     // grid
     CUSTOMREAL *r_2d, *t_2d; // coordinates
     CUSTOMREAL *fun_2d, *fac_a_2d, *fac_b_2d, *u_2d, *T_2d; // functions

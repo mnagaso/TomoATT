@@ -1294,6 +1294,8 @@ CUSTOMREAL InputParams::get_src_lon(const std::string& name_sim_src) {
 SrcRecInfo& InputParams::get_src_point(const std::string& name_src){
 
     if (subdom_main){
+        // ATTENTION, THIS FUNCTION IS CALLED VERY FREQUENTLY, SO WE SHOULD AVOID USING ANY LOOP HERE
+
         // THIS LOOP MAKE THE SPEED 10x SLOWER
         //for (auto& src: src_map){
         //    if (src.second.name == name_src)
@@ -1340,7 +1342,6 @@ SrcRecInfo& InputParams::get_rec_point(const std::string& name_rec) {
         //    exit(1);
         //}
 
-
         // if not found, return error
         std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
         exit(1);
@@ -1362,6 +1363,34 @@ std::vector<std::string> InputParams::get_rec_names(const std::string& name_src)
 }
 
 
+// return source name from in-sim_group id
+std::string InputParams::get_src_name(const int& local_id){
+
+    std::string src_name;
+    if (proc_store_srcrec)
+        src_name = src_id2name[local_id];
+
+    // broadcast
+    broadcast_str(src_name, 0);
+
+    return src_name;
+}
+
+
+// return src global id from src name
+int InputParams::get_src_id(const std::string& src_name) {
+    int src_id;
+    if (proc_store_srcrec)
+        src_id = src_map[src_name].id;
+
+    // broadcast
+    broadcast_i_single(src_id, 0);
+
+    return src_id;
+}
+
+
+
 
 bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
     bool if_src_teleseismic;
@@ -1380,14 +1409,23 @@ bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
 
 void InputParams::prepare_src_map(){
     //
-    // only the subdom_main process of the first simultaneous run group (id_sim==0 && sim_rank==any && subdom_main) reads src/rec file
+    // only the
+    // - subdom_main process of the
+    // - first subdomain of the
+    // - first simultaneous run group
+    // (subdom_main==true && id_subdomain==0 && id_sim==0) reads src/rec file
     // and stores entile src/rec list in src_points and rec_points
     // then, the subdom_main process of each simultaneous run group (id_sim==any && subdom_main==true) retains only its own src/rec objects,
     // which are actually calculated in those simultaneous run groups
     //
 
-    // read src rec file
-    if (src_rec_file_exist && id_sim==0 && subdom_main) {
+    // assigne processor roles
+    proc_read_srcrec = (subdom_main && id_subdomain==0 && id_sim==0);
+    proc_store_srcrec = (subdom_main && id_subdomain==0);
+
+    // read src rec file only
+    if (src_rec_file_exist && proc_read_srcrec) {
+
         // read source and receiver data, e.g.,
         //      event info:               s0
         //      data info1 (abs):         r0
@@ -1483,7 +1521,7 @@ void InputParams::prepare_src_map(){
             MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
-    } // end of if (src_rec_file_exist && id_sim==0 && subdom_main)
+    } // end of if (src_rec_file_exist && id_sim==0 && subdom_main && id_subdomain==0)
 
     // wait
     synchronize_all_world();
@@ -1494,13 +1532,13 @@ void InputParams::prepare_src_map(){
         // # TODO: check if this can be placed
 
         if (world_rank==0)
-            std::cout << "\nsource assign to processors\n" <<std::endl;
+            std::cout << "\nsource assign to simultaneous run groups\n" <<std::endl;
 
         // divide and distribute the data below to each simultaneous run group:
-        //  src_map,
+        //  src_map,     this will be used for checking global id in source iteration
         //  rec_map,
         //  data_map,
-        //  src_id2name,
+        //  src_id2name, this will be used for source iteration
         distribute_src_rec_data(src_map_all,
                                 rec_map_all,
                                 data_map_all,
@@ -1518,12 +1556,24 @@ void InputParams::prepare_src_map(){
         generate_src_map_with_common_receiver(data_map, src_map_comm_rec, src_id2name_comm_rec);
 
         // prepare source list for teleseismic source
-        prepare_src_map_for_2d_solver(src_map, src_id2name_2d, src_map_2d);
+        prepare_src_map_for_2d_solver(src_map_all, src_map, src_id2name_2d, src_map_2d);
 
         synchronize_all_world();
 
+        // count the number of sources in this simultaneous run group
+        if (proc_store_srcrec) {
+            n_src_this_sim_group          = (int) src_id2name.size();
+            n_src_comm_rec_this_sim_group = (int) src_id2name_comm_rec.size();
+            n_src_2d_this_sim_group       = (int) src_id2name_2d.size();
+        }
+        // broadcast the number of sources to all the processes in this simultaneous run group
+        broadcast_i_single_intra_sim(n_src_this_sim_group, 0);
+        broadcast_i_single_intra_sim(n_src_comm_rec_this_sim_group, 0);
+        broadcast_i_single_intra_sim(n_src_2d_this_sim_group, 0);
+
         if (world_rank==0)
             std::cout << "end parse src_rec file" << std::endl;
+
     } // end of if src_rec_file_exists
 }
 
@@ -1533,50 +1583,36 @@ void InputParams::generate_src_map_with_common_receiver(std::map<std::string, st
                                                         std::map<std::string, SrcRecInfo>&                                   src_map_comm_rec_tmp,
                                                         std::vector<std::string>&                                            src_id2name_comm_rec_tmp){
 
-    // for earthquake having common receiver differential traveltime, the synthetic traveltime should be computed first at each iteration
-    for(auto iter = data_map_tmp.begin(); iter != data_map_tmp.end(); iter++){
-        for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
-            for (auto& data: iter2->second){
-                if (data.is_src_pair){
-                    // add this source and turn to the next source
-                    src_map_comm_rec_tmp[iter->first] = src_map[iter->first];
-                    // add this source to the list of sources that will be looped in each iteration
-                    // if the source is not in the list, the synthetic traveltime will not be computed
-                    if (std::find(src_id2name_comm_rec_tmp.begin(), src_id2name_comm_rec_tmp.end(), iter->first) == src_id2name_comm_rec_tmp.end())
-                        src_id2name_comm_rec_tmp.push_back(iter->first);
+    if (proc_store_srcrec) {
 
-                    break;
+        // for earthquake having common receiver differential traveltime, the synthetic traveltime should be computed first at each iteration
+        for(auto iter = data_map_tmp.begin(); iter != data_map_tmp.end(); iter++){
+            for (auto iter2 = iter->second.begin(); iter2 != iter->second.end(); iter2++){
+                for (auto& data: iter2->second){
+                    if (data.is_src_pair){
+                        // add this source and turn to the next source
+                        src_map_comm_rec_tmp[iter->first] = src_map[iter->first];
+                        // add this source to the list of sources that will be looped in each iteration
+                        // if the source is not in the list, the synthetic traveltime will not be computed
+                        if (std::find(src_id2name_comm_rec_tmp.begin(), src_id2name_comm_rec_tmp.end(), iter->first) == src_id2name_comm_rec_tmp.end())
+                            src_id2name_comm_rec_tmp.push_back(iter->first);
+
+                        break;
+                    }
                 }
             }
         }
-    }
 
-    // broadcast the size of src_id2name_comm_rec_tmp
-    int n_src_id2name_comm_rec_tmp = src_id2name_comm_rec_tmp.size();
-    broadcast_i_single_sub(n_src_id2name_comm_rec_tmp, 0); // inter-sim
-
-    for (int i = 0; i < n_src_id2name_comm_rec_tmp; i++){
-        // broadcast the source name
-        std::string src_name;
-        if (subdom_main){
-            src_name = src_id2name_comm_rec_tmp[i];
+        // check if this sim group has common source double difference traveltime
+        if (src_map_comm_rec_tmp.size() > 0){
+            src_pair_exists = true;
         }
 
-        broadcast_str_sub(src_name, 0);
-
-        if (!subdom_main)
-            src_id2name_comm_rec_tmp.push_back(src_name);
-
-    }
-
-    // check if this sim group has common source double difference traveltime
-    if (src_map_comm_rec_tmp.size() > 0){
-        src_pair_exists = true;
-    }
+    } // end of if (proc_store_srcrec)
 
     // flag if any src_pair exists
     allreduce_bool_inplace_inter_sim(&src_pair_exists, 1); // inter-sim
-    allreduce_bool_inplace(&src_pair_exists, 1); // intra-sim
+    allreduce_bool_inplace(&src_pair_exists, 1); // intra-sim / inter subdom
     allreduce_bool_inplace_sub(&src_pair_exists, 1); // intra-subdom
 
 }
@@ -2352,41 +2388,41 @@ void InputParams::check_contradictions(){
 }
 
 
-void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, std::string name_src, \
-        bool i_first_in, bool i_last_in, bool j_first_in, bool j_last_in, bool k_first_in) {
-
-    i_first = i_first_in;
-    i_last  = i_last_in;
-    j_first = j_first_in;
-    j_last  = j_last_in;
-    k_first = k_first_in;
-
-    // allocate memory for teleseismic boundary sources
-    SrcRecInfo& src = get_src_point(name_src);
-
-    // check if this src is teleseismic source
-    if (src.is_out_of_region){
-        // North boundary
-        if (j_last)
-            src.arr_times_bound_N = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
-        // South boundary
-        if (j_first)
-            src.arr_times_bound_S = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
-        // East boundary
-        if (i_last)
-            src.arr_times_bound_E = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
-        // West boundary
-        if (i_first)
-            src.arr_times_bound_W = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
-        // Bottom boundary
-        if (k_first)
-            src.arr_times_bound_Bot = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*np*N_LAYER_SRC_BOUND);
-
-        // boundary source flag
-        src.is_bound_src = (bool*)malloc(sizeof(bool)*5);
-    }
-
-}
+//void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, std::string name_src, \
+//        bool i_first_in, bool i_last_in, bool j_first_in, bool j_last_in, bool k_first_in) {
+//
+//    i_first = i_first_in;
+//    i_last  = i_last_in;
+//    j_first = j_first_in;
+//    j_last  = j_last_in;
+//    k_first = k_first_in;
+//
+//    // allocate memory for teleseismic boundary sources
+//    SrcRecInfo& src = get_src_point(name_src);
+//
+//    // check if this src is teleseismic source
+//    if (src.is_out_of_region){
+//        // North boundary
+//        if (j_last)
+//            src.arr_times_bound_N = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
+//        // South boundary
+//        if (j_first)
+//            src.arr_times_bound_S = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
+//        // East boundary
+//        if (i_last)
+//            src.arr_times_bound_E = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
+//        // West boundary
+//        if (i_first)
+//            src.arr_times_bound_W = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
+//        // Bottom boundary
+//        if (k_first)
+//            src.arr_times_bound_Bot = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*np*N_LAYER_SRC_BOUND);
+//
+//        // boundary source flag
+//        src.is_bound_src = (bool*)malloc(sizeof(bool)*5);
+//    }
+//
+//}
 
 
 // station correction kernel (need revise)
