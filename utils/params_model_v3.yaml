@@ -132,9 +132,9 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # You can easily set w1 = w2 = 1.0 to normalize the weight related to XXX.
   # -------------- using absolute traveltime data --------------
   abs_time:
-    use_abs_time: false # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [0, 0, 0, 0] # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})
-    distance_weight: [0, 0, 0, 0] # XXX is epicenter distance (km) between the source and receiver related to the data
+    use_abs_time: true # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    residual_weight: [0, 9999, 1.0, 1.0] # XXX is the absolute traveltime residual (second) = abs(t^{obs}_{n,i} - t^{syn}_{n,j})
+    distance_weight: [0, 9999, 1.0, 1.0] # XXX is epicenter distance (km) between the source and receiver related to the data
 
   # -------------- using common source differential traveltime data --------------
   cs_dif_time:
