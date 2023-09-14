@@ -1402,6 +1402,24 @@ void recv_src_info_inter_sim(SrcRecInfo &src, int orig){
 }
 
 
+void broadcast_src_info_intra_sim(SrcRecInfo& src, int orig){
+        broadcast_i_single(src.id, orig);
+        broadcast_i_single(src.year , orig);
+        broadcast_i_single(src.month, orig);
+        broadcast_i_single(src.day  , orig);
+        broadcast_i_single(src.hour , orig);
+        broadcast_i_single(src.min  , orig);
+        broadcast_cr_single(src.sec, orig);
+        broadcast_cr_single(src.lat, orig);
+        broadcast_cr_single(src.lon, orig);
+        broadcast_cr_single(src.dep, orig);
+        broadcast_cr_single(src.mag, orig);
+        broadcast_i_single(src.n_data, orig);
+        broadcast_str(src.name, orig);
+        broadcast_bool_single(src.is_out_of_region, orig);
+}
+
+
 void send_rec_info_inter_sim(SrcRecInfo &rec, int dest){
 
     send_i_single_sim(&rec.id, dest);
@@ -1419,6 +1437,15 @@ void recv_rec_info_inter_sim(SrcRecInfo &rec, int orig){
     recv_cr_single_sim(&rec.lon, orig);
     recv_cr_single_sim(&rec.lat, orig);
     recv_cr_single_sim(&rec.dep, orig);
+}
+
+
+void broadcast_rec_info_intra_sim(SrcRecInfo& rec, int orig){
+        broadcast_i_single(rec.id, orig);
+        broadcast_str(rec.name, orig);
+        broadcast_cr_single(rec.lon, orig);
+        broadcast_cr_single(rec.lat, orig);
+        broadcast_cr_single(rec.dep, orig);
 }
 
 void send_data_info_inter_sim(DataInfo &data, int dest){

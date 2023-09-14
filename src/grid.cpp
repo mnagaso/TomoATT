@@ -1476,7 +1476,7 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 }
 
 
-void Grid::initialize_fields_teleseismic(Source& src, SrcRecInfo& srcrec){
+void Grid::initialize_fields_teleseismic(){
     CUSTOMREAL inf_T = 2000.0;
 
     for (int k_r = 0; k_r < loc_K; k_r++) {
@@ -1488,68 +1488,7 @@ void Grid::initialize_fields_teleseismic(Source& src, SrcRecInfo& srcrec){
         }
     }
 
-    // set boundary arrival time conditions
-    load_2d_traveltime(srcrec);
-
-    //for (int l = 0; l < N_LAYER_SRC_BOUND; l++){
-    //    // West boundary
-    //    if (i_first() && srcrec.is_bound_src[2]) {
-    //        for (int k_r = 0; k_r < loc_K; k_r++) {
-    //            for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-    //                T_loc[I2V(l,j_lat,k_r)] = srcrec.arr_times_bound_W[JK2V(j_lat,k_r,l)];
-    //                is_changed[I2V(l,j_lat,k_r)] = false;
-    //            }
-    //        }
-    //    }
-    //    // East boundary
-    //    if (i_last() && srcrec.is_bound_src[1]){
-    //        for (int k_r = 0; k_r < loc_K; k_r++) {
-    //            for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-    //                T_loc[I2V(loc_I-1-l,j_lat,k_r)] = srcrec.arr_times_bound_E[JK2V(j_lat,k_r,l)];
-    //                is_changed[I2V(loc_I-1-l,j_lat,k_r)] = false;
-    //            }
-    //        }
-    //    }
-    //    // South boundary
-    //    if (j_first() && srcrec.is_bound_src[3]) {
-    //        for (int k_r = 0; k_r < loc_K; k_r++) {
-    //            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-    //                T_loc[I2V(i_lon,l,k_r)] = srcrec.arr_times_bound_S[IK2V(i_lon,k_r,l)];
-    //                is_changed[I2V(i_lon,l,k_r)] = false;
-    //            }
-    //        }
-    //    }
-    //    // North boundary
-    //    if (j_last() && srcrec.is_bound_src[0]) {
-    //        for (int k_r = 0; k_r < loc_K; k_r++) {
-    //            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-    //                T_loc[I2V(i_lon,loc_J-1-l,k_r)] = srcrec.arr_times_bound_N[IK2V(i_lon,k_r,l)];
-    //                is_changed[I2V(i_lon,loc_J-1-l,k_r)] = false;
-    //            }
-    //        }
-    //    }
-    //    // Bottom boundary
-    //    if (k_first() && srcrec.is_bound_src[4]) {
-    //        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-    //            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-    //                T_loc[I2V(i_lon,j_lat,l)] = srcrec.arr_times_bound_Bot[IJ2V(i_lon,j_lat,l)];
-    //                is_changed[I2V(i_lon,j_lat,l)] = false;
-    //            }
-    //        }
-    //    }
-
-    //}
-
-    // store initial field in T0v_loc for debugging
-    for (int k_r = 0; k_r < loc_K; k_r++) {
-        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                T0v_loc[I2V(i_lon,j_lat,k_r)] = T_loc[I2V(i_lon,j_lat,k_r)];
-                tau_old_loc[I2V(i_lon,j_lat,k_r)] = _0_CR; // initialize tau_old_loc to 0
-            }
-        }
-    }
-
+    // setup of boundary arrival time conditions is done in iterator function
 }
 
 

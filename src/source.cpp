@@ -2,7 +2,6 @@
 
 Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src) {
 
-    if (is_teleseismic) return;
 
     if (subdom_main) {
         if(if_verbose) stdout_by_main("--- start source initialization ---");
@@ -16,7 +15,12 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
         src_lon = IP.get_src_lon(   name_sim_src); // in radian
         src_lat = IP.get_src_lat(   name_sim_src); // in radian
         src_r   = IP.get_src_radius(name_sim_src); // radious
+    }
 
+    // further initialization is not needed for teleseismic source
+    if (is_teleseismic) return;
+
+    if (subdom_main) {
         // descretize source position (LOCAL ID)
         i_src_loc = std::floor((src_lon - grid.get_lon_min_loc()) / grid.get_delta_lon());
         j_src_loc = std::floor((src_lat - grid.get_lat_min_loc()) / grid.get_delta_lat());

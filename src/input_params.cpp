@@ -809,25 +809,25 @@ InputParams::InputParams(std::string& input_file){
 
 InputParams::~InputParams(){
     // free memory
-    if (subdom_main) {
-        for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
-            SrcRecInfo& src = iter->second;
-            if (src.is_out_of_region){
-                if (j_last && src.arr_times_bound_N != nullptr)
-                    free(src.arr_times_bound_N);
-                if (j_first && src.arr_times_bound_S != nullptr)
-                    free(src.arr_times_bound_S);
-                if (i_last && src.arr_times_bound_E != nullptr)
-                    free(src.arr_times_bound_E);
-                if (i_first && src.arr_times_bound_W != nullptr)
-                    free(src.arr_times_bound_W);
-                if (k_first && src.arr_times_bound_Bot != nullptr)
-                    free(src.arr_times_bound_Bot);
+    //if (subdom_main) {
+    //    for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
+    //        SrcRecInfo& src = iter->second;
+    //        if (src.is_out_of_region){
+    //            //if (j_last && src.arr_times_bound_N != nullptr)
+    //            //    free(src.arr_times_bound_N);
+    //            //if (j_first && src.arr_times_bound_S != nullptr)
+    //            //    free(src.arr_times_bound_S);
+    //            //if (i_last && src.arr_times_bound_E != nullptr)
+    //            //    free(src.arr_times_bound_E);
+    //            //if (i_first && src.arr_times_bound_W != nullptr)
+    //            //    free(src.arr_times_bound_W);
+    //            //if (k_first && src.arr_times_bound_Bot != nullptr)
+    //            //    free(src.arr_times_bound_Bot);
 
-                free(src.is_bound_src);
-            }
-        }
-    }
+    //            //free(src.is_bound_src);
+    //        }
+    //    }
+    //}
 
     delete [] dep_inv;
     delete [] lat_inv;
@@ -1291,65 +1291,86 @@ CUSTOMREAL InputParams::get_src_lon(const std::string& name_sim_src) {
 }
 
 
-SrcRecInfo& InputParams::get_src_point(const std::string& name_src){
+SrcRecInfo InputParams::get_src_point(const std::string& name_src){
 
-    if (subdom_main){
-        // ATTENTION, THIS FUNCTION IS CALLED VERY FREQUENTLY, SO WE SHOULD AVOID USING ANY LOOP HERE
+    SrcRecInfo src_tmp;
 
-        // THIS LOOP MAKE THE SPEED 10x SLOWER
-        //for (auto& src: src_map){
-        //    if (src.second.name == name_src)
-        //        return src.second;
-        //}
+    if (proc_store_srcrec)
+        src_tmp = src_map[name_src];
 
-        //if (src_map.find(name_src) != src_map.end()) // THIS SHOULD ALSO BE AVOIDED
-            return src_map[name_src];
-        //else {
-            // if not found, return error
-            std::cout << "Error: src name " << name_src << " not found!" << std::endl;
-            // assigned src id
-            std::cout << "Assigned src names to this simultanous run : ";
-            for (auto& src: src_map){
-                std::cout << src.second.name << " ";
-            }
-            std::cout << std::endl;
+    // broadcast
+    broadcast_src_info_intra_sim(src_tmp, 0);
 
-            exit(1);
-        //}
-    } else {
-        // return error because non-subdom_main process should not call this function
-        std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
-        exit(1);
-    }
+    // return
+    return src_tmp;
+
+    //if (subdom_main){
+    //    // ATTENTION, THIS FUNCTION IS CALLED VERY FREQUENTLY, SO WE SHOULD AVOID USING ANY LOOP HERE
+
+    //    // THIS LOOP MAKE THE SPEED 10x SLOWER
+    //    //for (auto& src: src_map){
+    //    //    if (src.second.name == name_src)
+    //    //        return src.second;
+    //    //}
+
+    //    //if (src_map.find(name_src) != src_map.end()) // THIS SHOULD ALSO BE AVOIDED
+    //        return src_map[name_src];
+    //    //else {
+    //        // if not found, return error
+    //        std::cout << "Error: src name " << name_src << " not found!" << std::endl;
+    //        // assigned src id
+    //        std::cout << "Assigned src names to this simultanous run : ";
+    //        for (auto& src: src_map){
+    //            std::cout << src.second.name << " ";
+    //        }
+    //        std::cout << std::endl;
+
+    //        exit(1);
+    //    //}
+    //} else {
+    //    // return error because non-subdom_main process should not call this function
+    //    std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
+    //    exit(1);
+    //}
 }
 
 
-SrcRecInfo& InputParams::get_rec_point(const std::string& name_rec) {
-    if (subdom_main){
+SrcRecInfo InputParams::get_rec_point(const std::string& name_rec) {
 
-        // THIS LOOP MAKE THE SPEED 10x SLOWER
-        //for (auto& rec: rec_map) {
-        //    if (rec.second.name == name_rec)
-        //        return rec.second;
-        //}
+    SrcRecInfo rec_tmp;
+    if (proc_store_srcrec)
+        rec_tmp = rec_map[name_rec];
 
-        // check if rec_map[name_rec] exists
-        //if (rec_map.find(name_rec) != rec_map.end()) // THIS SHOULD ALSO BE AVOIDED
-            return rec_map[name_rec];
-        //else {
-        //    // if not found, return error
-        //    std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
-        //    exit(1);
-        //}
+    // broadcast
+    broadcast_src_info_intra_sim(rec_tmp, 0);
 
-        // if not found, return error
-        std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
-        exit(1);
-    } else {
-        // return error because non-subdom_main process should not call this function
-        std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
-        exit(1);
-   }
+    return rec_tmp;
+
+    //if (subdom_main){
+
+    //    // THIS LOOP MAKE THE SPEED 10x SLOWER
+    //    //for (auto& rec: rec_map) {
+    //    //    if (rec.second.name == name_rec)
+    //    //        return rec.second;
+    //    //}
+
+    //    // check if rec_map[name_rec] exists
+    //    //if (rec_map.find(name_rec) != rec_map.end()) // THIS SHOULD ALSO BE AVOIDED
+    //        return rec_map[name_rec];
+    //    //else {
+    //    //    // if not found, return error
+    //    //    std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
+    //    //    exit(1);
+    //    //}
+
+    //    // if not found, return error
+    //    std::cout << "Error: rec name " << name_rec << " not found!" << std::endl;
+    //    exit(1);
+    //} else {
+    //    // return error because non-subdom_main process should not call this function
+    //    std::cout << "Error: non-subdom_main process should not call this function!" << std::endl;
+    //    exit(1);
+    //}
 }
 
 
@@ -2387,42 +2408,6 @@ void InputParams::check_contradictions(){
 #endif
 }
 
-
-//void InputParams::allocate_memory_tele_boundaries(int np, int nt, int nr, std::string name_src, \
-//        bool i_first_in, bool i_last_in, bool j_first_in, bool j_last_in, bool k_first_in) {
-//
-//    i_first = i_first_in;
-//    i_last  = i_last_in;
-//    j_first = j_first_in;
-//    j_last  = j_last_in;
-//    k_first = k_first_in;
-//
-//    // allocate memory for teleseismic boundary sources
-//    SrcRecInfo& src = get_src_point(name_src);
-//
-//    // check if this src is teleseismic source
-//    if (src.is_out_of_region){
-//        // North boundary
-//        if (j_last)
-//            src.arr_times_bound_N = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
-//        // South boundary
-//        if (j_first)
-//            src.arr_times_bound_S = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*np*nr*N_LAYER_SRC_BOUND);
-//        // East boundary
-//        if (i_last)
-//            src.arr_times_bound_E = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
-//        // West boundary
-//        if (i_first)
-//            src.arr_times_bound_W = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*nr*N_LAYER_SRC_BOUND);
-//        // Bottom boundary
-//        if (k_first)
-//            src.arr_times_bound_Bot = (CUSTOMREAL*)malloc(sizeof(CUSTOMREAL)*nt*np*N_LAYER_SRC_BOUND);
-//
-//        // boundary source flag
-//        src.is_bound_src = (bool*)malloc(sizeof(bool)*5);
-//    }
-//
-//}
 
 
 // station correction kernel (need revise)

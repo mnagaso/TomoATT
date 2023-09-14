@@ -84,8 +84,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  2. we use common receiver data to update model; (cr + not swap) or (cs + swap)
     //  3. we do inversion
     if ( src_pair_exists &&
-         ((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())) &&
-         (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC))
+              ((IP.get_use_cr() && !IP.get_is_srcrec_swap())
+            || (IP.get_use_cs() && IP.get_is_srcrec_swap()) )
+        && (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC))
         pre_run_forward_only(IP, grid, io, i_inv);
 
     //

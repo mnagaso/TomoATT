@@ -1,6 +1,6 @@
 #include "iterator.h"
 
-Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, SrcRecInfo& srcInfo, IO_utils& io, const std::string& src_name, \
+Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, \
                    bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
          : is_second_run(is_second_run_in) {
 
@@ -67,7 +67,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, SrcRecInfo& srcInfo
     }
 
     // initialize factors etc.
-    initialize_arrays(IP, io, grid, src, src_name, srcInfo);
+    initialize_arrays(IP, io, grid, src, src_name);
 
 }
 
@@ -135,7 +135,7 @@ Iterator::~Iterator() {
 }
 
 
-void Iterator::initialize_arrays(InputParams& IP, IO_utils& io, Grid& grid, Source& src, const std::string& name_sim_src, SrcRecInfo& srcInfo) {
+void Iterator::initialize_arrays(InputParams& IP, IO_utils& io, Grid& grid, Source& src, const std::string& name_sim_src) {
     if(if_verbose && myrank == 0) std::cout << "(re) initializing arrays" << std::endl;
 
     // std::cout << "source lat: " << src.get_src_t()*RAD2DEG << ", source lon: " << src.get_src_p()*RAD2DEG << ", source dep: " << src.get_src_r() << std::endl;
@@ -145,14 +145,15 @@ void Iterator::initialize_arrays(InputParams& IP, IO_utils& io, Grid& grid, Sour
             if (!is_teleseismic) {
                 // set initial a b c and calculate a0 b0 c0 f0
                 grid.setup_factors(src);
+
                 // calculate T0 T0r T0t T0p and initialize tau
                 grid.initialize_fields(src, IP);
             } else {
                 // copy T_loc arrival time on domain's boundaries.
-                grid.initialize_fields_teleseismic(src, IP.get_src_point(name_sim_src));
+                grid.initialize_fields_teleseismic();
 
                 // load 2d traveltime on boundary from file
-                load_2d_traveltime(IP, srcInfo, grid, io);
+                load_2d_traveltime(IP, src, grid, io);
             }
         }
     }
