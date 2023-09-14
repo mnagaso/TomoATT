@@ -16,7 +16,6 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const
 
         if (first_init) {
 
-            // #BUG this broadcast is not working by somehow...
             broadcast_i_single_sub(nr,0);
             broadcast_i_single_sub(nt,0);
             broadcast_i_single_sub(np,0);

@@ -38,10 +38,10 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     ///////////////////////
 
     // iterate over sources
-    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
-        const std::string name_sim_src = IP.src_id2name[i_src];
-        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
+        const std::string name_sim_src = IP.get_src_name(i_src);
+        const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);
@@ -98,10 +98,10 @@ std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, G
     recs.init_vars_src_reloc(IP);
 
     // iterate over sources
-    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
-        const std::string name_sim_src = IP.src_id2name[i_src];
-        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
+        const std::string name_sim_src = IP.get_src_name(i_src);
+        const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);

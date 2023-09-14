@@ -1269,7 +1269,7 @@ void InputParams::write_params_to_file() {
 // return radious
 CUSTOMREAL InputParams::get_src_radius(const std::string& name_sim_src) {
     if (src_rec_file_exist)
-        return depth2radius(get_src_point(name_sim_src).dep);
+        return depth2radius(get_src_point_bcast(name_sim_src).dep);
     else
         return depth2radius(src_dep);
 }
@@ -1277,7 +1277,7 @@ CUSTOMREAL InputParams::get_src_radius(const std::string& name_sim_src) {
 
 CUSTOMREAL InputParams::get_src_lat(const std::string& name_sim_src) {
     if (src_rec_file_exist)
-        return get_src_point(name_sim_src).lat*DEG2RAD;
+        return get_src_point_bcast(name_sim_src).lat*DEG2RAD;
     else
         return src_lat*DEG2RAD;
 }
@@ -1285,13 +1285,35 @@ CUSTOMREAL InputParams::get_src_lat(const std::string& name_sim_src) {
 
 CUSTOMREAL InputParams::get_src_lon(const std::string& name_sim_src) {
     if (src_rec_file_exist)
-        return get_src_point(name_sim_src).lon*DEG2RAD;
+        return get_src_point_bcast(name_sim_src).lon*DEG2RAD;
     else
         return src_lon*DEG2RAD;
 }
 
 
-SrcRecInfo InputParams::get_src_point(const std::string& name_src){
+SrcRecInfo& InputParams::get_src_point(const std::string& name_src){
+    if (proc_store_srcrec)
+        return src_map[name_src];
+    else  {
+        // exit with error
+        std::cout << "Error: non-proc_store_srcrec process should not call the function get_src_point." << std::endl;
+        exit(1);
+    }
+}
+
+
+SrcRecInfo& InputParams::get_rec_point(const std::string& name_rec){
+    if (proc_store_srcrec)
+        return rec_map[name_rec];
+    else  {
+        // exit with error
+        std::cout << "Error: non-proc_store_srcrec process should not call the function get_rec_point." << std::endl;
+        exit(1);
+    }
+}
+
+
+SrcRecInfo InputParams::get_src_point_bcast(const std::string& name_src){
 
     SrcRecInfo src_tmp;
 
@@ -1335,7 +1357,7 @@ SrcRecInfo InputParams::get_src_point(const std::string& name_src){
 }
 
 
-SrcRecInfo InputParams::get_rec_point(const std::string& name_rec) {
+SrcRecInfo InputParams::get_rec_point_bcast(const std::string& name_rec) {
 
     SrcRecInfo rec_tmp;
     if (proc_store_srcrec)
@@ -1374,16 +1396,6 @@ SrcRecInfo InputParams::get_rec_point(const std::string& name_rec) {
 }
 
 
-std::vector<std::string> InputParams::get_rec_names(const std::string& name_src){
-    std::vector<std::string> rec_names;
-
-    for (auto iter = data_map[name_src].begin(); iter != data_map[name_src].end(); iter++) {
-        rec_names.push_back(iter->first);
-    }
-    return rec_names;
-}
-
-
 // return source name from in-sim_group id
 std::string InputParams::get_src_name(const int& local_id){
 
@@ -1416,13 +1428,21 @@ int InputParams::get_src_id(const std::string& src_name) {
 bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
     bool if_src_teleseismic;
 
-    if (subdom_main)
+    std::cout << "debug: 00001" << std::endl; synchronize_all_world();
+
+    if (proc_store_srcrec)
         if_src_teleseismic = get_src_point(src_name).is_out_of_region;
     else
         if_src_teleseismic = false; // need to be broadcasted from subdom_main later
 
+    std::cout << "debug: 00002" << std::endl; synchronize_all_world();
+
+
     // broadcast to all processes within simultaneous run group
+    broadcast_bool_single(if_src_teleseismic, 0);
     broadcast_bool_single_sub(if_src_teleseismic, 0);
+    std::cout << "debug: 00003, rank: " << myrank << std::endl; synchronize_all_world();
+
 
     return if_src_teleseismic;
 }
@@ -1550,7 +1570,6 @@ void InputParams::prepare_src_map(){
 
     // to all the subdom_main processes of each simultaneous run group
     if (src_rec_file_exist) {
-        // # TODO: check if this can be placed
 
         if (world_rank==0)
             std::cout << "\nsource assign to simultaneous run groups\n" <<std::endl;

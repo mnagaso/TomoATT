@@ -124,11 +124,17 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // run forward simulation
         /////////////////////////
 
+        std::cout << "debug: 0000" << std::endl; synchronize_all_world();
+
         // get is_teleseismic flag
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
+        std::cout << "debug: 1111" << std::endl; synchronize_all_world();
+
 
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic, name_sim_src);
+        std::cout << "debug: 2222" << std::endl; synchronize_all_world();
+
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);

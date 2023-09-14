@@ -10,7 +10,6 @@ public:
     Receiver();
     ~Receiver();
 
-    void calculate_arrival_time(InputParams&, Grid&);
     void interpolate_and_store_arrival_times_at_rec_position(InputParams&, Grid&, const std::string&);       // only for common receiver differential traveltime
 
     // adjoint source
@@ -30,7 +29,7 @@ public:
 
 private:
     CUSTOMREAL interpolate_travel_time(Grid&, InputParams&, std::string, std::string);
-    void calculate_T_gradient_one_rec(Grid&, SrcRecInfo&, CUSTOMREAL*);
+    void calculate_T_gradient_one_rec(Grid&, InputParams&, std::string, CUSTOMREAL*);
 };
 
 #endif // RECEIVER_H

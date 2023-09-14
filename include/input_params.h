@@ -30,7 +30,13 @@ public:
     // write parameters to output file
     void write_params_to_file();
 
-    // get parameters
+    //
+    // getter/setter
+    //
+
+    //
+    // bondary information
+    //
     CUSTOMREAL get_min_dep(){return min_dep;};
     CUSTOMREAL get_max_dep(){return max_dep;};
     CUSTOMREAL get_min_lat(){return min_lat*DEG2RAD;};
@@ -38,20 +44,29 @@ public:
     CUSTOMREAL get_min_lon(){return min_lon*DEG2RAD;};
     CUSTOMREAL get_max_lon(){return max_lon*DEG2RAD;};
 
+    //
+    // source receiver data
+    //
+
+    // source receiver information for processes which stores source receiver information
+    std::string                 get_src_rec_file()      {return src_rec_file;};
+    bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
+    SrcRecInfo&                 get_src_point(const std::string&);          // return SrcRec object
+    SrcRecInfo&                 get_rec_point(const std::string&);          // return receivers for the current source
+
+    // source receiver information with broadcast to all subdom_main processes
+    SrcRecInfo                  get_src_point_bcast(const std::string&);    // return SrcRec object
+    SrcRecInfo                  get_rec_point_bcast(const std::string&);    // return receivers for the current source
     CUSTOMREAL                  get_src_radius(const std::string&);
     CUSTOMREAL                  get_src_lat(   const std::string&);
     CUSTOMREAL                  get_src_lon(   const std::string&);
-    std::string                 get_src_rec_file()      {return src_rec_file;};
-    bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
-    bool                        get_if_src_teleseismic(const std::string&); // return true if the source is teleseismic
-    SrcRecInfo                  get_src_point(const std::string&);          // return SrcRec object
-    SrcRecInfo                  get_rec_point(const std::string&);          // return receivers for the current source
-    std::vector<std::string>    get_rec_names(const std::string&);          // return SrcRec object
-
     std::string                 get_src_name(const int&);                   // return source name from in-sim_group id
     int                         get_src_id(const std::string&);             // return src global id from src name
+    bool                        get_if_src_teleseismic(const std::string&); // return true if the source is teleseismic
 
-
+    //
+    // others
+    //
     CUSTOMREAL get_conv_tol()                    {return conv_tol;};
     void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
     CUSTOMREAL get_max_iter()                    {return max_iter;};
@@ -204,9 +219,6 @@ public:
     void initialize_adjoint_source();
     // set adjoint source
     void set_adjoint_source(std::string, CUSTOMREAL);
-
-    void allocate_memory_tele_boundaries(int, int, int, std::string,
-        bool, bool, bool, bool, bool); // allocate memory for tele boundaries
 
     // gather traveltimes and calculate differences of synthetic data
     void gather_traveltimes_and_calc_syn_diff();
