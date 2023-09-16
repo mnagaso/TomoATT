@@ -21,23 +21,24 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
     //
     // pre calculation of 2d travel time fields
     //
-    if (proc_store_srcrec) {
 
-       for (int i_src = 0; i_src < IP.n_src_2d_this_sim_group; i_src++){
+    for (int i_src = 0; i_src < IP.n_src_2d_this_sim_group; i_src++){
 
-            std::string name_sim_src = IP.src_id2name_2d[i_src];
+        std::string name_sim_src;
 
-            // get source info
-            bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
-            Source src(IP, grid, is_teleseismic, name_sim_src);
+        if (proc_store_srcrec)
+            name_sim_src = IP.src_id2name_2d[i_src];
+        broadcast_str(name_sim_src, 0);
 
-            // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-            if (is_teleseismic){
-               // calculate 2d travel time field (or read pre-computed file)
-                // without loading the boundary source values
-                run_2d_solver(IP, src, io);
-            }
-        }
+        // get source info
+        bool is_teleseismic = true; // the object in src_id2name_2d is always teleseismic
+        // #BUG: src in src_id2name_2d includes the srcs in other sim groups.
+        bool for_2d_solver = true;
+        Source src(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
+
+        // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
+        if (proc_store_srcrec)
+            run_2d_solver(IP, src, io);
     }
 
     synchronize_all_world();
@@ -57,7 +58,7 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 
 PlainGrid::PlainGrid(Source& src, InputParams& IP) {
 
-    stdout_by_main("PlainGrid initialization start.");
+    //stdout_by_main("PlainGrid initialization start.");
 
     // get source info
     src_r = src.get_src_r();
@@ -329,7 +330,7 @@ void PlainGrid::run_iteration(InputParams& IP){
     //                   -2c tau_x tau_y + (aTx^2+bTy^2-2cTxTy) = f^2
 
     if (myrank==0)
-        std::cout << "Running iteration for 2d eikonal solver..." << std::endl;
+        std::cout << "Running 2d eikonal solver..." << std::endl;
 
     CUSTOMREAL L1_dif  =1000000000;
     CUSTOMREAL Linf_dif=1000000000;
@@ -591,23 +592,22 @@ void run_2d_solver(InputParams& IP, Source& src, IO_utils& io) {
     PlainGrid plain_grid(src,IP);
 
     // check if pre-calculated 2d travel time field exists
-    if(myrank == 0) {
-        // create output directory for 2d solver
-        std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
-        create_output_dir(dir_2d);
 
-        std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
+    // create output directory for 2d solver
+    std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
+    create_output_dir(dir_2d);
 
-        if (is_file_exist(fname_2d_src.c_str())) {
-            std::cout << "2d solver skipped the src because traveltime data already exists: " << fname_2d_src << std::endl;
-        } else { // if not, calculate and store it
-            // run iteration
-            std::cout << "start run iteration myrank: " << myrank << std::endl;
-            plain_grid.run_iteration(IP);
+    std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
 
-            // write out calculated 2D travel time field
-            io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.get_src_dep());
-        }
+    if (is_file_exist(fname_2d_src.c_str())) {
+        std::cout << "2d solver skipped the src because traveltime data already exists: " << fname_2d_src << std::endl;
+    } else { // if not, calculate and store it
+        // run iteration
+        std::cout << "start run iteration myrank: " << myrank << std::endl;
+        plain_grid.run_iteration(IP);
+
+        // write out calculated 2D travel time field
+        io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.get_src_dep());
     }
 
  }
@@ -620,9 +620,9 @@ void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) 
     // check if pre-calculated 2d travel time field exists
     if(myrank == 0) {
 
-        // create output directory for 2d solver
+        // output directory for 2d solver
         std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
-        create_output_dir(dir_2d);
+        //create_output_dir(dir_2d);
 
         std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
 
@@ -633,9 +633,11 @@ void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) 
             // read 2d travel time field from file
             io.read_2d_travel_time_field(fname_2d_src, plain_grid.T_2d, plain_grid.nt_2d, plain_grid.nr_2d);
 
-            std::cout << "2d travel time field has been read from file: " << fname_2d_src << std::endl;
+            if (if_verbose)
+                std::cout << "2d travel time field has been read from file: " << fname_2d_src << std::endl;
         } else { // if not, stop the program
             std::cout << "2d travel time field does not exist. Please verify if the 2d solver finished normally." << std::endl;
+            std::cout << "missing : " << fname_2d_src << std::endl;
             exit(1);
         }
     }
@@ -655,14 +657,12 @@ void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) 
                 // North boundary
                 if (grid.j_last()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(loc_J-1-l), grid.get_lon_by_index(i), tmp_dist);
-                    //src.arr_times_bound_N[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.T_loc[I2V(i, loc_J-1-l, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.is_changed[I2V(i, loc_J-1-l, k)] = false;
                 }
                 // South boundary
                 if (grid.j_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(l), grid.get_lon_by_index(i), tmp_dist);
-                    //src.arr_times_bound_S[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.T_loc[I2V(i, l, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.is_changed[I2V(i, l, k)] = false;
                 }
@@ -674,14 +674,12 @@ void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) 
                 // East boundary
                 if (grid.i_last()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(loc_I-1-l), tmp_dist);
-                    //src.arr_times_bound_E[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.T_loc[I2V(loc_I-1-l, j, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.is_changed[I2V(loc_I-1-l, j, k)] = false;
                 }
                 // West boundary
                 if (grid.i_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(l), tmp_dist);
-                    //src.arr_times_bound_W[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.T_loc[I2V(l, j, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
                     grid.is_changed[I2V(l, j, k)] = false;
                 }
@@ -693,8 +691,8 @@ void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) 
                 // Bottom boundary
                 if (grid.k_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(i), tmp_dist);
-                    //src.arr_times_bound_Bot[IJ2V(i,j,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
                     grid.T_loc[I2V(i, j, l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
+                    grid.is_changed[I2V(i, j, l)] = false;
                 }
             }
         }

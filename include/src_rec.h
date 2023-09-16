@@ -184,6 +184,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&, \
+                             std::vector<std::string>&, \
                              std::vector<std::string>&);
 
 void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>&, \

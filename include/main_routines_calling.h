@@ -202,8 +202,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 if (!found_next_step)
                     goto end_of_inversion;
             }
-
-
         }
 
         // output station correction file (only for teleseismic differential data)
@@ -535,12 +533,12 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
         calculate_traveltime_for_all_src_rec(IP, grid, io);
 
 
-
         // initilize all earthquakes
-        for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            iter->second.is_stop = false;
+        if (proc_store_srcrec){
+            for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+                iter->second.is_stop = false;
+            }
         }
-
 
         // iterate
         for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){

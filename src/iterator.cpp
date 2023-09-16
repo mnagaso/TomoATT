@@ -36,7 +36,7 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const
 
         // check if teleseismic source
         is_teleseismic = is_teleseismic_in;
-        broadcast_bool_single_sub(is_teleseismic, 0);
+        //broadcast_bool_single_sub(is_teleseismic, 0); // done in IP.get_if_teleseismic()
 
         // check initialized values
         if (if_verbose){
@@ -571,6 +571,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
                     grid.send_recev_boundary_data(grid.tau_loc);
                 else
                     grid.send_recev_boundary_data(grid.T_loc);
+
             }
 #endif
         }
@@ -668,6 +669,9 @@ iter_end:
     // teleseismic case will update T_loc, so T = T0*tau is not necessary.
     if (subdom_main && !is_teleseismic) grid.calc_T_plus_tau();
 
+    // corner nodes are not used in the sweeping but used in the interpolation and visualization
+    if (subdom_main) grid.send_recev_boundary_data_kosumi(grid.T_loc);
+
     // check the time for iteration
     if (inter_sub_rank==0 && subdom_main) {
         timer_iter.stop_timer();
@@ -691,7 +695,6 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) 
 
     // initialize delta and Tadj_loc (here we use the array tau_old instead of delta for memory saving)
     if (subdom_main)
-        // init_delta_and_Tadj(grid, IP);
         init_delta_and_Tadj(grid, IP);
 
     if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
@@ -786,16 +789,18 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
         }
     }
 
-    // set the contributions of stations from the each station
-    int DEBUG_REC_COUNT = 0;
-
     // loop all receivers
-    // MNMN this loop checks all the receivers, even unrelated ones for this source. (rec_map is a unique map of all receivers)
-    for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
+    for (int irec = 0; irec < IP.n_rec_this_sim_group; irec++) {
+
+        // get receiver information
+        std::string rec_name = IP.get_rec_name(irec);
+        auto rec = IP.get_rec_point_bcast(rec_name);
 
         // "iter->second" is the receiver, with the class SrcRecInfo
-        if (iter->second.adjoint_source == 0)
+        if (rec.adjoint_source == 0){
+            std::cout << "adjoint source is zero for receiver " << rec_name << std::endl;
             continue;
+        }
 
         CUSTOMREAL delta_lon = grid.get_delta_lon();
         CUSTOMREAL delta_lat = grid.get_delta_lat();
@@ -803,16 +808,14 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
 
 
         // get positions
-        CUSTOMREAL rec_lon = iter->second.lon*DEG2RAD;
-        CUSTOMREAL rec_lat = iter->second.lat*DEG2RAD;
-        CUSTOMREAL rec_r = depth2radius(iter->second.dep);
+        CUSTOMREAL rec_lon = rec.lon*DEG2RAD;
+        CUSTOMREAL rec_lat = rec.lat*DEG2RAD;
+        CUSTOMREAL rec_r = depth2radius(rec.dep);
 
         // check if the receiver is in this subdomain
         if (grid.get_lon_min_loc() <= rec_lon && rec_lon <= grid.get_lon_max_loc()  && \
             grid.get_lat_min_loc() <= rec_lat && rec_lat <= grid.get_lat_max_loc()  && \
             grid.get_r_min_loc()   <= rec_r   && rec_r   <= grid.get_r_max_loc()   ) {
-
-            DEBUG_REC_COUNT++;
 
             // descretize receiver position (LOCAL ID)
             int i_rec_loc =  std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
@@ -844,14 +847,14 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
             }
 
             // set delta values
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += iter->second.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += iter->second.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += iter->second.adjoint_source*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += iter->second.adjoint_source*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += iter->second.adjoint_source*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += iter->second.adjoint_source*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += iter->second.adjoint_source*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
-            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += iter->second.adjoint_source*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc)]       += rec.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc,k_rec_loc+1)]     += rec.adjoint_source*(1.0-e_lon)*(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc)]     += rec.adjoint_source*(1.0-e_lon)*     e_lat* (1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc,j_rec_loc+1,k_rec_loc+1)]   += rec.adjoint_source*(1.0-e_lon)*     e_lat*      e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc)]     += rec.adjoint_source*     e_lon *(1.0-e_lat)*(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec.adjoint_source*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec.adjoint_source*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+            grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec.adjoint_source*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
         }
 
 
@@ -859,8 +862,6 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
 
     // communicate tau_old_loc to all processors
     grid.send_recev_boundary_data(grid.tau_old_loc);
-
-    if(if_verbose) std::cout << "DEBUG_REC_COUNT: " << DEBUG_REC_COUNT << std::endl;
 
 }
 

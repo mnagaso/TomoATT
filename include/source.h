@@ -13,7 +13,7 @@
 
 class Source {
 public:
-    Source(InputParams &, Grid &, bool&, const std::string&);
+    Source(InputParams &, Grid &, bool&, const std::string&, bool for_2d_solver=false);
     ~Source();
 
     //

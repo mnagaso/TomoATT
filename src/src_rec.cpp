@@ -556,8 +556,12 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
          || src.dep < min_dep || src.dep > max_dep){
 
             // out of region (teleseismic events)
-            src.is_out_of_region       = true;
+            src.is_out_of_region      = true;
             src_map_tele[iter->first] = src;
+
+            // set a flag on backup data (for output)
+            src_map_back[iter->first].is_out_of_region = true;
+
         } else {
             // within region (local events)
             src.is_out_of_region  = false;
@@ -1117,7 +1121,8 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                              std::map<std::string, SrcRecInfo>&                                   src_map_this_sim, \
                              std::map<std::string, SrcRecInfo>&                                   rec_map_this_sim, \
                              std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map_this_sim, \
-                             std::vector<std::string>&                                            src_name_list_this_sim){
+                             std::vector<std::string>&                                            src_name_list_this_sim, \
+                             std::vector<std::string>&                                            rec_name_list_this_sim){
 
 
     // this process is done by only the processes which stores the data.
@@ -1160,12 +1165,16 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                     for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
                         // rec by data
                         rec_map_this_sim[iter->first] = rec_map[iter->first];
+                        rec_name_list_this_sim.push_back(iter->first);
+
                         for (auto& data : iter->second){
                             data_map_this_sim[src_name][iter->first].push_back(data);
 
                             // store the second receiver for rec_pair
-                            if (data.is_rec_pair)
+                            if (data.is_rec_pair){
                                 rec_map_this_sim[data.name_rec_pair[1]] = rec_map[data.name_rec_pair[1]];
+                                rec_name_list_this_sim.push_back(data.name_rec_pair[1]);
+                            }
                         }
                     }
 
@@ -1231,6 +1240,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                         recv_rec_info_inter_sim(tmp_RecInfo, 0);
 
                         rec_map_this_sim[tmp_RecInfo.name] = tmp_RecInfo;
+                        rec_name_list_this_sim.push_back(tmp_RecInfo.name);
 
                         int n_data = 0;
                         recv_i_single_sim(&n_data, 0);
@@ -1244,8 +1254,10 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                             data_map_this_sim[tmp_DataInfo.name_src][tmp_DataInfo.name_rec].push_back(tmp_DataInfo);
 
                             // store the second receiver for rec_pair
-                            if (tmp_DataInfo.is_rec_pair)
+                            if (tmp_DataInfo.is_rec_pair){
                                 recv_rec_info_inter_sim(rec_map_this_sim[tmp_DataInfo.name_rec_pair[1]], 0);
+                                rec_name_list_this_sim.push_back(tmp_DataInfo.name_rec_pair[1]);
+                            }
                         }
 
                     } // end of for i_srcrec
@@ -1260,6 +1272,10 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
             } // end of if (id_sim==0)
 
         } // end of for i_src
+
+        // make rec_name_list_this_sim unique using unique
+        std::sort(rec_name_list_this_sim.begin(), rec_name_list_this_sim.end());
+        rec_name_list_this_sim.erase(std::unique(rec_name_list_this_sim.begin(), rec_name_list_this_sim.end()), rec_name_list_this_sim.end());
 
     } // end of if (proc_store_srcrec)
 
@@ -1446,6 +1462,7 @@ void broadcast_rec_info_intra_sim(SrcRecInfo& rec, int orig){
         broadcast_cr_single(rec.lon, orig);
         broadcast_cr_single(rec.lat, orig);
         broadcast_cr_single(rec.dep, orig);
+        broadcast_cr_single(rec.adjoint_source, orig);
 }
 
 void send_data_info_inter_sim(DataInfo &data, int dest){

@@ -25,8 +25,8 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
     for (int i_src = 0; i_src < IP.n_src_comm_rec_this_sim_group; i_src++){
 
-        std::string name_sim_src = IP.src_id2name_comm_rec[i_src];
-        int         id_sim_src   = IP.src_map_comm_rec[name_sim_src].id; // global source id
+        std::string name_sim_src = IP.get_src_name_comm(i_src);
+        int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // check if this source is common receiver data
 
@@ -124,17 +124,11 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // run forward simulation
         /////////////////////////
 
-        std::cout << "debug: 0000" << std::endl; synchronize_all_world();
-
         // get is_teleseismic flag
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
-        std::cout << "debug: 1111" << std::endl; synchronize_all_world();
-
 
         // (re) initialize source object and set to grid
         Source src(IP, grid, is_teleseismic, name_sim_src);
-        std::cout << "debug: 2222" << std::endl; synchronize_all_world();
-
 
         // initialize iterator object
         bool first_init = (i_inv == 0 && i_src==0);
@@ -230,8 +224,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             }
 
             // check adjoint source
-            // for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
+            // if (proc_store_srcrec){
+            //     for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+            //         std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
+            //     }
             // }
 
         } // end if run_mode == DO_INVERSION
@@ -256,6 +252,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // compute all residual and obj
     Receiver recs;
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
+
 
     // return current objective function value
     return obj_residual;

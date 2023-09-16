@@ -1,6 +1,6 @@
 #include "source.h"
 
-Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src) {
+Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src, bool for_2d_solver) {
 
 
     if (subdom_main) {
@@ -12,9 +12,16 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
         delta_r   = grid.get_delta_r();
 
         // set source position
-        src_lon = IP.get_src_lon(   name_sim_src); // in radian
-        src_lat = IP.get_src_lat(   name_sim_src); // in radian
-        src_r   = IP.get_src_radius(name_sim_src); // radious
+        if(!for_2d_solver){
+            src_lon = IP.get_src_lon(   name_sim_src); // in radian
+            src_lat = IP.get_src_lat(   name_sim_src); // in radian
+            src_r   = IP.get_src_radius(name_sim_src); // radious
+        } else {
+            // 2d src database (src_map_2d) is accessible from dedicated getters.
+            src_lon = IP.get_src_lon_2d(   name_sim_src); // in radian
+            src_lat = IP.get_src_lat_2d(   name_sim_src); // in radian
+            src_r   = IP.get_src_radius_2d(name_sim_src); // radious
+        }
     }
 
     // further initialization is not needed for teleseismic source

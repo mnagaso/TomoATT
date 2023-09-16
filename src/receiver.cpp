@@ -95,6 +95,8 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
             }
         }
     } // end subdomain
+
+    synchronize_all();
 }
 
 
@@ -275,6 +277,8 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
         } // end loop receivers
 
     } // end proc_store_srcrec
+
+    synchronize_all();
 }
 
 
@@ -872,7 +876,7 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
 
 
 // void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
-//     if (subdom_main) {
+//     if (proc_store_srcrec) {
 
 //         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
 //             if (IP.rec_map[iter->first].is_stop) continue; // keep the completed tau_opt
@@ -1020,19 +1024,20 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
 
     //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 
-    for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-        CUSTOMREAL obj = iter->second.vobj_src_reloc;
-        CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
-        if (i_iter != 0 && old_obj < obj){    // if obj increase, decrease the step length of this (swapped) source
-            // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
-            iter->second.step_length_max *= step_length_decay_src_reloc;
-            // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
+    if (proc_store_srcrec) {
+        for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+            CUSTOMREAL obj = iter->second.vobj_src_reloc;
+            CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
+            if (i_iter != 0 && old_obj < obj){    // if obj increase, decrease the step length of this (swapped) source
+                // std::cout << "before, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
+                iter->second.step_length_max *= step_length_decay_src_reloc;
+                // std::cout << "after, step_length_max: " << iter->second.step_length_max << "step_length_decay: " << step_length_decay << std::endl;
+            }
+            // std::cout << "id_sim: " << id_sim << ", name: " << iter->first << ", obj: " << obj << ", old obj: " << old_obj << ", step_length_max: " << iter->second.step_length_max
+            //           << ", step_length_decay: " << step_length_decay
+            //           << std::endl;
         }
-        // std::cout << "id_sim: " << id_sim << ", name: " << iter->first << ", obj: " << obj << ", old obj: " << old_obj << ", step_length_max: " << iter->second.step_length_max
-        //           << ", step_length_decay: " << step_length_decay
-        //           << std::endl;
     }
-
 
     return obj_residual;
 }
