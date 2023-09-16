@@ -269,11 +269,11 @@ inline bool in_between(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL cons
 inline CUSTOMREAL calc_ratio_between(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c){
     // calculate ratio of a between b and c
     // b can be larger than c or vice versa
-    if (b < c){
+    //if (b < c){
         return (a - b) / (c - b);
-    } else {
-        return (a - c) / (b - c);
-    }
+    //} else {
+    //    return (a - c) / (b - c);
+    //}
 }
 
 
