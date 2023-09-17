@@ -1102,6 +1102,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         for (int l = 0; l < n_inv_grids; l++) {
             for (int k = 0; k < n_inv_K_loc; k++)
                 r_loc_inv[I2V_INV_GRIDS_1DK(n_inv_K_loc - 1 - k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
+                //r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
         }
     } else {            // flexibly designed inversion grid for depth
         CUSTOMREAL* dep_inv = IP.get_dep_inv();

@@ -768,6 +768,9 @@ iter_end:
             std::cout << "errors at iteration " << iter_count << ": " << cur_err_Linf << std::endl;
     }
 
+    // corner nodes are not used in the sweeping but used in the interpolation and visualization
+    if (subdom_main) grid.send_recev_boundary_data_kosumi(grid.Tadj_loc);
+
     // check the time for iteration
     if (inter_sub_rank==0 && subdom_main) timer_iter.stop_timer();
 

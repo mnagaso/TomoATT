@@ -30,6 +30,45 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
             }
 
             if (smooth_method == 0) {
+                // Ks_loc, Keta_loc, Kxi_loc to be 0 for ghost layers for eliminate the effect of boundary
+                for (int k = 0; k < loc_K; k++) {
+                    for (int j = 0; j < loc_J; j++) {
+                        for (int i = 0; i < loc_I; i++) {
+
+                            if (i == 0 && !grid.i_first()) {
+                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                            }
+                            if (i == loc_I-1 && !grid.i_last()) {
+                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                            }
+                            if (j == 0 && !grid.j_first()) {
+                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                            }
+                            if (j == loc_J-1 && !grid.j_last()) {
+                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                            }
+                            if (k == 0 && !grid.k_first()) {
+                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                            }
+                            if (k == loc_K-1 && !grid.k_last()) {
+                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                            }
+                        }
+                    }
+                }
+
                 // grid based smoothing
                 smooth_inv_kernels_orig(grid, IP);
             } else if (smooth_method == 1) {
@@ -41,6 +80,11 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
             grid.send_recev_boundary_data(grid.Ks_update_loc);
             grid.send_recev_boundary_data(grid.Keta_update_loc);
             grid.send_recev_boundary_data(grid.Kxi_update_loc);
+
+            grid.send_recev_boundary_data_kosumi(grid.Ks_update_loc);
+            grid.send_recev_boundary_data_kosumi(grid.Keta_update_loc);
+            grid.send_recev_boundary_data_kosumi(grid.Kxi_update_loc);
+
 
         } // end if id_sim == 0
 
