@@ -158,34 +158,34 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // run (forward and adjoint) simulation for each source
         ///////////////////////////////////////////////////////
 
-        // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel for all sources
-        line_search_mode = false;
-        // skip for the mode with sub-iteration
-        if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
-        } else {
-            bool is_read_time = false;
-            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_read_time);
-            v_obj = v_obj_misfit[0];
-        }
-
-        // wait for all processes to finish
-        synchronize_all_world();
-
-        // check if v_obj is nan
-        if (std::isnan(v_obj)) {
-            if (myrank == 0)
-                std::cout << "v_obj is nan, stop inversion" << std::endl;
-
-            // stop inversion
-            break;
-        }
-
-        // output src rec file with the result arrival times
-        if (IP.get_if_output_in_process_data()){
-            IP.write_src_rec_file(i_inv,0);
-        } else if (i_inv == IP.get_max_iter_inv()-1 || i_inv==0) {
-            IP.write_src_rec_file(i_inv,0);
-        }
+//        // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel for all sources
+//        line_search_mode = false;
+//        // skip for the mode with sub-iteration
+//        if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
+//        } else {
+//            bool is_read_time = false;
+//            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_read_time);
+//            v_obj = v_obj_misfit[0];
+//        }
+//
+//        // wait for all processes to finish
+//        synchronize_all_world();
+//
+//        // check if v_obj is nan
+//        if (std::isnan(v_obj)) {
+//            if (myrank == 0)
+//                std::cout << "v_obj is nan, stop inversion" << std::endl;
+//
+//            // stop inversion
+//            break;
+//        }
+//
+//        // output src rec file with the result arrival times
+//        if (IP.get_if_output_in_process_data()){
+//            IP.write_src_rec_file(i_inv,0);
+//        } else if (i_inv == IP.get_max_iter_inv()-1 || i_inv==0) {
+//            IP.write_src_rec_file(i_inv,0);
+//        }
 
         ///////////////
         // model update

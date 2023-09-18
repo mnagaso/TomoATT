@@ -12,32 +12,73 @@ void calc_inversed_laplacian(CUSTOMREAL* d, CUSTOMREAL* Ap,
     // calculate inversed laplacian operator
     CUSTOMREAL termx = _0_CR, termy = _0_CR, termz = _0_CR;
 
-    if (i==0) {
-        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i+1,j,k)]));
-    } else if (i==loc_I-1) {
-        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i-1,j,k)]));
-    } else {
-        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+d[I2V(i-1,j,k)]+d[I2V(i+1,j,k)]));
-    }
+//    if (i==0) {
+//        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i+1,j,k)]));
+//    } else if (i==loc_I-1) {
+//        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i-1,j,k)]));
+//    } else {
+//        termx = dp*lp/3.0 * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+d[I2V(i-1,j,k)]+d[I2V(i+1,j,k)]));
+//    }
+//
+//    if (j==0) {
+//        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j+1,k)]));
+//    } else if (j==loc_J-1) {
+//        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j-1,k)]));
+//    } else {
+//        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j-1,k)]+d[I2V(i,j+1,k)]));
+//    }
+//
+//    if (k==0) {
+//        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j,k+1)]));
+//    } else if (k==loc_K-1) {
+//        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j,k-1)]));
+//    } else {
+//        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j,k-1)]+d[I2V(i,j,k+1)]));
+//    }
 
-    if (j==0) {
-        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j+1,k)]));
-    } else if (j==loc_J-1) {
-        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j-1,k)]));
-    } else {
-        termy = dt*lt/3.0 * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j-1,k)]+d[I2V(i,j+1,k)]));
-    }
+    // normalization terms
+    CUSTOMREAL p_coef = _1_CR; //dp*lp/3.0;
+    CUSTOMREAL t_coef = _1_CR; //dt*lt/3.0;
+    CUSTOMREAL r_coef = _1_CR; //dr*lr/3.0;
 
-    if (k==0) {
-        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j,k+1)]));
-    } else if (k==loc_K-1) {
-        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+2.0*d[I2V(i,j,k-1)]));
-    } else {
-        termz = dr*lr/3.0 * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j,k-1)]+d[I2V(i,j,k+1)]));
-    }
+
+    termx = p_coef * (1/(lp*dp)*(d[I2V(i,j,k)]) - lp/(dp*dp*dp)*(-2.0*d[I2V(i,j,k)]+d[I2V(i-1,j,k)]+d[I2V(i+1,j,k)]));
+    termy = t_coef * (1/(lt*dt)*(d[I2V(i,j,k)]) - lt/(dt*dt*dt)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j-1,k)]+d[I2V(i,j+1,k)]));
+    termz = r_coef * (1/(lr*dr)*(d[I2V(i,j,k)]) - lr/(dr*dr*dr)*(-2.0*d[I2V(i,j,k)]+d[I2V(i,j,k-1)]+d[I2V(i,j,k+1)]));
+
 
     Ap[I2V(i,j,k)] = termx+termy+termz;
 }
+
+void calc_laplacian(Grid& grid, CUSTOMREAL* d, CUSTOMREAL* Ap,
+                    const CUSTOMREAL dr, const CUSTOMREAL dt, const CUSTOMREAL dp,
+                    const CUSTOMREAL lr, const CUSTOMREAL lt, const CUSTOMREAL lp){
+
+    CUSTOMREAL r,t;
+
+    // calculate L(m) in sphercal coordinates
+    for (int k = 1; k < loc_K-1; k++) {
+        for (int j = 1; j < loc_J-1; j++) {
+            for (int i = 1; i < loc_I-1; i++) {
+                r = grid.r_loc_1d[k];
+                t = grid.t_loc_1d[j];
+
+                // finite difference approximation of laplacian spherical coordinates
+                Ap[I2V(i,j,k)] = \
+                    lr*_1_CR/(r*r) * (_1_CR/(dr*dr)*(d[I2V(i,j,k-1)]-_2_CR*d[I2V(i,j,k)]+d[I2V(i,j,k+1)]) \
+                                     +_1_CR/r*(d[I2V(i,j,k+1)]-d[I2V(i,j,k-1)])/(_2_CR*dr)) \
+                  + lt*_1_CR/(r*r*std::sin(t)*std::sin(t)) * (_1_CR/(dt*dt)*(d[I2V(i,j-1,k)]-_2_CR*d[I2V(i,j,k)]+d[I2V(i,j+1,k)])) \
+                  + lp*_1_CR/(r*r*std::sin(t)) * (_1_CR/(dp*dp)*(d[I2V(i-1,j,k)]-_2_CR*d[I2V(i,j,k)]+d[I2V(i+1,j,k)]));
+
+
+                Ap[I2V(i,j,k)] = d[I2V(i,j,k)] - Ap[I2V(i,j,k)];
+            }
+        }
+    }
+}
+
+
+
 
 void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL lr, CUSTOMREAL lt, CUSTOMREAL lp) {
     // arr: array to be smoothed
@@ -54,7 +95,7 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
     // rr = g_array * g_array (dot product)
 
     const int max_iter_cg = 1000;
-    const CUSTOMREAL xtol = 0.000001;
+    const CUSTOMREAL xtol = 0.001;
     const bool use_scaling = true;
 
     CUSTOMREAL dr=grid.dr, dt=grid.dt, dp=grid.dp;
@@ -91,8 +132,8 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
 
     // array initialization
     for (int i=0; i<loc_I*loc_J*loc_K; i++) {
-        x_array[i] = _0_CR;                   ///x
-        r_array[i] = arr_in[i]/scaling_coeff; // r
+        x_array[i] = _0_CR;                   // x
+        r_array[i] = arr_in[i]/scaling_coeff; // r = b - Ax
         p_array[i] = r_array[i];              // p
         Ap[i] = _0_CR;
     }
@@ -104,35 +145,45 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
     allreduce_cr_single(tmp, rr);
     rr_0 = rr; // record initial rr
 
-    int k_start=0, k_end=loc_K, j_start=0, j_end=loc_J, i_start=0, i_end=loc_I;
-    if (!grid.i_first()) k_start=1;
-    if (!grid.i_last())  k_end=loc_K-1;
-    if (!grid.j_first()) j_start=1;
-    if (!grid.j_last())  j_end=loc_J-1;
-    if (!grid.k_first()) i_start=1;
-    if (!grid.k_last())  i_end=loc_I-1;
+    //int k_start=0, k_end=loc_K, j_start=0, j_end=loc_J, i_start=0, i_end=loc_I;
+    // k_start=1;
+    // k_end=loc_K-1;
+    // j_start=1;
+    // j_end=loc_J-1;
+    // i_start=1;
+    // i_end=loc_I-1;
 
     // CG loop
     for (int iter=0; iter<max_iter_cg; iter++) {
 
-        // calculate laplacian
-        for (int k = k_start; k < k_end; k++) {
-            for (int j = j_start; j < j_end; j++) {
-                for (int i = i_start; i < i_end; i++) {
-                    //scaling_coeff = std::max(scaling_coeff, std::abs(arr[I2V(i,j,k)]));
+// inversed laplacian
+//        // calculate laplacian
+//        for (int k = k_start; k < k_end; k++) {
+//            for (int j = j_start; j < j_end; j++) {
+//                for (int i = i_start; i < i_end; i++) {
+//                    //scaling_coeff = std::max(scaling_coeff, std::abs(arr[I2V(i,j,k)]));
+//
+//                    // calculate inversed laplacian operator
+//                    calc_inversed_laplacian(p_array,Ap,i,j,k,lr,lt,lp,dr,dt,dp);
+//
+//                    // scaling
+//                    Ap[I2V(i,j,k)] = Ap[I2V(i,j,k)]*scaling_A;
+//                }
+//            }
+//        }
 
-                    // calculate inversed laplacian operator
-                    calc_inversed_laplacian(p_array,Ap,i,j,k,lr,lt,lp,dr,dt,dp);
-
-                    // scaling
-                    Ap[I2V(i,j,k)] = Ap[I2V(i,j,k)]*scaling_A;
-                }
-            }
-        }
-
+        // bessel function approximation
+        calc_laplacian(grid, p_array,Ap, dr,dt,dp,lr,lt,lp);
 
         // get the values on the boundaries
         grid.send_recev_boundary_data(Ap);
+
+        // bessel function approximation
+        calc_laplacian(grid, p_array,Ap, dr,dt,dp,lr,lt,lp);
+
+        // get the values on the boundaries
+        grid.send_recev_boundary_data(Ap);
+
 
         // calculate pAp
         pAp = dot_product(p_array, Ap, loc_I*loc_J*loc_K);
@@ -223,12 +274,12 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
     int kdr = 0, jdt = 0, idp = 0;
     int kdr_ani = 0, jdt_ani = 0, idp_ani = 0;
 
-    int k_start = 0; //grid.get_k_start_loc();
-    int j_start = 0; //grid.get_j_start_loc();
-    int i_start = 0; //grid.get_i_start_loc();
-    int k_end   = ngrid_k; //grid.get_k_end_loc();
-    int j_end   = ngrid_j; //grid.get_j_end_loc();
-    int i_end   = ngrid_i; //grid.get_i_end_loc();
+    int k_start = 0;
+    int j_start = 0;
+    int i_start = 0;
+    int k_end   = ngrid_k;
+    int j_end   = ngrid_j;
+    int i_end   = ngrid_i;
 
     CUSTOMREAL weight   = _1_CR;
     CUSTOMREAL * taper  = IP.get_depth_taper();

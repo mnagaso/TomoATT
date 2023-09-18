@@ -25,12 +25,24 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                         grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
                         grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
                         grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
+
+                        // make checkerboard pattern for debug
+                        if ((i/10+j/10+k/10)%2 == 0) {
+                            grid.Ks_loc[I2V(i,j,k)]   = 100.0;
+                            grid.Keta_loc[I2V(i,j,k)] = 100.0;
+                            grid.Kxi_loc[I2V(i,j,k)]  = 100.0;
+                        } else {
+                            grid.Ks_loc[I2V(i,j,k)]   = 50.0;
+                            grid.Keta_loc[I2V(i,j,k)] = 50.0;
+                            grid.Kxi_loc[I2V(i,j,k)]  = 50.0;
+                        }
                     }
                 }
             }
 
+
             if (smooth_method == 0) {
-                // Ks_loc, Keta_loc, Kxi_loc to be 0 for ghost layers for eliminate the effect of boundary
+                // Ks_loc, Keta_loc, Kxi_loc to be 0 for ghost layers to eliminate the effect of overlapping boundary
                 for (int k = 0; k < loc_K; k++) {
                     for (int j = 0; j < loc_J; j++) {
                         for (int i = 0; i < loc_I; i++) {
