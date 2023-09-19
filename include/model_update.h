@@ -27,15 +27,15 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                         grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
 
                         // make checkerboard pattern for debug
-                        if ((i/10+j/10+k/10)%2 == 0) {
-                            grid.Ks_loc[I2V(i,j,k)]   = 100.0;
-                            grid.Keta_loc[I2V(i,j,k)] = 100.0;
-                            grid.Kxi_loc[I2V(i,j,k)]  = 100.0;
-                        } else {
-                            grid.Ks_loc[I2V(i,j,k)]   = 50.0;
-                            grid.Keta_loc[I2V(i,j,k)] = 50.0;
-                            grid.Kxi_loc[I2V(i,j,k)]  = 50.0;
-                        }
+                        //if ((i/10+j/10+k/10)%2 == 0) {
+                        //    grid.Ks_loc[I2V(i,j,k)]   = 100.0;
+                        //    grid.Keta_loc[I2V(i,j,k)] = 100.0;
+                        //    grid.Kxi_loc[I2V(i,j,k)]  = 100.0;
+                        //} else {
+                        //    grid.Ks_loc[I2V(i,j,k)]   = 50.0;
+                        //    grid.Keta_loc[I2V(i,j,k)] = 50.0;
+                        //    grid.Kxi_loc[I2V(i,j,k)]  = 50.0;
+                        //}
                     }
                 }
             }
