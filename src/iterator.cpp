@@ -792,6 +792,8 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
         }
     }
 
+    int DEBUG_NREC = 0;
+
     // loop all receivers
     for (int irec = 0; irec < IP.n_rec_this_sim_group; irec++) {
 
@@ -801,7 +803,6 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
 
         // "iter->second" is the receiver, with the class SrcRecInfo
         if (rec.adjoint_source == 0){
-            std::cout << "adjoint source is zero for receiver " << rec_name << std::endl;
             continue;
         }
 
@@ -858,10 +859,16 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
             grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc,k_rec_loc+1)]   += rec.adjoint_source*     e_lon *(1.0-e_lat)*     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
             grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc)]   += rec.adjoint_source*     e_lon *     e_lat *(1.0-e_r)/(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
             grid.tau_old_loc[I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1)] += rec.adjoint_source*     e_lon *     e_lat *     e_r /(delta_lon*delta_lat*delta_r*my_square(rec_r)*std::cos(rec_lat));
+
+            DEBUG_NREC++;
         }
+    } // end of loop all receivers
 
-
-    }
+    // reduce DEBUG_NREC
+    int DEBUG_NREC_sum = 0;
+    allreduce_i_single(DEBUG_NREC, DEBUG_NREC_sum);
+    if (proc_read_srcrec)
+        std::cout << "DEBUG_NREC_sum: " << DEBUG_NREC_sum << std::endl;
 
     // communicate tau_old_loc to all processors
     grid.send_recev_boundary_data(grid.tau_old_loc);

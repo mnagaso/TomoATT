@@ -110,8 +110,8 @@ inline void initialize_mpi(){
         exit(1);
     }
 
-    if (world_rank == 0)
-        std::cout << "Number of threads = " << nthreads << std::endl;
+    //if (world_rank == 0)
+    //    std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
