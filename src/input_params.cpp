@@ -1481,8 +1481,8 @@ void InputParams::prepare_src_map(){
     //
 
     // assigne processor roles
-    proc_read_srcrec = (subdom_main && id_subdomain==0 && id_sim==0);
-    proc_store_srcrec = (subdom_main && id_subdomain==0);
+    proc_read_srcrec  = (subdom_main && id_subdomain==0 && id_sim==0); // process which reads src/rec file (only one process per entire simulation)
+    proc_store_srcrec = (subdom_main && id_subdomain==0); // process which stores src/rec objects (only one process per simultaneous run group)
 
     // read src rec file only
     if (src_rec_file_exist && proc_read_srcrec) {
@@ -1689,7 +1689,7 @@ void InputParams::initialize_adjoint_source(){
     }
 
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
-        iter->second.adjoint_source = 0;
+        iter->second.adjoint_source = _0_CR;
     }
 }
 
@@ -1702,7 +1702,7 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
     }
 
     if (rec_map.find(name_rec) != rec_map.end()){
-        rec_map[name_rec].adjoint_source += adjoint_source; // here need to be additive because the same receiver may be used in a different pair
+        rec_map[name_rec].adjoint_source = adjoint_source;
     } else {
         std::cout << "error !!!, undefined receiver name when adding adjoint source: " << name_rec << std::endl;
     }
