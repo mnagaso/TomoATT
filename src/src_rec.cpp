@@ -1463,6 +1463,7 @@ void broadcast_rec_info_intra_sim(SrcRecInfo& rec, int orig){
         broadcast_cr_single(rec.lat, orig);
         broadcast_cr_single(rec.dep, orig);
         broadcast_cr_single(rec.adjoint_source, orig);
+        broadcast_bool_single(rec.is_stop, orig);
 }
 
 void send_data_info_inter_sim(DataInfo &data, int dest){

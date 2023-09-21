@@ -17,6 +17,7 @@ void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& 
 
         // share the traveltime values on the corner points of the subdomains for interpolation
         // this is not necessary for sweeping (as the stencil is closs shape)
+        grid.send_recev_boundary_data(grid.T_loc);
         grid.send_recev_boundary_data_kosumi(grid.T_loc);
 
         if (proc_store_srcrec){
@@ -620,91 +621,95 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
 
 void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::string& name_sim_src){
 
-    int mykey_send = 9998;
-    int mykey_end  = 9999;
-    int key = 0;
+    if (subdom_main){
+        int mykey_send = 9998;
+        int mykey_end  = 9999;
+        int key = 0;
 
-    if(proc_store_srcrec){
-        // calculate gradient of travel time at each receiver (swapped source)
-        for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
-            for (auto& data: iter->second) {
-                // case 1: absolute traveltime for reloc
-                if (data.is_src_rec && IP.get_use_abs_reloc()){   // abs data && we use it
-                    std::string name_rec = data.name_rec;
+        if(proc_store_srcrec){
+            // calculate gradient of travel time at each receiver (swapped source)
+            for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
+                for (auto& data: iter->second) {
+                    // case 1: absolute traveltime for reloc
+                    if (data.is_src_rec && IP.get_use_abs_reloc()){   // abs data && we use it
+                        std::string name_rec = data.name_rec;
 
-                    if(IP.rec_map[name_rec].is_stop) continue;  // if this receiver (swapped source) is already located
+                        if(IP.rec_map[name_rec].is_stop) continue;  // if this receiver (swapped source) is already located
 
-                    // otherwise
-                    CUSTOMREAL DTijk[3];
+                        // otherwise
+                        CUSTOMREAL DTijk[3];
 
-                    // send dummy integer
-                    broadcast_i_single(mykey_send, 0);
-                    // send reeiver name
+                        // send dummy integer
+                        broadcast_i_single(mykey_send, 0);
+                        // send reeiver name
+                        broadcast_str(name_rec, 0);
+
+                        calculate_T_gradient_one_rec(grid, IP, name_rec, DTijk);
+                        data.DTi = DTijk[0];
+                        data.DTj = DTijk[1];
+                        data.DTk = DTijk[2];
+
+
+                    // case 2: common receiver (swapped source) double difference (double source, or double swapped receiver) for reloc
+                    } else if (data.is_rec_pair && IP.get_use_cr_reloc()) {  // common receiver data (swapped common source) and we use it.
+                        std::string name_rec1 = data.name_rec_pair[0];
+                        std::string name_rec2 = data.name_rec_pair[1];
+
+                        if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;  // if both receivers (swapped sources) are already located
+
+                        // otherwise
+                        CUSTOMREAL DTijk[3];
+
+                        // send dummy integer
+                        broadcast_i_single(mykey_send, 0);
+                        // send reeiver name
+                        broadcast_str(name_rec1, 0);
+                        calculate_T_gradient_one_rec(grid, IP, name_rec1, DTijk);
+                        data.DTi_pair[0]  = DTijk[0];
+                        data.DTj_pair[0]  = DTijk[1];
+                        data.DTk_pair[0]  = DTijk[2];
+
+                        // send dummy integer
+                        broadcast_i_single(mykey_send, 0);
+                        // send reeiver name
+                        broadcast_str(name_rec2, 0);
+                        calculate_T_gradient_one_rec(grid, IP, name_rec2, DTijk);
+                        data.DTi_pair[1]  = DTijk[0];
+                        data.DTj_pair[1]  = DTijk[1];
+                        data.DTk_pair[1]  = DTijk[2];
+
+                    } else {    // unsupported data (swapped common receiver, or others)
+                        continue;
+                    }
+                }
+            } // end loop over data
+
+            // send dummy integer to end the idle loop
+            broadcast_i_single(mykey_end, 0);
+
+        } else {
+            while (true) {
+                // receive dummy integer
+                broadcast_i_single(key, 0);
+
+                if (key==mykey_send) {
+                    // receive receiver name
+                    std::string name_rec;
                     broadcast_str(name_rec, 0);
-
-                    calculate_T_gradient_one_rec(grid, IP, name_rec, DTijk);
-                    data.DTi = DTijk[0];
-                    data.DTj = DTijk[1];
-                    data.DTk = DTijk[2];
-
-
-                // case 2: common receiver (swapped source) double difference (double source, or double swapped receiver) for reloc
-                } else if (data.is_rec_pair && IP.get_use_cr_reloc()) {  // common receiver data (swapped common source) and we use it.
-                    std::string name_rec1 = data.name_rec_pair[0];
-                    std::string name_rec2 = data.name_rec_pair[1];
-
-                    if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;  // if both receivers (swapped sources) are already located
-
-                    // otherwise
-                    CUSTOMREAL DTijk[3];
-
-                    // send dummy integer
-                    broadcast_i_single(mykey_send, 0);
-                    // send reeiver name
-                    broadcast_str(name_rec1, 0);
-                    calculate_T_gradient_one_rec(grid, IP, name_rec1, DTijk);
-                    data.DTi_pair[0]  = DTijk[0];
-                    data.DTj_pair[0]  = DTijk[1];
-                    data.DTk_pair[0]  = DTijk[2];
-
-                    // send dummy integer
-                    broadcast_i_single(mykey_send, 0);
-                    // send reeiver name
-                    broadcast_str(name_rec2, 0);
-                    calculate_T_gradient_one_rec(grid, IP, name_rec2, DTijk);
-                    data.DTi_pair[1]  = DTijk[0];
-                    data.DTj_pair[1]  = DTijk[1];
-                    data.DTk_pair[1]  = DTijk[2];
-
-                } else {    // unsupported data (swapped common receiver, or others)
-                    continue;
+                    // join in the calculation
+                    CUSTOMREAL DTijk_dummy[3];
+                    calculate_T_gradient_one_rec(grid, IP, name_rec, DTijk_dummy);
+                } else if (key==mykey_end) {
+                    break;
+                } else {
+                    std::cout << "Error: Receiver::calculate_T_gradient: key is not correct" << std::endl;
+                    std::cout << "received key is " << key << std::endl;
+                    exit(1);
                 }
             }
-        } // end loop over data
+        } // end if proc_store_srcrec
+    } // end subdom_main
 
-        // send dummy integer to end the idle loop
-        broadcast_i_single(mykey_end, 0);
-
-    } else {
-        while (true) {
-            // receive dummy integer
-            broadcast_i_single(key, 0);
-
-            if (key==mykey_send) {
-                // receive receiver name
-                std::string name_rec;
-                broadcast_str(name_rec, 0);
-                // join in the calculation
-                CUSTOMREAL DTijk[3];
-                calculate_T_gradient_one_rec(grid, IP, name_rec, DTijk);
-            } else if (key==mykey_end) {
-                break;
-            } else {
-                std::cout << "Error: Receiver::calculate_T_gradient: key is not correct" << std::endl;
-                exit(1);
-            }
-        }
-    }
 }
 
 
@@ -997,7 +1002,25 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
         // sum the obj from all sources (swapped receivers)
         IP.allreduce_rec_map_vobj_src_reloc();
 
-    }
+    } // end of if (proc_store_srcrec)
+
+    synchronize_all_world();
+
+    broadcast_cr_single(obj,0);
+    broadcast_cr_single(obj_abs,0);
+    broadcast_cr_single(obj_cs_dif,0);
+    broadcast_cr_single(obj_cr_dif,0);
+    broadcast_cr_single(obj_tele,0);
+    broadcast_cr_single(res,0);
+    broadcast_cr_single(res_sq,0);
+    broadcast_cr_single(res_abs,0);
+    broadcast_cr_single(res_abs_sq,0);
+    broadcast_cr_single(res_cs_dif,0);
+    broadcast_cr_single(res_cs_dif_sq,0);
+    broadcast_cr_single(res_cr_dif,0);
+    broadcast_cr_single(res_cr_dif_sq,0);
+    broadcast_cr_single(res_tele,0);
+    broadcast_cr_single(res_tele_sq,0);
 
     broadcast_cr_single_sub(obj,0);
     broadcast_cr_single_sub(obj_abs,0);
@@ -1015,14 +1038,12 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
     broadcast_cr_single_sub(res_tele,0);
     broadcast_cr_single_sub(res_tele_sq,0);
 
+
     obj_residual = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs_dif, res_cs_dif_sq, res_cr_dif, res_cr_dif_sq, res_tele, res_tele_sq};
 
     for(int i = 0; i < (int)obj_residual.size(); i++){
         allreduce_cr_sim_single_inplace(obj_residual[i]);
     }
-
-
-    //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
 
     if (proc_store_srcrec) {
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
@@ -1143,8 +1164,8 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                     continue;
                 }
             }
-        }
-    }
+        } // end of loop over all data_map for this src
+    } // end of if(proc_store_srcrec)
 }
 
 void Receiver::update_source_location(InputParams& IP, Grid& grid) {
@@ -1319,10 +1340,10 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
             }
 
             // share the flag of stop within the same simultanoue run group
-            allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop);
+            //allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop); // this is done in src_rec->broadcast_rec_info_intra_sim
 
         } // end iter loopvobj_grad_norm_src_reloc
-    } // end if subdom_main
+    } // end if(proc_store_srcrec)
 
     //IP.allreduce_rec_map_vobj_grad_norm_src_reloc();
 
