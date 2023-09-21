@@ -9,15 +9,20 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <filesystem>
+
 
 #include "config.h"
 
 
 inline void create_output_dir(std::string dir_path){
-    // create output directory
-    if (mkdir(dir_path.c_str(), 0777) == -1){
-        if (world_rank==0)
-            std::cout << "Warning : directory " << dir_path << " can not be created. Maybe already exists (no problem in this case)." << std::endl;
+    // create output directory if not exists (directories tree)
+    // this function requires c++17
+    if (!std::filesystem::exists(dir_path)){
+        std::filesystem::create_directories(dir_path);
+    } else {
+        if (world_rank == 0)
+            std::cout << "Output directory already exists. Overwriting..." << std::endl;
     }
 }
 
