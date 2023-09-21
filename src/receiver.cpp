@@ -126,7 +126,7 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     CUSTOMREAL obs_time       = data.travel_time_obs;
 
                     // assign local weight
-                    CUSTOMREAL  local_weight = 1.0;
+                    CUSTOMREAL  local_weight = _1_CR;
 
                     // evaluate residual_weight_abs （If run_mode == DO_INVERSION, tau_opt always equal 0. But when run_mode == INV_RELOC, we need to consider the change of ortime of earthquakes (swapped receiver)）
                     CUSTOMREAL  local_residual = abs(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
@@ -138,7 +138,7 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
 
 
                     // evaluate distance_weight_abs
-                    CUSTOMREAL  local_dis    =   0.0;
+                    CUSTOMREAL  local_dis    =   _0_CR;
                     Epicentral_distance_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_dis);
                     local_dis *= R_earth;       // rad to km
                     CUSTOMREAL* dis_weight = IP.get_distance_weight_abs();
@@ -167,7 +167,7 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
 
                     // assign local weight
-                    CUSTOMREAL  local_weight = 1.0;
+                    CUSTOMREAL  local_weight = _1_CR;
 
                     // evaluate residual_weight_abs
                     CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time);
@@ -181,9 +181,9 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
 
 
                     // evaluate distance_weight_abs
-                    CUSTOMREAL  local_azi1    =   0.0;
+                    CUSTOMREAL  local_azi1    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src1).lat*DEG2RAD, IP.get_src_point(name_src1).lon*DEG2RAD, local_azi1);
-                    CUSTOMREAL  local_azi2    =   0.0;
+                    CUSTOMREAL  local_azi2    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src2).lat*DEG2RAD, IP.get_src_point(name_src2).lon*DEG2RAD, local_azi2);
                     CUSTOMREAL  local_azi   = abs(local_azi1 - local_azi2)*RAD2DEG;
                     if(local_azi > 180.0)   local_azi = 360.0 - local_azi;
@@ -232,7 +232,7 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
                     // assign local weight
-                    CUSTOMREAL  local_weight = 1.0;
+                    CUSTOMREAL  local_weight = _1_CR;
 
                     // evaluate residual_weight_abs (see the remark in absolute traveltime data for considering tau_opt here)
                     CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
@@ -246,9 +246,9 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
 
 
                     // evaluate distance_weight_abs
-                    CUSTOMREAL  local_azi1    =   0.0;
+                    CUSTOMREAL  local_azi1    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec1).lat*DEG2RAD, IP.get_rec_point(name_rec1).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_azi1);
-                    CUSTOMREAL  local_azi2    =   0.0;
+                    CUSTOMREAL  local_azi2    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec2).lat*DEG2RAD, IP.get_rec_point(name_rec2).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_azi2);
                     CUSTOMREAL  local_azi   = abs(local_azi1 - local_azi2)*RAD2DEG;
                     if(local_azi > 180.0)   local_azi = 360.0 - local_azi;
