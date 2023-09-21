@@ -745,11 +745,19 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
     for (int i = 0; i < nprocs; i++) {
         if (rec_flags[i]) {
             rec_rank = i;
-            break; // this break means that the first subdomain is used if the receiver is in multiple subdomains (ghost layer)
+            //break; // this break means that the first subdomain is used if the receiver is in multiple subdomains (ghost layer)
         }
     }
-    delete[] rec_flags;
-     // check if the receiver is in the global domain
+
+    // count the number of subdomains where the receiver is located
+    int ndoms_rec = 0;
+    for (int i = 0; i < nprocs; i++) {
+        if (rec_flags[i]) {
+            ndoms_rec++;
+        }
+    }
+
+    // check if the receiver is in the global domain
     if (rec_rank == -1) {
         std::cout << "Error: the receiver is not in the global domain" << std::endl;
         // print rec
@@ -860,22 +868,30 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
         // std::cout << DT1 << "," << DT2 << "," << DT3 << "," << DT4 << "," << DT5 << "," << DT6 << "," << DT7 << "," << DT8 <<std::endl;
         // std::cout << "DTi: " << DTi << std::endl;
 
-        // broadcast the gradient components to all processes
-        broadcast_cr_single(DTk, rec_rank);
-        broadcast_cr_single(DTj, rec_rank);
-        broadcast_cr_single(DTi, rec_rank);
+        // sum the DTi, DTj, DTk over all subdomains
+        allreduce_cr_inplace(&DTi, 1);
+        allreduce_cr_inplace(&DTj, 1);
+        allreduce_cr_inplace(&DTk, 1);
 
     } else {
-        // receive the gradient components
-        broadcast_cr_single(DTk, rec_rank);
-        broadcast_cr_single(DTj, rec_rank);
-        broadcast_cr_single(DTi, rec_rank);
+        // sum the DTi, DTj, DTk over all subdomains
+        allreduce_cr_inplace(&DTi, 1);
+        allreduce_cr_inplace(&DTj, 1);
+        allreduce_cr_inplace(&DTk, 1);
     }
+
+    // average the DTi, DTj, DTk by the number of subdomains where the receiver is located
+    DTi /= ndoms_rec;
+    DTj /= ndoms_rec;
+    DTk /= ndoms_rec;
 
     // store the calculated travel time TODO: should be stored in data as DT is dependent with src-rec pair
     DTijk[2] = DTk;
     DTijk[1] = DTj;
     DTijk[0] = DTi;
+
+
+    delete[] rec_flags;
 
 }
 
@@ -1188,13 +1204,13 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 else
                     grad_dep_km = - IP.rec_map[name_rec].grad_chi_k * rescaling_dep; // over rescaling_dep is rescaling
 
-                CUSTOMREAL grad_lat_km = 0.0;;
+                CUSTOMREAL grad_lat_km = 0.0;
                 if (abs(max_change_lat - abs(IP.rec_map[name_rec].change_lat)) < 0.001)
                     grad_lat_km = 0.0;
                 else
                     grad_lat_km = IP.rec_map[name_rec].grad_chi_j/(R_earth) * rescaling_lat;
 
-                CUSTOMREAL grad_lon_km = 0.0;;
+                CUSTOMREAL grad_lon_km = 0.0;
                 if (abs(max_change_lon - abs(IP.rec_map[name_rec].change_lon)) < 0.001)
                     grad_lon_km = 0.0;
                 else
