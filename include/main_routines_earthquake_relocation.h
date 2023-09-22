@@ -73,7 +73,6 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         /////////////////////////
 
         if (proc_store_srcrec){
-
             auto srcmap_this = IP.get_src_point(name_sim_src);
 
             std::cout << "calculating source (" << i_src+1 << "/" << IP.n_src_this_sim_group << "), name: "

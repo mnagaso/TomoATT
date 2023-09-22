@@ -771,9 +771,8 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
     CUSTOMREAL DTi = 0.0, DTj = 0.0, DTk = 0.0;
 
     if (is_in_subdomain) {
-        // calculate the interpolated travel time and broadcast it
 
-        // descretize source position (LOCAL) ID)
+        // descretized source position (LOCAL) ID)
         int i_rec = std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
         int j_rec = std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
         int k_rec = std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
@@ -808,16 +807,37 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
         int i_rec_p1 = i_rec + 1;
         int j_rec_p1 = j_rec + 1;
         int k_rec_p1 = k_rec + 1;
+        int i_rec_m1 = i_rec - 1;
+        int j_rec_m1 = j_rec - 1;
+        int k_rec_m1 = k_rec - 1;
+        int i_rec_p1p1 = i_rec + 2;
+        int j_rec_p1p1 = j_rec + 2;
+        int k_rec_p1p1 = k_rec + 2;
+
+        // treatment for the nodes on the bounary
+        // if not, sources cannot go over the subdomain boundary
+        if (i_rec == 0)
+            i_rec_m1 += 1;
+        if (j_rec == 0)
+            j_rec_m1 += 1;
+        if (k_rec == 0)
+            k_rec_m1 += 1;
+        if (i_rec_p1 == loc_I-1)
+            i_rec_p1p1 -= 1;
+        if (j_rec_p1 == loc_J-1)
+            j_rec_p1p1 -= 1;
+        if (k_rec_p1 == loc_K-1)
+            k_rec_p1p1 -= 1;
 
         CUSTOMREAL DT1, DT2, DT3, DT4, DT5, DT6, DT7, DT8;
-        DT1 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec    + 1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec    - 1)]) / _2_CR / delta_r;
-        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec    + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec    - 1)]) / _2_CR / delta_r;
-        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec    + 1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec    - 1)]) / _2_CR / delta_r;
-        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec    + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec    - 1)]) / _2_CR / delta_r;
-        DT5 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1 - 1)]) / _2_CR / delta_r;
-        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1 - 1)]) / _2_CR / delta_r;
-        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1 - 1)]) / _2_CR / delta_r;
-        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1 - 1)]) / _2_CR / delta_r;
+        DT1 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1)]   - grid.T_loc[I2V(i_rec,     j_rec,     k_rec_m1)]) / _2_CR / delta_r;
+        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1)]   - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_m1)]) / _2_CR / delta_r;
+        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1)]   - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_m1)]) / _2_CR / delta_r;
+        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1)]   - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_m1)]) / _2_CR / delta_r;
+        DT5 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1p1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec)])    / _2_CR / delta_r;
+        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec)])    / _2_CR / delta_r;
+        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1p1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec)])    / _2_CR / delta_r;
+        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec)])    / _2_CR / delta_r;
 
         DTk =   (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * DT1
               +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * DT2
@@ -828,14 +848,14 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
               + (_1_CR - e_lon) *          e_lat  *          e_r  * DT7
               +          e_lon  *          e_lat  *          e_r  * DT8;
 
-        DT1 = (grid.T_loc[I2V(i_rec,     j_rec    + 1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec    - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec    + 1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec    - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1 + 1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec_p1 - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1 + 1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1 - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT5 = (grid.T_loc[I2V(i_rec,     j_rec    + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec    - 1,  k_rec_p1)]) / _2_CR / delta_lat;
-        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec    + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec    - 1,  k_rec_p1)]) / _2_CR / delta_lat;
-        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1 + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec_p1 - 1,  k_rec_p1)]) / _2_CR / delta_lat;
-        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1 + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1 - 1,  k_rec_p1)]) / _2_CR / delta_lat;
+        DT1 = (grid.T_loc[I2V(i_rec,     j_rec_p1,    k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec_m1,  k_rec   )]) / _2_CR / delta_lat;
+        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,    k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec_m1,  k_rec   )]) / _2_CR / delta_lat;
+        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1p1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec   )]) / _2_CR / delta_lat;
+        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1p1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec   )]) / _2_CR / delta_lat;
+        DT5 = (grid.T_loc[I2V(i_rec,     j_rec_p1,    k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec_m1,  k_rec_p1)]) / _2_CR / delta_lat;
+        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,    k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_m1,  k_rec_p1)]) / _2_CR / delta_lat;
+        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1)]) / _2_CR / delta_lat;
+        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1)]) / _2_CR / delta_lat;
 
         DTj =   (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * DT1
               +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * DT2
@@ -846,14 +866,14 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
               + (_1_CR - e_lon) *          e_lat  *          e_r  * DT7
               +          e_lon  *          e_lat  *          e_r  * DT8;
 
-        DT1 = (grid.T_loc[I2V(i_rec    + 1,  j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec    - 1,  j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
-        DT2 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
-        DT3 = (grid.T_loc[I2V(i_rec    + 1,  j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec    - 1,  j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
-        DT4 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
-        DT5 = (grid.T_loc[I2V(i_rec    + 1,  j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec    - 1,  j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
-        DT6 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
-        DT7 = (grid.T_loc[I2V(i_rec    + 1,  j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec    - 1,  j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
-        DT8 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT1 = (grid.T_loc[I2V(i_rec_p1,    j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec_m1,  j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
+        DT2 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
+        DT3 = (grid.T_loc[I2V(i_rec_p1,    j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec_m1,  j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
+        DT4 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
+        DT5 = (grid.T_loc[I2V(i_rec_p1,    j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec_m1,  j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT6 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT7 = (grid.T_loc[I2V(i_rec_p1,    j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_m1,  j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT8 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
 
         DTi =   (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * DT1
               +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * DT2
