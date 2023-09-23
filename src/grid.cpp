@@ -360,7 +360,7 @@ void Grid::setup_inversion_grids(InputParams& IP) {
     n_inv_J_loc = ngrid_j_inv;
     n_inv_K_loc = ngrid_k_inv;
 
-    // inversion grid for anisotropy (optional)
+    // inversion grid for anisotropy (requires flex inversion grid setup)
     if(IP.get_invgrid_ani()){
         ngrid_k_inv_ani = IP.get_n_inv_r_flex_ani();
     } else {

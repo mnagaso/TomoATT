@@ -297,7 +297,7 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // flexible inversion grid
-            if (config["model_update"]["dep_inv"]) {
+            if (config["model_update"]["dep_inv"] && type_invgrid_dep == 1) {
                 n_inv_r_flex = config["model_update"]["dep_inv"].size(); // TODO: further refactoring needed
                 dep_inv = new CUSTOMREAL[n_inv_r_flex];
                 for (int i = 0; i < n_inv_r_flex; i++){
@@ -305,7 +305,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_r_flex_read = true;
             }
-            if (config["model_update"]["lat_inv"]) {
+            if (config["model_update"]["lat_inv"] && type_invgrid_lat == 1) {
                 n_inv_t_flex = config["model_update"]["lat_inv"].size();
                 lat_inv = new CUSTOMREAL[n_inv_t_flex];
                 for (int i = 0; i < n_inv_t_flex; i++){
@@ -313,7 +313,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_t_flex_read = true;
             }
-            if (config["model_update"]["lon_inv"]) {
+            if (config["model_update"]["lon_inv"] && type_invgrid_lon == 1) {
                 n_inv_p_flex = config["model_update"]["lon_inv"].size();
                 lon_inv = new CUSTOMREAL[n_inv_p_flex];
                 for (int i = 0; i < n_inv_p_flex; i++){
@@ -2436,6 +2436,13 @@ void InputParams::check_contradictions(){
     // upwind scheme cannot use with level nor 3rd order nor sweep parallelization
     if (stencil_type == UPWIND && (sweep_type != SWEEP_TYPE_LEGACY || n_subprocs != 1)){
         std::cout << "Warning: upwind scheme cannot use with level nor 3rd order nor sweep parallelization" << std::endl;
+        MPI_Finalize();
+        exit(1);
+    }
+
+    // invgrid_ani cannot be used with non-flexible inversion grid
+    if (invgrid_ani && (type_invgrid_dep != 1 || type_invgrid_lat != 1 || type_invgrid_lon != 1)){
+        std::cout << "Warning: invgrid_ani cannot be used with non-flexible inversion grid" << std::endl;
         MPI_Finalize();
         exit(1);
     }
