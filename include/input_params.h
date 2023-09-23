@@ -30,7 +30,13 @@ public:
     // write parameters to output file
     void write_params_to_file();
 
-    // get parameters
+    //
+    // getter/setter
+    //
+
+    //
+    // bondary information
+    //
     CUSTOMREAL get_min_dep(){return min_dep;};
     CUSTOMREAL get_max_dep(){return max_dep;};
     CUSTOMREAL get_min_lat(){return min_lat*DEG2RAD;};
@@ -38,16 +44,35 @@ public:
     CUSTOMREAL get_min_lon(){return min_lon*DEG2RAD;};
     CUSTOMREAL get_max_lon(){return max_lon*DEG2RAD;};
 
-    CUSTOMREAL                  get_src_radius(const std::string&);
-    CUSTOMREAL                  get_src_lat(   const std::string&);
-    CUSTOMREAL                  get_src_lon(   const std::string&);
+    //
+    // source receiver data
+    //
+
+    // source receiver information for processes which stores source receiver information
     std::string                 get_src_rec_file()      {return src_rec_file;};
     bool                        get_src_rec_file_exist(){return src_rec_file_exist;};
-    bool                        get_if_src_teleseismic(const std::string&); // return true if the source is teleseismic
     SrcRecInfo&                 get_src_point(const std::string&);          // return SrcRec object
     SrcRecInfo&                 get_rec_point(const std::string&);          // return receivers for the current source
-    std::vector<std::string>    get_rec_names(const std::string&);          // return SrcRec object
 
+    // source receiver information with broadcast to all subdom_main processes
+    SrcRecInfo                  get_src_point_bcast(const std::string&);    // return SrcRec object
+    SrcRecInfo                  get_rec_point_bcast(const std::string&);    // return receivers for the current source
+    CUSTOMREAL                  get_src_radius(   const std::string&);
+    CUSTOMREAL                  get_src_lat(      const std::string&);
+    CUSTOMREAL                  get_src_lon(      const std::string&);
+    SrcRecInfo                  get_src_point_bcast_2d(const std::string&);    // return SrcRec object
+    CUSTOMREAL                  get_src_radius_2d(const std::string&);
+    CUSTOMREAL                  get_src_lat_2d(   const std::string&);
+    CUSTOMREAL                  get_src_lon_2d(   const std::string&);
+    std::string                 get_src_name(const int&);                   // return source name from in-sim_group id
+    std::string                 get_rec_name(const int&);                   // return receiver name from in-sim_group id
+    std::string                 get_src_name_comm(const int&);              // return source name in common receiver list
+    int                         get_src_id(const std::string&);             // return src global id from src name
+    bool                        get_if_src_teleseismic(const std::string&); // return true if the source is teleseismic
+
+    //
+    // others
+    //
     CUSTOMREAL get_conv_tol()                    {return conv_tol;};
     void       set_conv_tol(CUSTOMREAL conv_tol_){conv_tol = conv_tol_;};
     CUSTOMREAL get_max_iter()                    {return max_iter;};
@@ -152,6 +177,11 @@ public:
     // station correction
     void station_correction_update( CUSTOMREAL );
 
+    int n_src_this_sim_group = 0;          // number of sources in this simultaneous group
+    int n_src_comm_rec_this_sim_group = 0; // number of sources with common receiver in this simultaneous group
+    int n_src_2d_this_sim_group = 0;       // number of sources assigned for 2d solver in this simultaneous group
+    int n_rec_this_sim_group = 0;          // number of receivers in this simultaneous group
+
     std::map<std::string, SrcRecInfo> src_map_all;          // map of all sources (full information is only stored by the main process)
     std::map<std::string, SrcRecInfo> src_map;              // map of sources belonging to this simultaneous group
     std::map<std::string, SrcRecInfo> src_map_comm_rec;     // map of sources with common receiver
@@ -171,6 +201,7 @@ public:
 
     // src id <-> src name relations
     std::vector<std::string>                           src_id2name;          // name list of sources belonging to this simultaneous group
+    std::vector<std::string>                           rec_id2name;          // name list of receivers belongig to this simultaneous group
     std::vector<std::string>                           src_id2name_comm_rec; // name list of sources with common receiver
     std::vector<std::string>                           src_id2name_2d;       // name list of sources assigned for 2d solver.
     std::vector<std::string>                           src_id2name_all;      // name list of all sources (store the order of sources in src_rec file)
@@ -196,9 +227,6 @@ public:
     void initialize_adjoint_source();
     // set adjoint source
     void set_adjoint_source(std::string, CUSTOMREAL);
-
-    void allocate_memory_tele_boundaries(int, int, int, std::string,
-        bool, bool, bool, bool, bool); // allocate memory for tele boundaries
 
     // gather traveltimes and calculate differences of synthetic data
     void gather_traveltimes_and_calc_syn_diff();

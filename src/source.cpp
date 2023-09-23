@@ -1,8 +1,7 @@
 #include "source.h"
 
-Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src) {
+Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src, bool for_2d_solver) {
 
-    if (is_teleseismic) return;
 
     if (subdom_main) {
         if(if_verbose) stdout_by_main("--- start source initialization ---");
@@ -13,10 +12,22 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
         delta_r   = grid.get_delta_r();
 
         // set source position
-        src_lon = IP.get_src_lon(   name_sim_src); // in radian
-        src_lat = IP.get_src_lat(   name_sim_src); // in radian
-        src_r   = IP.get_src_radius(name_sim_src); // radious
+        if(!for_2d_solver){
+            src_lon = IP.get_src_lon(   name_sim_src); // in radian
+            src_lat = IP.get_src_lat(   name_sim_src); // in radian
+            src_r   = IP.get_src_radius(name_sim_src); // radious
+        } else {
+            // 2d src database (src_map_2d) is accessible from dedicated getters.
+            src_lon = IP.get_src_lon_2d(   name_sim_src); // in radian
+            src_lat = IP.get_src_lat_2d(   name_sim_src); // in radian
+            src_r   = IP.get_src_radius_2d(name_sim_src); // radious
+        }
+    }
 
+    // further initialization is not needed for teleseismic source
+    if (is_teleseismic) return;
+
+    if (subdom_main) {
         // descretize source position (LOCAL ID)
         i_src_loc = std::floor((src_lon - grid.get_lon_min_loc()) / grid.get_delta_lon());
         j_src_loc = std::floor((src_lat - grid.get_lat_min_loc()) / grid.get_delta_lat());

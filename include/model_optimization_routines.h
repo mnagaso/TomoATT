@@ -416,7 +416,7 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     bool wolfe_cond_ok = false;
     while (wolfe_cond_ok != true) {
 
-        //// initial guess for isub = 0
+        // initial guess for isub = 0
         if (i_inv == 0 && subiter_count == 0)
             initial_guess_step(grid, step_length, 1.0);
         else if (i_inv == 1 && subiter_count == 0)
@@ -477,24 +477,24 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         if (IP.get_verbose_output_level()&& id_sim==0)
             io.update_xdmf_file();
 
-        if (wolfe_cond_ok) {
-            // log out
-            if(myrank == 0 && id_sim ==0)
-                out_main \
-                         << std::setw(5)  << i_inv \
-                  << "," << std::setw(5)  << subiter_count \
-                  << "," << std::setw(15) << step_length \
-                  << "," << std::setw(15) << q_0 \
-                  << "," << std::setw(15) << q_t \
-                  << "," << std::setw(15) << v_obj_reg \
-                  << "," << std::setw(15) << qp_0 \
-                  << "," << std::setw(15) << qp_t \
-                  << "," << std::setw(15) << td \
-                  << "," << std::setw(15) << tg \
-                  << "," << std::setw(15) << wolfe_c1*qp_0 \
-                  << "," << std::setw(15) << wolfe_c2*qp_0 \
-                  << "," << std::setw(15) << wolfe_cond_ok << std::endl;
+        // log out
+        if(myrank == 0 && id_sim ==0)
+            out_main \
+                     << std::setw(5)  << i_inv \
+              << "," << std::setw(5)  << subiter_count \
+              << "," << std::setw(15) << step_length \
+              << "," << std::setw(15) << q_0 \
+              << "," << std::setw(15) << q_t \
+              << "," << std::setw(15) << v_obj_reg \
+              << "," << std::setw(15) << qp_0 \
+              << "," << std::setw(15) << qp_t \
+              << "," << std::setw(15) << td \
+              << "," << std::setw(15) << tg \
+              << "," << std::setw(15) << wolfe_c1*qp_0 \
+              << "," << std::setw(15) << wolfe_c2*qp_0 \
+              << "," << std::setw(15) << wolfe_cond_ok << std::endl;
 
+        if (wolfe_cond_ok) {
             goto end_of_subiteration;
         } else if (subiter_count > max_sub_iterations){
             // reached max subiter

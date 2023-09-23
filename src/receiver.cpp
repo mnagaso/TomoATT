@@ -10,57 +10,114 @@ Receiver::~Receiver() {
 
 void Receiver::interpolate_and_store_arrival_times_at_rec_position(InputParams& IP, Grid& grid, const std::string& name_sim_src) {
     if(subdom_main){
+
+        int mykey_send=9999;
+        int mykey_end=9998;
+        int key = 0;
+
         // share the traveltime values on the corner points of the subdomains for interpolation
         // this is not necessary for sweeping (as the stencil is closs shape)
+        grid.send_recev_boundary_data(grid.T_loc);
         grid.send_recev_boundary_data_kosumi(grid.T_loc);
 
-        // calculate the travel time of the receiver by interpolation
-        for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
-            for (auto& data: it_rec->second){
-                if (data.is_src_rec){   // absolute traveltime
-                    // store travel time on single receiver and double receivers (what is double receivers? by CHEN Jing)
-                    // store travel time from name_sim_src(src_name) to it_rec->first(rec_name)
-                    data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
-                } else if (data.is_rec_pair) {
-                    // store travel time from name_sim_src(src_name) to rec1_name and rec2_name
-                    // calculate travel times for two receivers
-                    CUSTOMREAL travel_time   = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[0]);
-                    CUSTOMREAL travel_time_2 = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[1]);
+        if (proc_store_srcrec){
+            // routine for processes which have the source and receiver data
 
-                    // Because name_sim_src = data.name_src; it_rec->first = name_rec = name_rec_pair[0]
-                    // Thus data.travel_time is travel_time
-                    data.travel_time = travel_time;
+            // calculate the travel time of the receiver by interpolation
+            for (auto it_rec = IP.data_map[name_sim_src].begin(); it_rec != IP.data_map[name_sim_src].end(); ++it_rec) {
+                for (auto& data: it_rec->second){
 
-                    // calculate and store travel time difference
-                    data.cs_dif_travel_time = travel_time - travel_time_2;
-                } else if (data.is_src_pair) {
-                    // store travel time from name_sim_src(src1_name) to it_rec->first(rec_name)
-                    data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
+                    if (data.is_src_rec){   // absolute traveltime
+                        // send receivr name as a starting signal for interpolation
 
-                } else {
-                    std::cout << "error type of data" << std::endl;
+                        // send dummy integer with key
+                        broadcast_i_single(mykey_send, 0);
+                        broadcast_str(data.name_rec, 0);
+
+                        // store travel time on single receiver and double receivers (what is double receivers? by CHEN Jing)
+                        // store travel time from name_sim_src(src_name) to it_rec->first(rec_name)
+                        data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
+                    } else if (data.is_rec_pair) {
+                        // store travel time from name_sim_src(src_name) to rec1_name and rec2_name
+                        // calculate travel times for two receivers
+                        broadcast_i_single(mykey_send, 0);
+                        broadcast_str(data.name_rec_pair[0], 0);
+                        CUSTOMREAL travel_time   = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[0]);
+
+                        broadcast_i_single(mykey_send, 0);
+                        broadcast_str(data.name_rec_pair[1], 0);
+                        CUSTOMREAL travel_time_2 = interpolate_travel_time(grid, IP, name_sim_src, data.name_rec_pair[1]);
+
+                        // Because name_sim_src = data.name_src; it_rec->first = name_rec = name_rec_pair[0]
+                        // Thus data.travel_time is travel_time
+                        data.travel_time = travel_time;
+
+                        // calculate and store travel time difference
+                        data.cs_dif_travel_time = travel_time - travel_time_2;
+                    } else if (data.is_src_pair) {
+                        // store travel time from name_sim_src(src1_name) to it_rec->first(rec_name)
+                        broadcast_i_single(mykey_send, 0);
+                        broadcast_str(data.name_rec, 0);
+                        data.travel_time = interpolate_travel_time(grid, IP, name_sim_src, it_rec->first);
+
+                    } else {
+                        std::cout << "error type of data" << std::endl;
+                    }
                 }
             }
+
+            // send a endind signal to the processes which do not have the source receiver data
+            broadcast_i_single(mykey_end, 0);
+
+        } else {
+            // routine for processes which do not have the source and receiver data
+
+            // waiting the communication from the proc_store_srcrec
+            while (true) {
+
+                // receive dummy integer
+                broadcast_i_single(key, 0);
+
+                // check the tag
+                if (key == mykey_send) {
+                    std::string name_rec;
+                    broadcast_str(name_rec, 0);
+
+                    CUSTOMREAL dummy_time = interpolate_travel_time(grid, IP, name_sim_src, name_rec);
+                    (void) dummy_time; // avoid compiler warning
+
+                } else if (key == mykey_end) {
+                    // receive dummy integer
+                    break;
+                } else {
+                    std::cout << "error in the tag" << std::endl;
+                }
+
+            }
         }
-    }
+    } // end subdomain
+
+    synchronize_all();
 }
 
 
-void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& name_sim_src) {
+void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name_sim_src) {
 
-    // rec.adjoint_source = 0
-    IP.initialize_adjoint_source();
+    // #TODO: run this function only by proc_store_srcrec
+    if (proc_store_srcrec) {
 
-    if(subdom_main){
+        // rec.adjoint_source = 0
+        IP.initialize_adjoint_source();
+
         // loop all data related to this source MNMN: use reference(auto&) to avoid copy
         for (auto it_src = IP.data_map[name_sim_src].begin(); it_src != IP.data_map[name_sim_src].end(); ++it_src) {
             for (auto& data: it_src->second){
                 //
                 // absolute traveltime
                 //
-                if (data.is_src_rec){                      
+                if (data.is_src_rec){
                     if (!IP.get_use_abs()){ // if we do not use abs data, ignore to consider the total obj and adjoint source
-                        continue;   
+                        continue;
                     }
 
 
@@ -70,7 +127,7 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
                     CUSTOMREAL obs_time       = data.travel_time_obs;
 
                     // assign local weight
-                    CUSTOMREAL  local_weight = 1.0;
+                    CUSTOMREAL  local_weight = _1_CR;
 
                     // evaluate residual_weight_abs （If run_mode == DO_INVERSION, tau_opt always equal 0. But when run_mode == INV_RELOC, we need to consider the change of ortime of earthquakes (swapped receiver)）
                     CUSTOMREAL  local_residual = abs(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
@@ -82,7 +139,7 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
 
 
                     // evaluate distance_weight_abs
-                    CUSTOMREAL  local_dis    =   0.0;
+                    CUSTOMREAL  local_dis    =   _0_CR;
                     Epicentral_distance_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_dis);
                     local_dis *= R_earth;       // rad to km
                     CUSTOMREAL* dis_weight = IP.get_distance_weight_abs();
@@ -99,8 +156,8 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
                 //
                 // common receiver differential traveltime && we use this data
                 //
-                } else if (data.is_src_pair) {  
-                    if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))   
+                } else if (data.is_src_pair) {
+                    if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))
                         continue;   // if we do not use this data (cr + not swap) or (cs + swap), ignore to consider the adjoint source
 
                     std::string name_src1 = data.name_src_pair[0];
@@ -109,25 +166,25 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
 
                     CUSTOMREAL syn_dif_time   = data.cr_dif_travel_time;
                     CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
-                 
+
                     // assign local weight
-                    CUSTOMREAL  local_weight = 1.0;
+                    CUSTOMREAL  local_weight = _1_CR;
 
                     // evaluate residual_weight_abs
                     CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time);
                     CUSTOMREAL* res_weight;
                     if (IP.get_is_srcrec_swap())    res_weight = IP.get_residual_weight_cs();
                     else                            res_weight = IP.get_residual_weight_cr();
-                    
+
                     if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
                     else if (local_residual > res_weight[1])    local_weight *= res_weight[3];
                     else                                        local_weight *= ((local_residual - res_weight[0])/(res_weight[1] - res_weight[0]) * (res_weight[3] - res_weight[2]) + res_weight[2]);
-                    
+
 
                     // evaluate distance_weight_abs
-                    CUSTOMREAL  local_azi1    =   0.0;
+                    CUSTOMREAL  local_azi1    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src1).lat*DEG2RAD, IP.get_src_point(name_src1).lon*DEG2RAD, local_azi1);
-                    CUSTOMREAL  local_azi2    =   0.0;
+                    CUSTOMREAL  local_azi2    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec).lat*DEG2RAD, IP.get_rec_point(name_rec).lon*DEG2RAD, IP.get_src_point(name_src2).lat*DEG2RAD, IP.get_src_point(name_src2).lon*DEG2RAD, local_azi2);
                     CUSTOMREAL  local_azi   = abs(local_azi1 - local_azi2)*RAD2DEG;
                     if(local_azi > 180.0)   local_azi = 360.0 - local_azi;
@@ -140,7 +197,7 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
                     if      (local_azi < azi_weight[0])         local_weight *= azi_weight[2];
                     else if (local_azi > azi_weight[1])         local_weight *= azi_weight[3];
                     else                                        local_weight *= ((local_azi - azi_weight[0])/(azi_weight[1] - azi_weight[0]) * (azi_weight[3] - azi_weight[2]) + azi_weight[2]);
-                    
+
 
                     // assign adjoint source
                     CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time) * data.weight * local_weight;
@@ -149,7 +206,7 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
 
 
                     // DEGUG: error check
-                    if (name_sim_src == name_src1){    
+                    if (name_sim_src == name_src1){
                         continue;
                     } else if (name_sim_src == name_src2) { // after modification, this case does not occur. since  name_sim_src = data.name_src = data.name_src_pair[0]
                         // thus, this part indicate an error.
@@ -165,7 +222,7 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
                 // common source differential traveltime
                 //
                 } else if (data.is_rec_pair) {
-                    if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))   
+                    if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))
                         continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
 
                     std::string name_src  = data.name_src;
@@ -176,7 +233,7 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
                     CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
                     // assign local weight
-                    CUSTOMREAL  local_weight = 1.0;
+                    CUSTOMREAL  local_weight = _1_CR;
 
                     // evaluate residual_weight_abs (see the remark in absolute traveltime data for considering tau_opt here)
                     CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
@@ -190,9 +247,9 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
 
 
                     // evaluate distance_weight_abs
-                    CUSTOMREAL  local_azi1    =   0.0;
+                    CUSTOMREAL  local_azi1    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec1).lat*DEG2RAD, IP.get_rec_point(name_rec1).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_azi1);
-                    CUSTOMREAL  local_azi2    =   0.0;
+                    CUSTOMREAL  local_azi2    =   _0_CR;
                     Azimuth_sphere(IP.get_rec_point(name_rec2).lat*DEG2RAD, IP.get_rec_point(name_rec2).lon*DEG2RAD, IP.get_src_point(name_src).lat*DEG2RAD, IP.get_src_point(name_src).lon*DEG2RAD, local_azi2);
                     CUSTOMREAL  local_azi   = abs(local_azi1 - local_azi2)*RAD2DEG;
                     if(local_azi > 180.0)   local_azi = 360.0 - local_azi;
@@ -219,7 +276,10 @@ void Receiver:: calculate_adjoint_source(InputParams& IP, const std::string& nam
 
             } // end of loop over data
         } // end loop receivers
-    } // end subdomain
+
+    } // end proc_store_srcrec
+
+    synchronize_all();
 }
 
 
@@ -242,18 +302,20 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
     CUSTOMREAL res_tele_sq   = 0.0;
 
     std::vector<CUSTOMREAL> obj_residual;
-    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
 
-        const std::string name_sim_src = IP.src_id2name[i_src];
+    if (proc_store_srcrec) {
 
-        if(subdom_main){
+        for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+
+            const std::string name_sim_src = IP.src_id2name[i_src];
+
             // loop all data related to this source MNMN: use reference(auto&) to avoid copy
             for (auto it_src = IP.data_map[name_sim_src].begin(); it_src != IP.data_map[name_sim_src].end(); ++it_src) {
                 for (auto& data: it_src->second){
                     //
-                    // absolute traveltime  
+                    // absolute traveltime
                     //
-                    if (data.is_src_rec){                      
+                    if (data.is_src_rec){
 
                         // error check (data.name_src_pair must be equal to name_sim1 and name_sim2)
                         if (data.name_src != name_sim_src) continue;
@@ -281,8 +343,8 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             continue;   // if we do not use abs data, ignore to consider the total obj
 
                         obj     += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
-                    } else if (data.is_src_pair) {  
-                    
+                    } else if (data.is_src_pair) {
+
                         std::string name_src1 = data.name_src_pair[0];
                         std::string name_src2 = data.name_src_pair[1];
                         std::string name_rec  = data.name_rec;
@@ -309,7 +371,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             res_cr_dif_sq   += 0.5 * my_square(syn_dif_time - obs_dif_time);
                         }
 
-                        if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))   
+                        if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))
                             continue;   // if we do not use this data (cr + not swap) or (cs + swap), ignore to consider the total obj and adjoint source
 
                         // because a pair of sources are counted twice, thus * 0.5
@@ -342,7 +404,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             res_cs_dif_sq   += 1.0 * my_square(syn_dif_time - obs_dif_time);
                         }
 
-                        if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))   
+                        if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))
                             continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
 
                         obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
@@ -350,9 +412,8 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
 
                 } // end of loop over data
             } // end loop receivers
-        } // end subdomain
-    }
-
+        } // end loop sources
+    } // end proc_store_srcrec
 
     broadcast_cr_single_sub(obj,0);
     broadcast_cr_single_sub(obj_abs,0);
@@ -384,7 +445,7 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
     // calculate the travel time of the receiver by 3d linear interpolation
 
     // get the reference for a receiver
-    const SrcRecInfo& rec = IP.get_rec_point(name_rec);
+    const SrcRecInfo rec = IP.get_rec_point_bcast(name_rec);
 
     // copy some parameters
     CUSTOMREAL delta_lon = grid.get_delta_lon();
@@ -537,7 +598,7 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
 
 
 void Receiver::init_vars_src_reloc(InputParams& IP){
-    if (subdom_main) {
+    if (proc_store_srcrec) {
 
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++) {
@@ -560,54 +621,104 @@ void Receiver::init_vars_src_reloc(InputParams& IP){
 
 void Receiver::calculate_T_gradient(InputParams& IP, Grid& grid, const std::string& name_sim_src){
 
-    if(subdom_main){
-        // calculate gradient of travel time at each receiver (swapped source)
-        for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
-            for (auto& data: iter->second) {
-                // case 1: absolute traveltime for reloc
-                if (data.is_src_rec && IP.get_use_abs_reloc()){   // abs data && we use it
-                    std::string name_rec = data.name_rec;
+    if (subdom_main){
+        int mykey_send = 9998;
+        int mykey_end  = 9999;
+        int key = 0;
 
-                    if(IP.rec_map[name_rec].is_stop) continue;  // if this receiver (swapped source) is already located
+        if(proc_store_srcrec){
+            // calculate gradient of travel time at each receiver (swapped source)
+            for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
+                for (auto& data: iter->second) {
+                    // case 1: absolute traveltime for reloc
+                    if (data.is_src_rec && IP.get_use_abs_reloc()){   // abs data && we use it
+                        std::string name_rec = data.name_rec;
 
-                    // otherwise
-                    CUSTOMREAL DTijk[3];
-                    calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec], DTijk);
-                    data.DTi = DTijk[0];
-                    data.DTj = DTijk[1];
-                    data.DTk = DTijk[2];
+                        if(IP.rec_map[name_rec].is_stop) continue;  // if this receiver (swapped source) is already located
+
+                        // otherwise
+                        CUSTOMREAL DTijk[3];
+
+                        // send dummy integer
+                        broadcast_i_single(mykey_send, 0);
+                        // send reeiver name
+                        broadcast_str(name_rec, 0);
+
+                        calculate_T_gradient_one_rec(grid, IP, name_rec, DTijk);
+                        data.DTi = DTijk[0];
+                        data.DTj = DTijk[1];
+                        data.DTk = DTijk[2];
 
 
-                // case 2: common receiver (swapped source) double difference (double source, or double swapped receiver) for reloc
-                } else if (data.is_rec_pair && IP.get_use_cr_reloc()) {  // common receiver data (swapped common source) and we use it.
-                    std::string name_rec1 = data.name_rec_pair[0];
-                    std::string name_rec2 = data.name_rec_pair[1];
+                    // case 2: common receiver (swapped source) double difference (double source, or double swapped receiver) for reloc
+                    } else if (data.is_rec_pair && IP.get_use_cr_reloc()) {  // common receiver data (swapped common source) and we use it.
+                        std::string name_rec1 = data.name_rec_pair[0];
+                        std::string name_rec2 = data.name_rec_pair[1];
 
-                    if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;  // if both receivers (swapped sources) are already located
+                        if(IP.rec_map[name_rec1].is_stop && IP.rec_map[name_rec2].is_stop) continue;  // if both receivers (swapped sources) are already located
 
-                    // otherwise
-                    CUSTOMREAL DTijk[3];
-                    calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec1], DTijk);
-                    data.DTi_pair[0]  = DTijk[0];
-                    data.DTj_pair[0]  = DTijk[1];
-                    data.DTk_pair[0]  = DTijk[2];
-                    calculate_T_gradient_one_rec(grid, IP.rec_map[name_rec2], DTijk);
-                    data.DTi_pair[1]  = DTijk[0];
-                    data.DTj_pair[1]  = DTijk[1];
-                    data.DTk_pair[1]  = DTijk[2];
+                        // otherwise
+                        CUSTOMREAL DTijk[3];
 
-                } else {    // unsupported data (swapped common receiver, or others)
-                    continue;
+                        // send dummy integer
+                        broadcast_i_single(mykey_send, 0);
+                        // send reeiver name
+                        broadcast_str(name_rec1, 0);
+                        calculate_T_gradient_one_rec(grid, IP, name_rec1, DTijk);
+                        data.DTi_pair[0]  = DTijk[0];
+                        data.DTj_pair[0]  = DTijk[1];
+                        data.DTk_pair[0]  = DTijk[2];
+
+                        // send dummy integer
+                        broadcast_i_single(mykey_send, 0);
+                        // send reeiver name
+                        broadcast_str(name_rec2, 0);
+                        calculate_T_gradient_one_rec(grid, IP, name_rec2, DTijk);
+                        data.DTi_pair[1]  = DTijk[0];
+                        data.DTj_pair[1]  = DTijk[1];
+                        data.DTk_pair[1]  = DTijk[2];
+
+                    } else {    // unsupported data (swapped common receiver, or others)
+                        continue;
+                    }
+                }
+            } // end loop over data
+
+            // send dummy integer to end the idle loop
+            broadcast_i_single(mykey_end, 0);
+
+        } else {
+            while (true) {
+                // receive dummy integer
+                broadcast_i_single(key, 0);
+
+                if (key==mykey_send) {
+                    // receive receiver name
+                    std::string name_rec;
+                    broadcast_str(name_rec, 0);
+                    // join in the calculation
+                    CUSTOMREAL DTijk_dummy[3];
+                    calculate_T_gradient_one_rec(grid, IP, name_rec, DTijk_dummy);
+                } else if (key==mykey_end) {
+                    break;
+                } else {
+                    std::cout << "Error: Receiver::calculate_T_gradient: key is not correct" << std::endl;
+                    std::cout << "received key is " << key << std::endl;
+                    exit(1);
                 }
             }
-        }
-    }
+        } // end if proc_store_srcrec
+    } // end subdom_main
+
 }
 
 
-void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMREAL* DTijk){
+void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::string rec_name, CUSTOMREAL* DTijk){
 
     // calculate the travel time of the receiver by 3d linear interpolation
+
+    // get the reference for a receiver
+    const SrcRecInfo rec = IP.get_rec_point_bcast(rec_name);
 
     // copy some parameters
     CUSTOMREAL delta_lon = grid.get_delta_lon();
@@ -634,11 +745,19 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
     for (int i = 0; i < nprocs; i++) {
         if (rec_flags[i]) {
             rec_rank = i;
-            break; // this break means that the first subdomain is used if the receiver is in multiple subdomains (ghost layer)
+            //break; // this break means that the first subdomain is used if the receiver is in multiple subdomains (ghost layer)
         }
     }
-    delete[] rec_flags;
-     // check if the receiver is in the global domain
+
+    // count the number of subdomains where the receiver is located
+    int ndoms_rec = 0;
+    for (int i = 0; i < nprocs; i++) {
+        if (rec_flags[i]) {
+            ndoms_rec++;
+        }
+    }
+
+    // check if the receiver is in the global domain
     if (rec_rank == -1) {
         std::cout << "Error: the receiver is not in the global domain" << std::endl;
         // print rec
@@ -652,9 +771,8 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
     CUSTOMREAL DTi = 0.0, DTj = 0.0, DTk = 0.0;
 
     if (is_in_subdomain) {
-        // calculate the interpolated travel time and broadcast it
 
-        // descretize source position (LOCAL) ID)
+        // descretized source position (LOCAL) ID)
         int i_rec = std::floor((rec_lon - grid.get_lon_min_loc()) / delta_lon);
         int j_rec = std::floor((rec_lat - grid.get_lat_min_loc()) / delta_lat);
         int k_rec = std::floor((rec_r   - grid.get_r_min_loc())   / delta_r);
@@ -689,16 +807,37 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
         int i_rec_p1 = i_rec + 1;
         int j_rec_p1 = j_rec + 1;
         int k_rec_p1 = k_rec + 1;
+        int i_rec_m1 = i_rec - 1;
+        int j_rec_m1 = j_rec - 1;
+        int k_rec_m1 = k_rec - 1;
+        int i_rec_p1p1 = i_rec + 2;
+        int j_rec_p1p1 = j_rec + 2;
+        int k_rec_p1p1 = k_rec + 2;
+
+        // treatment for the nodes on the bounary
+        // if not, sources cannot go over the subdomain boundary
+        if (i_rec == 0)
+            i_rec_m1 += 1;
+        if (j_rec == 0)
+            j_rec_m1 += 1;
+        if (k_rec == 0)
+            k_rec_m1 += 1;
+        if (i_rec_p1 == loc_I-1)
+            i_rec_p1p1 -= 1;
+        if (j_rec_p1 == loc_J-1)
+            j_rec_p1p1 -= 1;
+        if (k_rec_p1 == loc_K-1)
+            k_rec_p1p1 -= 1;
 
         CUSTOMREAL DT1, DT2, DT3, DT4, DT5, DT6, DT7, DT8;
-        DT1 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec    + 1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec    - 1)]) / _2_CR / delta_r;
-        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec    + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec    - 1)]) / _2_CR / delta_r;
-        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec    + 1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec    - 1)]) / _2_CR / delta_r;
-        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec    + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec    - 1)]) / _2_CR / delta_r;
-        DT5 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1 - 1)]) / _2_CR / delta_r;
-        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1 - 1)]) / _2_CR / delta_r;
-        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1 - 1)]) / _2_CR / delta_r;
-        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1 + 1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1 - 1)]) / _2_CR / delta_r;
+        DT1 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1)]   - grid.T_loc[I2V(i_rec,     j_rec,     k_rec_m1)]) / _2_CR / delta_r;
+        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1)]   - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_m1)]) / _2_CR / delta_r;
+        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1)]   - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_m1)]) / _2_CR / delta_r;
+        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1)]   - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_m1)]) / _2_CR / delta_r;
+        DT5 = (grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1p1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec)])    / _2_CR / delta_r;
+        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec)])    / _2_CR / delta_r;
+        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1p1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec)])    / _2_CR / delta_r;
+        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec_p1p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1,  k_rec)])    / _2_CR / delta_r;
 
         DTk =   (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * DT1
               +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * DT2
@@ -709,14 +848,14 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
               + (_1_CR - e_lon) *          e_lat  *          e_r  * DT7
               +          e_lon  *          e_lat  *          e_r  * DT8;
 
-        DT1 = (grid.T_loc[I2V(i_rec,     j_rec    + 1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec    - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec    + 1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec    - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1 + 1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec_p1 - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1 + 1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1 - 1,  k_rec   )]) / _2_CR / delta_lat;
-        DT5 = (grid.T_loc[I2V(i_rec,     j_rec    + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec    - 1,  k_rec_p1)]) / _2_CR / delta_lat;
-        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec    + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec    - 1,  k_rec_p1)]) / _2_CR / delta_lat;
-        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1 + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec_p1 - 1,  k_rec_p1)]) / _2_CR / delta_lat;
-        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1 + 1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_p1 - 1,  k_rec_p1)]) / _2_CR / delta_lat;
+        DT1 = (grid.T_loc[I2V(i_rec,     j_rec_p1,    k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec_m1,  k_rec   )]) / _2_CR / delta_lat;
+        DT2 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,    k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec_m1,  k_rec   )]) / _2_CR / delta_lat;
+        DT3 = (grid.T_loc[I2V(i_rec,     j_rec_p1p1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec   )]) / _2_CR / delta_lat;
+        DT4 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1p1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec   )]) / _2_CR / delta_lat;
+        DT5 = (grid.T_loc[I2V(i_rec,     j_rec_p1,    k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec_m1,  k_rec_p1)]) / _2_CR / delta_lat;
+        DT6 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1,    k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec_m1,  k_rec_p1)]) / _2_CR / delta_lat;
+        DT7 = (grid.T_loc[I2V(i_rec,     j_rec_p1p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec,     k_rec_p1)]) / _2_CR / delta_lat;
+        DT8 = (grid.T_loc[I2V(i_rec_p1,  j_rec_p1p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1,  j_rec,     k_rec_p1)]) / _2_CR / delta_lat;
 
         DTj =   (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * DT1
               +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * DT2
@@ -727,14 +866,14 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
               + (_1_CR - e_lon) *          e_lat  *          e_r  * DT7
               +          e_lon  *          e_lat  *          e_r  * DT8;
 
-        DT1 = (grid.T_loc[I2V(i_rec    + 1,  j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec    - 1,  j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
-        DT2 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
-        DT3 = (grid.T_loc[I2V(i_rec    + 1,  j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec    - 1,  j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
-        DT4 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
-        DT5 = (grid.T_loc[I2V(i_rec    + 1,  j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec    - 1,  j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
-        DT6 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
-        DT7 = (grid.T_loc[I2V(i_rec    + 1,  j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec    - 1,  j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
-        DT8 = (grid.T_loc[I2V(i_rec_p1 + 1,  j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_p1 - 1,  j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT1 = (grid.T_loc[I2V(i_rec_p1,    j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec_m1,  j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
+        DT2 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec   ,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec   ,  k_rec   )]) / _2_CR / delta_lon;
+        DT3 = (grid.T_loc[I2V(i_rec_p1,    j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec_m1,  j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
+        DT4 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec_p1,  k_rec   )] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec   )]) / _2_CR / delta_lon;
+        DT5 = (grid.T_loc[I2V(i_rec_p1,    j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec_m1,  j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT6 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec   ,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec   ,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT7 = (grid.T_loc[I2V(i_rec_p1,    j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec_m1,  j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
+        DT8 = (grid.T_loc[I2V(i_rec_p1p1,  j_rec_p1,  k_rec_p1)] - grid.T_loc[I2V(i_rec,     j_rec_p1,  k_rec_p1)]) / _2_CR / delta_lon;
 
         DTi =   (_1_CR - e_lon) * (_1_CR - e_lat) * (_1_CR - e_r) * DT1
               +          e_lon  * (_1_CR - e_lat) * (_1_CR - e_r) * DT2
@@ -749,28 +888,36 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, SrcRecInfo& rec, CUSTOMR
         // std::cout << DT1 << "," << DT2 << "," << DT3 << "," << DT4 << "," << DT5 << "," << DT6 << "," << DT7 << "," << DT8 <<std::endl;
         // std::cout << "DTi: " << DTi << std::endl;
 
-        // broadcast the gradient components to all processes
-        broadcast_cr_single(DTk, rec_rank);
-        broadcast_cr_single(DTj, rec_rank);
-        broadcast_cr_single(DTi, rec_rank);
+        // sum the DTi, DTj, DTk over all subdomains
+        allreduce_cr_inplace(&DTi, 1);
+        allreduce_cr_inplace(&DTj, 1);
+        allreduce_cr_inplace(&DTk, 1);
 
     } else {
-        // receive the gradient components
-        broadcast_cr_single(DTk, rec_rank);
-        broadcast_cr_single(DTj, rec_rank);
-        broadcast_cr_single(DTi, rec_rank);
+        // sum the DTi, DTj, DTk over all subdomains
+        allreduce_cr_inplace(&DTi, 1);
+        allreduce_cr_inplace(&DTj, 1);
+        allreduce_cr_inplace(&DTk, 1);
     }
+
+    // average the DTi, DTj, DTk by the number of subdomains where the receiver is located
+    DTi /= ndoms_rec;
+    DTj /= ndoms_rec;
+    DTk /= ndoms_rec;
 
     // store the calculated travel time TODO: should be stored in data as DT is dependent with src-rec pair
     DTijk[2] = DTk;
     DTijk[1] = DTj;
     DTijk[0] = DTi;
 
+
+    delete[] rec_flags;
+
 }
 
 
 // void Receiver::divide_optimal_origin_time_by_summed_weight(InputParams& IP) {
-//     if (subdom_main) {
+//     if (proc_store_srcrec) {
 
 //         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end();  iter++) {
 //             if (IP.rec_map[iter->first].is_stop) continue; // keep the completed tau_opt
@@ -804,7 +951,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
     // sum obj_residual from all sources
     std::vector<CUSTOMREAL> obj_residual;
 
-    if (subdom_main) {
+    if (proc_store_srcrec) {
 
         for (auto it_src = IP.data_map.begin(); it_src != IP.data_map.end(); it_src++) {
             std::string name_src = it_src->first;
@@ -847,11 +994,11 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                             }
                             // assign obj
                             obj_cs_dif                              += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            
+
                             // assign residual
                             res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            
+
                         }
                         if(!IP.rec_map[name_rec2].is_stop){
                             if (IP.get_use_cr_reloc()){
@@ -860,11 +1007,11 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                             }
                             // assign obj
                             obj_cs_dif                              += 0.5 * data.weight_reloc * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                        
+
                             // assign residual
                             res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                        
+
                         }
                     } else if (data.is_src_pair) {  // we only record the obj of this kind of data
                         std::string name_rec = data.name_rec;
@@ -872,7 +1019,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                         // if(IP.rec_map[name_rec].is_stop) continue;
 
                         // assign obj (0.5 is added here because there are two receiver (swapped earthquake) have this data. It will be counted twice)
-                        
+
                         // assign obj
                         obj_cr_dif                                  += 0.5 * data.weight_reloc * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
 
@@ -886,37 +1033,55 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                 }
 
             }
-        }
+        } // end of loop over all sources
 
         // sum the obj from all sources (swapped receivers)
         IP.allreduce_rec_map_vobj_src_reloc();
 
-        
-        broadcast_cr_single_sub(obj,0);
-        broadcast_cr_single_sub(obj_abs,0);
-        broadcast_cr_single_sub(obj_cs_dif,0);
-        broadcast_cr_single_sub(obj_cr_dif,0);
-        broadcast_cr_single_sub(obj_tele,0);
-        broadcast_cr_single_sub(res,0);
-        broadcast_cr_single_sub(res_sq,0);
-        broadcast_cr_single_sub(res_abs,0);
-        broadcast_cr_single_sub(res_abs_sq,0);
-        broadcast_cr_single_sub(res_cs_dif,0);
-        broadcast_cr_single_sub(res_cs_dif_sq,0);
-        broadcast_cr_single_sub(res_cr_dif,0);
-        broadcast_cr_single_sub(res_cr_dif_sq,0);
-        broadcast_cr_single_sub(res_tele,0);
-        broadcast_cr_single_sub(res_tele_sq,0);
+    } // end of if (proc_store_srcrec)
 
-        obj_residual = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs_dif, res_cs_dif_sq, res_cr_dif, res_cr_dif_sq, res_tele, res_tele_sq};
+    synchronize_all_world();
 
-        for(int i = 0; i < (int)obj_residual.size(); i++){
-            allreduce_cr_sim_single_inplace(obj_residual[i]);
-        }
+    broadcast_cr_single(obj,0);
+    broadcast_cr_single(obj_abs,0);
+    broadcast_cr_single(obj_cs_dif,0);
+    broadcast_cr_single(obj_cr_dif,0);
+    broadcast_cr_single(obj_tele,0);
+    broadcast_cr_single(res,0);
+    broadcast_cr_single(res_sq,0);
+    broadcast_cr_single(res_abs,0);
+    broadcast_cr_single(res_abs_sq,0);
+    broadcast_cr_single(res_cs_dif,0);
+    broadcast_cr_single(res_cs_dif_sq,0);
+    broadcast_cr_single(res_cr_dif,0);
+    broadcast_cr_single(res_cr_dif_sq,0);
+    broadcast_cr_single(res_tele,0);
+    broadcast_cr_single(res_tele_sq,0);
+
+    broadcast_cr_single_sub(obj,0);
+    broadcast_cr_single_sub(obj_abs,0);
+    broadcast_cr_single_sub(obj_cs_dif,0);
+    broadcast_cr_single_sub(obj_cr_dif,0);
+    broadcast_cr_single_sub(obj_tele,0);
+    broadcast_cr_single_sub(res,0);
+    broadcast_cr_single_sub(res_sq,0);
+    broadcast_cr_single_sub(res_abs,0);
+    broadcast_cr_single_sub(res_abs_sq,0);
+    broadcast_cr_single_sub(res_cs_dif,0);
+    broadcast_cr_single_sub(res_cs_dif_sq,0);
+    broadcast_cr_single_sub(res_cr_dif,0);
+    broadcast_cr_single_sub(res_cr_dif_sq,0);
+    broadcast_cr_single_sub(res_tele,0);
+    broadcast_cr_single_sub(res_tele_sq,0);
 
 
-        //synchronize_all_world(); // not necessary because allreduce is already synchronizing communication
+    obj_residual = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs_dif, res_cs_dif_sq, res_cr_dif, res_cr_dif_sq, res_tele, res_tele_sq};
 
+    for(int i = 0; i < (int)obj_residual.size(); i++){
+        allreduce_cr_sim_single_inplace(obj_residual[i]);
+    }
+
+    if (proc_store_srcrec) {
         for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
             CUSTOMREAL obj = iter->second.vobj_src_reloc;
             CUSTOMREAL old_obj = iter->second.vobj_src_reloc_old;
@@ -929,7 +1094,6 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
             //           << ", step_length_decay: " << step_length_decay
             //           << std::endl;
         }
-
     }
 
     return obj_residual;
@@ -939,7 +1103,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
 // calculate the gradient of the objective function
 void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& name_sim_src) {
 
-    if(subdom_main){
+    if(proc_store_srcrec){
         // calculate gradient of travel time at each receiver (swapped source)
         for (auto iter = IP.data_map[name_sim_src].begin(); iter != IP.data_map[name_sim_src].end(); iter++){
             for (const auto& data: iter->second) {
@@ -1036,13 +1200,13 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                     continue;
                 }
             }
-        }
-    }
+        } // end of loop over all data_map for this src
+    } // end of if(proc_store_srcrec)
 }
 
 void Receiver::update_source_location(InputParams& IP, Grid& grid) {
 
-    if (subdom_main) {
+    if (proc_store_srcrec) {
         // get list of receivers from input parameters
         for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
 
@@ -1060,13 +1224,13 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
                 else
                     grad_dep_km = - IP.rec_map[name_rec].grad_chi_k * rescaling_dep; // over rescaling_dep is rescaling
 
-                CUSTOMREAL grad_lat_km = 0.0;;
+                CUSTOMREAL grad_lat_km = 0.0;
                 if (abs(max_change_lat - abs(IP.rec_map[name_rec].change_lat)) < 0.001)
                     grad_lat_km = 0.0;
                 else
                     grad_lat_km = IP.rec_map[name_rec].grad_chi_j/(R_earth) * rescaling_lat;
 
-                CUSTOMREAL grad_lon_km = 0.0;;
+                CUSTOMREAL grad_lon_km = 0.0;
                 if (abs(max_change_lon - abs(IP.rec_map[name_rec].change_lon)) < 0.001)
                     grad_lon_km = 0.0;
                 else
@@ -1212,10 +1376,10 @@ void Receiver::update_source_location(InputParams& IP, Grid& grid) {
             }
 
             // share the flag of stop within the same simultanoue run group
-            allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop);
+            //allreduce_bool_single_inplace(IP.rec_map[name_rec].is_stop); // this is done in src_rec->broadcast_rec_info_intra_sim
 
         } // end iter loopvobj_grad_norm_src_reloc
-    } // end if subdom_main
+    } // end if(proc_store_srcrec)
 
     //IP.allreduce_rec_map_vobj_grad_norm_src_reloc();
 

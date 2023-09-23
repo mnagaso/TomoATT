@@ -360,7 +360,7 @@ void Grid::setup_inversion_grids(InputParams& IP) {
     n_inv_J_loc = ngrid_j_inv;
     n_inv_K_loc = ngrid_k_inv;
 
-    // inversion grid for anisotropy (optional)
+    // inversion grid for anisotropy (requires flex inversion grid setup)
     if(IP.get_invgrid_ani()){
         ngrid_k_inv_ani = IP.get_n_inv_r_flex_ani();
     } else {
@@ -1102,6 +1102,7 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         for (int l = 0; l < n_inv_grids; l++) {
             for (int k = 0; k < n_inv_K_loc; k++)
                 r_loc_inv[I2V_INV_GRIDS_1DK(n_inv_K_loc - 1 - k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
+                //r_loc_inv[I2V_INV_GRIDS_1DK(k,l)] = r_min_inv   + k*dinv_r - l*dinv_lr;
         }
     } else {            // flexibly designed inversion grid for depth
         CUSTOMREAL* dep_inv = IP.get_dep_inv();
@@ -1262,10 +1263,10 @@ void Grid::initialize_kernels(){
 // get a part of pointers from the requested array for visualization
 CUSTOMREAL* Grid::get_array_for_vis(CUSTOMREAL* arr, bool inverse_value) {
 
-    //send_recev_boundary_data(arr);
+    send_recev_boundary_data(arr);
     // add a routine for communication the boundary value
     // with the neighbors with line/point contact
-    //send_recev_boundary_data_kosumi(arr);
+    send_recev_boundary_data_kosumi(arr);
 
     for (int k_r = 0; k_r < loc_K; k_r++) {
         for (int j_lat = 0; j_lat < loc_J; j_lat++) {
@@ -1476,7 +1477,7 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
 }
 
 
-void Grid::initialize_fields_teleseismic(Source& src, SrcRecInfo& srcrec){
+void Grid::initialize_fields_teleseismic(){
     CUSTOMREAL inf_T = 2000.0;
 
     for (int k_r = 0; k_r < loc_K; k_r++) {
@@ -1488,67 +1489,7 @@ void Grid::initialize_fields_teleseismic(Source& src, SrcRecInfo& srcrec){
         }
     }
 
-    // set boundary arrival time conditions
-
-    for (int l = 0; l < N_LAYER_SRC_BOUND; l++){
-        // West boundary
-        if (i_first() && srcrec.is_bound_src[2]) {
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-                    T_loc[I2V(l,j_lat,k_r)] = srcrec.arr_times_bound_W[JK2V(j_lat,k_r,l)];
-                    is_changed[I2V(l,j_lat,k_r)] = false;
-                }
-            }
-        }
-        // East boundary
-        if (i_last() && srcrec.is_bound_src[1]){
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-                    T_loc[I2V(loc_I-1-l,j_lat,k_r)] = srcrec.arr_times_bound_E[JK2V(j_lat,k_r,l)];
-                    is_changed[I2V(loc_I-1-l,j_lat,k_r)] = false;
-                }
-            }
-        }
-        // South boundary
-        if (j_first() && srcrec.is_bound_src[3]) {
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                    T_loc[I2V(i_lon,l,k_r)] = srcrec.arr_times_bound_S[IK2V(i_lon,k_r,l)];
-                    is_changed[I2V(i_lon,l,k_r)] = false;
-                }
-            }
-        }
-        // North boundary
-        if (j_last() && srcrec.is_bound_src[0]) {
-            for (int k_r = 0; k_r < loc_K; k_r++) {
-                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                    T_loc[I2V(i_lon,loc_J-1-l,k_r)] = srcrec.arr_times_bound_N[IK2V(i_lon,k_r,l)];
-                    is_changed[I2V(i_lon,loc_J-1-l,k_r)] = false;
-                }
-            }
-        }
-        // Bottom boundary
-        if (k_first() && srcrec.is_bound_src[4]) {
-            for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-                for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                    T_loc[I2V(i_lon,j_lat,l)] = srcrec.arr_times_bound_Bot[IJ2V(i_lon,j_lat,l)];
-                    is_changed[I2V(i_lon,j_lat,l)] = false;
-                }
-            }
-        }
-
-    }
-
-    // store initial field in T0v_loc for debugging
-    for (int k_r = 0; k_r < loc_K; k_r++) {
-        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
-            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
-                T0v_loc[I2V(i_lon,j_lat,k_r)] = T_loc[I2V(i_lon,j_lat,k_r)];
-                tau_old_loc[I2V(i_lon,j_lat,k_r)] = _0_CR; // initialize tau_old_loc to 0
-            }
-        }
-    }
-
+    // setup of boundary arrival time conditions is done in iterator function
 }
 
 

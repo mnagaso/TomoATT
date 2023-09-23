@@ -23,10 +23,10 @@
 
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
 
-    for (int i_src = 0; i_src < (int)IP.src_id2name_comm_rec.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_comm_rec_this_sim_group; i_src++){
 
-        std::string name_sim_src = IP.src_id2name_comm_rec[i_src];
-        int         id_sim_src   = IP.src_map_comm_rec[name_sim_src].id; // global source id
+        std::string name_sim_src = IP.get_src_name_comm(i_src);
+        int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // check if this source is common receiver data
 
@@ -84,8 +84,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //  2. we use common receiver data to update model; (cr + not swap) or (cs + swap)
     //  3. we do inversion
     if ( src_pair_exists &&
-         ((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())) &&
-         (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC))
+              ((IP.get_use_cr() && !IP.get_is_srcrec_swap())
+            || (IP.get_use_cs() && IP.get_is_srcrec_swap()) )
+        && (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC))
         pre_run_forward_only(IP, grid, io, i_inv);
 
     //
@@ -93,10 +94,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     //
 
      // iterate over sources
-    for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
-        const std::string name_sim_src = IP.src_id2name[i_src];
-        const int         id_sim_src   = IP.src_map[name_sim_src].id; // global source id
+        const std::string name_sim_src = IP.get_src_name(i_src);
+        const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // set simu group id and source name for output files/dataset names
         io.set_id_src(id_sim_src);
@@ -223,8 +224,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             }
 
             // check adjoint source
-            // for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            //     std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
+            // if (proc_store_srcrec){
+            //     for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+            //         std::cout << "rec id: " << iter->second.id << ", rec name: " << iter->second.name << ", adjoint source: " << iter->second.adjoint_source << std::endl;
+            //     }
             // }
 
         } // end if run_mode == DO_INVERSION
@@ -249,6 +252,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     // compute all residual and obj
     Receiver recs;
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
+
 
     // return current objective function value
     return obj_residual;

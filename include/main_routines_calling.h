@@ -202,8 +202,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 if (!found_next_step)
                     goto end_of_inversion;
             }
-
-
         }
 
         // output station correction file (only for teleseismic differential data)
@@ -259,9 +257,6 @@ end_of_inversion:
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
     Receiver recs;
-    int nrec_total = IP.rec_map_all.size();
-    // broadcast
-    broadcast_i_single_inter_and_intra_sim(nrec_total, 0);
 
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
@@ -390,10 +385,6 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     /////////////////////
 
     Receiver recs;
-    int nrec_total = IP.rec_map_all.size();
-    // broadcast
-    broadcast_i_single_inter_and_intra_sim(nrec_total, 0);
-
 
     /////////////////////
     // main loop for model update and relocation
@@ -535,12 +526,12 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
         calculate_traveltime_for_all_src_rec(IP, grid, io);
 
 
-
         // initilize all earthquakes
-        for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-            iter->second.is_stop = false;
+        if (proc_store_srcrec){
+            for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+                iter->second.is_stop = false;
+            }
         }
-
 
         // iterate
         for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){

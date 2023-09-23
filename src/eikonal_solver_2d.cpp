@@ -13,57 +13,42 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
     // - src_map_2d
     // for 2D eikonal solver runs
 
+    // in the current implentation, we only run the 2d solver with the proc_store_srcrec process
+    // thus all the processes assigned to subdomain and sweep parallelization will not used.
+    // For efficiency, it is strongly recommended to use pre-run mode of teleseismic source calculation,
+    // with no domain decomposition and sweep parallelization.
+
     //
     // pre calculation of 2d travel time fields
     //
-    if (subdom_main) {
 
-       for (int i_src = 0; i_src < (int)IP.src_id2name_2d.size(); i_src++){
+    for (int i_src = 0; i_src < IP.n_src_2d_this_sim_group; i_src++){
 
-            std::string name_sim_src = IP.src_id2name_2d[i_src];
+        std::string name_sim_src;
 
-            // get source info
-            SrcRecInfo& src = IP.src_map_2d[name_sim_src];
+        if (proc_store_srcrec)
+            name_sim_src = IP.src_id2name_2d[i_src];
+        broadcast_str(name_sim_src, 0);
 
-            // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-            if (src.is_out_of_region){
-                // calculate 2d travel time field (or read pre-computed file)
-                // without loading the boundary source values
-                run_2d_solver(IP, src, io);
-            }
-        }
+        // get source info
+        bool is_teleseismic = true; // the object in src_id2name_2d is always teleseismic
+        // #BUG: src in src_id2name_2d includes the srcs in other sim groups.
+        bool for_2d_solver = true;
+        Source src(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
+
+        // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
+        if (proc_store_srcrec)
+            run_2d_solver(IP, src, io);
     }
 
     synchronize_all_world();
 
-    //
-    // load travel times on the boundary
-    //
-    if (subdom_main) {
-       for (int i_src = 0; i_src < (int)IP.src_id2name.size(); i_src++){
+    // boundary travel time data should not be loaded here because the memory requirement will be
+    // too large for large scale simulations.
+    // instead, we load the boundary travel time data at the initialization of the iterator class.
 
-            std::string name_sim_src = IP.src_id2name[i_src];
-
-            // get source info
-            SrcRecInfo& src = IP.get_src_point(name_sim_src);
-
-            // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-            if (src.is_out_of_region){
-
-                // allocate memory for teleseismic boundary source condition
-                IP.allocate_memory_tele_boundaries(loc_I, loc_J, loc_K, name_sim_src, \
-                    grid.i_first(), grid.i_last(), grid.j_first(), grid.j_last(), grid.k_first());
-
-                // load 2d travel time field
-                load_2d_traveltime(IP, src, grid, io);
-
-                if_teleseismic_event_exists = true;
-
-            }
-        }
-    }
-
-    synchronize_all_world();
+    if (IP.n_src_2d_this_sim_group > 0)
+        if_teleseismic_event_exists = true;
 
     if (myrank==0 && if_teleseismic_event_exists)
         std::cout << "done preparing teleseismic boundary conditions" << std::endl;
@@ -71,14 +56,14 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 
 
 
-PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
+PlainGrid::PlainGrid(Source& src, InputParams& IP) {
 
-    stdout_by_main("PlainGrid initialization start.");
+    //stdout_by_main("PlainGrid initialization start.");
 
     // get source info
-    src_r = depth2radius(src.dep);
-    src_t = src.lat*DEG2RAD;
-    src_p = src.lon*DEG2RAD;
+    src_r = src.get_src_r();
+    src_t = src.get_src_t();
+    src_p = src.get_src_p();
     src_t_dummy = _0_CR; // dummy src_t
     rmin_3d = radius2depth(IP.get_max_dep());
     rmax_3d = radius2depth(IP.get_min_dep());
@@ -112,11 +97,11 @@ PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
         std::abs(epicentral_distance_2d[3]),
     });
 
-    activated_boundaries[0] = true; // N
-    activated_boundaries[1] = true; // E
-    activated_boundaries[2] = true; // W
-    activated_boundaries[3] = true; // S
-    activated_boundaries[4] = true; // Bot
+    //activated_boundaries[0] = true; // N
+    //activated_boundaries[1] = true; // E
+    //activated_boundaries[2] = true; // W
+    //activated_boundaries[3] = true; // S
+    //activated_boundaries[4] = true; // Bot
 
     // grid setup
     nr_2d = std::floor((rmax_2d-rmin_2d)/dr_2d)+1;
@@ -244,14 +229,14 @@ PlainGrid::PlainGrid(SrcRecInfo& src, InputParams& IP) {
 void PlainGrid::allocate_arrays(){
     azimuth_2d             = new CUSTOMREAL[4];
     epicentral_distance_2d = new CUSTOMREAL[4];
-    activated_boundaries   = new bool[5];
+    //activated_boundaries   = new bool[5];
 }
 
 
 void PlainGrid::deallocate_arrays(){
     delete[] azimuth_2d;
     delete[] epicentral_distance_2d;
-    delete[] activated_boundaries;
+    //delete[] activated_boundaries;
     delete[] r_2d;
     delete[] t_2d;
     delete[] fun_2d;
@@ -345,7 +330,7 @@ void PlainGrid::run_iteration(InputParams& IP){
     //                   -2c tau_x tau_y + (aTx^2+bTy^2-2cTxTy) = f^2
 
     if (myrank==0)
-        std::cout << "Running iteration for 2d eikonal solver..." << std::endl;
+        std::cout << "Running 2d eikonal solver..." << std::endl;
 
     CUSTOMREAL L1_dif  =1000000000;
     CUSTOMREAL Linf_dif=1000000000;
@@ -578,7 +563,7 @@ CUSTOMREAL interp2d(PlainGrid& pg, CUSTOMREAL t, CUSTOMREAL r) {
 }
 
 
-std::string get_2d_tt_filename(const std::string& dir_2d, SrcRecInfo& src) {
+std::string get_2d_tt_filename(const std::string& dir_2d, Source& src) {
 
     std::string fname_2d_src;
 
@@ -586,13 +571,13 @@ std::string get_2d_tt_filename(const std::string& dir_2d, SrcRecInfo& src) {
 #ifdef USE_HDF5
         // add the depth of the source to the file name
         // to share the travel time field if sources have the same depth of hypocenter
-        auto str = std::to_string(src.dep);
+        auto str = std::to_string(src.get_src_dep());
         fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".h5";
 #else
         std::cout << "HDF5 is not enabled. Please recompile with HDF5" << std::endl;
 #endif
     } else if (output_format == OUTPUT_FORMAT_ASCII) {
-        auto str = std::to_string(src.dep);
+        auto str = std::to_string(src.get_src_dep()); // use depth value of the source to the file name
         fname_2d_src = dir_2d + "/2d_travel_time_field_dep_" + str.substr(0,str.find(".")+4) +".dat";
     }
 
@@ -600,45 +585,44 @@ std::string get_2d_tt_filename(const std::string& dir_2d, SrcRecInfo& src) {
 
 }
 
-void run_2d_solver(InputParams& IP, SrcRecInfo& src, IO_utils& io) {
+void run_2d_solver(InputParams& IP, Source& src, IO_utils& io) {
     // calculate 2d travel time field by only the first process of each simulation group
 
     // initialize grid for all processes
     PlainGrid plain_grid(src,IP);
 
     // check if pre-calculated 2d travel time field exists
-    if(myrank == 0) {
-        // create output directory for 2d solver
-        std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
-        create_output_dir(dir_2d);
 
-        std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
+    // create output directory for 2d solver
+    std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
+    create_output_dir(dir_2d);
 
-        if (is_file_exist(fname_2d_src.c_str())) {
-            std::cout << "2d solver skipped the src because traveltime data already exists: " << fname_2d_src << std::endl;
-        } else { // if not, calculate and store it
-            // run iteration
-            std::cout << "start run iteration myrank: " << myrank << std::endl;
-            plain_grid.run_iteration(IP);
+    std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
 
-            // write out calculated 2D travel time field
-            io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.dep);
-        }
+    if (is_file_exist(fname_2d_src.c_str())) {
+        std::cout << "2d solver skipped the src because traveltime data already exists: " << fname_2d_src << std::endl;
+    } else { // if not, calculate and store it
+        // run iteration
+        std::cout << "start run iteration myrank: " << myrank << std::endl;
+        plain_grid.run_iteration(IP);
+
+        // write out calculated 2D travel time field
+        io.write_2d_travel_time_field(plain_grid.T_2d, plain_grid.r_2d, plain_grid.t_2d, plain_grid.nr_2d, plain_grid.nt_2d, src.get_src_dep());
     }
 
  }
 
 
-void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& io) {
+void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) {
     // initialize grid for all processes
     PlainGrid plain_grid(src,IP);
 
     // check if pre-calculated 2d travel time field exists
     if(myrank == 0) {
 
-        // create output directory for 2d solver
+        // output directory for 2d solver
         std::string dir_2d = output_dir+"/"+OUTPUT_DIR_2D;
-        create_output_dir(dir_2d);
+        //create_output_dir(dir_2d);
 
         std::string fname_2d_src = get_2d_tt_filename(dir_2d, src);
 
@@ -649,9 +633,11 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
             // read 2d travel time field from file
             io.read_2d_travel_time_field(fname_2d_src, plain_grid.T_2d, plain_grid.nt_2d, plain_grid.nr_2d);
 
-            std::cout << "2d travel time field has been read from file: " << fname_2d_src << std::endl;
+            if (if_verbose)
+                std::cout << "2d travel time field has been read from file: " << fname_2d_src << std::endl;
         } else { // if not, stop the program
             std::cout << "2d travel time field does not exist. Please verify if the 2d solver finished normally." << std::endl;
+            std::cout << "missing : " << fname_2d_src << std::endl;
             exit(1);
         }
     }
@@ -671,12 +657,14 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
                 // North boundary
                 if (grid.j_last()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(loc_J-1-l), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_N[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(i, loc_J-1-l, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(i, loc_J-1-l, k)] = false;
                 }
                 // South boundary
                 if (grid.j_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(l), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_S[IK2V(i,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(i, l, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(i, l, k)] = false;
                 }
             }
         }
@@ -686,12 +674,14 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
                 // East boundary
                 if (grid.i_last()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(loc_I-1-l), tmp_dist);
-                    src.arr_times_bound_E[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(loc_I-1-l, j, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(loc_I-1-l, j, k)] = false;
                 }
                 // West boundary
                 if (grid.i_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(l), tmp_dist);
-                    src.arr_times_bound_W[JK2V(j,k,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.T_loc[I2V(l, j, k)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(k));
+                    grid.is_changed[I2V(l, j, k)] = false;
                 }
             }
         }
@@ -701,18 +691,12 @@ void load_2d_traveltime(InputParams& IP, SrcRecInfo& src, Grid& grid, IO_utils& 
                 // Bottom boundary
                 if (grid.k_first()){
                     Epicentral_distance_sphere(plain_grid.src_t, plain_grid.src_p, grid.get_lat_by_index(j), grid.get_lon_by_index(i), tmp_dist);
-                    src.arr_times_bound_Bot[IJ2V(i,j,l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
+                    grid.T_loc[I2V(i, j, l)] = interp2d(plain_grid, tmp_dist, grid.get_r_by_index(l));
+                    grid.is_changed[I2V(i, j, l)] = false;
                 }
             }
         }
     }
-
-    // copy boundary source flags into the source object
-    src.is_bound_src[0] = plain_grid.activated_boundaries[0];
-    src.is_bound_src[1] = plain_grid.activated_boundaries[1];
-    src.is_bound_src[2] = plain_grid.activated_boundaries[2];
-    src.is_bound_src[3] = plain_grid.activated_boundaries[3];
-    src.is_bound_src[4] = plain_grid.activated_boundaries[4];
 
 }
 

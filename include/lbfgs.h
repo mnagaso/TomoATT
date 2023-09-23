@@ -280,7 +280,8 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
 
 }
 
-
+/*
+// laplacian approximation in cartesian coordinates
 inline void calc_laplacian_field(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_res) {
     if (subdom_main) {
 
@@ -309,6 +310,48 @@ inline void calc_laplacian_field(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr
         grid.send_recev_boundary_data(arr_res);
     }
 }
+*/
+
+// laplacian approximation in spherical coordinates
+inline void calc_laplacian_field(Grid& grid, CUSTOMREAL* d, CUSTOMREAL* arr_out){
+
+    if (subdom_main) {
+
+        CUSTOMREAL lr = regul_lp;
+        CUSTOMREAL lt = regul_lt;
+        CUSTOMREAL lp = regul_lp;
+        CUSTOMREAL dr = grid.dr;
+        CUSTOMREAL dt = grid.dt;
+        CUSTOMREAL dp = grid.dp;
+
+        CUSTOMREAL r,t;
+
+        // calculate L(m) in sphercal coordinates
+        for (int k = 1; k < loc_K-1; k++) {
+            for (int j = 1; j < loc_J-1; j++) {
+                for (int i = 1; i < loc_I-1; i++) {
+                    r = grid.r_loc_1d[k];
+                    t = grid.t_loc_1d[j];
+
+                    // finite difference approximation of laplacian spherical coordinates
+                    arr_out[I2V(i,j,k)] = \
+                        lr*lr*((d[I2V(i,j,k+1)] - _2_CR*d[I2V(i,j,k)] + d[I2V(i,j,k-1)])/(dr*dr) \
+                           +(_2_CR/r)*(d[I2V(i,j,k+1)]-d[I2V(i,j,k-1)])/dr) \
+                      + lt*lt*((_1_CR/(r*r*std::sin(t)))*(std::cos(t)*(d[I2V(i,j+1,k)]-d[I2V(i,j-1,k)])/dt \
+                        - (std::sin(t)*(d[I2V(i,j+1,k)]-_2_CR*d[I2V(i,j,k)]+d[I2V(i,j-1,k)])/(dt*dt)))) \
+                      + lp*lp*((_1_CR/(r*r*std::sin(t)*std::sin(t)))*(d[I2V(i+1,j,k)]-_2_CR*d[I2V(i,j,k)]+d[I2V(i-1,j,k)])/(dp*dp));
+
+                }
+            }
+        }
+
+        // communicate with adjacent subdomains
+        grid.send_recev_boundary_data(arr_out);
+    }
+}
+
+
+
 
 // add 1/2 * L(m)^2 to the objective function
 inline CUSTOMREAL calculate_regularization_obj(Grid& grid) {

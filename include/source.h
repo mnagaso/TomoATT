@@ -13,7 +13,7 @@
 
 class Source {
 public:
-    Source(InputParams &, Grid &, bool&, const std::string&);
+    Source(InputParams &, Grid &, bool&, const std::string&, bool for_2d_solver=false);
     ~Source();
 
     //
@@ -22,9 +22,10 @@ public:
     CUSTOMREAL get_ds_lat(){return dis_src_lat;};
     CUSTOMREAL get_ds_lon(){return dis_src_lon;};
     CUSTOMREAL get_ds_r  (){return dis_src_r;};
-    CUSTOMREAL get_src_r(){return src_r;};
-    CUSTOMREAL get_src_t(){return src_lat;};
-    CUSTOMREAL get_src_p(){return src_lon;};
+    CUSTOMREAL get_src_r(){return src_r;};   // radius
+    CUSTOMREAL get_src_t(){return src_lat;}; // radian
+    CUSTOMREAL get_src_p(){return src_lon;}; // radian
+    CUSTOMREAL get_src_dep(){return radius2depth(src_r);}; // km
 
     //
     // parallel getters

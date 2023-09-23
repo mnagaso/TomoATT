@@ -67,12 +67,19 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
 
             V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-            else            kkr = kkr-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-            else            jjt = jjt-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-iip; //ii-1;
-            else            iip = iip-1;  //np-ii;
+            //if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            //else            kkr = kkr-1;  //nr-kk;
+            //if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            //else            jjt = jjt-1;  //nt-jj;
+            //if (p_dirc < 0) iip = np-iip; //ii-1;
+            //else            iip = iip-1;  //np-ii;
+
+            if (r_dirc < 0) kkr = nr-kkr-1;
+            //else            kkr = kkr;
+            if (t_dirc < 0) jjt = nt-jjt-1;
+            //else            jjt = jjt;
+            if (p_dirc < 0) iip = np-iip-1;
+            //else            iip = iip;
 
             //
             // calculate stencils

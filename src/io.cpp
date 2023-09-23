@@ -1698,7 +1698,7 @@ void IO_utils::h5_create_dataset(std::string& dset_name, int ndims, int* dims, i
             // close dataspace
             H5Sclose(space_id);
         }
-        
+
         delete[] dims_h5;
     }
 
