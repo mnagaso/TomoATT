@@ -257,9 +257,6 @@ end_of_inversion:
 inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
     Receiver recs;
-    int nrec_total = IP.rec_map_all.size();
-    // broadcast
-    broadcast_i_single_inter_and_intra_sim(nrec_total, 0);
 
     // calculate traveltime for each receiver (swapped from source) and write in output file
     calculate_traveltime_for_all_src_rec(IP, grid, io);
@@ -388,10 +385,6 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     /////////////////////
 
     Receiver recs;
-    int nrec_total = IP.rec_map_all.size();
-    // broadcast
-    broadcast_i_single_inter_and_intra_sim(nrec_total, 0);
-
 
     /////////////////////
     // main loop for model update and relocation

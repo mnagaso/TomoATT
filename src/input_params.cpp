@@ -1814,10 +1814,6 @@ void InputParams::gather_rec_info_to_main(){
 
     if (proc_store_srcrec) {
 
-        // broadcast total number of recenver to all procs
-        int nrec_total= rec_map_all.size();
-        broadcast_i_single_inter_sim(nrec_total, 0);
-
         std::vector<std::string> name_rec_all;
 
         if (id_sim==0){
