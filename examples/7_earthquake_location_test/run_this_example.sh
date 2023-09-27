@@ -9,13 +9,13 @@ mkdir OUTPUT_FILES
 # python generate_syn_obs_src_rec_data.py
 
 # run location using absolute traveltime data
-# mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_reloc_abs.yml
+mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_reloc_abs.yml
 
 # run location using common receiver differential traveltime data
 # mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_reloc_cr.yml
 
 # run location using both data
-mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_reloc_abs_cr.yml
+# mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_reloc_abs_cr.yml
 
 # python compare_location_result.py
 
