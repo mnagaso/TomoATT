@@ -450,10 +450,8 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             if (optim_method == GRADIENT_DESCENT)
                 model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
-            else if (optim_method == LBFGS_MODE)
-                model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
-                model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                v_obj_misfit = model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == LBFGS_MODE) {
                 bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
 
