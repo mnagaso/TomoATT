@@ -184,7 +184,7 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
 }
 
 
-inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
+inline std::vector<CUSTOMREAL> model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, CUSTOMREAL& v_obj_inout, bool& first_src, std::ofstream& out_main) {
 
     CUSTOMREAL step_length = step_length_init; // step size init is global variable
     CUSTOMREAL diff_obj  = - 9999999999;
@@ -239,15 +239,11 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
 
         if ( diff_obj > _0_CR // if the objective function value is larger than the old one
           || std::abs(diff_obj/v_obj_old) > MAX_DIFF_RATIO_VOBJ) { // if the objective function reduced too much  ) {
+
+            // set step length just for writing out
+            step_length_init = step_length;
             // print status
-            if(myrank == 0 && id_sim ==0)
-                out_main \
-                           << std::setw(5) << i_inv \
-                    << "," << std::setw(5) << sub_iter_count \
-                    << "," << std::setw(15) << step_length \
-                    << "," << std::setw(15) << diff_obj \
-                    << "," << std::setw(15) << v_obj_new \
-                    << "," << std::setw(15) << v_obj_old << std::endl;
+            write_objective_function(IP, i_inv, v_obj_misfit_new, out_main, "sub iter");
 
             if (subdom_main) grid.restore_fun_xi_eta_bcf();
             step_length *= HALVE_STEP_RATIO;
@@ -262,15 +258,6 @@ inline void model_optimize_halve_stepping(InputParams& IP, Grid& grid, IO_utils&
     }
 
 end_of_sub_iteration:
-    // out log
-    if(myrank == 0 && id_sim ==0)
-        out_main \
-                << std::setw(5) << i_inv \
-         << "," << std::setw(5) << sub_iter_count \
-         << "," << std::setw(15) << step_length \
-         << "," << std::setw(15) << diff_obj \
-         << "," << std::setw(15) << v_obj_new \
-         << "," << std::setw(15) << v_obj_old << " accepted." << std::endl;
 
     v_obj_inout = v_obj_new;
     step_length_init = step_length/(HALVE_STEP_RATIO)*HALVE_STEP_RESTORAION_RATIO; // use this step size for the next inversion
@@ -280,6 +267,7 @@ end_of_sub_iteration:
     if (subdom_main && IP.get_if_output_source_field())
         io.write_adjoint_field(grid,next_i_inv);
 
+    return v_obj_misfit_new;
 
 }
 

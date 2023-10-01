@@ -193,10 +193,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         if (IP.get_run_mode() == DO_INVERSION) {
             if (optim_method == GRADIENT_DESCENT)
                 model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
-            else if (optim_method == LBFGS_MODE)
-                model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
-                model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                v_obj_misfit = model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
             else if (optim_method == LBFGS_MODE) {
                 bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
                 if (!found_next_step)
