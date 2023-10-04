@@ -9,8 +9,10 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#if __cplusplus > 201402L
 #include <filesystem>
-#include <sys/stat.h>
+#endif
+
 
 #include "config.h"
 
