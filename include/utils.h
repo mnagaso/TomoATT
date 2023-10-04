@@ -10,20 +10,65 @@
 #include <sstream>
 #include <cmath>
 #include <filesystem>
-
+#include <sys/stat.h>
 
 #include "config.h"
 
 
-inline void create_output_dir(std::string dir_path){
-    // create output directory if not exists (directories tree)
-    // this function requires c++17
-    if (!std::filesystem::exists(dir_path)){
-        std::filesystem::create_directories(dir_path);
-    } else {
-        if (world_rank == 0)
-            std::cout << "Output directory already exists. Overwriting..." << std::endl;
+inline int mkpath(std::string s,mode_t mode) {
+    size_t pos=0;
+    std::string dir;
+    int mdret = 0;
+
+    if(s[s.size()-1]!='/'){
+        // force trailing / so we can handle everything in loop
+        s+='/';
     }
+
+    while((pos=s.find_first_of('/',pos))!=std::string::npos){
+        dir=s.substr(0,pos++);
+        if(dir.size()==0) continue; // if leading / first time is 0 length
+        if((mdret=mkdir(dir.c_str(),mode)) && errno!=EEXIST){
+            return mdret;
+        }
+    }
+    return mdret;
+}
+
+
+
+inline void create_output_dir(std::string dir_path){
+
+    // create output directory if not exists (directories tree)
+    if (world_rank == 0) {
+
+#if __cplusplus > 201402L
+        // this function requires c++17
+        if (!std::filesystem::exists(dir_path)){
+            std::filesystem::create_directories(dir_path);
+        } else {
+            std::cout << "Output directory already exists. Overwriting..." << std::endl;
+        }
+#else // compilers not supporting std++17
+        // check if directory exists
+        struct stat info;
+        if (stat(dir_path.c_str(), &info) != 0){
+            // directory does not exist
+            // create directory
+            int status = mkpath(dir_path, 0755);
+            if (status != 0){
+                std::cout << "Error: cannot create output directory" << std::endl;
+                std::cout << "Exiting..." << std::endl;
+                exit(1);
+            }
+        } else {
+            // directory exists
+            std::cout << "Output directory already exists. Overwriting..." << std::endl;
+        }
+#endif
+
+    }
+
 }
 
 
