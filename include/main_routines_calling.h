@@ -318,7 +318,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
     }
 
-    // modify the receiver's location   (something wrong, the location of source is modified only if the source is contained in this processor )
+    // modify the receiver's location
     IP.modify_swapped_source_location();
     // write out new src_rec_file
     IP.write_src_rec_file(0,0);
@@ -572,11 +572,11 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             IP.modify_swapped_source_location();
 
             relocation_step += 1;
-        }
+        } // end relocation loop
 
         grid.rejunenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
-    }
+    } // end loop for model update and relocation
 
     // close xdmf file
     io.finalize_data_output_file();

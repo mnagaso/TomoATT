@@ -21,58 +21,6 @@
 #include "lbfgs.h"
 
 
-
-// do model update by gradient descent
-inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
-                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
-
-    // change stepsize
-    if (i_inv > 0 && v_obj_inout < old_v_obj) {
-        // step_length_init = std::min(0.01, step_length_init*1.03);
-        step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
-        step_length_init_sc = std::min((CUSTOMREAL)1.0, step_length_init_sc);
-    } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
-        // step_length_init = std::max(0.00001, step_length_init*0.97);
-        step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
-        step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
-    }
-
-    // sum kernels among all simultaneous runs
-    sumup_kernels(grid);
-
-    // smooth kernels
-    smooth_kernels(grid, IP);
-
-    // update the model with the initial step size
-    set_new_model(grid, step_length_init);
-
-    // make station correction
-    IP.station_correction_update(step_length_init_sc);
-
-    // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
-    if (subdom_main && IP.get_verbose_output_level()) {
-        // store kernel only in the first src datafile
-        io.change_group_name_for_model();
-
-        // output updated velocity models
-        io.write_Ks(grid, i_inv);
-        io.write_Keta(grid, i_inv);
-        io.write_Kxi(grid, i_inv);
-
-        // output descent direction
-        io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
-    }
-
-    // writeout temporary xdmf file
-    if (IP.get_verbose_output_level())
-        io.update_xdmf_file();
-
-    synchronize_all_world();
-}
-
-
 inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUSTOMREAL>& v_misfit_inout, std::ofstream& out_main, std::string type) {
     // output objective function
     if (myrank==0 && id_sim==0) {
@@ -181,6 +129,57 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
         }
         out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
     }
+}
+
+
+// do model update by gradient descent
+inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
+                    CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
+
+    // change stepsize
+    if (i_inv > 0 && v_obj_inout < old_v_obj) {
+        // step_length_init = std::min(0.01, step_length_init*1.03);
+        step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
+        step_length_init_sc = std::min((CUSTOMREAL)1.0, step_length_init_sc);
+    } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
+        // step_length_init = std::max(0.00001, step_length_init*0.97);
+        step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
+        step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
+    }
+
+    // sum kernels among all simultaneous runs
+    sumup_kernels(grid);
+
+    // smooth kernels
+    smooth_kernels(grid, IP);
+
+    // update the model with the initial step size
+    set_new_model(grid, step_length_init);
+
+    // make station correction
+    IP.station_correction_update(step_length_init_sc);
+
+    // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
+    if (subdom_main && IP.get_verbose_output_level()) {
+        // store kernel only in the first src datafile
+        io.change_group_name_for_model();
+
+        // output updated velocity models
+        io.write_Ks(grid, i_inv);
+        io.write_Keta(grid, i_inv);
+        io.write_Kxi(grid, i_inv);
+
+        // output descent direction
+        io.write_Ks_update(grid, i_inv);
+        io.write_Keta_update(grid, i_inv);
+        io.write_Kxi_update(grid, i_inv);
+    }
+
+    // writeout temporary xdmf file
+    if (IP.get_verbose_output_level())
+        io.update_xdmf_file();
+
+    synchronize_all_world();
 }
 
 
