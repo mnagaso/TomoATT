@@ -205,6 +205,12 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // run adjoint simulation
         /////////////////////////
 
+        // if (myrank == 0){
+        //     std::cout << "calculating adjoint field, source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+        //             << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+        //             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+        //             << std::endl;
+        // }
         if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
 
             // calculate adjoint source
