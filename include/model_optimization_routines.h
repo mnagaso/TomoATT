@@ -93,23 +93,6 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
         CUSTOMREAL mean;
         CUSTOMREAL std;
         std::string tmp;
-
-        std::cout   << "v_misfit_inout[5]: " << v_misfit_inout[5]
-                    << ", v_misfit_inout[6]: " << v_misfit_inout[6]
-                    << ", N_data: " << IP.N_data
-                    << std::endl;
-        std::cout   << "v_misfit_inout[7]: " << v_misfit_inout[7]
-                    << ", v_misfit_inout[8]: " << v_misfit_inout[8]
-                    << ", N_abs_local_data: " << IP.N_abs_local_data
-                    << std::endl;
-        std::cout   << "v_misfit_inout[11]: " << v_misfit_inout[11]
-                    << ", v_misfit_inout[12]: " << v_misfit_inout[12]
-                    << ", N_cr_dif_local_data: " << IP.N_cr_dif_local_data
-                    << std::endl;
-        std::cout   << "v_misfit_inout[9]: " << v_misfit_inout[9]
-                    << ", v_misfit_inout[10]: " << v_misfit_inout[10]
-                    << ", N_cs_dif_local_data: " << IP.N_cs_dif_local_data
-                    << std::endl;
         if (IP.N_data > 0) {
             mean = v_misfit_inout[5]/IP.N_data;
             std  = sqrt(v_misfit_inout[6]/IP.N_data - my_square(mean));
