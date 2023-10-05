@@ -9,10 +9,13 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
-#if __cplusplus > 201402L
+
+// chec if compiler is gcc 7.5 or older
+#if __GNUC__ == 7 && __GNUC_MINOR__ <= 5
+#include <experimental/filesystem>
+#elif __cplusplus > 201402L // compilers supporting c++17
 #include <filesystem>
 #endif
-
 
 #include "config.h"
 
