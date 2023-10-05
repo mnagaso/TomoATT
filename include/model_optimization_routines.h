@@ -79,23 +79,16 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
         out_main << std::setw(5) << i_inv << ",";
         out_main << std::setw(13) << type;
         out_main << "," << std::setw(19) << v_misfit_inout[0];
-        // if( IP.data_type.find("abs") != IP.data_type.end())
         out_main << "," << std::setw(19) << v_misfit_inout[1];
-        // if( IP.data_type.find("cs_dif") != IP.data_type.end()){
         if (IP.get_is_srcrec_swap())
             out_main << "," << std::setw(19) << v_misfit_inout[3];
         else
             out_main << "," << std::setw(19) << v_misfit_inout[2];
-        // }
-        // if( IP.data_type.find("cr_dif") != IP.data_type.end()){
         if (IP.get_is_srcrec_swap())
             out_main << "," << std::setw(19) << v_misfit_inout[2];
         else
             out_main << "," << std::setw(19) << v_misfit_inout[3];
-        // }
-        // if( IP.data_type.find("tele") != IP.data_type.end()){
         out_main << "," << std::setw(19) << v_misfit_inout[4];
-        // }
         // res
         CUSTOMREAL mean;
         CUSTOMREAL std;
@@ -179,7 +172,8 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
         } else {
             out_main << "," << std::setw(24) << "0.0/0.0";
         }
-        out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
+        if(type == "model update")
+            out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
     }
 }
 
