@@ -250,11 +250,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     Receiver recs;
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
 
-    std::cout << "residuals: " << std::endl;
-    for(int i = 0; i < (int)obj_residual.size(); i++){
-        std::cout << obj_residual[i] << ", ";
-    }
-    std::cout << std::endl;
     // return current objective function value
     return obj_residual;
 }
