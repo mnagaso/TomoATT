@@ -333,13 +333,13 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                         if (IP.get_src_point(name_src).is_out_of_region || \
                             IP.get_rec_point(name_rec1).is_out_of_region || \
                             IP.get_rec_point(name_rec2).is_out_of_region){
-                            obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                            res_tele        += 1.0 *          (syn_dif_time - obs_dif_time);
-                            res_tele_sq     += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                            obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt)*data.weight;
+                            res_tele        += 1.0 *          (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_tele_sq     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         } else{
-                            obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                            res_cs_dif      += 1.0 *          (syn_dif_time - obs_dif_time);
-                            res_cs_dif_sq   += 1.0 * my_square(syn_dif_time - obs_dif_time);
+                            obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt)*data.weight;
+                            res_cs_dif      += 1.0 *          (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_cs_dif_sq   += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         }
 
                         if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))   
@@ -852,6 +852,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                             res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             
+                            res                                     += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_sq                                  += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            
                         }
                         if(!IP.rec_map[name_rec2].is_stop){
                             if (IP.get_use_cr_reloc()){
@@ -864,6 +867,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                             // assign residual
                             res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                        
+                            res                                     += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            res_sq                                  += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         
                         }
                     } else if (data.is_src_pair) {  // we only record the obj of this kind of data
@@ -879,6 +885,9 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                         // assign residual
                         res_cr_dif                                  += 0.5 *          (data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
                         res_cr_dif_sq                               += 0.5 * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
+
+                        res                                         += 0.5 *          (data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
+                        res_sq                                      += 0.5 * my_square(data.cr_dif_travel_time - data.cr_dif_travel_time_obs);
 
                     } else {    // unsupported data (swapped common receiver, or others)
                         continue;
