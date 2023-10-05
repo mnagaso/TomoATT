@@ -18,8 +18,8 @@ model:
   init_model_path: ../0_generate_files_for_TomoATT/models/model_init_N61_61_61.h5    # path to initial model file (ignored if init_model_type is '1d_*')
 
 parallel: # parameters for parallel computation
-  n_sims: 8          # number of simultaneous run
-  ndiv_rtp: [1, 1, 1] # number of subdomains
+  n_sims: 4          # number of simultaneous run
+  ndiv_rtp: [2, 1, 1] # number of subdomains
   nproc_sub: 1       # number of subprocess used for each subdomain
 
 output_setting:
