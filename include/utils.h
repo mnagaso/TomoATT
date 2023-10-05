@@ -13,6 +13,7 @@
 // chec if compiler is gcc 7.5 or older
 #if __GNUC__ == 7 && __GNUC_MINOR__ <= 5
 #include <experimental/filesystem>
+#define GNUC_7_5
 #elif __cplusplus > 201402L // compilers supporting c++17
 #include <filesystem>
 #endif
@@ -47,7 +48,7 @@ inline void create_output_dir(std::string dir_path){
     // create output directory if not exists (directories tree)
     if (world_rank == 0) {
 
-#if __cplusplus > 201402L
+#if __cplusplus > 201402L && !defined(GNUC_7_5)
         // this function requires c++17
         if (!std::filesystem::exists(dir_path)){
             std::filesystem::create_directories(dir_path);
