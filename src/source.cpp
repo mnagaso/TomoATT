@@ -1,8 +1,7 @@
 #include "source.h"
 
-Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src) {
+Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src, bool for_2d_solver) {
 
-    if (is_teleseismic) return;
 
     if (subdom_main) {
         if(if_verbose) stdout_by_main("--- start source initialization ---");
@@ -13,14 +12,33 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
         delta_r   = grid.get_delta_r();
 
         // set source position
-        src_lon = IP.get_src_lon(   name_sim_src); // in radian
-        src_lat = IP.get_src_lat(   name_sim_src); // in radian
-        src_r   = IP.get_src_radius(name_sim_src); // radious
+        if(!for_2d_solver){
+            src_lon = IP.get_src_lon(   name_sim_src); // in radian
+            src_lat = IP.get_src_lat(   name_sim_src); // in radian
+            src_r   = IP.get_src_radius(name_sim_src); // radious
+        } else {
+            // 2d src database (src_map_2d) is accessible from dedicated getters.
+            src_lon = IP.get_src_lon_2d(   name_sim_src); // in radian
+            src_lat = IP.get_src_lat_2d(   name_sim_src); // in radian
+            src_r   = IP.get_src_radius_2d(name_sim_src); // radious
+        }
+    }
 
+    // further initialization is not needed for teleseismic source
+    if (is_teleseismic) return;
+
+    if (subdom_main) {
         // descretize source position (LOCAL ID)
         i_src_loc = std::floor((src_lon - grid.get_lon_min_loc()) / grid.get_delta_lon());
         j_src_loc = std::floor((src_lat - grid.get_lat_min_loc()) / grid.get_delta_lat());
         k_src_loc = std::floor((src_r   - grid.get_r_min_loc())   / grid.get_delta_r())  ;
+
+        if(i_src_loc +1 >= loc_I)
+            i_src_loc = loc_I - 2;
+        if(j_src_loc + 1 >= loc_J)
+            j_src_loc = loc_J - 2;
+        if(k_src_loc + 1 >= loc_K)
+            k_src_loc = loc_K - 2;
 
         // check if the source is in this subdomain (including the ghost nodes)
         if (grid.get_lon_min_loc() <= src_lon && src_lon <= grid.get_lon_max_loc()  && \
@@ -59,21 +77,21 @@ Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::str
             dis_src_err_r   = std::min(error_r   / grid.get_delta_r()  , _1_CR);
 
             // precision error for std::floor
-            if (dis_src_err_lon == _1_CR){
-                // i_src_loc shoud be +1
-                dis_src_err_lon = _0_CR;
-                i_src_loc++;
-            }
-            if (dis_src_err_lat == _1_CR){
-                // j_src_loc shoud be +1
-                dis_src_err_lat = _0_CR;
-                j_src_loc++;
-            }
-            if (dis_src_err_r == _1_CR){
-                // k_src_loc shoud be +1
-                dis_src_err_r = _0_CR;
-                k_src_loc++;
-            }
+            // if (dis_src_err_lon == _1_CR){
+            //     // i_src_loc shoud be +1
+            //     dis_src_err_lon = _0_CR;
+            //     i_src_loc++;
+            // }
+            // if (dis_src_err_lat == _1_CR){
+            //     // j_src_loc shoud be +1
+            //     dis_src_err_lat = _0_CR;
+            //     j_src_loc++;
+            // }
+            // if (dis_src_err_r == _1_CR){
+            //     // k_src_loc shoud be +1
+            //     dis_src_err_r = _0_CR;
+            //     k_src_loc++;
+            // }
 
             // std::cout << "src_lon, dis_src_lon, dis_src_err_lon : " << src_lon*RAD2DEG << ", " << dis_src_lon*RAD2DEG << ", " << dis_src_err_lon << std::endl;
             // std::cout << "src_lat, dis_src_lat, dis_src_err_lat : " << src_lat*RAD2DEG << ", " << dis_src_lat*RAD2DEG << ", " << dis_src_err_lat << std::endl;

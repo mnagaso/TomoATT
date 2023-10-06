@@ -39,7 +39,7 @@ public:
     // calculate initial fields T0 T0r T0t T0p and initialize tau
     void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
-    void initialize_fields_teleseismic(Source &, SrcRecInfo&);
+    void initialize_fields_teleseismic();
     // calculate L1 and Linf diff (sum of value change on the nodes)
     void calc_L1_and_Linf_diff(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for teleseismic source (sum of value change on the nodes)
@@ -123,6 +123,9 @@ public:
     CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc,   false);}; // Ks_update
     CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc,  false);}; // Kxi_update
     CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc, false);}; // Keta_update
+    CUSTOMREAL* get_Ks_descent_dir() {return get_array_for_vis(Ks_descent_dir_loc, false);}; // Ks_descent_dir
+    CUSTOMREAL* get_Kxi_descent_dir(){return get_array_for_vis(Kxi_descent_dir_loc,false);}; // Kxi_descent_dir
+    CUSTOMREAL* get_Keta_descent_dir(){return get_array_for_vis(Keta_descent_dir_loc,false);}; // Keta_descent_dir
 
     // get physical parameters
     CUSTOMREAL get_r_min()       {return r_min;};
@@ -273,7 +276,8 @@ public:
     CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc;
     CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
     CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
-    CUSTOMREAL *Ks_regularization_penalty_loc, *Keta_regularization_penalty_loc, *Kxi_regularization_penalty_loc;
+    CUSTOMREAL *fun_gradient_regularization_penalty_loc, *eta_gradient_regularization_penalty_loc, *xi_gradient_regularization_penalty_loc;
+    CUSTOMREAL *fun_prior_loc, *eta_prior_loc, *xi_prior_loc; // *zeta_prior_loc; TODO
     // tmp array for file IO
     CUSTOMREAL *vis_data;
 

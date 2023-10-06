@@ -38,12 +38,12 @@ public:
 
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
     bool        is_out_of_region    = false;   // is the source or receiver in the region; false: in the refion; true: teleseismic
-    CUSTOMREAL* arr_times_bound_N   = nullptr; // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E   = nullptr; // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W   = nullptr; // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S   = nullptr; // arrival time of the receiver at the south boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
-    bool*       is_bound_src;                  // true if the source is on the boundary surface
+    //CUSTOMREAL* arr_times_bound_N   = nullptr; // arrival time of the receiver at the north boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_E   = nullptr; // arrival time of the receiver at the east boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_W   = nullptr; // arrival time of the receiver at the west boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_S   = nullptr; // arrival time of the receiver at the south boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
+    //bool*       is_bound_src;                  // true if the source is on the boundary surface
 
     // kernel
     CUSTOMREAL sta_correct = 0.0;
@@ -184,16 +184,20 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&, \
+                             std::vector<std::string>&, \
                              std::vector<std::string>&);
 
 void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>&, \
+                                   std::map<std::string, SrcRecInfo>&, \
                                    std::vector<std::string>&, \
                                    std::map<std::string, SrcRecInfo>&);
 
 void send_src_info_inter_sim(SrcRecInfo&, int);
 void recv_src_info_inter_sim(SrcRecInfo&, int);
+void broadcast_src_info_intra_sim(SrcRecInfo&, int);
 void send_rec_info_inter_sim(SrcRecInfo&, int);
 void recv_rec_info_inter_sim(SrcRecInfo&, int);
+void broadcast_rec_info_intra_sim(SrcRecInfo&, int);
 void send_data_info_inter_sim(DataInfo&, int);
 void recv_data_info_inter_sim(DataInfo&, int);
 

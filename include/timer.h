@@ -8,7 +8,7 @@
 
 class Timer {
 public:
-    Timer(std::string& name){
+    Timer(std::string name){
         this->name = name;
         this->start_timer();
     };
