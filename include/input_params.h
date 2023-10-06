@@ -253,7 +253,7 @@ private:
     int n_inv_r_flex=1, n_inv_t_flex=1, n_inv_p_flex=1;                                   // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_read = false, n_inv_t_flex_read = false, n_inv_p_flex_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
 
-    bool invgrid_ani;                                                                                 // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
+    bool invgrid_ani = false;                                                                         // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
     CUSTOMREAL *dep_inv_ani, *lat_inv_ani, *lon_inv_ani;                                              // flexibly designed inversion grid
     int n_inv_r_flex_ani=1, n_inv_t_flex_ani=1, n_inv_p_flex_ani=1;                                   // number of flexibly designed inversion grid in r, t, p direction
     bool n_inv_r_flex_ani_read = false, n_inv_t_flex_ani_read = false, n_inv_p_flex_ani_read = false; // flag if n inv grid flex is read or not. if false, code allocate dummy memory
