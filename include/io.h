@@ -111,6 +111,13 @@ public:
     void write_Kxi_update(Grid&, int);
     // Keta_update
     void write_Keta_update(Grid&, int);
+    // Ks_descent_dir_loc
+    void write_Ks_descent_dir(Grid&, int);
+    // Kxi_descent_dir_loc
+    void write_Kxi_descent_dir(Grid&, int);
+    // Keta_descent_dir_loc
+    void write_Keta_descent_dir(Grid&, int);
+
     // write all concerning parameters
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
     void write_concerning_parameters(Grid&, int, InputParams&);

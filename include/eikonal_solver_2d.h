@@ -16,7 +16,7 @@
 class PlainGrid {
 
 public:
-    PlainGrid(SrcRecInfo& src, InputParams& IP);
+    PlainGrid(Source& src, InputParams& IP);
     ~PlainGrid();
 
     void run_iteration(InputParams& IP);
@@ -35,7 +35,7 @@ public:
     // epicentral distance
     CUSTOMREAL *epicentral_distance_2d;
     // activated boundaries
-    bool *activated_boundaries;
+    //bool *activated_boundaries;
     // grid
     CUSTOMREAL *r_2d, *t_2d; // coordinates
     CUSTOMREAL *fun_2d, *fac_a_2d, *fac_b_2d, *u_2d, *T_2d; // functions
@@ -60,9 +60,9 @@ private:
 };
 
 void prepare_teleseismic_boundary_conditions(InputParams&, Grid&, IO_utils&);
-void run_2d_solver(InputParams&, SrcRecInfo&, IO_utils&);
+void run_2d_solver(InputParams&, Source&, IO_utils&);
 void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
-void load_2d_traveltime(InputParams&, SrcRecInfo&, Grid&, IO_utils&);
-std::string get_2d_tt_filename(const std::string&, SrcRecInfo&);
+void load_2d_traveltime(InputParams&, Source&, Grid&, IO_utils&);
+std::string get_2d_tt_filename(const std::string&, Source&);
 
 #endif // EIKONAL_SOLVER_2D_H

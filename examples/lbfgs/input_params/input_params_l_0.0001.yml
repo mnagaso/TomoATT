@@ -18,12 +18,12 @@ model:
 
 parallel: # parameters for parallel computation
   n_sims: 1           # number of simultaneous run
-  ndiv_rtp: [1, 1, 1] # number of subdomains
-  nproc_sub: 2        # number of subprocess used for each subdomain
+  ndiv_rtp: [1, 2, 2] # number of subdomains
+  nproc_sub: 1        # number of subprocess used for each subdomain
 
 output_setting:
   output_dir: ./OUTPUT_FILES/    # path to output director (default is ./OUTPUT_FILES/)
-  output_source_field: true     # output the calculated field of all sources
+  output_source_field: true      # output the calculated field of all sources
   output_model_dat: false        # output model_parameters_inv_0000.dat or not.
   output_final_model: true       # output merged final model or not.
   output_in_process: true        # output model at each inv iteration or not.
@@ -47,8 +47,8 @@ run_mode: 1
 #          model update parameters setting        #
 ###################################################
 model_update: # update model parameters (when run_mode : 1 and 3)
-  max_iterations: 3 # maximum number of inversion iterations
-  optim_method: 0  # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
+  max_iterations: 30 # maximum number of inversion iterations
+  optim_method: 2   # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)
 
   # common parameters for all optim methods
   step_length: 0.01 # step length of model perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration.
@@ -56,17 +56,18 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # parameters for optim_method 0 (grad_descent)
   optim_method_0:
     step_length_decay: 0.9 # if objective function increase, step size -> step length * step_length_decay. default: 0.9
-    step_length_sc: 0.001  # ... # use it also ?
+    step_length_sc: 0.01  # ... # use it also ?
 
   # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)
   optim_method_1_2:
-    max_sub_iterations: 10       # maximum number of each sub-iteration
-    regularization_weight: 100.0 # weight value for regularization (lbfgs mode only)
+    max_sub_iterations: 5       # maximum number of each sub-iteration
+    regularization_weight: 0.0001 # weight value for regularization (lbfgs mode only)
+    coefs_regulalization_rtp: [1.0, 1.0, 1.0] # coefficients for regularization on each direction(lbfgs mode only)
 
   # smoothing
   smoothing:
-    smooth_method: 0        # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)
-    l_smooth_rtp: [1, 1, 1] # smoothing coefficients for laplacian smoothing
+    smooth_method: 1        # 0: multiparametrization, 1: laplacian smoothing (EXPERIMENTAL)
+    l_smooth_rtp: [1000,1000,1000] # smoothing coefficients for laplacian smoothing
 
   # parameters for smooth method 0 (multigrid model parametrization)
   n_inversion_grid: 5 # number of inversion grid sets
@@ -87,9 +88,6 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   lat_inv: [0.0, 1.0] # latitude in degree (ignored if type_lat_inv : 0)
   lon_inv: [0.0, 1.0] # longitude in degree (ignored if type_lon_inv : 0)
 
-  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
-  invgrid_volume_rescale: true
-
   # path to station correction file
   use_sta_correction: false
   sta_correction_file: dummy_sta_correction_file # station correction file path
@@ -97,18 +95,18 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   # -------------- using absolute traveltime data --------------
   abs_time:
     use_abs_time: true # 'true' for using absolute traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
-    residual_weight: [1.0, 3.0, 1.0, 1.0]    # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
-    distance_weight: [50.0, 150.0, 1.0, 1.0] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
+    residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
+    distance_weight: [50.0, 150.0, 1.0, 0.1] # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
 
   # -------------- using common source differential traveltime data --------------
   cs_dif_time:
-    use_cs_time: false # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual.
     azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two stations.
 
   # -------------- using common receiver differential traveltime data --------------
   cr_dif_time:
-    use_cr_time: false # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    use_cr_time: true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1]    # weight (wt) of residual.
     azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two earthquakes.
 
@@ -149,13 +147,13 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
   abs_time:
-    use_abs_time: true   # true for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
+    use_abs_time: yes   # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1]          # weight (wt) of residual. wt = residual_weight[2] for res < residual_weight[0]. wt = residual_weight[3] for res > residual_weight[1], and linear weight in between.
     distance_weight: [50.0, 150.0, 1.0, 0.1]       # weight of epicenter distance. wt = distance_weight[2] for dis < distance_weight[0]. wt = distance_weight[3] for dis > distance_weight[1], and linear weight in between.
 
   # -------------- using common receiver differential traveltime data --------------
   cr_dif_time:
-    use_cr_time: true  # true for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
+    use_cr_time: true  # 'yes' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1]          # weight (wt) of residual.
     azimuthal_weight: [10.0, 30.0, 1.0, 0.1]       # weight of azimuth (deg.) between two earthquakes.
 

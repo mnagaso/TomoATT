@@ -244,36 +244,36 @@ else:
 print("The output obj files are list here: ")
 print("  Use data types        total obj         obj of abs             obj of cs             obj of cr")
 tmp = obj_no_swap_abs_cr_cs
-print("no_swap_abs_cr_cs: %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_abs_cr_cs: %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_abs_cr
-print("no_swap_abs_cr:    %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_abs_cr:    %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_abs_cs
-print("no_swap_abs_cs:    %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_abs_cs:    %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_abs
-print("no_swap_abs:       %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_abs:       %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_cr_cs
-print("no_swap_cr_cs:     %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_cr_cs:     %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_cr
-print("no_swap_cr:        %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_cr:        %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_cs
-print("no_swap_cs:        %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_cs:        %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_no_data
-print("no_swap_no_data:   %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("no_swap_no_data:   %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 print("")
 tmp = obj_no_swap_abs_cr_cs
-print("swap_abs_cr_cs:    %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_abs_cr_cs:    %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_abs_cr
-print("swap_abs_cr:       %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_abs_cr:       %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_abs_cs
-print("swap_abs_cs:       %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_abs_cs:       %8.2f(total) %8.2f(    use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_abs
-print("swap_abs:          %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_abs:          %8.2f(total) %8.2f(    use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_cr_cs
-print("swap_cr_cs:        %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_cr_cs:        %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_cr
-print("swap_cr:           %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_cr:           %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(    use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_cs
-print("swap_cs:           %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_cs:           %8.2f(total) %8.2f(not use abs) %8.2f(    use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 tmp = obj_no_swap_no_data
-print("swap_no_data:      %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][1],tmp[0][2],tmp[0][3],tmp[0][4]))
+print("swap_no_data:      %8.2f(total) %8.2f(not use abs) %8.2f(not use cs ) %8.2f(not use cr )"%(tmp[0][0],tmp[0][1],tmp[0][2],tmp[0][3]))
 

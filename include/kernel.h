@@ -138,7 +138,13 @@ void sumup_kernels(Grid& grid) {
         grid.send_recev_boundary_data(grid.Ks_loc);
         grid.send_recev_boundary_data(grid.Kxi_loc);
         grid.send_recev_boundary_data(grid.Keta_loc);
+
+        grid.send_recev_boundary_data_kosumi(grid.Ks_loc);
+        grid.send_recev_boundary_data_kosumi(grid.Kxi_loc);
+        grid.send_recev_boundary_data_kosumi(grid.Keta_loc);
     }
+
+    synchronize_all_world();
 }
 
 #endif

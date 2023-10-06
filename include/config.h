@@ -165,6 +165,10 @@ inline int      id_sim           = 0; // simultaneous run id  (not equal to src 
 inline int      id_subdomain     = 0; // subdomain id
 inline bool     subdom_main      = false; // true if this process is main process in subdomain
 
+// flags for explaining the process's role
+inline bool proc_read_srcrec = false;  // true if this process is reading source file
+inline bool proc_store_srcrec = false; // true if this process is storing srcrec file
+
 // MNMN stop using these global variable for avoiding misleadings during the sources' iteration loop
 //inline int      id_sim_src       = 0; // id of current target source
 //inline std::string name_sim_src  = "unknown";   //name of current target source
@@ -189,6 +193,9 @@ inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplac
 inline CUSTOMREAL smooth_lp = 1.0;
 inline CUSTOMREAL smooth_lt = 1.0;
 inline CUSTOMREAL smooth_lr = 1.0;
+inline CUSTOMREAL regul_lp  = 1.0;
+inline CUSTOMREAL regul_lt  = 1.0;
+inline CUSTOMREAL regul_lr  = 1.0;
 inline const int  GRADIENT_DESCENT    = 0;
 inline const int  HALVE_STEPPING_MODE = 1;
 inline const int  LBFGS_MODE          = 2;
@@ -198,7 +205,7 @@ inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
-inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 0.3; // relative step size for the second and later iteration
+inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 3.0; // relative step size for the second and later iteration
 
 // variables for test
 inline bool if_test = false;

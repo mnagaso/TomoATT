@@ -1,28 +1,29 @@
-#ifndef SMOOTH_DESCENT_DIR_H
-#define SMOOTH_DESCENT_DIR_H
+#ifndef SMOOTH_GRAD_REGUL_H
+#define SMOOTH_GRAD_REGUL_H
 
 #include <iostream>
 #include "grid.h"
 #include "config.h"
 #include "smooth.h"
 
-
-inline void smooth_descent_dir_CG(Grid& grid, const CUSTOMREAL lr, const CUSTOMREAL lt, const CUSTOMREAL lp) {
+inline void smooth_gradient_regularization_CG(Grid& grid, const CUSTOMREAL lr, const CUSTOMREAL lt, const CUSTOMREAL lp) {
     // smoothing kernels with Conjugate Gradient method
     // lr,lt,lp: smoothing length in r, theta, phi direction
 
     // smooth Ks
-    CG_smooth(grid, grid.Ks_descent_dir_loc, grid.Ks_descent_dir_loc, lr, lt, lp);
+    CG_smooth(grid, grid.fun_gradient_regularization_penalty_loc, \
+                    grid.fun_gradient_regularization_penalty_loc, lr, lt, lp);
     // smooth Keta
-    CG_smooth(grid, grid.Keta_descent_dir_loc, grid.Keta_descent_dir_loc, lr, lt, lp);
+    CG_smooth(grid, grid.eta_gradient_regularization_penalty_loc, \
+                    grid.eta_gradient_regularization_penalty_loc, lr, lt, lp);
     // smooth Kxi
-    CG_smooth(grid, grid.Kxi_descent_dir_loc, grid.Kxi_descent_dir_loc, lr, lt, lp);
+    CG_smooth(grid, grid.xi_gradient_regularization_penalty_loc, \
+                    grid.xi_gradient_regularization_penalty_loc, lr, lt, lp);
 
 }
 
-
 // original method for smoothing kernels
-inline void smooth_descent_dir(Grid& grid){
+inline void smooth_gradient_regularization_orig(Grid& grid){
     // necessary params
     CUSTOMREAL r_r, r_t, r_p;
     int kdr, jdt, idp;
@@ -104,37 +105,37 @@ inline void smooth_descent_dir(Grid& grid){
                     if (i_loc < 0 || i_loc > loc_I-1) continue;
 
                     // update Ks_inv Keta_inv Kxi_inv
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt,kdr+1)] += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr)] += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr)] += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp,jdt+1,kdr+1)] += r_r*r_t*(_1_CR-r_p)*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt,kdr+1)] += r_r*(_1_CR-r_t)*r_p*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr)] += (_1_CR-r_r)*r_t*r_p*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
-                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)];
-                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)];
-                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)];
+                    grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)];
+                    grid.Keta_inv_loc[I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)];
+                    grid.Kxi_inv_loc[ I2V_INV_KNL(idp+1,jdt+1,kdr+1)] += r_r*r_t*r_p*grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)];
 
                 } // end for i
             } // end for j
@@ -238,9 +239,9 @@ inline void smooth_descent_dir(Grid& grid){
 
 
                     // update para
-                    grid.Ks_descent_dir_loc[  I2V(i_loc,j_loc,k_loc)] += pert_Ks;
-                    grid.Keta_descent_dir_loc[I2V(i_loc,j_loc,k_loc)] += pert_Keta;
-                    grid.Kxi_descent_dir_loc[ I2V(i_loc,j_loc,k_loc)] += pert_Kxi;
+                    grid.fun_gradient_regularization_penalty_loc[  I2V(i_loc,j_loc,k_loc)] += pert_Ks;
+                    grid.eta_gradient_regularization_penalty_loc[I2V(i_loc,j_loc,k_loc)] += pert_Keta;
+                    grid.xi_gradient_regularization_penalty_loc[ I2V(i_loc,j_loc,k_loc)] += pert_Kxi;
 
 
                 } // end for i

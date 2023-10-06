@@ -21,7 +21,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
     std::stringstream ss;       // for parsing each line
 
     // only world_rank 0 reads the file
-    if (sim_rank == 0){
+    //if (sim_rank == 0){
         ifs.open(src_rec_file);
         // abort if file does not exist
         if (!ifs.is_open()){
@@ -30,7 +30,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
         }
         ss_whole << ifs.rdbuf();
         ifs.close();
-    }
+    //}
 
     std::string line;
     int cc = 0;        // count the number of lines
@@ -57,13 +57,13 @@ void parse_src_rec_file(std::string& src_rec_file, \
         line.clear(); // clear the line before use
 
         // read a line
-        if (sim_rank == 0){
+        //if (sim_rank == 0){
             if (!std::getline(ss_whole, line))
                 end_of_file = true;
-        }
+        //}
 
         // broadcast end_of_file
-        broadcast_bool_single(end_of_file, 0);
+        //broadcast_bool_single(end_of_file, 0);
 
         if (end_of_file)
             break;
@@ -74,17 +74,17 @@ void parse_src_rec_file(std::string& src_rec_file, \
                 skip_this_line = true;
         }
 
-        broadcast_bool_single(skip_this_line, 0);
+        //broadcast_bool_single(skip_this_line, 0);
 
         if (skip_this_line)
             continue;
 
         // parse the line
-        int ntokens = 0;
+        //int ntokens = 0;
         std::string token;
         std::vector<std::string> tokens;
 
-        if (sim_rank==0){
+        //if (sim_rank==0){
             // erase the trailing space
             line.erase(line.find_last_not_of(" \n\r\t")+1);
 
@@ -98,19 +98,19 @@ void parse_src_rec_file(std::string& src_rec_file, \
             }
 
             // length of tokens
-            ntokens = tokens.size();
-        }
+            //ntokens = tokens.size();
+        //}
 
         // broadcast ntokens
-        broadcast_i_single(ntokens, 0);
+        //broadcast_i_single(ntokens, 0);
         // broadcast tokens
-        for (int i=0; i<ntokens; i++){
-            if (sim_rank == 0)
-                token = tokens[i];
-            broadcast_str(token, 0);
-            if (sim_rank != 0)
-                tokens.push_back(token);
-        }
+        //for (int i=0; i<ntokens; i++){
+        //    if (sim_rank == 0)
+        //        token = tokens[i];
+        //    broadcast_str(token, 0);
+        //    if (sim_rank != 0)
+        //        tokens.push_back(token);
+        //}
 
         try { // check failure of parsing line by line
 
@@ -194,7 +194,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
 
                     data.data_weight = src_weight * rec_weight;
                     data.weight      = data.data_weight * abs_time_local_weight;
-                    data.weight_reloc= data.data_weight * abs_time_local_weight_reloc;                    
+                    data.weight_reloc= data.data_weight * abs_time_local_weight_reloc;
                     data.phase       = tokens[6];
 
                     data.is_src_rec      = true;
@@ -334,8 +334,8 @@ void parse_src_rec_file(std::string& src_rec_file, \
         } catch (std::invalid_argument& e) {
                 std::cout << "Error: invalid argument in src_rec_file. Abort." << std::endl;
                 std::cout << "problematic line: \n\n" << line << std::endl;
-
-                MPI_Abort(MPI_COMM_WORLD, 1);
+                exit(1);
+                //MPI_Abort(MPI_COMM_WORLD, 1);
         }
 
     /*
@@ -430,33 +430,33 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
         line.clear();
 
         // read a line
-        if (sim_rank == 0){
+        //if (sim_rank == 0){
             if (!std::getline(ss_whole,line))
                 end_of_file = true;
-        }
+        //}
 
-        broadcast_bool_single(end_of_file, 0);
+        //broadcast_bool_single(end_of_file, 0);
 
         if (end_of_file)
             break;
 
         // skip this line if it is a comment line
-        if (sim_rank == 0){
+        //if (sim_rank == 0){
             if (line[0] == '#' || line.empty())
                 skip_this_line = true;
-        }
+        //}
 
-        broadcast_bool_single(skip_this_line, 0);
+        //broadcast_bool_single(skip_this_line, 0);
 
         if (skip_this_line)
             continue;
 
         // parse the line
-        int ntokens = 0;
+        //int ntokens = 0;
         std::string token;
         std::vector<std::string> tokens;
 
-        if (sim_rank == 0){
+        //if (sim_rank == 0){
             // erase the last space
             line.erase(line.find_last_not_of(" \n\r\t")+1);
 
@@ -469,19 +469,19 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
                     tokens.push_back(token);
             }
             // number of tokens
-            ntokens = tokens.size();
-        }
+            //ntokens = tokens.size();
+        //}
 
         // broadcast ntokens
-        broadcast_i_single(ntokens, 0);
+        //broadcast_i_single(ntokens, 0);
         // broadcast tokens
-        for (int i=0; i<ntokens; i++){
-            if (sim_rank == 0)
-                token = tokens[i];
-            broadcast_str(token, 0);
-            if (sim_rank != 0)
-                tokens.push_back(token);
-        }
+        //for (int i=0; i<ntokens; i++){
+        //    if (sim_rank == 0)
+        //        token = tokens[i];
+        //    broadcast_str(token, 0);
+        //    if (sim_rank != 0)
+        //        tokens.push_back(token);
+        //}
 
         try { // check failure of parsion line by line
 
@@ -507,7 +507,8 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
             std::cout << "Error: invalid argument in sta_correction_file. Abort." << std::endl;
             std::cout << "problematic line: \n\n" << line << std::endl;
 
-            MPI_Abort(MPI_COMM_WORLD, 1);
+            exit(1);
+            //MPI_Abort(MPI_COMM_WORLD, 1);
         }
     }
 }
@@ -555,8 +556,12 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
          || src.dep < min_dep || src.dep > max_dep){
 
             // out of region (teleseismic events)
-            src.is_out_of_region       = true;
+            src.is_out_of_region      = true;
             src_map_tele[iter->first] = src;
+
+            // set a flag on backup data (for output)
+            src_map_back[iter->first].is_out_of_region = true;
+
         } else {
             // within region (local events)
             src.is_out_of_region  = false;
@@ -598,7 +603,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                     } else {
                         total_abs_local_data_weight         += data.data_weight;
                         total_abs_local_data_weight_reloc   += data.data_weight;
-                        
+
                         data_map[name_src][name_rec].push_back(data);
                         rec_map[name_rec]            = rec_map_back[name_rec];
                         data_type["abs"]             = 1;
@@ -617,7 +622,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                         data.weight                              = data.data_weight * teleseismic_weight;
                         total_teleseismic_data_weight_reloc     += data.data_weight;
                         data.weight_reloc                        = data.data_weight * teleseismic_weight_reloc;
-                        
+
                         data_map_tele[name_src1][name_rec].push_back(data);
                         rec_map_tele[name_rec]             = rec_map_back[name_rec];
                         data_type["tele"]                  = 1;
@@ -1067,13 +1072,36 @@ void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &src_map,
                                std::map<std::string, SrcRecInfo> &rec_map_tele,
                                std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &data_map_tele){
     if(src_map_tele.size() > 0) {
-        for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++)
+        for (auto iter = src_map_tele.cbegin(); iter != src_map_tele.cend();){
             src_map[iter->first] = iter->second;
+            // erase pushed data
+            src_map_tele.erase(iter++);
+        }
 
-        for (auto iter = rec_map_tele.begin(); iter != rec_map_tele.end(); iter++)
+        for (auto iter = rec_map_tele.cbegin(); iter != rec_map_tele.cend();){
             rec_map[iter->first] = iter->second;
+            // erase pushed data
+            rec_map_tele.erase(iter++);
+        }
 
-        data_map.insert(data_map_tele.begin(), data_map_tele.end());
+        //data_map.insert(data_map_tele.begin(), data_map_tele.end());
+        // instead of insert, we use manual loop to avoid unefficent memory allocation
+        for (auto iter = data_map_tele.cbegin(); iter != data_map_tele.cend();){
+            for (auto iter2 = iter->second.cbegin(); iter2 != iter->second.cend();){
+                if (data_map[iter->first][iter2->first].size()==0) {
+                    data_map[iter->first][iter2->first] = iter2->second;
+                    // erase pushed data
+                    data_map_tele[iter->first].erase(iter2++);
+                } else {
+                    data_map[iter->first][iter2->first].insert(data_map[iter->first][iter2->first].end(), iter2->second.begin(), iter2->second.end());
+                    // erase pushed data
+                    data_map_tele[iter->first].erase(iter2++);
+                }
+
+            }
+            // erase pushed data
+            data_map_tele.erase(iter++);
+        }
     }
 
     // give new event id (accourding to the name)
@@ -1093,61 +1121,68 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                              std::map<std::string, SrcRecInfo>&                                   src_map_this_sim, \
                              std::map<std::string, SrcRecInfo>&                                   rec_map_this_sim, \
                              std::map<std::string, std::map<std::string, std::vector<DataInfo>>>& data_map_this_sim, \
-                             std::vector<std::string>&                                            src_name_list_this_sim){
+                             std::vector<std::string>&                                            src_name_list_this_sim, \
+                             std::vector<std::string>&                                            rec_name_list_this_sim){
 
-    // number of total sources
-    int n_src = 0;
 
-    // number of total sources
-    if (id_sim == 0 && subdom_main)
-        n_src = src_map.size();
+    // this process is done by only the processes which stores the data.
+    if (proc_store_srcrec) {
 
-    // broadcast the number of sources to all the processors
-    broadcast_i_single_inter_and_intra_sim(n_src, 0);
+        // number of total sources
+        int n_src = 0;
 
-    // store the total number of sources
-    nsrc_total = n_src;
+        // number of total sources
+        if (proc_read_srcrec)
+            n_src = src_map.size();
 
-    // assign sources to each simulutaneous run group
-    for (int i_src = 0; i_src < n_src; i_src++) {
+        // broadcast the number of sources to all the processors
+        broadcast_i_single_inter_sim(n_src, 0); // inter simulutaneous run group
 
-        // id of simulutaneous run group to which the i_src-th source belongs
-        int dst_id_sim = select_id_sim_for_src(i_src, n_sims);
+        // store the total number of sources
+        nsrc_total = n_src;
 
-        // broadcast the source name
-        std::string src_name;
-        if (id_sim == 0 && subdom_main){
-            src_name = src_name_list[i_src];
-        }
+        // assign sources to each simulutaneous run group
+        for (int i_src = 0; i_src < n_src; i_src++) {
 
-        broadcast_str_inter_and_intra_sim(src_name, 0);
+            // id of simulutaneous run group to which the i_src-th source belongs
+            int dst_id_sim = select_id_sim_for_src(i_src, n_sims);
 
-        if (id_sim==0){ // sender
+            // broadcast the source name
+            std::string src_name;
+            if (id_sim == 0 && subdom_main){
+                src_name = src_name_list[i_src];
+            }
 
-            if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group
+            broadcast_str_inter_sim(src_name, 0); // inter simulutaneous run group
 
-                if (subdom_main){
+            if (id_sim==0){ // sender
+
+                if (dst_id_sim == id_sim){ // this source belongs to this simulutaneous run group
+
                     // src
                     src_map_this_sim[src_name] = src_map[src_name];
                     // data
                     for (auto iter = data_map[src_name].begin(); iter != data_map[src_name].end(); iter++){
                         // rec by data
                         rec_map_this_sim[iter->first] = rec_map[iter->first];
+                        rec_name_list_this_sim.push_back(iter->first);
+
                         for (auto& data : iter->second){
                             data_map_this_sim[src_name][iter->first].push_back(data);
 
                             // store the second receiver for rec_pair
-                            if (data.is_rec_pair)
+                            if (data.is_rec_pair){
                                 rec_map_this_sim[data.name_rec_pair[1]] = rec_map[data.name_rec_pair[1]];
+                                rec_name_list_this_sim.push_back(data.name_rec_pair[1]);
+                            }
                         }
                     }
-                } // end if (subdom_main)
 
-                // add the source name to the source name list
-                src_name_list_this_sim.push_back(src_name);
+                    // add the source name to the source name list
+                    src_name_list_this_sim.push_back(src_name);
 
-            } else { // this source belongs to non-main simulutaneous run group
-                if (subdom_main){
+                } else { // this source belongs to non-main simulutaneous run group
+
                     // send src
                     send_src_info_inter_sim(src_map[src_name], dst_id_sim);
 
@@ -1177,14 +1212,13 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
 
                         }
                     } // if (n_data > 0)
-                } // end if (subdom_main)
 
-            }
-        } else { // receive
-            if (dst_id_sim == id_sim){
+                }
+            } else { // receive
+                if (dst_id_sim == id_sim){
 
-                // receive src/rec_points from the main process of dst_id_sim
-                if(subdom_main){
+                    // receive src/rec_points from the main process of dst_id_sim
+
                     // prepare SrcRecInfo object for receiving the contents
                     SrcRecInfo tmp_SrcInfo;
 
@@ -1206,6 +1240,7 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                         recv_rec_info_inter_sim(tmp_RecInfo, 0);
 
                         rec_map_this_sim[tmp_RecInfo.name] = tmp_RecInfo;
+                        rec_name_list_this_sim.push_back(tmp_RecInfo.name);
 
                         int n_data = 0;
                         recv_i_single_sim(&n_data, 0);
@@ -1219,24 +1254,30 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
                             data_map_this_sim[tmp_DataInfo.name_src][tmp_DataInfo.name_rec].push_back(tmp_DataInfo);
 
                             // store the second receiver for rec_pair
-                            if (tmp_DataInfo.is_rec_pair)
+                            if (tmp_DataInfo.is_rec_pair){
                                 recv_rec_info_inter_sim(rec_map_this_sim[tmp_DataInfo.name_rec_pair[1]], 0);
+                                rec_name_list_this_sim.push_back(tmp_DataInfo.name_rec_pair[1]);
+                            }
                         }
 
                     } // end of for i_srcrec
-                } // end of if(subdom_main)
 
-                // add the source name to the source name list
-                src_name_list_this_sim.push_back(src_name);
+                    // add the source name to the source name list
+                    src_name_list_this_sim.push_back(src_name);
 
-            } else {
-                // do nothing
-            }
+                } else {
+                    // do nothing
+                }
 
-        } // end of if (id_sim==0)
+            } // end of if (id_sim==0)
 
+        } // end of for i_src
 
-    } // end of for i_src
+        // make rec_name_list_this_sim unique using unique
+        std::sort(rec_name_list_this_sim.begin(), rec_name_list_this_sim.end());
+        rec_name_list_this_sim.erase(std::unique(rec_name_list_this_sim.begin(), rec_name_list_this_sim.end()), rec_name_list_this_sim.end());
+
+    } // end of if (proc_store_srcrec)
 
     // check IP.src_ids_this_sim for this rank
     if (myrank==0 && if_verbose) {
@@ -1250,44 +1291,51 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&                 
 }
 
 
-void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map_tele, \
-                                   std::vector<std::string>& src_id2name_2d, \
+void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map_all, \
+                                   std::map<std::string, SrcRecInfo>& src_map, \
+                                   std::vector<std::string>&          src_id2name_2d, \
                                    std::map<std::string, SrcRecInfo>& src_map_2d) {
-    // src_map_tele: map of teleseismic src objects, (only the main process has the information.)
+    //
     // src_id2name_2d: list of src name assigned to this simultaneous run group
     // src_map_2d: src map assigned to this simultaneous run group
 
-    std::map<std::string, SrcRecInfo> tmp_src_map_unique;
-    std::vector<std::string> tmp_src_name_list_unique;
+    if (proc_store_srcrec) {
 
-    // at first, make a depth-unique source list in the main process from src_map_tele
-    if (id_sim==0 && subdom_main) {
+        std::map<std::string, SrcRecInfo> tmp_src_map_unique;
+        std::vector<std::string> tmp_src_name_list_unique;
 
-        for (auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++){
-            std::string tmp_name = iter->second.name;
+        // at first, make a depth-unique source list in the main process from src_map_tele
+        if (proc_read_srcrec) {
 
-            // check if there is no element in tmp_src_map_unique with the same iter->second.depth
-            bool if_unique = true;
-            for (auto iter2 = tmp_src_map_unique.begin(); iter2 != tmp_src_map_unique.end(); iter2++){
-                if (iter2->second.dep == iter->second.dep){
-                    if_unique = false;
-                    break;
+            for (auto iter = src_map_all.begin(); iter != src_map_all.end(); iter++){
+
+                // skip if this is not a teleseismic source
+                if (!iter->second.is_out_of_region)
+                    continue;
+
+                std::string tmp_name = iter->second.name;
+
+                // check if there is no element in tmp_src_map_unique with the same iter->second.depth
+                bool if_unique = true;
+                for (auto iter2 = tmp_src_map_unique.begin(); iter2 != tmp_src_map_unique.end(); iter2++){
+                    if (iter2->second.dep == iter->second.dep){
+                        if_unique = false;
+                        break;
+                    }
+                }
+
+                if (if_unique) {
+                    tmp_src_map_unique[tmp_name] = iter->second;
+                    tmp_src_name_list_unique.push_back(tmp_name);
                 }
             }
-
-            if (if_unique) {
-                tmp_src_map_unique[tmp_name] = iter->second;
-                tmp_src_name_list_unique.push_back(tmp_name);
-            }
         }
-    }
 
-    // broadcast the number of unique sources to all processes
-    int n_src_unique = 0;
-    if (id_sim==0 && subdom_main) n_src_unique = tmp_src_map_unique.size();
-    MPI_Bcast(&n_src_unique, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        // broadcast the number of unique sources to all processes
+        int n_src_unique = 0;
+        if (proc_read_srcrec) n_src_unique = tmp_src_map_unique.size();
+        broadcast_i_single_inter_sim(n_src_unique, 0); // inter simulutaneous run group
 
-    if (subdom_main){
         // iterate over all the unique sources
         for (int i_src_unique = 0; i_src_unique < n_src_unique; i_src_unique++){
             int dst_id_sim = select_id_sim_for_src(i_src_unique, n_sims);
@@ -1313,7 +1361,7 @@ void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>& src_map_te
                 }
             }
         }
-   } // end of if (subdom_main)
+    } // end of if (proc_store_srcrec)
 
     // print the number of sources ssigned to this simultaneous run group
     for (int i_sim=0; i_sim < n_sims; i_sim++){
@@ -1370,6 +1418,24 @@ void recv_src_info_inter_sim(SrcRecInfo &src, int orig){
 }
 
 
+void broadcast_src_info_intra_sim(SrcRecInfo& src, int orig){
+        broadcast_i_single(src.id, orig);
+        //broadcast_i_single(src.year , orig);
+        //broadcast_i_single(src.month, orig);
+        //broadcast_i_single(src.day  , orig);
+        //broadcast_i_single(src.hour , orig);
+        //broadcast_i_single(src.min  , orig);
+        //broadcast_cr_single(src.sec, orig);
+        broadcast_cr_single(src.lat, orig);
+        broadcast_cr_single(src.lon, orig);
+        broadcast_cr_single(src.dep, orig);
+        //broadcast_cr_single(src.mag, orig);
+        broadcast_i_single(src.n_data, orig);
+        broadcast_str(src.name, orig);
+        broadcast_bool_single(src.is_out_of_region, orig);
+}
+
+
 void send_rec_info_inter_sim(SrcRecInfo &rec, int dest){
 
     send_i_single_sim(&rec.id, dest);
@@ -1387,6 +1453,17 @@ void recv_rec_info_inter_sim(SrcRecInfo &rec, int orig){
     recv_cr_single_sim(&rec.lon, orig);
     recv_cr_single_sim(&rec.lat, orig);
     recv_cr_single_sim(&rec.dep, orig);
+}
+
+
+void broadcast_rec_info_intra_sim(SrcRecInfo& rec, int orig){
+        broadcast_i_single(rec.id, orig);
+        broadcast_str(rec.name, orig);
+        broadcast_cr_single(rec.lon, orig);
+        broadcast_cr_single(rec.lat, orig);
+        broadcast_cr_single(rec.dep, orig);
+        broadcast_cr_single(rec.adjoint_source, orig);
+        broadcast_bool_single(rec.is_stop, orig);
 }
 
 void send_data_info_inter_sim(DataInfo &data, int dest){
