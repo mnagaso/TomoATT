@@ -10,7 +10,7 @@ domain:
   n_rtp: [61, 61, 61]         # number of nodes
 
 source:
-  src_rec_file: ../0_generate_files_for_TomoATT/src_rec_files/src_rec_config.dat    # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file: src_rec_config.dat    # source receiver file (if found, src_dep_lat_lon is ignored)
   # src_rec_file : 'eg3_地震定位简易测试/src_rec_init_loc_single.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec: true                # swap source and receiver (true or false)
 
@@ -18,8 +18,8 @@ model:
   init_model_path: ../0_generate_files_for_TomoATT/models/model_ckb_N61_61_61.h5    # path to initial model file (ignored if init_model_type is '1d_*')
 
 parallel: # parameters for parallel computation
-  n_sims: 2          # number of simultaneous run
-  ndiv_rtp: [2, 2, 1] # number of subdomains
+  n_sims: 8          # number of simultaneous run
+  ndiv_rtp: [1, 1, 1] # number of subdomains
   nproc_sub: 1       # number of subprocess used for each subdomain
 
 output_setting:
@@ -28,6 +28,7 @@ output_setting:
   output_model_dat: true  # output model_parameters_inv_0000.dat or not.
   output_final_model: true # output merged final model or not.
   output_in_process: true # output model at each inv iteration or not.
+  output_in_process_data: true # output src_rec_file at each inv iteration or not.
   single_precision_output: false # output results in single precision or not.
   verbose_output_level: 0 # output internal parameters, if 0, only model parameters are out. Higher level, more internal parameters are output. default: 0
   output_file_format: 0 # in/output file format, if 0: HDF5, if 1: ASCII
@@ -100,13 +101,13 @@ model_update: # update model parameters (when run_mode : 1 and 3)
 
   # -------------- using common source differential traveltime data --------------
   cs_dif_time:
-    use_cs_time: false # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    use_cs_time: true # 'true' for using common source differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
     azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two stations.
 
   # -------------- using common receiver differential traveltime data --------------
   cr_dif_time:
-    use_cr_time: false # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
+    use_cr_time: true # 'true' for using common receiver differential traveltime data to update model parameters; 'false' for not using (no need to set parameters in this section)
     residual_weight: [1.0, 3.0, 1.0, 0.1] # weight (wt) of residual.
     azimuthal_weight: [15.0, 30.0, 1.0, 0.1] # weight of azimuth between two earthquakes.
 
@@ -139,7 +140,6 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
   max_iterations: 100   # maximum number of iterations for relocation
   tol_gradient: 0.0001  # threshold value for checking the convergence for each iteration
 
-  # more option for using different types of data is under development (following)
   # -------------- using absolute traveltime data --------------
   abs_time:
     use_abs_time: true   # 'true' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)
@@ -152,6 +152,10 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 1)
     residual_weight: [1.0, 3.0, 1.0, 0.1]          # weight (wt) of residual.
     azimuthal_weight: [10.0, 30.0, 1.0, 0.1]       # weight of azimuth (deg.) between two earthquakes.
 
+  global_weight:
+    balance_data_weight: false # true: over the total weight of the each type of the data; no: use original weight (below weight for each type of data needs to be set)
+    abs_time_weight: 1.0 # weight of absolute traveltime data after balance,                       default: 1.0
+    cr_dif_time_local_weight: 1.0 # weight of common receiver differential traveltime data after balance,   default: 1.0
 
 ####################################################################
 #          inversion strategy for tomography and relocation        #
@@ -164,8 +168,7 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
   inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
     model_update_N_iter : 1
     relocation_N_iter  : 1 
-    max_loop : 40
-
+    max_loop : 10
 
 
 # --- parameters for core solver ---------------------------------------------------------
