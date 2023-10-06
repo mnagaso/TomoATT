@@ -10,7 +10,7 @@ domain:
   n_rtp: [61, 61, 61]         # number of nodes
 
 source:
-  src_rec_file: src_rec_config.dat    # source receiver file (if found, src_dep_lat_lon is ignored)
+  src_rec_file: ../0_generate_files_for_TomoATT/src_rec_files/src_rec_config.dat    # source receiver file (if found, src_dep_lat_lon is ignored)
   # src_rec_file : 'eg3_地震定位简易测试/src_rec_init_loc_single.dat' # source receiver file (if found, src_dep_lat_lon is ignored)
   swap_src_rec: true                # swap source and receiver (true or false)
 
@@ -167,7 +167,7 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
     model_update_N_iter : 1
-    relocation_N_iter  : 1 
+    relocation_N_iter  : 1
     max_loop : 10
 
 
