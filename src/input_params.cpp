@@ -326,7 +326,39 @@ InputParams::InputParams(std::string& input_file){
             if (config["model_update"]["invgrid_ani"]) {
                 getNodeValue(config["model_update"], "invgrid_ani", invgrid_ani);
             }
-            if (config["model_update"]["dep_inv_ani"]) {
+            // type_invgrid_dep_ani
+            if (config["model_update"]["type_invgrid_dep_ani"]) {
+                getNodeValue(config["model_update"], "type_invgrid_dep_ani", type_invgrid_dep_ani);
+            }
+            if (config["model_update"]["type_invgrid_lat_ani"]) {
+                getNodeValue(config["model_update"], "type_invgrid_lat_ani", type_invgrid_lat_ani);
+            }
+            if (config["model_update"]["type_invgrid_lon_ani"]) {
+                getNodeValue(config["model_update"], "type_invgrid_lon_ani", type_invgrid_lon_ani);
+            }
+            // number of inversion grid for regular grid
+            if (config["model_update"]["n_inv_dep_lat_lon_ani"]) {
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_r_ani, 0);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_t_ani, 1);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_p_ani, 2);
+            }
+            // inversion grid positions
+            if (config["model_update"]["min_max_dep_inv_ani"]) {
+                getNodeValue(config["model_update"], "min_max_dep_inv_ani", min_dep_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_dep_inv_ani", max_dep_inv_ani, 1);
+            }
+            // minimum and maximum latitude
+            if (config["model_update"]["min_max_lat_inv_ani"]) {
+                getNodeValue(config["model_update"], "min_max_lat_inv_ani", min_lat_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_lat_inv_ani", max_lat_inv_ani, 1);
+            }
+            // minimum and maximum longitude
+            if (config["model_update"]["min_max_lon_inv_ani"]) {
+                getNodeValue(config["model_update"], "min_max_lon_inv", min_lon_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_lon_inv", max_lon_inv_ani, 1);
+            }
+
+            if (config["model_update"]["dep_inv_ani"] && type_invgrid_dep_ani == 1) {
                 n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
                 dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
                 for (int i = 0; i < n_inv_r_flex_ani; i++){
@@ -334,7 +366,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_r_flex_ani_read = true;
             }
-            if (config["model_update"]["lat_inv_ani"]) {
+            if (config["model_update"]["lat_inv_ani"] && type_invgrid_lat_ani == 1) {
                 n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
                 lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
                 for (int i = 0; i < n_inv_t_flex_ani; i++){
@@ -342,7 +374,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_t_flex_ani_read = true;
             }
-            if (config["model_update"]["lon_inv_ani"]) {
+            if (config["model_update"]["lon_inv_ani"] && type_invgrid_lon_ani == 1) {
                 n_inv_p_flex_ani = config["model_update"]["lon_inv_ani"].size();
                 lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
                 for (int i = 0; i < n_inv_p_flex_ani; i++){
@@ -698,9 +730,15 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(type_invgrid_dep, 0);
     broadcast_i_single(type_invgrid_lat, 0);
     broadcast_i_single(type_invgrid_lon, 0);
+    broadcast_i_single(type_invgrid_dep_ani, 0);
+    broadcast_i_single(type_invgrid_lat_ani, 0);
+    broadcast_i_single(type_invgrid_lon_ani, 0);
     broadcast_i_single(n_inv_r, 0);
     broadcast_i_single(n_inv_t, 0);
     broadcast_i_single(n_inv_p, 0);
+    broadcast_i_single(n_inv_r_ani, 0);
+    broadcast_i_single(n_inv_t_ani, 0);
+    broadcast_i_single(n_inv_p_ani, 0);
     broadcast_cr_single(min_dep_inv, 0);
     broadcast_cr_single(max_dep_inv, 0);
     broadcast_cr_single(min_lat_inv, 0);
@@ -710,28 +748,32 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(n_inv_r_flex, 0);
     broadcast_i_single(n_inv_t_flex, 0);
     broadcast_i_single(n_inv_p_flex, 0);
+    broadcast_cr_single(min_dep_inv_ani, 0);
+    broadcast_cr_single(max_dep_inv_ani, 0);
+    broadcast_cr_single(min_lat_inv_ani, 0);
+    broadcast_cr_single(max_lat_inv_ani, 0);
+    broadcast_cr_single(min_lon_inv_ani, 0);
+    broadcast_cr_single(max_lon_inv_ani, 0);
+    broadcast_i_single(n_inv_r_flex_ani, 0);
+    broadcast_i_single(n_inv_t_flex_ani, 0);
+    broadcast_i_single(n_inv_p_flex_ani, 0);
+
     if (world_rank != 0) {
         dep_inv = new CUSTOMREAL[n_inv_r_flex];
         lat_inv = new CUSTOMREAL[n_inv_t_flex];
         lon_inv = new CUSTOMREAL[n_inv_p_flex];
-    }
-    broadcast_cr(dep_inv,n_inv_r_flex, 0);
-    broadcast_cr(lat_inv,n_inv_t_flex, 0);
-    broadcast_cr(lon_inv,n_inv_p_flex, 0);
-
-    broadcast_bool_single(invgrid_ani, 0);
-    broadcast_i_single(n_inv_r_flex_ani, 0);
-    broadcast_i_single(n_inv_t_flex_ani, 0);
-    broadcast_i_single(n_inv_p_flex_ani, 0);
-    if (world_rank != 0) {
         dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
         lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
         lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
     }
+    broadcast_cr(dep_inv,n_inv_r_flex, 0);
+    broadcast_cr(lat_inv,n_inv_t_flex, 0);
+    broadcast_cr(lon_inv,n_inv_p_flex, 0);
     broadcast_cr(dep_inv_ani,n_inv_r_flex_ani, 0);
     broadcast_cr(lat_inv_ani,n_inv_t_flex_ani, 0);
     broadcast_cr(lon_inv_ani,n_inv_p_flex_ani, 0);
 
+    broadcast_bool_single(invgrid_ani, 0);
     broadcast_bool_single(invgrid_volume_rescale, 0);
 
     broadcast_bool_single(use_sta_correction, 0);
@@ -1027,6 +1069,21 @@ void InputParams::write_params_to_file() {
     fout << "  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)" << std::endl;
     fout << "  invgrid_ani: " << invgrid_ani << std::endl;
     fout << "  # settings for flexible inversion grid for anisotropy (only flexible grid input is provided)" << std::endl;
+
+    fout << "  # anisotropic inversion grid type (used only if invgrid_ani : true)" << std::endl;
+    fout << "  type_invgrid_dep_ani: " << type_invgrid_dep_ani << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "  type_invgrid_lat_ani: " << type_invgrid_lat_ani << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "  type_invgrid_lon_ani: " << type_invgrid_lon_ani << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << std::endl;
+
+    fout << "  # settings for uniform anisotropic inversion grid (used only if invgrid_ani : true)" << std::endl;
+    fout << "  n_inv_dep_lat_lon_ani: [" << n_inv_r_ani << ", " << n_inv_t_ani << ", " << n_inv_p_ani << "] # number of the base inversion grid points" << std::endl;
+    fout << "  min_max_dep_inv_ani: [" << min_dep_inv_ani << ", " << max_dep_inv_ani << "]" << " # depth in km (Radius of the earth is defined in config.h/R_earth)"  << std::endl;
+    fout << "  min_max_lat_inv_ani: [" << min_lat_inv_ani << ", " << max_lat_inv_ani << "]" << " # latitude in degree"  << std::endl;
+    fout << "  min_max_lon_inv_ani: [" << min_lon_inv_ani << ", " << max_lon_inv_ani << "]" << " # longitude in degree" << std::endl;
+    fout << std::endl;
+
+    fout << "  # settings for flexible inversion grid for anisotropy (used only if invgrid_ani : true)" << std::endl;
     if (n_inv_r_flex_ani_read){
         fout << "  dep_inv_ani: [";
         for (int i = 0; i < n_inv_r_flex_ani; i++){
@@ -2436,13 +2493,6 @@ void InputParams::check_contradictions(){
     // upwind scheme cannot use with level nor 3rd order nor sweep parallelization
     if (stencil_type == UPWIND && (sweep_type != SWEEP_TYPE_LEGACY || n_subprocs != 1)){
         std::cout << "Warning: upwind scheme cannot use with level nor 3rd order nor sweep parallelization" << std::endl;
-        MPI_Finalize();
-        exit(1);
-    }
-
-    // invgrid_ani cannot be used with non-flexible inversion grid
-    if (invgrid_ani && (type_invgrid_dep != 1 || type_invgrid_lat != 1 || type_invgrid_lon != 1)){
-        std::cout << "Warning: invgrid_ani cannot be used with non-flexible inversion grid" << std::endl;
         MPI_Finalize();
         exit(1);
     }
