@@ -164,6 +164,17 @@ set(APP_SOURCES
   #src/SrcRecWeight.cxx
   )
 
+# if BUILD_TESTING is defined, make APP_TEST and append to APP_SOURCES list
+if(BUILD_TESTING)
+  # use all the cxx files in tests/ directory
+  file( GLOB APP_TEST tests/*.cxx)
+  # or you can specify the test files one by one
+  #set(APP_TEST
+  #  tests/read_write_srcrec.cxx
+  #)
+  list(APPEND APP_SOURCES ${APP_TEST})
+endif()
+
 foreach( execsourcefile ${APP_SOURCES} )
   # get app name from file name
   get_filename_component(EXEC_NAME ${execsourcefile} NAME_WE)
@@ -213,3 +224,19 @@ foreach( execsourcefile ${APP_SOURCES} )
 
 endforeach( execsourcefile ${APP_SOURCES} )
 
+
+# test
+
+# We check if this is the main file
+# you don't usually want users of your library to
+# execute tests as part of their build
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} AND BUILD_TESTING)
+    include(CTest)
+
+    # loop over APP_TEST
+    foreach( execsourcefile ${APP_TEST} )
+      add_test(NAME ${execsourcefile} COMMAND ${EXEC_NAME} ${execsourcefile})
+    endforeach( execsourcefile ${APP_TEST} )
+endif ()
+
+enable_testing()
