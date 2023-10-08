@@ -1131,7 +1131,7 @@ void InputParams::write_params_to_file() {
     else
         fout << "#  sta_correction_file: " << "dummy_sta_correction_file";
     fout << "  # station correction file path" << std::endl;
-    fout << "  step_length_sc: " << step_length_init_sc << " step length relate to the update of station correction terms" << std::endl;
+    fout << "  step_length_sc: " << step_length_init_sc << " # step length relate to the update of station correction terms" << std::endl;
     fout << std::endl;
 
     fout << std::endl;
