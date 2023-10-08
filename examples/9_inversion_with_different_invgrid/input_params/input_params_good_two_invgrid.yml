@@ -89,7 +89,21 @@ model_update: # update model parameters (when run_mode : 1 and 3)
   lat_inv: [0.0, 1.0] # latitude in degree (ignored if type_lat_inv : 0)
   lon_inv: [0.0, 1.0] # longitude in degree (ignored if type_lon_inv : 0)
 
+  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)
   invgrid_ani: true
+
+  # inversion grid type for anisotropy (used only if invgrid_ani : true)
+  type_invgrid_dep_ani: 1 # 0: uniform inversion grid, 1: flexible grid
+  type_invgrid_lat_ani: 1 # 0: uniform inversion grid, 1: flexible grid
+  type_invgrid_lon_ani: 1 # 0: uniform inversion grid, 1: flexible grid
+
+  # settings for uniform anisotropic inversion grid (used only if invgrid_ani : true)
+  #n_inv_dep_lat_lon_ani: [1, 1, 1] # number of the base inversion grid points
+  #min_max_dep_inv_ani: [-99999, -99999] # depth in km (Radius of the earth is defined in config.h/R_earth)
+  #min_max_lat_inv_ani: [-99999, -99999] # latitude in degree
+  #min_max_lon_inv_ani: [-99999, -99999] # longitude in degree
+
+  # settings for flexible inversion grid for anisotropy (used only if invgrid_ani : true)
   dep_inv_ani: [-20.0, -10.0,  0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0]
   lat_inv_ani: [29.75, 30.00, 30.25, 30.50, 30.75, 31.00, 31.25, 31.50, 31.75, 32.00, 32.25]
   lon_inv_ani: [29.75, 30.00, 30.25, 30.50, 30.75, 31.00, 31.25, 31.50, 31.75, 32.00, 32.25]
@@ -169,7 +183,7 @@ inversion_strategy: # update model parameters and earthquake hypocenter iterativ
   # for inv_mode : 0, parameters below are required
   inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
     model_update_N_iter : 1
-    relocation_N_iter  : 1 
+    relocation_N_iter  : 1
     max_loop : 40
 
 
