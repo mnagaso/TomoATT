@@ -10,7 +10,7 @@ mkdir OUTPUT_FILES
 # invert for ckb model and relocation using absolute traveltime
 # mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_reloc_abs.yml
 
-mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_inv_abs_cs_reloc_abs_cr_based_on_location.yml
+mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_inv_abs_cr_reloc_abs_cr_based_on_location.yml
 
 # invert for ckb model and relocation using absolute traveltime
 # mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yml
