@@ -118,6 +118,8 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
         }
         if(type == "model update")
             out_main << "," << std::setw(19) << step_length_init << "," << std::endl;
+        else
+            out_main << std::endl;
     }
 }
 
