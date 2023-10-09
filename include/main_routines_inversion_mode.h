@@ -23,6 +23,7 @@
 
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
 
+    // noted that src_map_comm_rec is the subset of src_map
     for (int i_src = 0; i_src < IP.n_src_comm_rec_this_sim_group; i_src++){
 
         std::string name_sim_src = IP.get_src_name_comm(i_src);
@@ -30,8 +31,13 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
         // check if this source is common receiver data
 
-        if (myrank == 0)
-            std::cout << "calculating the " << i_src << " th source on this simulation group, source id: " << id_sim_src << ", name: " << name_sim_src << ", computing common receiver differential traveltime starting..." << std::endl;
+        if (myrank == 0){
+            std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() 
+                    << "), for common receiver differntial traveltime. name: "
+                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                    << std::endl;
+        }
 
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
@@ -49,6 +55,20 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         Receiver recs;
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
 
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
+
+        // set group name to be used for output in h5
+        io.change_group_name_for_source();
+
+        // writeout travel time field
+        if (subdom_main) {
+            // output T (result timetable)
+            io.write_T(grid, 0);
+        }
+        
+        IP.src_map[name_sim_src].is_T_written_into_file = true;
     }
 
     // wait for all processes to finish
@@ -86,9 +106,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     if ( src_pair_exists &&
               ((IP.get_use_cr() && !IP.get_is_srcrec_swap())
             || (IP.get_use_cs() && IP.get_is_srcrec_swap()) )
-        && (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC))
+        && (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)){
         pre_run_forward_only(IP, grid, io, i_inv);
-
+    }
     //
     // loop over all sources
     //
@@ -138,10 +158,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         if (!hybrid_stencil_order){
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-            // we can choose to read traveltime field from the computed traveltime field if (is_read_time == true and is_teleseismic == false)
-            if ((is_read_time) && (!is_teleseismic)) {
+            // // we can choose to read traveltime field from the computed traveltime field if (is_read_time == true and is_teleseismic == false)
+            // // if ((is_read_time) && (!is_teleseismic)) {
+            // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
+            if (IP.src_map[name_sim_src].is_T_written_into_file){
                 if (myrank == 0){
-                    std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+                    std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size() 
+                            << "), for traveltime field. name: "
                             << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                             << std::endl;
@@ -154,7 +177,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                 //  case 2. is_read_time == true, but we compute teleseismic data;
 
                 if (myrank == 0){
-                    std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
+                    std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() 
+                            << "), for traveltime field. name: "
                             << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                             << std::endl;

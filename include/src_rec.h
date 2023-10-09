@@ -67,6 +67,8 @@ public:
     CUSTOMREAL change_lon = 0.0;
     CUSTOMREAL change_tau = 0.0;
     int        Ndata      = 0.0;
+
+    bool       is_T_written_into_file = false; 
 };
 
 class DataInfo {

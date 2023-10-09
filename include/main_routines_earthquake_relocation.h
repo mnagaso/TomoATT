@@ -88,6 +88,8 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
             // output T (result timetable)
             io.write_T(grid, 0);
         }
+
+        IP.src_map[name_sim_src].is_T_written_into_file = true;
     }
 
     // wait for all processes to finish traveltime calculation
