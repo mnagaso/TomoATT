@@ -29,15 +29,12 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         std::string name_sim_src = IP.get_src_name_comm(i_src);
         int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
-        // check if this source is common receiver data
+        // set simu group id and source name for output files/dataset names
+        io.set_id_src(id_sim_src);
+        io.set_name_src(name_sim_src);
 
-        if (myrank == 0){
-            std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() 
-                    << "), for common receiver differntial traveltime. name: "
-                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                    << std::endl;
-        }
+        // set group name to be used for output in h5
+        io.change_group_name_for_source();
 
         bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
 
@@ -50,25 +47,43 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         std::unique_ptr<Iterator> It;
 
         select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-        It->run_iteration_forward(IP, grid, io, first_init);
+
+        if (IP.src_map[name_sim_src].is_T_written_into_file){
+            // load travel time field on grid.T_loc
+            if (myrank == 0){
+                std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size() 
+                        << "), for common receiver differntial traveltime. name: "
+                        << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                        << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                        << std::endl;
+            }
+            
+            io.read_T(grid);
+        } else {
+            // We need to solve eikonal equation
+            if (myrank == 0){
+                std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size() 
+                        << "), for common receiver differntial traveltime. name: "
+                        << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                        << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                        << std::endl;
+            }
+            // solve travel time field on grid.T_loc
+            It->run_iteration_forward(IP, grid, io, first_init);
+
+            // writeout travel time field
+            if (subdom_main) {
+                // output T (result timetable)
+                io.write_T(grid, 0);
+            }
+            
+            IP.src_map[name_sim_src].is_T_written_into_file = true;
+        }
 
         Receiver recs;
-        recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src); // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
+        recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src); 
+        // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
 
-        // set simu group id and source name for output files/dataset names
-        io.set_id_src(id_sim_src);
-        io.set_name_src(name_sim_src);
-
-        // set group name to be used for output in h5
-        io.change_group_name_for_source();
-
-        // writeout travel time field
-        if (subdom_main) {
-            // output T (result timetable)
-            io.write_T(grid, 0);
-        }
-        
-        IP.src_map[name_sim_src].is_T_written_into_file = true;
     }
 
     // wait for all processes to finish
