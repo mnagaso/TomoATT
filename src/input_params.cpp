@@ -354,8 +354,8 @@ InputParams::InputParams(std::string& input_file){
             }
             // minimum and maximum longitude
             if (config["model_update"]["min_max_lon_inv_ani"]) {
-                getNodeValue(config["model_update"], "min_max_lon_inv", min_lon_inv_ani, 0);
-                getNodeValue(config["model_update"], "min_max_lon_inv", max_lon_inv_ani, 1);
+                getNodeValue(config["model_update"], "min_max_lon_inv_ani", min_lon_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_lon_inv_ani", max_lon_inv_ani, 1);
             }
 
             if (config["model_update"]["dep_inv_ani"] && type_invgrid_dep_ani == 1) {
