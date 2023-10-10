@@ -388,7 +388,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     // main loop for model update and relocation
     /////////////////////
 
-    CUSTOMREAL v_obj = 0.0, old_v_obj = 0.0;
+    CUSTOMREAL v_obj = 0.0, old_v_obj = 10000000000.0;
     std::vector<CUSTOMREAL> v_obj_misfit(20, 0.0);
 
     int model_update_step = 0;
@@ -410,7 +410,6 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 std::cout   << std::endl;
             }
 
-            old_v_obj = v_obj;
 
             // prepare inverstion iteration group in xdmf file
             io.prepare_grid_inv_xdmf(i_inv);
@@ -458,6 +457,9 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 if (!found_next_step)
                     break;
             }
+
+            // define old_v_obj
+            old_v_obj = v_obj;
 
             // output objective function
             write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
@@ -546,8 +548,8 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 std::cout   << std::endl;
             }
 
-            old_v_obj  = v_obj;
-            v_obj      = 0.0;
+            // old_v_obj  = v_obj;
+            // v_obj      = 0.0;
 
             // calculate gradient of objective function at sources
             v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_iter);
