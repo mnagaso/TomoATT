@@ -693,6 +693,8 @@ std::string IO_utils::create_fname_ascii_model(std::string& dset_name){
 
 
 void IO_utils::write_true_solution(Grid& grid) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "true_solution";
@@ -710,6 +712,8 @@ void IO_utils::write_true_solution(Grid& grid) {
 
 
 void IO_utils::write_vel(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "vel";
@@ -750,75 +754,78 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
         std::cout << "--- write data to ascii file " << fname << " ---" << std::endl;
 
     // collective write
-    for (int i_rank = 0; i_rank < n_subdomains; i_rank++) {
-        if (i_rank == myrank){
-            std::ofstream fout;
-            if (i_rank == 0){
-                fout.open(fname.c_str());
-                fout<< std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "depth" << " "
-                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "latitude" << " "
-                    << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "longitude" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
-                    << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
-                    << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " ";
-                    if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
-                        fout << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
-                        // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
-                        << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks_update" << " ";
-                    }
-                    fout << std::endl;
-            } else
-                fout.open(fname.c_str(), std::ios_base::app); // append
-            if (!fout.is_open()) {
-                std::cout << "ERROR: cannot open file " << fname << std::endl;
-                exit(1);
-            }
+    if (subdom_main){
 
-            // iterate over nodes skipping the last layer for ignoring gap filling nodes for h5 output
+        for (int i_rank = 0; i_rank < n_subdomains; i_rank++) {
+            if (i_rank == myrank){
+                std::ofstream fout;
+                if (i_rank == 0){
+                    fout.open(fname.c_str());
+                    fout<< std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "depth" << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "latitude" << " "
+                        << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "longitude" << " "
+                        << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "slowness" << " "
+                        << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "xi" << " "
+                        << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "eta" << " "
+                        << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "velocity" << " "
+                        << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << "Traveltime" << " ";
+                        if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
+                            fout << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << "Ks" << " "
+                            // << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Tadj" << " "
+                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << "Ks_update" << " ";
+                        }
+                        fout << std::endl;
+                } else
+                    fout.open(fname.c_str(), std::ios_base::app); // append
+                if (!fout.is_open()) {
+                    std::cout << "ERROR: cannot open file " << fname << std::endl;
+                    exit(1);
+                }
 
-            CUSTOMREAL* nodes_coords_p = grid.get_nodes_coords_p();     // dep,lat,lon
-            CUSTOMREAL* nodes_coords_t = grid.get_nodes_coords_t();
-            CUSTOMREAL* nodes_coords_r = grid.get_nodes_coords_r();
-            std::vector<CUSTOMREAL> slowness = get_grid_data(grid.get_fun());
-            std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
-            std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
-            std::vector<CUSTOMREAL> Ks, Ks_update;
-            if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
-                //std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
-                Ks = get_grid_data(grid.get_Ks());
-                Ks_update = get_grid_data(grid.get_Ks_update());
-            }
-            std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
+                // iterate over nodes skipping the last layer for ignoring gap filling nodes for h5 output
 
-            for (int k = 0; k < loc_K_vis; k++){
-                for (int j = 0; j < loc_J_vis; j++){
-                    for (int i = 0; i < loc_I_vis; i++){
-                        int idx = I2V_VIS(i,j,k);
-                        fout<< std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << radius2depth(nodes_coords_r[idx]) << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_t[idx] << " "
-                            << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_p[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
-                            << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
-                            << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " ";
+                CUSTOMREAL* nodes_coords_p = grid.get_nodes_coords_p();     // dep,lat,lon
+                CUSTOMREAL* nodes_coords_t = grid.get_nodes_coords_t();
+                CUSTOMREAL* nodes_coords_r = grid.get_nodes_coords_r();
+                std::vector<CUSTOMREAL> slowness = get_grid_data(grid.get_fun());
+                std::vector<CUSTOMREAL> xi = get_grid_data(grid.get_xi());
+                std::vector<CUSTOMREAL> eta = get_grid_data(grid.get_eta());
+                std::vector<CUSTOMREAL> Ks, Ks_update;
+                if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
+                    //std::vector<CUSTOMREAL> Tadj = get_grid_data(grid.get_Tadj());
+                    Ks = get_grid_data(grid.get_Ks());
+                    Ks_update = get_grid_data(grid.get_Ks_update());
+                }
+                std::vector<CUSTOMREAL> T = get_grid_data(grid.get_T());
 
-                            if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
-                                fout << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
-                                // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
-                                << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " ";
-                            }
-                            fout << std::endl;
+                for (int k = 0; k < loc_K_vis; k++){
+                    for (int j = 0; j < loc_J_vis; j++){
+                        for (int i = 0; i < loc_I_vis; i++){
+                            int idx = I2V_VIS(i,j,k);
+                            fout<< std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << radius2depth(nodes_coords_r[idx]) << " "
+                                << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_t[idx] << " "
+                                << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << nodes_coords_p[idx] << " "
+                                << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << slowness[idx] << " "
+                                << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << xi[idx] << " "
+                                << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << eta[idx] << " "
+                                << std::fixed << std::setprecision(7) << std::setw(9) << std::right << std::setfill(' ') << _1_CR/slowness[idx] << " "
+                                << std::fixed << std::setprecision(5) << std::setw(11) << std::right << std::setfill(' ') << T[idx] << " ";
+
+                                if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC) {
+                                    fout << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks[idx] << " "
+                                    // << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Tadj[idx] << " "
+                                    << std::fixed << std::setprecision(7) << std::setw(12) << std::right << std::setfill(' ') << Ks_update[idx] << " ";
+                                }
+                                fout << std::endl;
+                        }
                     }
                 }
+                fout.close();
             }
-            fout.close();
-        }
 
 
-    } // end for i_rank
+        } // end for i_rank
+    } // end if subdom_main
 
     // synchronize
     synchronize_all_inter();
@@ -826,6 +833,8 @@ void IO_utils::write_concerning_parameters(Grid& grid, int i_inv, InputParams& I
 
 
 void IO_utils::write_T0v(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "T0v";
@@ -843,6 +852,8 @@ void IO_utils::write_T0v(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_u(Grid& grid) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "u";
@@ -860,6 +871,8 @@ void IO_utils::write_u(Grid& grid) {
 
 
 void IO_utils::write_tau(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "tau";
@@ -894,6 +907,8 @@ void IO_utils::write_tau(Grid& grid, int i_inv) {
 //
 
 void IO_utils::write_T(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "T_res";
@@ -911,6 +926,8 @@ void IO_utils::write_T(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_residual(Grid& grid) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "residual";
@@ -929,6 +946,8 @@ void IO_utils::write_residual(Grid& grid) {
 
 
 void IO_utils::write_adjoint_field(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "adjoint_field";
@@ -946,6 +965,8 @@ void IO_utils::write_adjoint_field(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_fun(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "fun";
@@ -963,6 +984,8 @@ void IO_utils::write_fun(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_xi(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "xi";
@@ -980,6 +1003,8 @@ void IO_utils::write_xi(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_eta(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "eta";
@@ -997,6 +1022,8 @@ void IO_utils::write_eta(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_a(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "fac_a";
@@ -1014,6 +1041,8 @@ void IO_utils::write_a(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_b(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "fac_b";
@@ -1032,6 +1061,8 @@ void IO_utils::write_b(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_c(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "fac_c";
@@ -1049,6 +1080,8 @@ void IO_utils::write_c(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_f(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "fac_f";
@@ -1066,7 +1099,9 @@ void IO_utils::write_f(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Ks(Grid& grid, int i_inv) {
-    if (output_format==OUTPUT_FORMAT_HDF5){
+    if (!subdom_main) return;
+
+   if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Ks";
         write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Ks(), i_inv, model_data);
@@ -1083,6 +1118,8 @@ void IO_utils::write_Ks(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Kxi(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Kxi";
@@ -1100,6 +1137,8 @@ void IO_utils::write_Kxi(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Keta(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Keta";
@@ -1117,6 +1156,8 @@ void IO_utils::write_Keta(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Ks_update";
@@ -1134,6 +1175,8 @@ void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Kxi_update(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Kxi_update";
@@ -1151,6 +1194,8 @@ void IO_utils::write_Kxi_update(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Keta_update";
@@ -1168,6 +1213,8 @@ void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Ks_descent_dir(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Ks_descent_dir_local_inv_" + int2string_zero_fill(i_inv);
@@ -1185,6 +1232,8 @@ void IO_utils::write_Ks_descent_dir(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Kxi_descent_dir(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Kxi_descent_dir_local_inv_" + int2string_zero_fill(i_inv);
@@ -1202,6 +1251,8 @@ void IO_utils::write_Kxi_descent_dir(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_Keta_descent_dir(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "Keta_descent_dir_local_inv_" + int2string_zero_fill(i_inv);
@@ -1219,6 +1270,8 @@ void IO_utils::write_Keta_descent_dir(Grid& grid, int i_inv) {
 
 
 void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
+    if (!subdom_main) return;
+
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
         std::string h5_dset_name = "T_res";
@@ -1433,29 +1486,29 @@ void IO_utils::read_model(std::string& model_fname, const char* dset_name_in, CU
 
 // read travel time data from file
 void IO_utils::read_T(Grid& grid) {
-    if (subdom_main){
-        if (output_format == OUTPUT_FORMAT_HDF5) {
-            // read traveltime field from HDF5 file
+    if (!subdom_main) return;
+
+    if (output_format == OUTPUT_FORMAT_HDF5) {
+        // read traveltime field from HDF5 file
 #ifdef USE_HDF5
-            // h5_group_name_data = "src_" + std::to_string(id_sim_src);
-            h5_group_name_data = "src_" + name_sim_src;
-            std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
-            read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
+        // h5_group_name_data = "src_" + std::to_string(id_sim_src);
+        h5_group_name_data = "src_" + name_sim_src;
+        std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
+        read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else
-            std::cerr << "Error: HDF5 is not enabled." << std::endl;
-            exit(1);
+        std::cerr << "Error: HDF5 is not enabled." << std::endl;
+        exit(1);
 #endif
-        } else if (output_format == OUTPUT_FORMAT_ASCII) {
-            // read traveltime field from ASCII file
-            std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
-            std::string filename = create_fname_ascii(dset_name);
+    } else if (output_format == OUTPUT_FORMAT_ASCII) {
+        // read traveltime field from ASCII file
+        std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
+        std::string filename = create_fname_ascii(dset_name);
 
-            read_data_ascii(grid, filename);
-        }
-
-        // set to T_loc array from grid.vis_data
-        grid.set_array_from_vis(grid.T_loc);
+        read_data_ascii(grid, filename);
     }
+
+    // set to T_loc array from grid.vis_data
+    grid.set_array_from_vis(grid.T_loc);
 }
 
 

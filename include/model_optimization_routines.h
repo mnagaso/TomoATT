@@ -152,7 +152,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     IP.station_correction_update(step_length_init_sc);
 
     // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
-    if (subdom_main && IP.get_verbose_output_level()) {
+    if (IP.get_verbose_output_level()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -191,13 +191,13 @@ inline std::vector<CUSTOMREAL> model_optimize_halve_stepping(InputParams& IP, Gr
     smooth_kernels(grid, IP);
 
     // backup the initial model
-    if(subdom_main) grid.back_up_fun_xi_eta_bcf();
+    grid.back_up_fun_xi_eta_bcf();
 
     // update the model with the initial step size
     set_new_model(grid, step_length);
 
 
-    if (subdom_main && IP.get_verbose_output_level()) {
+    if (IP.get_verbose_output_level()) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -236,7 +236,7 @@ inline std::vector<CUSTOMREAL> model_optimize_halve_stepping(InputParams& IP, Gr
             // print status
             write_objective_function(IP, i_inv, v_obj_misfit_new, out_main, "sub iter");
 
-            if (subdom_main) grid.restore_fun_xi_eta_bcf();
+            grid.restore_fun_xi_eta_bcf();
             step_length *= HALVE_STEP_RATIO;
             set_new_model(grid, step_length);
 
@@ -349,10 +349,10 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
     }
 
     // backup the initial model
-    if(subdom_main) grid.back_up_fun_xi_eta_bcf();
+    grid.back_up_fun_xi_eta_bcf();
 
     // update the model with the initial step size
-    if (subdom_main && IP.get_verbose_output_level() && id_sim==0) {
+    if (IP.get_verbose_output_level() && id_sim==0) {
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
@@ -436,7 +436,7 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         wolfe_cond_ok = check_wolfe_cond(grid, q_0, q_t, qp_0, qp_t, td, tg, step_length);
 
         // update the model with the initial step size
-        if (subdom_main && IP.get_verbose_output_level() && id_sim==0) {
+        if (IP.get_verbose_output_level() && id_sim==0) {
             // store kernel only in the first src datafile
             io.change_group_name_for_model();
 
@@ -485,7 +485,8 @@ inline bool model_optimize_lbfgs(InputParams& IP, Grid& grid, IO_utils& io, int 
         } else {
             // wolfe conditions not satisfied
             subiter_count++;
-            if(subdom_main) grid.restore_fun_xi_eta_bcf();
+
+            grid.restore_fun_xi_eta_bcf();
         }
 
     }

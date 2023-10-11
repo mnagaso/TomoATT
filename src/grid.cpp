@@ -1574,6 +1574,8 @@ void Grid::update_Tadj() {
 
 
 void Grid::back_up_fun_xi_eta_bcf() {
+    if (!subdom_main) return;
+
     std::copy(fun_loc, fun_loc+loc_I*loc_J*loc_K, fun_loc_back);
     std::copy(xi_loc,  xi_loc +loc_I*loc_J*loc_K, xi_loc_back);
     std::copy(eta_loc, eta_loc+loc_I*loc_J*loc_K, eta_loc_back);
@@ -1584,6 +1586,8 @@ void Grid::back_up_fun_xi_eta_bcf() {
 
 
 void Grid::restore_fun_xi_eta_bcf() {
+    if (!subdom_main) return;
+
     std::copy(fun_loc_back, fun_loc_back+loc_I*loc_J*loc_K, fun_loc);
     std::copy(xi_loc_back,  xi_loc_back +loc_I*loc_J*loc_K, xi_loc);
     std::copy(eta_loc_back, eta_loc_back+loc_I*loc_J*loc_K, eta_loc);

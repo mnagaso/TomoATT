@@ -100,8 +100,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     std::ofstream out_main; // close() is not mandatory
     prepare_header_line(IP, out_main);
 
-
-    if (subdom_main && id_sim==0) {
+    if (id_sim==0) {
         io.prepare_grid_inv_xdmf(0);
 
         //io.change_xdmf_obj(0); // change xmf file for next src
@@ -206,7 +205,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         IP.write_station_correction_file(i_inv + 1);
 
         // output updated model
-        if (subdom_main && id_sim==0) {
+        if (id_sim==0) {
             //io.change_xdmf_obj(0); // change xmf file for next src
             io.change_group_name_for_model();
 
@@ -345,7 +344,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     std::ofstream out_main; // close() is not mandatory
     prepare_header_line(IP, out_main);
 
-    if (subdom_main && id_sim==0) {
+    if (id_sim==0) {
         // prepare inverstion iteration group in xdmf file
         io.prepare_grid_inv_xdmf(0);
 
@@ -468,11 +467,13 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             // initialize is_T_written_into_file
             for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
                 const std::string name_sim_src = IP.get_src_name(i_src);
-                IP.src_map[name_sim_src].is_T_written_into_file = false;
+
+                if (proc_store_srcrec) // only proc_store_srcrec has the src_map object
+                    IP.src_map[name_sim_src].is_T_written_into_file = false;
             }
-            
+
             // output updated model
-            if (subdom_main && id_sim==0) {
+            if (id_sim==0) {
                 //io.change_xdmf_obj(0); // change xmf file for next src
                 io.change_group_name_for_model();
 
@@ -496,7 +497,8 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 if (IP.get_if_output_model_dat() \
                 && (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop()*IP.get_model_update_N_iter() - 2))
                     io.write_concerning_parameters(grid, i_inv + 1, IP);
-            }
+
+            } // end output updated model
 
             // writeout temporary xdmf file
             io.update_xdmf_file();
@@ -511,6 +513,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             // wait for all processes to finish
             synchronize_all_world();
+
         }   // end model update in one loop
 
 
@@ -548,8 +551,6 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 std::cout   << std::endl;
             }
 
-            // old_v_obj  = v_obj;
-            // v_obj      = 0.0;
 
             // calculate gradient of objective function at sources
             v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_iter);
