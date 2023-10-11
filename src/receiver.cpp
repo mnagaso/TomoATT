@@ -406,7 +406,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
 
                         obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
-                
+
                     }
 
                 } // end of loop over data
@@ -429,6 +429,22 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
     broadcast_cr_single_sub(res_cr_dif_sq,0);
     broadcast_cr_single_sub(res_tele,0);
     broadcast_cr_single_sub(res_tele_sq,0);
+
+    broadcast_cr_single(obj,0);
+    broadcast_cr_single(obj_abs,0);
+    broadcast_cr_single(obj_cs_dif,0);
+    broadcast_cr_single(obj_cr_dif,0);
+    broadcast_cr_single(obj_tele,0);
+    broadcast_cr_single(res,0);
+    broadcast_cr_single(res_sq,0);
+    broadcast_cr_single(res_abs,0);
+    broadcast_cr_single(res_abs_sq,0);
+    broadcast_cr_single(res_cs_dif,0);
+    broadcast_cr_single(res_cs_dif_sq,0);
+    broadcast_cr_single(res_cr_dif,0);
+    broadcast_cr_single(res_cr_dif_sq,0);
+    broadcast_cr_single(res_tele,0);
+    broadcast_cr_single(res_tele_sq,0);
 
     obj_residual = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs_dif, res_cs_dif_sq, res_cr_dif, res_cr_dif_sq, res_tele, res_tele_sq};
 
@@ -997,7 +1013,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                             // assign residual
                             res                                     += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_sq                                  += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                            
+
                             res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
 
@@ -1013,7 +1029,7 @@ std::vector<CUSTOMREAL> Receiver::calculate_obj_reloc(InputParams& IP, int i_ite
                             // assign residual
                             res                                     += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_sq                                  += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                        
+
                             res_cs_dif                              += 0.5 *          (data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq                           += 0.5 * my_square(data.cs_dif_travel_time - data.cs_dif_travel_time_obs + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
 
