@@ -83,11 +83,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 
         It->run_iteration_forward(IP, grid, io, first_init);
 
-        // writeout travel time field
-        if (subdom_main) {
-            // output T (result timetable)
-            io.write_T(grid, 0);
-        }
+        // writeout traveltime field
+        io.write_T(grid, 0);
+
+        if (proc_store_srcrec)
+            IP.src_map[name_sim_src].is_T_written_into_file = true;
     }
 
     // wait for all processes to finish traveltime calculation
