@@ -138,10 +138,7 @@ int main(int argc, char *argv[])
 
         // output the result of forward simulation
         // ignored for inversion mode.
-        if (subdom_main){
-            // output T (result timetable)
-            io.write_T_merged(grid, IP, i_inv);
-        }
+        io.write_T_merged(grid, IP, i_inv);
 
     } // end loop sources
 

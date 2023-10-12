@@ -1509,8 +1509,6 @@ int InputParams::get_src_id(const std::string& src_name) {
 }
 
 
-
-
 bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
     bool if_src_teleseismic = false;
 
@@ -1522,6 +1520,20 @@ bool InputParams::get_if_src_teleseismic(const std::string& src_name) {
     broadcast_bool_single_sub(if_src_teleseismic, 0);
 
     return if_src_teleseismic;
+}
+
+
+bool InputParams::get_is_T_written_into_file(const std::string& src_name) {
+    bool is_T_written_into_file = false;
+
+    if (proc_store_srcrec)
+        is_T_written_into_file = get_src_point(src_name).is_T_written_into_file;
+
+    // broadcast to all processes within simultaneous run group
+    broadcast_bool_single(is_T_written_into_file, 0);
+    broadcast_bool_single_sub(is_T_written_into_file, 0);
+
+    return is_T_written_into_file;
 }
 
 

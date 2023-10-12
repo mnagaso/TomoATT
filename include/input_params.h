@@ -176,6 +176,9 @@ public:
     CUSTOMREAL* get_residual_weight_cr_reloc()    {return residual_weight_cr_reloc;};
     CUSTOMREAL* get_azimuthal_weight_cr_reloc()   {return azimuthal_weight_cr_reloc;};
 
+    // get if the T field is written into the file
+    bool get_is_T_written_into_file(const std::string&);
+
     // prepare source list for this simulation group
     void prepare_src_map();
 
