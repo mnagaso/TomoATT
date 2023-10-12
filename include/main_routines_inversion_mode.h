@@ -268,6 +268,11 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                 io.write_adjoint_field(grid,i_inv);
             }
 
+            io.write_adjoint_field(grid,i_inv);
+            
+            io.write_Ks(grid, i_inv);
+
+            io.write_Ks_update(grid, i_inv);
             // check adjoint source
             // if (proc_store_srcrec){
             //     for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){

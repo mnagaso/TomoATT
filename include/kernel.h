@@ -27,8 +27,15 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
         for (int kkr = 1; kkr < nr-1; kkr++) {
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
-                    // distance between the source and grid point
-
+                    // distance between the source and grid point (source mask, require discussion)
+                    // CUSTOMREAL dis = std::sqrt(my_square((grid.r_loc_1d[kkr]-src_r)/dr) + my_square((grid.t_loc_1d[jjt]-src_lat)/dt) + my_square((grid.p_loc_1d[iip]-src_lon)/dp));
+                    // if(dis <= 2){
+                    //     weight = 0.0;
+                    // } else if ( dis <= 5) {
+                    //     weight = (dis-2)/5;
+                    // } else {
+                    //     weight = 1.0;
+                    // }
                     // mask within one grid around the source
                     if (std::abs(grid.r_loc_1d[kkr]-src_r)   >= dr \
                      || std::abs(grid.t_loc_1d[jjt]-src_lat) >= dt \
@@ -70,6 +77,10 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
                             grid.Kxi_loc[I2V(iip,jjt,kkr)]  = _0_CR;
                             grid.Keta_loc[I2V(iip,jjt,kkr)] = _0_CR;
                         }
+                    } else{
+                        grid.Ks_loc[I2V(iip,jjt,kkr)]   += _0_CR;
+                        grid.Kxi_loc[I2V(iip,jjt,kkr)]  += _0_CR;
+                        grid.Keta_loc[I2V(iip,jjt,kkr)] += _0_CR;
                     }
                 }
             }
