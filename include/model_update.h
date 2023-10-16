@@ -22,6 +22,9 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
             for (int k = 0; k < loc_K; k++) {
                 for (int j = 0; j < loc_J; j++) {
                     for (int i = 0; i < loc_I; i++) {
+                        grid.Ks_update_loc_previous[I2V(i,j,k)]   = grid.Ks_update_loc[I2V(i,j,k)];
+                        grid.Keta_update_loc_previous[I2V(i,j,k)] = grid.Keta_update_loc[I2V(i,j,k)];
+                        grid.Kxi_update_loc_previous[I2V(i,j,k)]  = grid.Kxi_update_loc[I2V(i,j,k)];
                         grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
                         grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
                         grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
@@ -48,34 +51,40 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                         for (int i = 0; i < loc_I; i++) {
 
                             if (i == 0 && !grid.i_first()) {
-                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
-                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
-                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                                grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
+                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (i == loc_I-1 && !grid.i_last()) {
-                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
-                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
-                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                                grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
+                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (j == 0 && !grid.j_first()) {
-                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
-                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
-                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                                grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
+                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (j == loc_J-1 && !grid.j_last()) {
-                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
-                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
-                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                                grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
+                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (k == 0 && !grid.k_first()) {
-                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
-                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
-                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                                grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
+                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (k == loc_K-1 && !grid.k_last()) {
-                                grid.Ks_loc[I2V(i,j,k)]   = _0_CR;
-                                grid.Keta_loc[I2V(i,j,k)] = _0_CR;
-                                grid.Kxi_loc[I2V(i,j,k)]  = _0_CR;
+                                grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
+                                grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
+                                grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
+                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
                             }
                         }
                     }
@@ -104,6 +113,11 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Ks_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
+
+        // send the previous updated model to all the simultaneous run
+        broadcast_cr_inter_sim(grid.Ks_update_loc_previous, loc_I*loc_J*loc_K, 0);
+        broadcast_cr_inter_sim(grid.Kxi_update_loc_previous, loc_I*loc_J*loc_K, 0);
+        broadcast_cr_inter_sim(grid.Keta_update_loc_previous, loc_I*loc_J*loc_K, 0);
 
     } // end if subdom_main
 
@@ -194,6 +208,32 @@ void calc_descent_direction(Grid& grid, int i_inv, InputParams& IP) {
 
     synchronize_all_world();
 
+}
+
+CUSTOMREAL direction_change_of_model_update(Grid& grid){
+    CUSTOMREAL norm_grad = _0_CR;
+    CUSTOMREAL norm_grad_previous = _0_CR;
+    CUSTOMREAL inner_product = _0_CR;
+    CUSTOMREAL cos_angle = _0_CR;
+    CUSTOMREAL angle = _0_CR;
+    if (subdom_main) {
+        
+        // initiaize update params
+        for (int k = 0; k < loc_K; k++) {
+            for (int j = 0; j < loc_J; j++) {
+                for (int i = 0; i < loc_I; i++) {
+                    inner_product       += grid.Ks_update_loc_previous[I2V(i,j,k)]  * grid.Ks_update_loc[I2V(i,j,k)];
+                    norm_grad           += grid.Ks_update_loc[I2V(i,j,k)]           * grid.Ks_update_loc[I2V(i,j,k)];
+                    norm_grad_previous  += grid.Ks_update_loc_previous[I2V(i,j,k)]  * grid.Ks_update_loc_previous[I2V(i,j,k)];
+                }
+            }
+        }
+
+        cos_angle = inner_product / (std::sqrt(norm_grad) * std::sqrt(norm_grad_previous));
+        angle     = acos(cos_angle) * RAD2DEG;
+    }
+
+    return angle;
 }
 
 

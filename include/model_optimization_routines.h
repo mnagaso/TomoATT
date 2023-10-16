@@ -128,25 +128,58 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
 inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
                     CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
 
-    // change stepsize
-    if (i_inv > 0 && v_obj_inout < old_v_obj) {
-        // step_length_init = std::min(0.01, step_length_init*1.03);
-        step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
-        step_length_init_sc = std::min((CUSTOMREAL)1.0, step_length_init_sc);
-    } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
-        // step_length_init = std::max(0.00001, step_length_init*0.97);
-        step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
-        step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
-    }
-
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
 
     // smooth kernels
     smooth_kernels(grid, IP);
 
+    // Previously, the step length is modulated when obj changes.  
+    // // change stepsize
+    // if (i_inv > 0 && v_obj_inout < old_v_obj) {
+    //     // step_length_init = std::min(0.01, step_length_init*1.03);
+    //     step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
+    //     step_length_init_sc = std::min((CUSTOMREAL)1.0, step_length_init_sc);
+    // } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
+    //     // step_length_init = std::max(0.00001, step_length_init*0.97);
+    //     step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
+    //     step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
+    // }
+
+    // Now, we modulate the step length according to the angle between the previous and current gradient directions. 
+    // If the angle is less than XX degree, which means the model update direction is successive, we should enlarge the step size
+    // Otherwise, the step length should decrease
+    CUSTOMREAL angle = direction_change_of_model_update(grid);
+    if(i_inv != 0){
+        if (angle > 120){
+            step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init * 0.5);
+            if(id_sim == 0){
+                std::cout << std::endl;
+                std::cout << "The angle between two update darections is " << angle
+                        << ". Because the angle is greater than 120 degree, the step length decreases from "
+                        << step_length_init*2 << " to " << step_length_init << std::endl;
+                std::cout << std::endl;
+            }
+        } else if (angle <= 120) {
+            step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init * 1.2);
+            if(id_sim == 0){
+                std::cout << std::endl;
+                std::cout << "The angle between two update darections is " << angle
+                        << ". Because the angle is less than 120 degree, the step length increases from "
+                        << step_length_init/1.2 << " to " << step_length_init << std::endl;
+                std::cout << std::endl;
+            }
+        }
+    } else {
+        if(id_sim == 0){
+            std::cout << std::endl;
+            std::cout << "At the first iteration, the step length is " << step_length_init << std::endl;
+            std::cout << std::endl;
+        }
+    }
     // update the model with the initial step size
     set_new_model(grid, step_length_init);
+
 
     // make station correction
     IP.station_correction_update(step_length_init_sc);

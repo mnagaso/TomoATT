@@ -587,17 +587,22 @@ void Grid::memory_allocation() {
         Ks_loc          = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kxi_loc         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        Kdensity_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
         Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        Ks_update_loc_previous   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        Kxi_update_loc_previous  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        Keta_update_loc_previous = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
 
-        if (sub_nprocs <= 1)
+        if (sub_nprocs <= 1){
             Tadj_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-
+            Tadj_density_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        }
         if (optim_method==HALVE_STEPPING_MODE) {
             fac_b_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fac_c_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -697,7 +702,7 @@ void Grid::shm_memory_allocation() {
 
     // inversion
     prepare_shm_array_cr(n_total_loc_grid_points, Tadj_loc, win_Tadj_loc);
-
+    prepare_shm_array_cr(n_total_loc_grid_points, Tadj_density_loc, win_Tadj_density_loc);
 }
 
 
@@ -880,16 +885,21 @@ void Grid::memory_deallocation() {
         free(Ks_loc);
         free(Kxi_loc);
         free(Keta_loc);
+        free(Kdensity_loc);
         free(Ks_inv_loc);
         free(Kxi_inv_loc);
         free(Keta_inv_loc);
         free(Ks_update_loc);
         free(Kxi_update_loc);
         free(Keta_update_loc);
+        free(Ks_update_loc_previous);
+        free(Kxi_update_loc_previous);
+        free(Keta_update_loc_previous);
 
-        if (sub_nprocs <= 1)
+        if (sub_nprocs <= 1){
             free(Tadj_loc);
-
+            free(Tadj_density_loc);
+        }
         if (optim_method==HALVE_STEPPING_MODE) {
             free(fac_b_loc_back);
             free(fac_c_loc_back);
@@ -1305,10 +1315,10 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
 void Grid::initialize_kernels(){
     // initialize kernels
     if (subdom_main){
-        std::fill(Ks_loc,   Ks_loc   + loc_I*loc_J*loc_K, _0_CR);
-        std::fill(Kxi_loc,  Kxi_loc  + loc_I*loc_J*loc_K, _0_CR);
-        std::fill(Keta_loc, Keta_loc + loc_I*loc_J*loc_K, _0_CR);
-
+        std::fill(Ks_loc,       Ks_loc   + loc_I*loc_J*loc_K,       _0_CR);
+        std::fill(Kxi_loc,      Kxi_loc  + loc_I*loc_J*loc_K,       _0_CR);
+        std::fill(Keta_loc,     Keta_loc + loc_I*loc_J*loc_K,       _0_CR);
+        std::fill(Kdensity_loc, Kdensity_loc + loc_I*loc_J*loc_K,   _0_CR);
         //for (int k = 0; k < loc_K; k++) {
         //    for (int j = 0; j < loc_J; j++) {
         //        for (int i = 0; i < loc_I; i++) {
@@ -1571,7 +1581,9 @@ void Grid::T2tau_old() {
 void Grid::update_Tadj() {
     std::copy(tau_loc, tau_loc+loc_I*loc_J*loc_K, Tadj_loc);
 }
-
+void Grid::update_Tadj_density() {
+    std::copy(tau_loc, tau_loc+loc_I*loc_J*loc_K, Tadj_density_loc);
+}
 
 void Grid::back_up_fun_xi_eta_bcf() {
     if (!subdom_main) return;
@@ -1677,6 +1689,30 @@ void Grid::calc_L1_and_Linf_diff_adj(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff)
     }
 }
 
+void Grid::calc_L1_and_Linf_diff_adj_density(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
+
+    if (subdom_main) {
+        //L1_diff   = 0.0;
+        Linf_diff = 0.0;
+        CUSTOMREAL obj_func_glob = 0.0;
+        CUSTOMREAL adj_factor = 1.0;
+
+        // calculate L1 error
+        for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+            for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+                for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
+                    // Adjoint simulation use only Linf
+                    Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - Tadj_density_loc[I2V(i_lon,j_lat,k_r)]));
+                }
+            }
+        }
+
+        // sum up the values of all processes
+        obj_func_glob=0.0;
+        allreduce_cr_single_max(Linf_diff, obj_func_glob);
+        Linf_diff = obj_func_glob*adj_factor;///(ngrid_i*ngrid_j*ngrid_k);
+    }
+}
 
 void Grid::calc_L1_and_Linf_error(CUSTOMREAL& L1_error, CUSTOMREAL& Linf_error) {
     L1_error   = 0.0;

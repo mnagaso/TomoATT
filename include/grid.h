@@ -48,6 +48,8 @@ public:
     void calc_L1_and_Linf_error(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for adjoint field
     void calc_L1_and_Linf_diff_adj(CUSTOMREAL&, CUSTOMREAL&);
+    // calculate L1 and Linf diff for density of adjoint field
+    void calc_L1_and_Linf_diff_adj_density(CUSTOMREAL&, CUSTOMREAL&);
 
     // send and receive data to/from other subdomains
     void send_recev_boundary_data(CUSTOMREAL*);
@@ -120,6 +122,7 @@ public:
     CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc,   false);}; // Ks
     CUSTOMREAL* get_Kxi()          {return get_array_for_vis(Kxi_loc,         false);}; // Kxi
     CUSTOMREAL* get_Keta()         {return get_array_for_vis(Keta_loc,        false);}; // Keta
+    CUSTOMREAL* get_Kdensity()     {return get_array_for_vis(Kdensity_loc,    false);}; // Kdensity
     CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc,   false);}; // Ks_update
     CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc,  false);}; // Kxi_update
     CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc, false);}; // Keta_update
@@ -180,6 +183,8 @@ public:
     void T2tau_old();
     // copy tau to Tadj
     void update_Tadj();
+    // copy tau to Tadj
+    void update_Tadj_density();
     // back up fun xi eta
     void back_up_fun_xi_eta_bcf();
     // restore fun xi eta
@@ -322,7 +327,9 @@ public:
     CUSTOMREAL *Ks_loc;
     CUSTOMREAL *Kxi_loc;
     CUSTOMREAL *Keta_loc;
+    CUSTOMREAL *Kdensity_loc;
     CUSTOMREAL *Tadj_loc; // timetable for adjoint source
+    CUSTOMREAL *Tadj_density_loc; // timetable for density of adjoint source
     CUSTOMREAL *Ks_inv_loc;
     CUSTOMREAL *Kxi_inv_loc;
     CUSTOMREAL *Keta_inv_loc;
@@ -330,9 +337,13 @@ public:
     CUSTOMREAL *Ks_update_loc;
     CUSTOMREAL *Kxi_update_loc;
     CUSTOMREAL *Keta_update_loc;
+    // model update para of the previous step
+    CUSTOMREAL *Ks_update_loc_previous;
+    CUSTOMREAL *Kxi_update_loc_previous;
+    CUSTOMREAL *Keta_update_loc_previous;
 private:
     MPI_Win     win_Tadj_loc;
-
+    MPI_Win     win_Tadj_density_loc;
     // boundary layer for mpi communication
     // storing not the value but the pointers for the elements of arrays
     // to send

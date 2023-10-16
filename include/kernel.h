@@ -27,15 +27,10 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
         for (int kkr = 1; kkr < nr-1; kkr++) {
             for (int jjt = 1; jjt < nt-1; jjt++) {
                 for (int iip = 1; iip < np-1; iip++) {
-                    // distance between the source and grid point (source mask, require discussion)
-                    // CUSTOMREAL dis = std::sqrt(my_square((grid.r_loc_1d[kkr]-src_r)/dr) + my_square((grid.t_loc_1d[jjt]-src_lat)/dt) + my_square((grid.p_loc_1d[iip]-src_lon)/dp));
-                    // if(dis <= 2){
-                    //     weight = 0.0;
-                    // } else if ( dis <= 5) {
-                    //     weight = (dis-2)/5;
-                    // } else {
-                    //     weight = 1.0;
-                    // }
+
+                    // density of kernel
+                    grid.Kdensity_loc[I2V(iip,jjt,kkr)]    += grid.Tadj_density_loc[I2V(iip,jjt,kkr)];  
+
                     // mask within one grid around the source
                     if (std::abs(grid.r_loc_1d[kkr]-src_r)   >= dr \
                      || std::abs(grid.t_loc_1d[jjt]-src_lat) >= dt \
@@ -47,7 +42,7 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
 
                         if (IP.get_update_slowness()==1){      // we need to update slowness
                             // Kernel w r t slowness s
-                            grid.Ks_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] * my_square(grid.fun_loc[I2V(iip,jjt,kkr)]);
+                            grid.Ks_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] * my_square(grid.fun_loc[I2V(iip,jjt,kkr)]);                                                  
                         } else {
                             grid.Ks_loc[I2V(iip,jjt,kkr)] = _0_CR;
                         }
@@ -61,6 +56,7 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
 
                                 grid.Keta_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \
                                                                 * ( -_2_CR * Ttheta * Tphi / (my_square(grid.r_loc_1d[kkr])*std::cos(grid.t_loc_1d[jjt])));
+
                             } else {
                                 grid.Kxi_loc[I2V(iip,jjt,kkr)]  += weight * grid.Tadj_loc[I2V(iip,jjt,kkr)] \
                                                             * ((- GAMMA * grid.xi_loc[I2V(iip,jjt,kkr)] / \
@@ -94,11 +90,13 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
                     grid.Ks_loc[I2V(0,jjt,kkr)]      = _0_CR;
                     grid.Kxi_loc[I2V(0,jjt,kkr)]     = _0_CR;
                     grid.Keta_loc[I2V(0,jjt,kkr)]    = _0_CR;
+                    grid.Kdensity_loc[I2V(0,jjt,kkr)]    = _0_CR;
                 }
                 if (grid.i_last()){
                     grid.Ks_loc[I2V(np-1,jjt,kkr)]   = _0_CR;
                     grid.Kxi_loc[I2V(np-1,jjt,kkr)]  = _0_CR;
                     grid.Keta_loc[I2V(np-1,jjt,kkr)] = _0_CR;
+                    grid.Kdensity_loc[I2V(np-1,jjt,kkr)] = _0_CR;
                 }
            }
         }
@@ -109,11 +107,13 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
                     grid.Ks_loc[I2V(iip,0,kkr)]      = _0_CR;
                     grid.Kxi_loc[I2V(iip,0,kkr)]     = _0_CR;
                     grid.Keta_loc[I2V(iip,0,kkr)]    = _0_CR;
+                    grid.Kdensity_loc[I2V(iip,0,kkr)]    = _0_CR;
                 }
                 if (grid.j_last()){
                     grid.Ks_loc[I2V(iip,nt-1,kkr)]   = _0_CR;
                     grid.Kxi_loc[I2V(iip,nt-1,kkr)]  = _0_CR;
                     grid.Keta_loc[I2V(iip,nt-1,kkr)] = _0_CR;
+                    grid.Kdensity_loc[I2V(iip,nt-1,kkr)] = _0_CR;
                 }
             }
         }
@@ -124,11 +124,13 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
                     grid.Ks_loc[I2V(iip,jjt,0)]      = _0_CR;
                     grid.Kxi_loc[I2V(iip,jjt,0)]     = _0_CR;
                     grid.Keta_loc[I2V(iip,jjt,0)]    = _0_CR;
+                    grid.Kdensity_loc[I2V(iip,jjt,0)]    = _0_CR;
                 }
                 if (grid.k_last()){
                     grid.Ks_loc[I2V(iip,jjt,nr-1)]   = _0_CR;
                     grid.Kxi_loc[I2V(iip,jjt,nr-1)]  = _0_CR;
                     grid.Keta_loc[I2V(iip,jjt,nr-1)] = _0_CR;
+                    grid.Kdensity_loc[I2V(iip,jjt,nr-1)] = _0_CR;
                 }
             }
         }
@@ -144,15 +146,18 @@ void sumup_kernels(Grid& grid) {
         allreduce_cr_sim_inplace(grid.Ks_loc, n_grids);
         allreduce_cr_sim_inplace(grid.Kxi_loc, n_grids);
         allreduce_cr_sim_inplace(grid.Keta_loc, n_grids);
+        allreduce_cr_sim_inplace(grid.Kdensity_loc, n_grids);
 
         // share the values on boundary
         grid.send_recev_boundary_data(grid.Ks_loc);
         grid.send_recev_boundary_data(grid.Kxi_loc);
         grid.send_recev_boundary_data(grid.Keta_loc);
+        grid.send_recev_boundary_data(grid.Kdensity_loc);
 
         grid.send_recev_boundary_data_kosumi(grid.Ks_loc);
         grid.send_recev_boundary_data_kosumi(grid.Kxi_loc);
         grid.send_recev_boundary_data_kosumi(grid.Keta_loc);
+        grid.send_recev_boundary_data_kosumi(grid.Kdensity_loc);
     }
 
     synchronize_all_world();
