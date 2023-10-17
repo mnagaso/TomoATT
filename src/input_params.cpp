@@ -213,9 +213,20 @@ InputParams::InputParams(std::string& input_file){
 
             // parameters for optim_method == 0
             if (optim_method == 0) {
+                // step method
+                if (config["model_update"]["optim_method_0"]["step_method"]) {
+                    getNodeValue(config["model_update"]["optim_method_0"], "step_method", step_method);
+                }
                 // step length decay
                 if (config["model_update"]["optim_method_0"]["step_length_decay"]) {
                     getNodeValue(config["model_update"]["optim_method_0"], "step_length_decay", step_length_decay);
+                }
+                if (config["model_update"]["optim_method_0"]["step_length_gradient_angle"]) {
+                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_gradient_angle", step_length_gradient_angle);
+                }
+                if (config["model_update"]["optim_method_0"]["step_length_change"]) {
+                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_change", step_length_down,0);
+                    getNodeValue(config["model_update"]["optim_method_0"], "step_length_change", step_length_up,1);
                 }
             }
 
@@ -713,8 +724,12 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_i_single(max_iter_inv, 0);
     broadcast_i_single(optim_method, 0);
+    broadcast_i_single(step_method, 0);
     broadcast_cr_single(step_length_init, 0);
     broadcast_cr_single(step_length_decay, 0);
+    broadcast_cr_single(step_length_gradient_angle, 0);
+    broadcast_cr_single(step_length_down, 0);
+    broadcast_cr_single(step_length_up, 0);
     broadcast_cr_single(step_length_init_sc, 0);
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_cr_single(regularization_weight, 0);
@@ -996,7 +1011,13 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
     fout << "  # parameters for optim_method 0 (gradient_descent)" << std::endl;
     fout << "  optim_method_0:" << std::endl;
-    fout << "    step_length_decay: " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
+    fout << "    step_method: " << step_method << "  # the method to modulate step size. 0: according to objective function; 1: according to gradient direction " << std::endl;
+    fout << "    # if step_method:0. if objective function increase, step size -> step length * step_length_decay. " << std::endl;
+    fout << "    step_length_decay: " << step_length_decay << " # default: 0.9" << std::endl;
+    fout << "    # if step_method:1. if the angle between the current and the previous gradients is greater than step_length_gradient_angle, step size -> step length * step_length_change[0]. " << std::endl;
+    fout << "    #                                                                                                                otherwise, step size -> step length * step_length_change[1]. " << std::endl;
+    fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;   
+    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl;     
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
@@ -1232,8 +1253,8 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
 
     fout << "  # relocation_strategy" << std::endl;
-    fout << "  step_length : " << step_length_init << " # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
-    fout << "  step_length_decay : " << step_length_decay << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
+    fout << "  step_length : " << step_length_src_reloc << " # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
+    fout << "  step_length_decay : " << step_length_decay_src_reloc << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
 
     fout << "  rescaling_dep_lat_lon_ortime  : [";
     fout << rescaling_dep << ", " << rescaling_lat << ", " << rescaling_lon << ", " << rescaling_ortime;

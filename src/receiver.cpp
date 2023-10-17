@@ -430,6 +430,22 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
     broadcast_cr_single_sub(res_tele,0);
     broadcast_cr_single_sub(res_tele_sq,0);
 
+    broadcast_cr_single(obj,0);
+    broadcast_cr_single(obj_abs,0);
+    broadcast_cr_single(obj_cs_dif,0);
+    broadcast_cr_single(obj_cr_dif,0);
+    broadcast_cr_single(obj_tele,0);
+    broadcast_cr_single(res,0);
+    broadcast_cr_single(res_sq,0);
+    broadcast_cr_single(res_abs,0);
+    broadcast_cr_single(res_abs_sq,0);
+    broadcast_cr_single(res_cs_dif,0);
+    broadcast_cr_single(res_cs_dif_sq,0);
+    broadcast_cr_single(res_cr_dif,0);
+    broadcast_cr_single(res_cr_dif_sq,0);
+    broadcast_cr_single(res_tele,0);
+    broadcast_cr_single(res_tele_sq,0);
+
     obj_residual = {obj, obj_abs, obj_cs_dif, obj_cr_dif, obj_tele, res, res_sq, res_abs, res_abs_sq, res_cs_dif, res_cs_dif_sq, res_cr_dif, res_cr_dif_sq, res_tele, res_tele_sq};
 
     for(int i = 0; i < (int)obj_residual.size(); i++){

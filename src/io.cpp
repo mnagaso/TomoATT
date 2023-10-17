@@ -1155,6 +1155,25 @@ void IO_utils::write_Keta(Grid& grid, int i_inv) {
 }
 
 
+void IO_utils::write_Kdensity(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "Kdensity";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Kdensity(), i_inv, model_data);
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if (output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "Kdensity_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii_model(dset_name);
+        write_data_ascii(grid, fname, grid.get_Kdensity());
+    }
+}
+
+
 void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
     if (!subdom_main) return;
 

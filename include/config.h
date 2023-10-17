@@ -98,7 +98,13 @@ inline const CUSTOMREAL r_kermel_mask  = 40.0;
 inline CUSTOMREAL       step_length_init = 0.01; // update step size limit
 inline CUSTOMREAL       step_length_init_sc = 0.001; // update step size limit (for station correction)
 inline CUSTOMREAL       step_length_decay = 0.9;
+inline CUSTOMREAL       step_length_down = 0.5;
+inline CUSTOMREAL       step_length_up = 1.2;
 inline CUSTOMREAL       step_length_lbfgs;
+inline int              step_method         = 0; // 0：modulate according to obj, modulate according to gradient direction.
+inline CUSTOMREAL       step_length_gradient_angle = 120.0;
+inline const int        OBJ_DEFINED         = 0;
+inline const int        GRADIENT_DEFINED    = 1;
 
 // halve steping params
 inline const CUSTOMREAL HALVE_STEP_RATIO = 0.7;
@@ -200,7 +206,7 @@ inline const int  GRADIENT_DESCENT    = 0;
 inline const int  HALVE_STEPPING_MODE = 1;
 inline const int  LBFGS_MODE          = 2;
 inline int        optim_method        = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
-inline const CUSTOMREAL wolfe_c1     = 1e-4;
+inline const CUSTOMREAL wolfe_c1     = 1e-4; 
 inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight

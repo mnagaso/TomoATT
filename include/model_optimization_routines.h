@@ -134,49 +134,77 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // smooth kernels
     smooth_kernels(grid, IP);
 
-    // Previously, the step length is modulated when obj changes.  
-    // // change stepsize
-    // if (i_inv > 0 && v_obj_inout < old_v_obj) {
-    //     // step_length_init = std::min(0.01, step_length_init*1.03);
-    //     step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
-    //     step_length_init_sc = std::min((CUSTOMREAL)1.0, step_length_init_sc);
-    // } else if (i_inv > 0 && v_obj_inout >= old_v_obj) {
-    //     // step_length_init = std::max(0.00001, step_length_init*0.97);
-    //     step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
-    //     step_length_init_sc = std::max((CUSTOMREAL)0.00001, step_length_init_sc*step_length_decay);
-    // }
+    // change stepsize
 
-    // Now, we modulate the step length according to the angle between the previous and current gradient directions. 
-    // If the angle is less than XX degree, which means the model update direction is successive, we should enlarge the step size
-    // Otherwise, the step length should decrease
-    CUSTOMREAL angle = direction_change_of_model_update(grid);
-    if(i_inv != 0){
-        if (angle > 120){
-            step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init * 0.5);
+    // Option 1: the step length is modulated when obj changes.  
+    if (step_method == OBJ_DEFINED){
+        if(i_inv != 0){
+            if (v_obj_inout < old_v_obj) {
+                step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init);
+                if(id_sim == 0){
+                    std::cout << std::endl;
+                    std::cout << "The obj keeps decreasing, from " << old_v_obj << " to " << v_obj_inout
+                            << ", the step length is " << step_length_init << std::endl;
+                    std::cout << std::endl;
+                }
+            } else if (v_obj_inout >= old_v_obj) {
+                step_length_init    = std::max((CUSTOMREAL)0.00001, step_length_init*step_length_decay);
+                if(id_sim == 0){
+                    std::cout << std::endl;
+                    std::cout << "The obj keep increases, from " << old_v_obj << " to " << v_obj_inout
+                            << ", the step length decreases from " << step_length_init/step_length_decay
+                            << " to " << step_length_init << std::endl;
+                    std::cout << std::endl;
+                }
+            }
+        } else {
             if(id_sim == 0){
                 std::cout << std::endl;
-                std::cout << "The angle between two update darections is " << angle
-                        << ". Because the angle is greater than 120 degree, the step length decreases from "
-                        << step_length_init*2 << " to " << step_length_init << std::endl;
+                std::cout << "At the first iteration, the step length is " << step_length_init << std::endl;
                 std::cout << std::endl;
             }
-        } else if (angle <= 120) {
-            step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init * 1.2);
+        }
+    } else if (step_method == GRADIENT_DEFINED){
+        // Option 2: we modulate the step length according to the angle between the previous and current gradient directions. 
+        // If the angle is less than XX degree, which means the model update direction is successive, we should enlarge the step size
+        // Otherwise, the step length should decrease
+        CUSTOMREAL angle = direction_change_of_model_update(grid);
+        if(i_inv != 0){
+            if (angle > step_length_gradient_angle){
+                step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init * step_length_down);
+                if(id_sim == 0){
+                    std::cout << std::endl;
+                    std::cout << "The angle between two update darections is " << angle
+                            << ". Because the angle is greater than " << step_length_gradient_angle << " degree, the step length decreases from "
+                            << step_length_init/step_length_down << " to " << step_length_init << std::endl;
+                    std::cout << std::endl;
+                }
+            } else if (angle <= step_length_gradient_angle) {
+                step_length_init    = std::min((CUSTOMREAL)1.0, step_length_init * step_length_up);
+                if(id_sim == 0){
+                    std::cout << std::endl;
+                    std::cout << "The angle between two update darections is " << angle
+                            << ". Because the angle is less than " << step_length_gradient_angle << " degree, the step length increases from "
+                            << step_length_init/step_length_up << " to " << step_length_init << std::endl;
+                    std::cout << std::endl;
+                }
+            }
+        } else {
             if(id_sim == 0){
                 std::cout << std::endl;
-                std::cout << "The angle between two update darections is " << angle
-                        << ". Because the angle is less than 120 degree, the step length increases from "
-                        << step_length_init/1.2 << " to " << step_length_init << std::endl;
+                std::cout << "At the first iteration, the step length is " << step_length_init << std::endl;
                 std::cout << std::endl;
             }
         }
     } else {
-        if(id_sim == 0){
-            std::cout << std::endl;
-            std::cout << "At the first iteration, the step length is " << step_length_init << std::endl;
-            std::cout << std::endl;
-        }
+        std::cout << std::endl;
+        std::cout << "No supported method for step size change, step keep the same: " << step_length_init << std::endl;
+        std::cout << std::endl;
     }
+
+    // broadcast the step_length
+    broadcast_cr_single(step_length_init,0);
+
     // update the model with the initial step size
     set_new_model(grid, step_length_init);
 
