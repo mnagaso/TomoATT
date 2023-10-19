@@ -242,6 +242,7 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
             for (int j = 0; j < n_inv_J_loc; j++) {
                 for (int i = 0; i < n_inv_I_loc; i++) {
                     grid.Ks_inv_loc[  I2V_INV_KNL(i,j,k)] = _0_CR;
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(i,j,k)] = _0_CR;
                 }
             }
         }
@@ -345,34 +346,42 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp,    jdt,    kdr)]     += (_1_CR-r_r)    *(_1_CR-r_t)    *(_1_CR-r_p)    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani)] += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani)] += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
-
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp,    jdt,    kdr)]     += (_1_CR-r_r)    *(_1_CR-r_t)    *(_1_CR-r_p)    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
+                    
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp,    jdt,    kdr    +1)] += r_r    *(_1_CR-r_t)    *(_1_CR-r_p)    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani+1)] += r_r_ani*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani+1)] += r_r_ani*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
-
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp,    jdt,    kdr    +1)] += r_r    *(_1_CR-r_t)    *(_1_CR-r_p)    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
+                    
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp,    jdt    +1,kdr)]     += (_1_CR-r_r)    *r_t    *(_1_CR-r_p)    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani)] += (_1_CR-r_r_ani)*r_t_ani*(_1_CR-r_p_ani)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani)] += (_1_CR-r_r_ani)*r_t_ani*(_1_CR-r_p_ani)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp,    jdt    +1,kdr)]     += (_1_CR-r_r)    *r_t    *(_1_CR-r_p)    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
 
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp    +1,jdt,    kdr)]     += (_1_CR-r_r)    *(_1_CR-r_t)    *r_p    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani)] += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*r_p_ani*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani)] += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*r_p_ani*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp    +1,jdt,    kdr)]     += (_1_CR-r_r)    *(_1_CR-r_t)    *r_p    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
 
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp,    jdt    +1,kdr    +1)] += r_r    *r_t    *(_1_CR-r_p)    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani+1)] += r_r_ani*r_t_ani*(_1_CR-r_p_ani)*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani+1)] += r_r_ani*r_t_ani*(_1_CR-r_p_ani)*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp,    jdt    +1,kdr    +1)] += r_r    *r_t    *(_1_CR-r_p)    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
 
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp    +1,jdt,    kdr    +1)] += r_r    *(_1_CR-r_t)    *r_p    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani+1)] += r_r_ani*(_1_CR-r_t_ani)*r_p_ani*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani+1)] += r_r_ani*(_1_CR-r_t_ani)*r_p_ani*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp    +1,jdt,    kdr    +1)] += r_r    *(_1_CR-r_t)    *r_p    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
 
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp    +1,jdt    +1,kdr)]     += (_1_CR-r_r)    *r_t    *r_p    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani)] += (_1_CR-r_r_ani)*r_t_ani*r_p_ani*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani)] += (_1_CR-r_r_ani)*r_t_ani*r_p_ani*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp    +1,jdt    +1,kdr)]     += (_1_CR-r_r)    *r_t    *r_p    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
 
                     grid.Ks_inv_loc[  I2V_INV_KNL(    idp    +1,jdt    +1,kdr    +1)] += r_r    *r_t    *r_p    *grid.Ks_loc[  I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani+1)] += r_r_ani*r_t_ani*r_p_ani*grid.Keta_loc[I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
                     grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani+1)] += r_r_ani*r_t_ani*r_p_ani*grid.Kxi_loc[ I2V(i_loc,j_loc,k_loc)]/std::pow(grid.Kdensity_loc[I2V(i_loc,j_loc,k_loc)],Kdensity_coe);
+                    grid.Kdensity_inv_loc[  I2V_INV_KNL(    idp    +1,jdt    +1,kdr    +1)] += r_r    *r_t    *r_p    *grid.Kdensity_loc[  I2V(i_loc,j_loc,k_loc)];
 
                 } // end for i
             } // end for j
@@ -439,14 +448,6 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                             volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp-1,i_grid)]);
 
                         volume = volume_r * volume_t * volume_p;
-                        // std::cout   << "ii_invr: " << ii_invr
-                        //             << "ii_invt: " << ii_invt
-                        //             << "ii_invp: " << ii_invp
-                        //             << "volume_r: " << volume_r
-                        //             << "volume_t: " << volume_t
-                        //             << "volume_p: " << volume_p
-                        //             << "volume: " << volume
-                        //             << std::endl;
 
                         grid.Keta_inv_loc[  I2V_INV_ANI_KNL(ii_invp,ii_invt,ii_invr)]   /= volume;
                         grid.Kxi_inv_loc[   I2V_INV_ANI_KNL(ii_invp,ii_invt,ii_invr)]   /= volume;
@@ -459,6 +460,8 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
         allreduce_cr_inplace(grid.Ks_inv_loc,   n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
         allreduce_cr_inplace(grid.Keta_inv_loc, n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani);
         allreduce_cr_inplace(grid.Kxi_inv_loc,  n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani);
+        allreduce_cr_inplace(grid.Kdensity_inv_loc,   n_inv_I_loc*n_inv_J_loc*n_inv_K_loc);
+
 
         //
         // update factors
@@ -555,45 +558,54 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                     CUSTOMREAL pert_Ks   = 0.0;
                     CUSTOMREAL pert_Keta = 0.0;
                     CUSTOMREAL pert_Kxi  = 0.0;
+                    CUSTOMREAL pert_Kdensity  = 0.0;
 
                     pert_Ks   += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)];
                     pert_Keta += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani)];
                     pert_Kxi  += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani)];
-
+                    pert_Kdensity   += (_1_CR-r_r)*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp,jdt,kdr)];
+                    
                     pert_Ks    += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)];
                     pert_Keta  += r_r_ani*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani+1)];
                     pert_Kxi   += r_r_ani*(_1_CR-r_t_ani)*(_1_CR-r_p_ani)*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani,kdr_ani+1)];
-
+                    pert_Kdensity    += r_r*(_1_CR-r_t)*(_1_CR-r_p)*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp,jdt,kdr+1)];
+                    
                     pert_Ks    += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)];
                     pert_Keta  += (_1_CR-r_r_ani)*r_t_ani*(_1_CR-r_p_ani)*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani)];
                     pert_Kxi   += (_1_CR-r_r_ani)*r_t_ani*(_1_CR-r_p_ani)*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani)];
-
+                    pert_Kdensity    += (_1_CR-r_r)*r_t*(_1_CR-r_p)*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr)];
+                    
                     pert_Ks    += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)];
                     pert_Keta  += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*r_p_ani*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani)];
                     pert_Kxi   += (_1_CR-r_r_ani)*(_1_CR-r_t_ani)*r_p_ani*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani)];
-
+                    pert_Kdensity    += (_1_CR-r_r)*(_1_CR-r_t)*r_p*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr)];
+                    
                     pert_Ks    += r_r*r_t*(_1_CR-r_p)*grid.Ks_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)];
                     pert_Keta  += r_r_ani*r_t_ani*(_1_CR-r_p_ani)*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani+1)];
                     pert_Kxi   += r_r_ani*r_t_ani*(_1_CR-r_p_ani)*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani,jdt_ani+1,kdr_ani+1)];
-
+                    pert_Kdensity    += r_r*r_t*(_1_CR-r_p)*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp,jdt+1,kdr+1)];
+                    
                     pert_Ks    += r_r*(_1_CR-r_t)*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)];
                     pert_Keta  += r_r_ani*(_1_CR-r_t_ani)*r_p_ani*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani+1)];
                     pert_Kxi   += r_r_ani*(_1_CR-r_t_ani)*r_p_ani*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani,kdr_ani+1)];
-
+                    pert_Kdensity    += r_r*(_1_CR-r_t)*r_p*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp+1,jdt,kdr+1)];
+                    
                     pert_Ks    += (_1_CR-r_r)*r_t*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)];
                     pert_Keta  += (_1_CR-r_r_ani)*r_t_ani*r_p_ani*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani)];
                     pert_Kxi   += (_1_CR-r_r_ani)*r_t_ani*r_p_ani*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani)];
-
+                    pert_Kdensity    += (_1_CR-r_r)*r_t*r_p*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr)];
+                    
                     pert_Ks    += r_r*r_t*r_p*grid.Ks_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)];
                     pert_Keta  += r_r_ani*r_t_ani*r_p_ani*grid.Keta_inv_loc[I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani+1)];
                     pert_Kxi   += r_r_ani*r_t_ani*r_p_ani*grid.Kxi_inv_loc[ I2V_INV_ANI_KNL(idp_ani+1,jdt_ani+1,kdr_ani+1)];
-
+                    pert_Kdensity    += r_r*r_t*r_p*grid.Kdensity_inv_loc[  I2V_INV_KNL(idp+1,jdt+1,kdr+1)];
+                    
 
                     // update para
                     grid.Ks_update_loc[  I2V(i_loc,j_loc,k_loc)] += weight * pert_Ks;
                     grid.Keta_update_loc[I2V(i_loc,j_loc,k_loc)] += weight * pert_Keta;
                     grid.Kxi_update_loc[ I2V(i_loc,j_loc,k_loc)] += weight * pert_Kxi;
-
+                    grid.Kdensity_update_loc[  I2V(i_loc,j_loc,k_loc)] += pert_Kdensity;
 
                 } // end for i
             } // end for j

@@ -589,11 +589,13 @@ void Grid::memory_allocation() {
         Keta_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kdensity_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Ks_inv_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
+        Kdensity_inv_loc= (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
         Kxi_inv_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Keta_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid_ani);
         Ks_update_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        Kdensity_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Ks_update_loc_previous   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Kxi_update_loc_previous  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_update_loc_previous = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -889,9 +891,11 @@ void Grid::memory_deallocation() {
         free(Ks_inv_loc);
         free(Kxi_inv_loc);
         free(Keta_inv_loc);
+        free(Kdensity_inv_loc);
         free(Ks_update_loc);
         free(Kxi_update_loc);
         free(Keta_update_loc);
+        free(Kdensity_update_loc);
         free(Ks_update_loc_previous);
         free(Kxi_update_loc_previous);
         free(Keta_update_loc_previous);

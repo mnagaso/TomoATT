@@ -28,7 +28,7 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                         grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
                         grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
                         grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
-
+                        grid.Kdensity_update_loc[I2V(i,j,k)]  = _0_CR;
                         // make checkerboard pattern for debug
                         //if ((i/10+j/10+k/10)%2 == 0) {
                         //    grid.Ks_loc[I2V(i,j,k)]   = 100.0;
@@ -101,11 +101,12 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
             grid.send_recev_boundary_data(grid.Ks_update_loc);
             grid.send_recev_boundary_data(grid.Keta_update_loc);
             grid.send_recev_boundary_data(grid.Kxi_update_loc);
+            grid.send_recev_boundary_data(grid.Kdensity_update_loc);
 
             grid.send_recev_boundary_data_kosumi(grid.Ks_update_loc);
             grid.send_recev_boundary_data_kosumi(grid.Keta_update_loc);
             grid.send_recev_boundary_data_kosumi(grid.Kxi_update_loc);
-
+            grid.send_recev_boundary_data_kosumi(grid.Kdensity_update_loc);
 
         } // end if id_sim == 0
 
@@ -113,7 +114,8 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Ks_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
-
+        broadcast_cr_inter_sim(grid.Kdensity_update_loc, loc_I*loc_J*loc_K, 0);
+        
         // send the previous updated model to all the simultaneous run
         broadcast_cr_inter_sim(grid.Ks_update_loc_previous, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Kxi_update_loc_previous, loc_I*loc_J*loc_K, 0);
