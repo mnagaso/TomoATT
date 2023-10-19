@@ -212,7 +212,7 @@ inline const int        Mbfgs        = 5;            // number of gradients/mode
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
 inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 3.0; // relative step size for the second and later iteration
-
+inline CUSTOMREAL       Kdensity_coe  = 0.0;          // a preconditioner \in [0,1], kernel -> kernel / pow(kernel density, Kdensity_coe)
 // variables for test
 inline bool if_test = false;
 

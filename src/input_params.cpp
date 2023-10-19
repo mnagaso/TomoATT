@@ -228,6 +228,21 @@ InputParams::InputParams(std::string& input_file){
                     getNodeValue(config["model_update"]["optim_method_0"], "step_length_change", step_length_down,0);
                     getNodeValue(config["model_update"]["optim_method_0"], "step_length_change", step_length_up,1);
                 }
+                if (config["model_update"]["optim_method_0"]["Kdensity_coe"]) {
+                    getNodeValue(config["model_update"]["optim_method_0"], "Kdensity_coe", Kdensity_coe);
+                    if (Kdensity_coe < 0.0){
+                        Kdensity_coe = 0.0;
+                        std::cout << std::endl;
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl; 
+                        std::cout << std::endl;
+                    }
+                    if (Kdensity_coe > 1.0){
+                        Kdensity_coe = 1.0;
+                        std::cout << std::endl;
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl; 
+                        std::cout << std::endl;
+                    }
+                }
             }
 
             // parameters for optim_method == 1 or 2
@@ -730,6 +745,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(step_length_gradient_angle, 0);
     broadcast_cr_single(step_length_down, 0);
     broadcast_cr_single(step_length_up, 0);
+    broadcast_cr_single(Kdensity_coe, 0);
     broadcast_cr_single(step_length_init_sc, 0);
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_cr_single(regularization_weight, 0);
@@ -1017,7 +1033,10 @@ void InputParams::write_params_to_file() {
     fout << "    # if step_method:1. if the angle between the current and the previous gradients is greater than step_length_gradient_angle, step size -> step length * step_length_change[0]. " << std::endl;
     fout << "    #                                                                                                                otherwise, step size -> step length * step_length_change[1]. " << std::endl;
     fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;   
-    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl;     
+    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl; 
+    fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl; 
+    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;  
+    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;   
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
