@@ -215,7 +215,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 io.write_xi( grid, i_inv+1);
                 io.write_eta(grid, i_inv+1);
                 // io.write_Kdensity(grid, i_inv);
-                io.write_Kdensity_update(grid, i_inv);
+                if (IP.get_run_mode() == DO_INVERSION) {
+                    io.write_Kdensity_update(grid, i_inv);
+                }
             }
             //io.write_zeta(grid, i_inv); // TODO
 

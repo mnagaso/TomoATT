@@ -22,6 +22,7 @@ base_proj
 include_copy*
 src_copy_*
 jchen_work
+debug
 
 # result for comparison
 test/inversion_2_one_src/fortran_code/ega5/output/*
