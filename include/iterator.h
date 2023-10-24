@@ -27,8 +27,9 @@ public:
     Iterator(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
     virtual ~Iterator();
     // regional source
-    void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
-    void run_iteration_adjoint(InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
+    void run_iteration_forward            (InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
+    void run_iteration_forward_attenuation(InputParams&, Grid&, IO_utils&, bool&); // run forward-attenuation iteratiom till convergence
+    void run_iteration_adjoint            (InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
 
     void initialize_arrays(InputParams&, IO_utils&, Grid&, Source&, const std::string&); // initialize factors etc.
 
@@ -63,6 +64,9 @@ protected:
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
     virtual void do_sweep_adj(int, Grid&, InputParams&){};             // do sweeping with ordinal method for adjoint field
     void calculate_stencil_adj(Grid&, int&, int&, int&);               // calculate stencil for 1st order for adjoint field
+
+    // methods for attenuation
+    virtual void do_sweep_attenuation(int, Grid&, InputParams&){};     // do sweeping with ordinal method for attenuation
 
     // grid point information
     int* _nr, *_nt, *_np;           // number of grid points on the direction r, theta, phi

@@ -219,6 +219,10 @@ void Grid::init_decomposition(InputParams& IP) {
     // check if inversion grids are needed
     if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
         inverse_flag = true;
+
+        // check if inverse for Qp is needed
+        inverse_flag_qp = IP.get_update_qp();
+
         setup_inversion_grids(IP);
     } else {
         inverse_flag = false;
@@ -418,6 +422,8 @@ void Grid::memory_allocation() {
         xi_loc      = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         eta_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         zeta_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        fun_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+
         T_loc       = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         tau_old_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
@@ -429,8 +435,13 @@ void Grid::memory_allocation() {
         fac_b_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_c_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         fac_f_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
-        fun_loc     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         is_changed  = (bool *)       malloc(sizeof(bool)       * n_total_loc_grid_points);
+
+        // attenuation
+        if (inverse_flag_qp){
+            qp_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+            Tstar_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        }
 
         // 1d arrays
         p_loc_1d = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * loc_I);
@@ -594,6 +605,11 @@ void Grid::memory_allocation() {
         Kxi_update_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         Keta_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
 
+        if (inverse_flag_qp) {
+            Kqp_loc        = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
+            Kqp_inv_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_inv_grid);
+            Kqp_update_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+        }
 
         if (sub_nprocs <= 1)
             Tadj_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
@@ -605,6 +621,8 @@ void Grid::memory_allocation() {
             xi_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             eta_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
             fun_loc_back = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+            if (inverse_flag_qp)
+                qp_loc_back  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
         }
 
         if (optim_method==LBFGS_MODE) {
@@ -619,10 +637,18 @@ void Grid::memory_allocation() {
             Ks_descent_dir_loc   = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Kxi_descent_dir_loc  = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
             Keta_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+
             // initialize
             std::fill(Ks_descent_dir_loc,   Ks_descent_dir_loc   + n_total_loc_lbfgs, _0_CR);
             std::fill(Kxi_descent_dir_loc,  Kxi_descent_dir_loc  + n_total_loc_lbfgs, _0_CR);
             std::fill(Keta_descent_dir_loc, Keta_descent_dir_loc + n_total_loc_lbfgs, _0_CR);
+
+            // arrays for attenuation
+            if (inverse_flag_qp) {
+                qp_loc_back         = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_grid_points);
+                Kqp_descent_dir_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                std::fill(Kqp_descent_dir_loc, Kqp_descent_dir_loc + n_total_loc_lbfgs, _0_CR);
+            }
 
             if (id_sim==0){
                 Ks_grad_store_loc    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
@@ -657,6 +683,22 @@ void Grid::memory_allocation() {
                 std::fill(fun_prior_loc,                           fun_prior_loc                           + n_total_loc_lbfgs, _0_CR);
                 std::fill(xi_prior_loc,                            xi_prior_loc                            + n_total_loc_lbfgs, _0_CR);
                 std::fill(eta_prior_loc,                           eta_prior_loc                           + n_total_loc_lbfgs, _0_CR);
+
+                // for attenuation
+                if (inverse_flag_qp) {
+                    Kqp_grad_store_loc                     = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                    Kqp_model_store_loc                    = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                    qp_gradient_regularization_penalty_loc = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                    qp_regularization_penalty_loc          = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                    qp_prior_loc                           = (CUSTOMREAL *) malloc(sizeof(CUSTOMREAL) * n_total_loc_lbfgs);
+                    // initialization
+                    std::fill(Kqp_grad_store_loc,                      Kqp_grad_store_loc                      + n_total_loc_lbfgs, _0_CR);
+                    std::fill(Kqp_model_store_loc,                     Kqp_model_store_loc                     + n_total_loc_lbfgs, _0_CR);
+                    std::fill(qp_gradient_regularization_penalty_loc,  qp_gradient_regularization_penalty_loc  + n_total_loc_lbfgs, _0_CR);
+                    std::fill(qp_regularization_penalty_loc,           qp_regularization_penalty_loc           + n_total_loc_lbfgs, _0_CR);
+                    std::fill(qp_prior_loc,                            qp_prior_loc                            + n_total_loc_lbfgs, _0_CR);
+                }
+
             }
         }
     } // end of if inverse_flag
@@ -675,6 +717,7 @@ void Grid::shm_memory_allocation() {
 
     prepare_shm_array_cr(n_total_loc_grid_points, T_loc, win_T_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, tau_old_loc, win_tau_old_loc);
+    prepare_shm_array_cr(n_total_loc_grid_points, fun_loc, win_fun_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, xi_loc, win_xi_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, eta_loc, win_eta_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, zeta_loc, win_zeta_loc);
@@ -688,8 +731,13 @@ void Grid::shm_memory_allocation() {
     prepare_shm_array_cr(n_total_loc_grid_points, fac_b_loc, win_fac_b_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, fac_c_loc, win_fac_c_loc);
     prepare_shm_array_cr(n_total_loc_grid_points, fac_f_loc, win_fac_f_loc);
-    prepare_shm_array_cr(n_total_loc_grid_points, fun_loc, win_fun_loc);
     prepare_shm_array_bool(n_total_loc_grid_points, is_changed, win_is_changed);
+
+    // attenuation
+    if (inverse_flag_qp) {
+        prepare_shm_array_cr(n_total_loc_grid_points, qp_loc, win_qp_loc);
+        prepare_shm_array_cr(n_total_loc_grid_points, Tstar_loc, win_Tstar_loc);
+    }
 
     prepare_shm_array_cr(loc_I, p_loc_1d, win_p_loc_1d);
     prepare_shm_array_cr(loc_J, t_loc_1d, win_t_loc_1d);
@@ -739,6 +787,13 @@ void Grid::memory_deallocation() {
         free(t_loc_1d);
         free(p_loc_1d);
         free(r_loc_1d);
+
+        if (inverse_flag_qp){
+            free(qp_loc);
+            free(Tstar_loc);
+        }
+
+
     }
     if(if_test) free(u_loc);
 
@@ -887,6 +942,12 @@ void Grid::memory_deallocation() {
         free(Kxi_update_loc);
         free(Keta_update_loc);
 
+        if (inverse_flag_qp){
+            free(Kqp_loc);
+            free(Kqp_inv_loc);
+            free(Kqp_update_loc);
+        }
+
         if (sub_nprocs <= 1)
             free(Tadj_loc);
 
@@ -897,6 +958,8 @@ void Grid::memory_deallocation() {
             free(fun_loc_back);
             free(xi_loc_back);
             free(eta_loc_back);
+            if (inverse_flag_qp)
+                free(qp_loc_back);
         }
 
         if (optim_method==LBFGS_MODE) {
@@ -906,6 +969,11 @@ void Grid::memory_deallocation() {
             free(Ks_descent_dir_loc);
             free(Kxi_descent_dir_loc);
             free(Keta_descent_dir_loc);
+
+            if (inverse_flag_qp) {
+                free(qp_loc_back);
+                free(Kqp_descent_dir_loc);
+            }
 
             if (id_sim==0){
                 free(Ks_grad_store_loc   );
@@ -923,6 +991,14 @@ void Grid::memory_deallocation() {
                 free(fun_prior_loc);
                 free(xi_prior_loc);
                 free(eta_prior_loc);
+
+                if (inverse_flag_qp) {
+                    free(Kqp_grad_store_loc);
+                    free(Kqp_model_store_loc);
+                    free(qp_regularization_penalty_loc);
+                    free(qp_gradient_regularization_penalty_loc);
+                    free(qp_prior_loc);
+                }
             }
        }
     } // end if inverse_flag
@@ -1004,6 +1080,9 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
         io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
         //io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
+        if (inverse_flag_qp)
+            io.read_model(f_model_path,"qp",   qp_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
+
         if(if_test) {
             // solver test
             io.read_model(f_model_path, "u", u_loc, tmp_offset_i, tmp_offset_j, tmp_offset_k);
@@ -1017,6 +1096,8 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
             std::copy(xi_loc,  xi_loc + loc_I*loc_J*loc_K,  xi_prior_loc);
             std::copy(eta_loc, eta_loc + loc_I*loc_J*loc_K, eta_prior_loc);
             std::copy(fun_loc, fun_loc + loc_I*loc_J*loc_K, fun_prior_loc);
+            if (inverse_flag_qp)
+                std::copy(qp_loc, qp_loc + loc_I*loc_J*loc_K, qp_prior_loc);
         }
 
     }
@@ -1027,9 +1108,10 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     broadcast_cr_inter_sim(eta_loc,   n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(zeta_loc,  n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0); // here passing velocity array
-    if(if_test) {
+    if (inverse_flag_qp)
+        broadcast_cr_inter_sim(qp_loc,    n_total_loc_grid_points, 0);
+    if(if_test)
         broadcast_cr_inter_sim(u_loc, n_total_loc_grid_points, 0);
-    }
 
     // center of the domain
     CUSTOMREAL lon_center = (lon_min + lon_max) / 2.0;
@@ -1573,6 +1655,12 @@ void Grid::update_Tadj() {
 }
 
 
+// copy Tstar to tau_old
+void Grid::Tstar2tau_old() {
+    std::copy(Tstar_loc, Tstar_loc+loc_I*loc_J*loc_K, tau_old_loc);
+}
+
+
 void Grid::back_up_fun_xi_eta_bcf() {
     if (!subdom_main) return;
 
@@ -1637,6 +1725,33 @@ void Grid::calc_L1_and_Linf_diff_tele(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff
                 for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
                     L1_diff   +=                    std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]); // tau_old is used as T_old_loc here
                     Linf_diff  = std::max(Linf_diff,std::abs(T_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]));
+                }
+            }
+        }
+
+        // sum up the values of all processes
+        obj_func_glob=0.0;
+        allreduce_cr_single(L1_diff, obj_func_glob);
+        L1_diff = obj_func_glob/((ngrid_i-2)*(ngrid_j-2)*(ngrid_k-2));
+        obj_func_glob=0.0;
+        allreduce_cr_single_max(Linf_diff, obj_func_glob);
+        Linf_diff = obj_func_glob;///(ngrid_i*ngrid_j*ngrid_k);
+    }
+}
+
+
+void Grid::calc_L1_and_Linf_diff_tele_attenuation(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
+    if (subdom_main) {
+        L1_diff   = 0.0;
+        Linf_diff = 0.0;
+        CUSTOMREAL obj_func_glob = 0.0;
+
+        // calculate L1 error
+        for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+            for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+                for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
+                    L1_diff   +=                    std::abs(Tstar_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]); // tau_old is used as T_old_loc here
+                    Linf_diff  = std::max(Linf_diff,std::abs(Tstar_loc[I2V(i_lon,j_lat,k_r)] - tau_old_loc[I2V(i_lon,j_lat,k_r)]));
                 }
             }
         }

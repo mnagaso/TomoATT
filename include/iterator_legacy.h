@@ -10,6 +10,7 @@ public:
 protected:
     void do_sweep_adj(int, Grid&, InputParams&) override ; // do sweeping for adjoint routine
     virtual void do_sweep(int, Grid&, InputParams&) {}; // do sweeping
+    virtual void do_sweep_attenuation(int, Grid&, InputParams&) {}; // do sweeping for attenuation
 };
 
 
@@ -19,6 +20,7 @@ public:
 protected:
     void do_sweep_adj(int, Grid&, InputParams&) override ; // do sweeping for adjoint routine
     virtual void do_sweep(int, Grid&, InputParams&) {}; // do sweeping
+    virtual void do_sweep_attenuation(int, Grid&, InputParams&) {}; // do sweeping for attenuation
 };
 
 
@@ -28,6 +30,7 @@ public:
     Iterator_legacy_1st_order(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
 private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+    void do_sweep_attenuation(int, Grid&, InputParams&) override; // do sweeping for attenuation
 
 };
 
@@ -38,6 +41,7 @@ public:
     //void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&);
 private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+    void do_sweep_attenuation(int, Grid&, InputParams&) override; // do sweeping for attenuation
 
 };
 
@@ -47,6 +51,8 @@ public:
     Iterator_legacy_1st_order_upwind(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
 private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+    void do_sweep_attenuation(int, Grid&, InputParams&) override; // do sweeping for attenuation
+
 };
 
 class Iterator_legacy_1st_order_tele : public Iterator_legacy_tele {
@@ -56,6 +62,7 @@ public:
     //void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&);
 private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+    void do_sweep_attenuation(int, Grid&, InputParams&) override; // do sweeping for attenuation
 
 };
 
@@ -66,6 +73,7 @@ public:
     //void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&);
 private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+    void do_sweep_attenuation(int, Grid&, InputParams&) override; // do sweeping for attenuation
 
 };
 
@@ -76,6 +84,7 @@ public:
     //void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&);
 private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+    void do_sweep_attenuation(int, Grid&, InputParams&) override; // do sweeping for attenuation
 
 };
 

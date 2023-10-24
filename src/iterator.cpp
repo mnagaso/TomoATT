@@ -686,6 +686,126 @@ iter_end:
 }
 
 
+void Iterator::run_iteration_forward_attenuation(InputParams& IP, Grid& grid, IO_utils& io, bool& first_init) {
+
+    if(if_verbose) stdout_by_main("--- start iteration forward for attenuation. ---");
+
+    // start timer
+    std::string iter_str = "iteration_forward_attenuation";
+    Timer timer_iter(iter_str);
+
+    // in cpu mode
+    iter_count = 0; cur_diff_L1 = HUGE_VAL; cur_diff_Linf = HUGE_VAL;
+
+    if (subdom_main) {
+        grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
+        if (myrank==0 && if_verbose)
+            std::cout << "initial diff values L1, inf: " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+    }
+
+    // start iteration
+    while (true) {
+
+        // store tau for comparison
+        if (subdom_main){
+            if(!is_teleseismic)
+                grid.tau2tau_old();
+            else
+                grid.Tstar2tau_old();
+        }
+
+        // do sweeping for all direction
+        for (int iswp = nswp-1; iswp > -1; iswp--) {
+            do_sweep_attenuation(iswp, grid, IP);
+
+#ifdef FREQ_SYNC_GHOST
+            // synchronize ghost cells everytime after sweeping of each direction
+            if (subdom_main){
+                if (!is_teleseismic)
+                    grid.send_recev_boundary_data(grid.tau_loc);
+                else
+                    grid.send_recev_boundary_data(grid.Tstar_loc);
+
+            }
+#endif
+        }
+
+#ifndef FREQ_SYNC_GHOST
+        // synchronize ghost cells everytime after sweeping of all directions
+        // as the same method with Detrixhe2016
+        if (subdom_main){
+            if (!is_teleseismic)
+                grid.send_recev_boundary_data(grid.tau_loc);
+            else
+                grid.send_recev_boundary_data(grid.Tstar_loc);
+        }
+#endif
+
+        // calculate the objective function
+        // if converged, break the loop
+        if (subdom_main) {
+            if (!is_teleseismic)
+                grid.calc_L1_and_Linf_diff(cur_diff_L1, cur_diff_Linf);
+            else
+                grid.calc_L1_and_Linf_diff_tele_attenuation(cur_diff_L1, cur_diff_Linf);
+
+            if(if_test) {
+                grid.calc_L1_and_Linf_error(cur_err_L1, cur_err_Linf);
+                //std::cout << "Theoretical difference: " << cur_err_L1 << ' ' << cur_err_Linf << std::endl;
+            }
+        }
+
+        // broadcast the diff values
+        broadcast_cr_single_sub(cur_diff_L1, 0);
+        broadcast_cr_single_sub(cur_diff_Linf, 0); // dead lock
+        if (if_test) {
+            broadcast_cr_single_sub(cur_err_L1, 0);
+            broadcast_cr_single_sub(cur_err_Linf, 0);
+        }
+
+        if (cur_diff_L1 < IP.get_conv_tol()) {
+            goto iter_end;
+        } else if (IP.get_max_iter() <= iter_count) {
+            stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
+            goto iter_end;
+        } else {
+            if(myrank==0 && if_verbose)
+                std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
+            iter_count++;
+        }
+    }
+
+iter_end:
+    if (myrank==0){
+        if (if_verbose){
+            std::cout << "Converged at iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+        }
+        if (if_test)
+            std::cout << "errors at iteration " << iter_count << ": " << cur_err_L1 << ", " << cur_err_Linf << std::endl;
+    }
+
+    // calculate T
+    // teleseismic case will update T_loc, so T = T0*tau is not necessary.
+    if (subdom_main && !is_teleseismic) grid.calc_T_plus_tau();
+
+    // corner nodes are not used in the sweeping but used in the interpolation and visualization
+    if (subdom_main) grid.send_recev_boundary_data_kosumi(grid.Tstar_loc);
+
+    // check the time for iteration
+    if (inter_sub_rank==0 && subdom_main) {
+        timer_iter.stop_timer();
+
+        // output time in file
+        std::ofstream ofs;
+        ofs.open("time.txt", std::ios::app);
+        ofs << "Converged at iteration " << iter_count << ", L1 " << cur_diff_L1 << ", Linf " << cur_diff_Linf << ", total time[s] " << timer_iter.get_t() << std::endl;
+
+    }
+
+}
+
+
+
 void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io) {
 
     if(if_verbose) stdout_by_main("--- start iteration adjoint. ---");
@@ -856,7 +976,7 @@ void Iterator::init_delta_and_Tadj(Grid& grid, InputParams& IP) {
             // }
 
             // if(I2V(i_rec_loc+1,j_rec_loc+1,k_rec_loc+1) >= loc_I * loc_J * loc_K){
-            //     std::cout   << "out of range: " 
+            //     std::cout   << "out of range: "
             //                 << ", i_rec_loc+1: " << i_rec_loc+1 << ", loc_I: " << loc_I
             //                 << ", j_rec_loc+1: " << j_rec_loc+1 << ", loc_J: " << loc_J
             //                 << ", k_rec_loc+1: " << k_rec_loc+1 << ", loc_K: " << loc_K

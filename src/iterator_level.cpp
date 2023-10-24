@@ -26,12 +26,12 @@ void Iterator_level::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
 
             V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-            else            kkr = kkr-1;  //nr-kk;
-            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-            else            jjt = jjt-1;  //nt-jj;
-            if (p_dirc < 0) iip = np-iip; //ii-1;
-            else            iip = iip-1;  //np-ii;
+            if (r_dirc < 0) kkr = nr-kkr;
+            else            kkr = kkr-1;
+            if (t_dirc < 0) jjt = nt-jjt;
+            else            jjt = jjt-1;
+            if (p_dirc < 0) iip = np-iip;
+            else            iip = iip-1;
 
             //
             // calculate stencils
@@ -67,19 +67,9 @@ void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
 
             V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-            //if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-            //else            kkr = kkr-1;  //nr-kk;
-            //if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-            //else            jjt = jjt-1;  //nt-jj;
-            //if (p_dirc < 0) iip = np-iip; //ii-1;
-            //else            iip = iip-1;  //np-ii;
-
             if (r_dirc < 0) kkr = nr-kkr-1;
-            //else            kkr = kkr;
             if (t_dirc < 0) jjt = nt-jjt-1;
-            //else            jjt = jjt;
             if (p_dirc < 0) iip = np-iip-1;
-            //else            iip = iip;
 
             //
             // calculate stencils
@@ -126,12 +116,12 @@ void Iterator_level_1st_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
                 V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-                if (r_dirc < 0) kkr = nr-kkr; //kk-1;
-                else            kkr = kkr-1;  //nr-kk;
-                if (t_dirc < 0) jjt = nt-jjt; //jj-1;
-                else            jjt = jjt-1;  //nt-jj;
-                if (p_dirc < 0) iip = np-iip; //ii-1;
-                else            iip = iip-1;  //np-ii;
+                if (r_dirc < 0) kkr = nr-kkr;
+                else            kkr = kkr-1;
+                if (t_dirc < 0) jjt = nt-jjt;
+                else            jjt = jjt-1;
+                if (p_dirc < 0) iip = np-iip;
+                else            iip = iip-1;
 
                 //
                 // calculate stencils
@@ -1055,5 +1045,176 @@ void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& 
 
     } // end of if use_gpu
 
+
+}
+
+
+//
+// attenuation #TODO: attenuation routine does not support SIMD or GPU
+//
+void Iterator_level_1st_order::do_sweep_attenuation(int iswp, Grid& grid, InputParams& IP){
+
+    // set sweep direction
+    set_sweep_direction(iswp);
+
+    int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
+
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
+
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr;
+            else            kkr = kkr-1;
+            if (t_dirc < 0) jjt = nt-jjt;
+            else            jjt = jjt-1;
+            if (p_dirc < 0) iip = np-iip;
+            else            iip = iip-1;
+
+            //
+            // calculate stencils
+            //
+            if (grid.is_changed[I2V(iip, jjt, kkr)]) {
+                calculate_stencil_1st_order(grid, iip, jjt, kkr);
+            } // is_changed == true
+        } // end ijk
+
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
+
+    // update boundary
+    if (subdom_main) {
+        calculate_boundary_nodes(grid);
+    }
+}
+
+
+void Iterator_level_3rd_order::do_sweep_attenuation(int iswp, Grid& grid, InputParams& IP){
+
+    // set sweep direction
+    set_sweep_direction(iswp);
+
+    int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
+
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
+
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr; //kk-1;
+            else            kkr = kkr-1;  //nr-kk;
+            if (t_dirc < 0) jjt = nt-jjt; //jj-1;
+            else            jjt = jjt-1;  //nt-jj;
+            if (p_dirc < 0) iip = np-iip; //ii-1;
+            else            iip = iip-1;  //np-ii;
+
+            //
+            // calculate stencils
+            //
+            if (grid.is_changed[I2V(iip, jjt, kkr)]) {
+                calculate_stencil_3rd_order(grid, iip, jjt, kkr);
+            } // is_changed == true
+        } // end ijk
+
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
+
+    // update boundary
+    if (subdom_main) {
+        calculate_boundary_nodes(grid);
+    }
+
+}
+
+
+void Iterator_level_1st_order_tele::do_sweep_attenuation(int iswp, Grid& grid, InputParams& IP){
+
+    // set sweep direction
+    set_sweep_direction(iswp);
+
+    int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
+
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
+
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr-1;
+            if (t_dirc < 0) jjt = nt-jjt-1;
+            if (p_dirc < 0) iip = np-iip-1;
+
+            //
+            // calculate stencils
+            //
+            if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+                // calculate stencils
+                calculate_stencil_1st_order_tele(grid, iip, jjt, kkr);
+            } else {
+                // update boundary
+                calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
+            }
+        } // end ijk
+
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
+
+
+}
+
+
+void Iterator_level_3rd_order_tele::do_sweep_attenuation(int iswp, Grid& grid, InputParams& IP){
+
+
+    // set sweep direction
+    set_sweep_direction(iswp);
+
+    int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
+
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
+
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
+
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
+
+            if (r_dirc < 0) kkr = nr-kkr-1;
+            //else            kkr = kkr;
+            if (t_dirc < 0) jjt = nt-jjt-1;
+            //else            jjt = jjt;
+            if (p_dirc < 0) iip = np-iip-1;
+            //else            iip = iip;
+
+            //
+            // calculate stencils
+            //
+            if (iip != 0 && iip != np-1 && jjt != 0 && jjt != nt-1 && kkr != 0 && kkr != nr-1) {
+                // calculate stencils
+                calculate_stencil_3rd_order_tele(grid, iip, jjt, kkr);
+            } else {
+                // update boundary
+                calculate_boundary_nodes_tele(grid, iip, jjt, kkr);
+            }
+        } // end ijk
+
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
 
 }

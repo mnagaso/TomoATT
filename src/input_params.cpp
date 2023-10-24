@@ -465,6 +465,8 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["model_update"], "update_azi_ani", update_azi_ani);
             if (config["model_udpate"]["update_rad_ani"])
                 getNodeValue(config["model_update"], "update_rad_ani", update_rad_ani);
+            if (config["model_update"]["update_qp"])
+                getNodeValue(config["model_update"], "update_qp", update_qp);
 
             // taper kernel (now only for teleseismic tomography)
             if (config["model_update"]["depth_taper"]){
@@ -799,6 +801,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(update_slowness, 0);
     broadcast_bool_single(update_azi_ani, 0);
     broadcast_bool_single(update_rad_ani, 0);
+    broadcast_bool_single(update_qp, 0);
     broadcast_cr(depth_taper,2,0);
 
     broadcast_i_single(min_Ndata_reloc, 0);
@@ -1213,6 +1216,7 @@ void InputParams::write_params_to_file() {
     fout << "  update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
     fout << "  update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
     // fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
+    fout << "  update_qp  : " << update_qp  << " # update Qp (attenuation factor) or not.   default: false" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- for teleseismic inversion (under development) --------------" << std::endl;

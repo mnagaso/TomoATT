@@ -157,9 +157,10 @@ model_update: # update model parameters (when run_mode : 1 and 3)
     teleseismic_weight: 1 # weight of teleseismic data after balance,                               default: 1.0  (exclude in this version)
 
   # -------------- inversion parameters --------------
-  update_slowness : true  # update slowness (velocity) or not.              default: true
-  update_azi_ani  : false # update azimuthal anisotropy (xi, eta) or not.   default: false
+  update_slowness : true   # update slowness (velocity) or not.              default: true
+  update_azi_ani  : false  # update azimuthal anisotropy (xi, eta) or not.   default: false
   #update_rad_ani  : false # update radial anisotropy (in future) or not.    default: false
+  update_qp : false        # update Qp (attenuation factor) or not.          default: false
 
   # -------------- for teleseismic inversion (under development) --------------
   # depth_taper : [d1,d2] means:

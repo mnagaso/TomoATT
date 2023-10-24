@@ -48,6 +48,8 @@ public:
     void calc_L1_and_Linf_error(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for adjoint field
     void calc_L1_and_Linf_diff_adj(CUSTOMREAL&, CUSTOMREAL&);
+    // calculate L1 and Linf diff for teleseismic source for attenuation
+    void calc_L1_and_Linf_diff_tele_attenuation(CUSTOMREAL&, CUSTOMREAL&);
 
     // send and receive data to/from other subdomains
     void send_recev_boundary_data(CUSTOMREAL*);
@@ -180,6 +182,8 @@ public:
     void T2tau_old();
     // copy tau to Tadj
     void update_Tadj();
+    // copy Tstart to tau old
+    void Tstar2tau_old();
     // back up fun xi eta
     void back_up_fun_xi_eta_bcf();
     // restore fun xi eta
@@ -258,8 +262,10 @@ public:
     CUSTOMREAL *fac_b_loc; // factor b
     CUSTOMREAL *fac_c_loc; // factor c
     CUSTOMREAL *fac_f_loc; // factor f
-    CUSTOMREAL *fun_loc;
+    CUSTOMREAL *fun_loc;   // slowness
+    CUSTOMREAL *qp_loc;    // attenuation Qp factor
     CUSTOMREAL *T_loc;
+    CUSTOMREAL *Tstar_loc; // used for attenuation calculation
     CUSTOMREAL *T0v_loc, *T0r_loc, *T0p_loc, *T0t_loc;
     CUSTOMREAL *tau_loc;
     CUSTOMREAL *tau_old_loc;
@@ -271,13 +277,15 @@ public:
     CUSTOMREAL *fac_b_loc_back;
     CUSTOMREAL *fac_c_loc_back;
     CUSTOMREAL *fac_f_loc_back;
+    CUSTOMREAL *qp_loc_back;
     // for lbfgs
-    CUSTOMREAL *Ks_grad_store_loc, *Keta_grad_store_loc, *Kxi_grad_store_loc;
-    CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc;
-    CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
-    CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
-    CUSTOMREAL *fun_gradient_regularization_penalty_loc, *eta_gradient_regularization_penalty_loc, *xi_gradient_regularization_penalty_loc;
-    CUSTOMREAL *fun_prior_loc, *eta_prior_loc, *xi_prior_loc; // *zeta_prior_loc; TODO
+    CUSTOMREAL *Ks_grad_store_loc, *Keta_grad_store_loc, *Kxi_grad_store_loc, *Kqp_grad_store_loc;
+    CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc, *Kqp_model_store_loc;
+    CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc, *Kqp_descent_dir_loc;
+    CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc, *qp_regularization_penalty_loc;
+    CUSTOMREAL *fun_gradient_regularization_penalty_loc, *eta_gradient_regularization_penalty_loc, *xi_gradient_regularization_penalty_loc, *qp_gradient_regularization_penalty_loc;
+    CUSTOMREAL *fun_prior_loc, *eta_prior_loc, *xi_prior_loc, *qp_prior_loc; // *zeta_prior_loc; TODO
+
     // tmp array for file IO
     CUSTOMREAL *vis_data;
 
@@ -290,6 +298,7 @@ private:
     MPI_Win win_T_loc, win_tau_old_loc;
     MPI_Win win_xi_loc, win_eta_loc, win_zeta_loc;
     MPI_Win win_r_loc_1d, win_t_loc_1d, win_p_loc_1d;
+    MPI_Win win_qp_loc, win_Tstar_loc; // attenuation
 
     CUSTOMREAL *x_loc_3d;     // local (lon) x (global position)
     CUSTOMREAL *y_loc_3d;     // local (lat) y (global position)
@@ -306,8 +315,8 @@ public:
     CUSTOMREAL *p_loc_1d; // phi lon x   in radian
 private:
     // arrays for inversion
-    // TODO: check if those arrays can use shm
-    bool inverse_flag = false;
+    bool inverse_flag         = false; // inverse flag
+    bool inverse_flag_qp      = false; // inverse flag for Qp
     //int n_inv_grids; // in config.h
     //int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc; // in config.h
     CUSTOMREAL dinv_r, dinv_t, dinv_p;
@@ -330,6 +339,11 @@ public:
     CUSTOMREAL *Ks_update_loc;
     CUSTOMREAL *Kxi_update_loc;
     CUSTOMREAL *Keta_update_loc;
+    // for attenuation
+    CUSTOMREAL *Kqp_loc;
+    CUSTOMREAL *Kqp_inv_loc;
+    CUSTOMREAL *Kqp_update_loc;
+
 private:
     MPI_Win     win_Tadj_loc;
 
