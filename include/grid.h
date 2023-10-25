@@ -36,6 +36,8 @@ public:
     void setup_grid_params(InputParams&, IO_utils&); // setup grid parameters
     // set factors
     void setup_factors(Source &);
+    // set factors for attenuation
+    void setup_factors_attenuation(Source &);
     // calculate initial fields T0 T0r T0t T0p and initialize tau
     void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
@@ -116,6 +118,7 @@ public:
     CUSTOMREAL* get_u()            {return get_array_for_vis(u_loc,     false);}; // current solution
     CUSTOMREAL* get_tau()          {return get_array_for_vis(tau_loc,   false);}; // current tau
     CUSTOMREAL* get_T()            {return get_array_for_vis(T_loc,     false);};
+    CUSTOMREAL* get_Tstar()        {return get_array_for_vis(Tstar_loc, false);};
     CUSTOMREAL* get_residual()     { calc_residual();
                                      return get_array_for_vis(u_loc,   false);}; // calculate residual (T_loc over written!!)
     CUSTOMREAL* get_Tadj()         {return get_array_for_vis(Tadj_loc, false);}; // adjoint solution

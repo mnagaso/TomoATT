@@ -21,64 +21,86 @@
 
 
 
+inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_utils& io, const int i_src, bool first_init,
+                                               std::unique_ptr<Iterator>& It, const std::string& name_sim_src, const bool& prerun=false){
+
+    if (IP.get_is_T_written_into_file(name_sim_src)){
+        // load travel time field on grid.T_loc
+        if (myrank == 0){
+            std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
+                    << "), for common receiver differntial traveltime. name: "
+                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                    << std::endl;
+        }
+
+        io.read_T_tmp(grid);
+
+        // read Tstar field for attenuation
+        if (IP.get_update_qp())
+            io.read_Tstar_tmp(grid);
+
+    } else {
+        // We need to solve eikonal equation
+        if (myrank == 0){
+            std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
+                    << "), for common receiver differntial traveltime. name: "
+                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                    << std::endl;
+        }
+        // solve travel time field on grid.T_loc
+        It->run_iteration_forward(IP, grid, io, first_init);
+
+        // if attenuation is on, we need to calculate the attenuation (Tstar) field
+        if (IP.get_update_qp())
+            It->run_iteration_forward_attenuation(IP, grid, io, first_init);
+
+        // writeout travel time field
+        if (prerun) {
+            // write the temporary traveltime field into file for later use
+            io.write_T_tmp(grid);
+            if (IP.get_update_qp())
+                io.write_Tstar_tmp(grid);
+
+            if (proc_store_srcrec) // only proc_store_srcrec has the src_map object
+                IP.src_map[name_sim_src].is_T_written_into_file = true;
+        }
+
+   }
+}
+
+
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
+
+    Source src;
+    Receiver recs;
 
     // noted that src_map_comm_rec is the subset of src_map
     for (int i_src = 0; i_src < IP.n_src_comm_rec_this_sim_group; i_src++){
+        // check if this is the first iteration of entire inversion process
+        bool first_init = (i_inv == 0 && i_src==0);
 
-        std::string name_sim_src = IP.get_src_name_comm(i_src);
-        int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
+        // get source info
+        std::string name_sim_src   = IP.get_src_name_comm(i_src);
+        int         id_sim_src     = IP.get_src_id(name_sim_src); // global source id
+        bool        is_teleseismic = IP.get_if_src_teleseismic(name_sim_src); // get is_teleseismic flag
 
         // set simu group id and source name for output files/dataset names
-        io.set_id_src(id_sim_src);
-        io.set_name_src(name_sim_src);
+        io.reset_source_info(id_sim_src, name_sim_src);
 
-        // set group name to be used for output in h5
-        io.change_group_name_for_source();
-
-        bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
-
-        Source src(IP, grid, is_teleseismic, name_sim_src);
-
-        // initialize iterator object
-        bool first_init = (i_inv == 0 && i_src==0);
+        // set source position
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
         select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
 
-        if (IP.get_is_T_written_into_file(name_sim_src)){
-            // load travel time field on grid.T_loc
-            if (myrank == 0){
-                std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                        << "), for common receiver differntial traveltime. name: "
-                        << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                        << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                        << std::endl;
-            }
+        // calculate or read traveltime field
+        bool prerun_mode = true;
+        calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src, prerun_mode);
 
-            io.read_T_tmp(grid);
-        } else {
-            // We need to solve eikonal equation
-            if (myrank == 0){
-                std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                        << "), for common receiver differntial traveltime. name: "
-                        << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                        << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                        << std::endl;
-            }
-            // solve travel time field on grid.T_loc
-            It->run_iteration_forward(IP, grid, io, first_init);
-
-            // writeout travel time field
-            io.write_T_tmp(grid);
-
-            if (proc_store_srcrec) // only proc_store_srcrec has the src_map object
-                IP.src_map[name_sim_src].is_T_written_into_file = true;
-        }
-
-        Receiver recs;
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
         // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
 
@@ -122,23 +144,27 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         && (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)){
         pre_run_forward_only(IP, grid, io, i_inv);
     }
+
     //
     // loop over all sources
     //
 
-     // iterate over sources
+    Source src;
+    Receiver recs;
+
+    // iterate over sources
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
-        const std::string name_sim_src = IP.get_src_name(i_src);
-        const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
+        // check if this is the first iteration of entire inversion process
+        bool first_init = (i_inv == 0 && i_src==0);
+
+        // get source info
+        const std::string name_sim_src   = IP.get_src_name(i_src);                  // source name
+        const int         id_sim_src     = IP.get_src_id(name_sim_src);             // global source id
+        bool              is_teleseismic = IP.get_if_src_teleseismic(name_sim_src); // get is_teleseismic flag
 
         // set simu group id and source name for output files/dataset names
-        io.set_id_src(id_sim_src);
-        io.set_name_src(name_sim_src);
-
-        // set group name to be used for output in h5
-        // TODO set id_sim_src and name_sim_src with this function
-        io.change_group_name_for_source();
+        io.reset_source_info(id_sim_src, name_sim_src);
 
         // output initial field
         if(first_src && IP.get_if_output_source_field()) {
@@ -154,48 +180,18 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // run forward simulation
         /////////////////////////
 
-        // get is_teleseismic flag
-        bool is_teleseismic = IP.get_if_src_teleseismic(name_sim_src);
-
         // (re) initialize source object and set to grid
-        Source src(IP, grid, is_teleseismic, name_sim_src);
-
-        // initialize iterator object
-        bool first_init = (i_inv == 0 && i_src==0);
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-            // // we can choose to read traveltime field from the computed traveltime field if (is_read_time == true and is_teleseismic == false)
-            // // if ((is_read_time) && (!is_teleseismic)) {
-            // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
-            if (IP.get_is_T_written_into_file(name_sim_src)){
-                if (myrank == 0){
-                    std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                            << "), for traveltime field. name: "
-                            << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                            << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                            << std::endl;
-                }
-                // load travel time field on grid.T_loc
-                io.read_T_tmp(grid);
-            } else {
-                // We need to compute traveltime field, including such cases:
-                //  case 1. is_read_time == false;
-                //  case 2. is_read_time == true, but we compute teleseismic data;
 
-                if (myrank == 0){
-                    std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                            << "), for traveltime field. name: "
-                            << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                            << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                            << std::endl;
-                }
-                // solve travel time field on grid.T_loc
-                It->run_iteration_forward(IP, grid, io, first_init);
-            }
+            // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src);
+
         } else {
             // hybrid stencil mode
             std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
@@ -205,13 +201,15 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             IP.set_stencil_order(1);
             IP.set_conv_tol(IP.get_conv_tol()*100.0);
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It_pre, false);
-            It_pre->run_iteration_forward(IP, grid, io, first_init);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It_pre, name_sim_src);
+
 
             // run 3rd order forward simulation
             IP.set_stencil_order(3);
             IP.set_conv_tol(IP.get_conv_tol()/100.0);
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, true);
-            It->run_iteration_forward(IP, grid, io, first_init);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src);
+
         }
 
         // output the result of forward simulation
@@ -234,22 +232,16 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         }
 
         // calculate the arrival times at each receivers
-        Receiver recs;
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
+
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
 
-        // if (myrank == 0){
-        //     std::cout << "calculating adjoint field, source (" << i_src+1 << "/" << (int)IP.src_id2name.size() << "), name: "
-        //             << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-        //             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-        //             << std::endl;
-        // }
         if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
 
             // calculate adjoint source
-            recs.calculate_adjoint_source(IP, name_sim_src);
+            rec.calculate_adjoint_source(IP, name_sim_src);
 
             // run iteration for adjoint field calculation
             It->run_iteration_adjoint(IP, grid, io);
@@ -283,14 +275,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
     // gather all the traveltime to the main process and distribute to all processes
     // for calculating the synthetic common receiver differential traveltime
-    if ( IP.get_run_mode()==ONLY_FORWARD ||                 // case 1. if we are doing forward modeling, traveltime is not prepared for computing cr_dif data. Now we need to compute it
+    if ( IP.get_run_mode()==ONLY_FORWARD ||                  // case 1. if we are doing forward modeling, traveltime is not prepared for computing cr_dif data. Now we need to compute it
         (!IP.get_use_cr() && !IP.get_is_srcrec_swap())  ||   // case 2-1, we do inversion, but we do not use cr data (cr + no swap)
         (!IP.get_use_cs() &&  IP.get_is_srcrec_swap())){     // case 2-2, we do inversion, but we do not use cr data (cs +    swap)
         IP.gather_traveltimes_and_calc_syn_diff();
     }
 
     // compute all residual and obj
-    Receiver recs;
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
 
 

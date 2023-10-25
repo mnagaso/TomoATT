@@ -1,6 +1,6 @@
 #include "source.h"
 
-Source::Source(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src, bool for_2d_solver) {
+void Source::set_source_position(InputParams &IP, Grid &grid, bool& is_teleseismic, const std::string& name_sim_src, bool for_2d_solver) {
 
 
     if (subdom_main) {

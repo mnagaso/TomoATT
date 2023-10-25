@@ -51,7 +51,12 @@ IO_utils::~IO_utils() {
     stdout_by_main("--- IO object finalization ---");
 }
 
-void IO_utils::change_group_name_for_source() {
+void IO_utils::reset_source_info(const int& id_sim_src, const std::string& name_sim_src) {
+
+    // set simulation group id and source name for output files/dataset names
+    set_id_src(id_sim_src);
+    set_name_src(name_sim_src);
+
 #ifdef USE_HDF5
     // change group name for source
     // h5_group_name_data = "src_" + std::to_string(id_sim_src);
@@ -968,6 +973,58 @@ void IO_utils::write_T_tmp(Grid& grid) {
 }
 
 
+void IO_utils::write_Tstar(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "Tstar_res";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Tstar(), i_inv, src_data);
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if(output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "Tstar_res_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii(dset_name);
+        write_data_ascii(grid, fname, grid.get_Tstar());
+    }
+}
+
+
+void IO_utils::write_Tstar_tmp(Grid& grid) {
+    if (!subdom_main) return;
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        // temporally replice a filename for T_tmp
+        std::string h5_fname_back = h5_output_fname;
+        h5_output_fname = h5_output_fname_tmp;
+
+        // create file if not exist
+        std::string out_file_full = output_dir+"/"+h5_output_fname;
+        if (!is_file_exist(out_file_full.c_str()))
+            h5_create_file_by_group_main(h5_output_fname);
+
+        // dataset name
+        std::string h5_dset_name = "Tstar_tmp";
+        bool for_tmp_db = true;
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Tstar(), 0, src_data, for_tmp_db);
+
+        // restore filename
+        h5_output_fname = h5_fname_back;
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if(output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "Tstar_tmp";
+        std::string fname = create_fname_ascii(dset_name);
+        write_data_ascii(grid, fname, grid.get_Tstar());
+    }
+}
+
+
 void IO_utils::write_residual(Grid& grid) {
     if (!subdom_main) return;
 
@@ -1590,7 +1647,39 @@ void IO_utils::read_T_tmp(Grid& grid) {
 }
 
 
+void IO_utils::read_Tstar_tmp(Grid& grid) {
+    if (!subdom_main) return;
 
+    if (output_format == OUTPUT_FORMAT_HDF5) {
+        // read traveltime field from HDF5 file
+#ifdef USE_HDF5
+        // temporally replice a filename for T_tmp
+        std::string h5_fname_back = h5_output_fname;
+        h5_output_fname = h5_output_fname_tmp;
+
+        // h5_group_name_data = "src_" + std::to_string(id_sim_src);
+        h5_group_name_data = "src_" + name_sim_src;
+        std::string h5_dset_name = "Tstar_tmp";
+
+        read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
+
+        // recover h5_output_fname
+        h5_output_fname = h5_fname_back;
+#else
+        std::cerr << "Error: HDF5 is not enabled." << std::endl;
+        exit(1);
+#endif
+    } else if (output_format == OUTPUT_FORMAT_ASCII) {
+        // read traveltime field from ASCII file
+        std::string dset_name = "Tstar_tmp";
+        std::string filename = create_fname_ascii(dset_name);
+
+        read_data_ascii(grid, filename);
+    }
+
+    // set to T_loc array from grid.vis_data
+    grid.set_array_from_vis(grid.Tstar_loc);
+}
 
 
 void IO_utils::read_data_ascii(Grid& grid, std::string& fname){

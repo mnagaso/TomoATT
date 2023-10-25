@@ -1525,6 +1525,16 @@ void Grid::setup_factors(Source &src){
 }
 
 
+void Grid::setup_factors_attenuation(Source &src) {
+    // calculate factors for the source
+    a0   = src.get_fac_at_source(fac_a_loc);
+    b0   = src.get_fac_at_source(fac_b_loc);
+    c0   = src.get_fac_at_source(fac_c_loc);
+    f0   = src.get_fac_at_source(fac_f_loc);
+    fun0 = src.get_fac_at_source(fun_loc)*sqrt(src.get_fac_at_source(Tstar_loc));
+}
+
+
 void Grid::initialize_fields(Source& src, InputParams& IP){
 
     // get source position

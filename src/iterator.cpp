@@ -142,7 +142,6 @@ void Iterator::initialize_arrays(InputParams& IP, IO_utils& io, Grid& grid, Sour
     if (!is_second_run) { // field initialization has already been done in the second run
         if (subdom_main) {
             if (!is_teleseismic) {
-                // set initial a b c and calculate a0 b0 c0 f0
                 grid.setup_factors(src);
 
                 // calculate T0 T0r T0t T0p and initialize tau
@@ -682,6 +681,8 @@ iter_end:
         ofs << "Converged at iteration " << iter_count << ", L1 " << cur_diff_L1 << ", Linf " << cur_diff_Linf << ", total time[s] " << timer_iter.get_t() << std::endl;
 
     }
+
+    //
 
 }
 
@@ -1785,6 +1786,7 @@ void Iterator::calculate_stencil_1st_order_upwind(Grid&grid, int&iip, int&jjt, i
                       << std::endl;
     }
 }
+
 
 void Iterator::calculate_stencil_1st_order(Grid& grid, int& iip, int& jjt, int&kkr){
     sigr = SWEEPING_COEFF*std::sqrt(grid.fac_a_loc[I2V(iip, jjt, kkr)])*grid.T0v_loc[I2V(iip, jjt, kkr)];

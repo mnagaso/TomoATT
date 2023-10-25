@@ -38,7 +38,7 @@ public:
     void update_xdmf_file();
 
     // change group name for source
-    void change_group_name_for_source();
+    void reset_source_info(const int&, const std::string&);
     // change group name for model
     void change_group_name_for_model();
     // prepare grid for each inversion iteration
@@ -83,6 +83,10 @@ public:
     void write_T(Grid&, int);
     // write temporal timetable T in a separated file
     void write_T_tmp(Grid&);
+    // write result Tstar timetable
+    void write_Tstar(Grid&, int);
+    // write result Tstar timetable
+    void write_Tstar_tmp(Grid&);
     // write residual (resudual = true_solution - result)
     void write_residual(Grid&);
     // write adjoint field
@@ -144,6 +148,8 @@ public:
     void read_T(Grid&);
     // read Travel time from a temporal file for earthquake relocation and common receiver double-difference
     void read_T_tmp(Grid&);
+    // read Temporal Tstar from file
+    void read_Tstar_tmp(Grid&);
 
     void read_data_ascii(Grid&, std::string&);
 
@@ -162,9 +168,9 @@ private:
     std::string h5_output_fname      = "out_data.h5";      // output file name
     std::string h5_output_fname_tmp  = "out_data_tmp.h5";  // output file name
     std::string xdmf_output_fname    = "out_data.xmf";     // output file name
-    std::string h5_group_name_grid   = "Mesh";               // group name for grid data
-    std::string h5_group_name_event  = "Event";              // group name for event data
-    std::string h5_group_name_data   = "Data";               // group name for event data
+    std::string h5_group_name_grid   = "Mesh";             // group name for grid data
+    std::string h5_group_name_event  = "Event";            // group name for event data
+    std::string h5_group_name_data   = "Data";             // group name for event data
 
     std::string h5_dset_name_node_coords_x = "node_coords_x"; // dataset name for node coordinates
     std::string h5_dset_name_node_coords_y = "node_coords_y"; // dataset name for node coordinates
