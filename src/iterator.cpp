@@ -682,7 +682,10 @@ iter_end:
 
     }
 
-    //
+    // run attenuation iteration
+    if (IP.get_update_qp())
+        run_iteration_forward_attenuation(IP, grid, io, first_init);
+
 
 }
 

@@ -1390,16 +1390,6 @@ void Grid::initialize_kernels(){
         std::fill(Ks_loc,   Ks_loc   + loc_I*loc_J*loc_K, _0_CR);
         std::fill(Kxi_loc,  Kxi_loc  + loc_I*loc_J*loc_K, _0_CR);
         std::fill(Keta_loc, Keta_loc + loc_I*loc_J*loc_K, _0_CR);
-
-        //for (int k = 0; k < loc_K; k++) {
-        //    for (int j = 0; j < loc_J; j++) {
-        //        for (int i = 0; i < loc_I; i++) {
-        //            Ks_loc[  I2V(i,j,k)] = _0_CR;
-        //            Kxi_loc[ I2V(i,j,k)] = _0_CR;
-        //            Keta_loc[I2V(i,j,k)] = _0_CR;
-        //        }
-        //    }
-        //}
     }
 }
 
@@ -1514,14 +1504,12 @@ void Grid::rejunenate_abcf(){
 
 
 void Grid::setup_factors(Source &src){
-
     // calculate factors for the source
     a0   = src.get_fac_at_source(fac_a_loc);
     b0   = src.get_fac_at_source(fac_b_loc);
     c0   = src.get_fac_at_source(fac_c_loc);
     f0   = src.get_fac_at_source(fac_f_loc);
     fun0 = src.get_fac_at_source(fun_loc);
-
 }
 
 
@@ -1623,6 +1611,94 @@ void Grid::initialize_fields(Source& src, InputParams& IP){
     // std::cout << "p_loc_1d (lon): " << p_loc_1d[25]*RAD2DEG << ", id_i: " << 25
     //           << "t_loc_1d (lat): " << t_loc_1d[29]*RAD2DEG << ", id_j: " << 29
     //           << "r_loc_1d (r): " << r_loc_1d[41] << ", id_k: " << 41 <<  std::endl;
+
+    // warning if source node is not found
+    if( n_source_node > 0 && if_verbose )
+        std::cout << "rank  n_source_node: " << myrank << "  " << n_source_node << std::endl;
+
+}
+
+
+void Grid::initialize_fields_attenuation(Source& src, InputParams& IP){
+
+    // get source position
+    CUSTOMREAL src_r = src.get_src_r();
+    CUSTOMREAL src_t = src.get_src_t();
+    CUSTOMREAL src_p = src.get_src_p();
+
+    // std out src positions
+    CUSTOMREAL c0b0_minus_f0f0 = c0*b0 - f0*f0;
+
+    // debug
+    int n_source_node = 0;
+
+    for (int k_r = 0; k_r < loc_K; k_r++) {
+        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+                CUSTOMREAL dr_from_src = r_loc_1d[k_r]   - src_r;
+                CUSTOMREAL dt_from_src = t_loc_1d[j_lat] - src_t;
+                CUSTOMREAL dp_from_src = p_loc_1d[i_lon] - src_p;
+
+                T0v_loc[I2V(i_lon,j_lat,k_r)] = fun0 * std::sqrt( _1_CR/a0                  *my_square(dr_from_src) \
+                                                                + c0/(c0b0_minus_f0f0)      *my_square(dt_from_src) \
+                                                                + b0/(c0b0_minus_f0f0)      *my_square(dp_from_src) \
+                                                                + _2_CR*f0/(c0b0_minus_f0f0)*dt_from_src*dp_from_src);
+
+                is_changed[I2V(i_lon,j_lat,k_r)] = true;
+
+                if (isZero(T0v_loc[I2V(i_lon,j_lat,k_r)])) {
+                    T0r_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
+                    T0t_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
+                    T0p_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
+                } else {
+                    T0r_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(_1_CR/a0*dr_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0t_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(c0/(c0b0_minus_f0f0)*dt_from_src+f0/(c0b0_minus_f0f0)*dp_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                    T0p_loc[I2V(i_lon,j_lat,k_r)] = my_square(fun0)*(b0/(c0b0_minus_f0f0)*dp_from_src+f0/(c0b0_minus_f0f0)*dt_from_src)/T0v_loc[I2V(i_lon,j_lat,k_r)];
+                }
+
+                if (IP.get_stencil_order() == 1){
+                    source_width = _1_CR-0.1;
+                } else {
+                    source_width = _2_CR;
+                }
+
+                if (std::abs(dr_from_src/dr) <= source_width \
+                 && std::abs(dt_from_src/dt) <= source_width \
+                 && std::abs(dp_from_src/dp) <= source_width) {
+
+                    tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
+                    is_changed[I2V(i_lon,j_lat,k_r)] = false;
+
+                    n_source_node++;
+
+                    // std::cout << "source def " << std::endl;
+                    // std::cout << "p_loc_1d (lon): " << p_loc_1d[i_lon]*RAD2DEG << ", id_i: " << i_lon << ", src_p: " << src_p*RAD2DEG << std::endl;
+                    // std::cout << "t_loc_1d (lat): " << t_loc_1d[j_lat]*RAD2DEG << ", id_j: " << j_lat << ", src_t: " << src_t*RAD2DEG << std::endl;
+                    // std::cout << "r_loc_1d (r): " << r_loc_1d[k_r] << ", id_k: " << k_r << ", src_r: " << src_r << std::endl;
+
+                    if (if_verbose) {
+                        if ( (k_r == 0 && k_first()) || (k_r == loc_K-1 && k_last()) )
+                            std::cout << "Warning: source is on the boundary k of the grid.\n";
+                        if ( (j_lat == 0 && j_first()) || (j_lat == loc_J-1 && j_last()) )
+                            std::cout << "Warning: source is on the boundary j of the grid.\n";
+                        if ( (i_lon == 0 && i_first()) || (i_lon == loc_I-1 && i_last()) )
+                            std::cout << "Warning: source is on the boundary i of the grid.\n";
+                    }
+
+                } else {
+                    if (IP.get_stencil_type()==UPWIND)   // upwind scheme, initial tau should be large enough
+                        tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INF_VAL;
+                    else
+                        tau_loc[I2V(i_lon,j_lat,k_r)] = TAU_INITIAL_VAL;
+                    is_changed[I2V(i_lon,j_lat,k_r)] = true;
+
+                }
+
+                tau_old_loc[I2V(i_lon,j_lat,k_r)] = _0_CR;
+
+            } // end loop i
+        } // end loop j
+    } // end loop k
 
     // warning if source node is not found
     if( n_source_node > 0 && if_verbose )
