@@ -350,6 +350,22 @@ private:
     // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
     bool invgrid_ani = false;
 
+    //
+    // variables fo type = 2: trapezoid inversion grid
+    //
+    int n_lat_lon_spacing_inv_trape=1; 
+    CUSTOMREAL *lat_spacing_inv; // array for storing the spacing of inversion grid points in latitude
+    CUSTOMREAL *lon_spacing_inv; // array for storing the spacing of inversion grid points in longitude
+
+    // number of trapezoid designed inversion grid in t, p direction
+    int n_inv_t_trape=1; 
+    int n_inv_p_trape=1;
+
+    // flag if n inv grid trapezoid is read or not. if false, code allocate dummy memory
+    bool n_inv_t_trape_read = false;
+    bool n_inv_p_trape_read = false;
+
+
     // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
     bool invgrid_volume_rescale = false;
 
