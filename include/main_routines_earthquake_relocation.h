@@ -84,7 +84,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         It->run_iteration_forward(IP, grid, io, first_init);
 
         // writeout traveltime field
-        io.write_T(grid, 0);
+        io.write_T_tmp(grid);
 
         if (proc_store_srcrec)
             IP.src_map[name_sim_src].is_T_written_into_file = true;
@@ -115,7 +115,7 @@ std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, G
         io.change_group_name_for_source();
 
         // load travel time field on grid.T_loc
-        io.read_T(grid);
+        io.read_T_tmp(grid);
 
         // calculate travel time at the actual source location
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
