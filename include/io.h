@@ -60,7 +60,7 @@ public:
     // write grid data to output file
     void write_grid(Grid&);
     // general function for write out data in hdf5
-    void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*, int, bool);
+    void write_data_h5(Grid&, std::string&, std::string&, CUSTOMREAL*, int, bool, bool for_tmp_db=false);
     // general function for write out data in hdf5 with merging subdomains
     void write_data_merged_h5(Grid&, std::string&, std::string&, std::string&, CUSTOMREAL*, bool, bool no_group=true);
     // general function for write out data in ascii
@@ -81,6 +81,8 @@ public:
     //void write_tmp_tau(Grid&, int);
     // write result timetable T
     void write_T(Grid&, int);
+    // write temporal timetable T in a separated file
+    void write_T_tmp(Grid&);
     // write residual (resudual = true_solution - result)
     void write_residual(Grid&);
     // write adjoint field
@@ -142,15 +144,27 @@ public:
 
     // read model data
     void read_model(std::string&, const char*, CUSTOMREAL*, int, int, int);
-    // read Travel time from file for earthquake relocation
+    // read Travel time from file for earthquake relocation and common receiver double-difference
     void read_T(Grid&);
+    // read Travel time from a temporal file for earthquake relocation and common receiver double-difference
+    void read_T_tmp(Grid&);
 
     void read_data_ascii(Grid&, std::string&);
+
+    //
+    // delete functions
+    //
+    // Any deletion of data should be done on a created hdf5. Because the design of hdf5 is that
+    // it is not possible to delete data from an existing hdf5 file. The only way to do so is to
+    // create a new hdf5 file and copy the necessary data from the old one to the new one.
+    // Therefore, the deletion of data is not implemented in this class.
+    // Reference : https://stackoverflow.com/questions/1124994/removing-data-from-a-hdf5-file
 
 private:
     // member variables
     std::string h5_output_grid_fname = "out_data_grid.h5"; // output file name
     std::string h5_output_fname      = "out_data.h5";      // output file name
+    std::string h5_output_fname_tmp  = "out_data_tmp.h5";  // output file name
     std::string xdmf_output_fname    = "out_data.xmf";     // output file name
     std::string h5_group_name_grid   = "Mesh";               // group name for grid data
     std::string h5_group_name_event  = "Event";              // group name for event data

@@ -29,10 +29,12 @@ IO_utils::IO_utils(InputParams& IP) {
                 // for simultaneous run, data file is created for each simulation group
                 h5_output_fname = "./out_data_sim_group_" + std::to_string(id_sim) + ".h5";
                 xdmf_output_fname = "./out_data_sim_group_"+std::to_string(id_sim)+".xmf";
+                h5_output_fname_tmp = "./tmp_db_sim_group_" + std::to_string(id_sim) + ".h5";
             } else {
                 // otherwise, only one single data file is created for storing model params
                 h5_output_fname = "./out_data_sim.h5";
                 xdmf_output_fname = "./out_data_sim.xmf";
+                h5_output_fname_tmp = "./tmp_db_sim.h5";
             }
             // create data file
             h5_create_file_by_group_main(h5_output_fname);
@@ -384,14 +386,14 @@ void IO_utils::finalize_xdmf_file(){
 
 #ifdef USE_HDF5
 // function to write data to HDF5 file without merging subdomains
-void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& str_dset, CUSTOMREAL* array, int i_inv, bool model_data) {
-    std::string str_dset_h5   = str_dset + "_inv_" + int2string_zero_fill(i_inv);
-    std::string str_dset_xdmf;
-    if (!model_data)
-        // str_dset_xdmf = str_dset + "_src_" + int2string_zero_fill(id_sim_src); // use different name for xdmf
-        str_dset_xdmf = str_dset + "_src_" + name_sim_src; // use different name for xdmf
+void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& str_dset,
+                             CUSTOMREAL* array, int i_inv, bool model_data, bool for_tmp_db) {
+
+    std::string str_dset_h5 = "dummy";
+    if (!for_tmp_db)
+        str_dset_h5 = str_dset + "_inv_" + int2string_zero_fill(i_inv);
     else
-        str_dset_xdmf = str_dset; // use different name for xdmf
+        str_dset_h5 = str_dset;
 
     // write true solution to h5 file
     if (myrank == 0 && if_verbose)
@@ -428,13 +430,21 @@ void IO_utils::write_data_h5(Grid& grid, std::string& str_group, std::string& st
     // close file
     h5_close_file_collective();
 
-    // add xdmf file in
-    insert_data_xdmf(str_group, str_dset_xdmf, str_dset_h5);
+    if (!for_tmp_db) {
+        std::string str_dset_xdmf;
+        if (!model_data)
+            str_dset_xdmf = str_dset + "_src_" + name_sim_src; // use different name for xdmf
+        else
+            str_dset_xdmf = str_dset; // use different name for xdmf
 
+        // add xdmf file in
+        insert_data_xdmf(str_group, str_dset_xdmf, str_dset_h5);
+    }
 }
 
 // function to write data to HDF5 file with merging subdomains
-void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::string& str_group, std::string& str_dset, CUSTOMREAL* array, bool inverse_field, bool no_group) {
+void IO_utils::write_data_merged_h5(Grid& grid,std::string& str_filename, std::string& str_group, std::string& str_dset,
+                                    CUSTOMREAL* array, bool inverse_field, bool no_group) {
 
     // write true solution to h5 file
     if (myrank == 0 && if_verbose)
@@ -919,6 +929,39 @@ void IO_utils::write_T(Grid& grid, int i_inv) {
 #endif
     } else if(output_format==OUTPUT_FORMAT_ASCII){
         std::string dset_name = "T_res_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii(dset_name);
+        write_data_ascii(grid, fname, grid.get_T());
+    }
+}
+
+
+void IO_utils::write_T_tmp(Grid& grid) {
+    if (!subdom_main) return;
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        // temporally replice a filename for T_tmp
+        std::string h5_fname_back = h5_output_fname;
+        h5_output_fname = h5_output_fname_tmp;
+
+        // create file if not exist
+        std::string out_file_full = output_dir+"/"+h5_output_fname;
+        if (!is_file_exist(out_file_full.c_str()))
+            h5_create_file_by_group_main(h5_output_fname);
+
+        // dataset name
+        std::string h5_dset_name = "T_tmp";
+        bool for_tmp_db = true;
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T(), 0, src_data, for_tmp_db);
+
+        // restore filename
+        h5_output_fname = h5_fname_back;
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if(output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "T_tmp";
         std::string fname = create_fname_ascii(dset_name);
         write_data_ascii(grid, fname, grid.get_T());
     }
@@ -1546,6 +1589,44 @@ void IO_utils::read_T(Grid& grid) {
     // set to T_loc array from grid.vis_data
     grid.set_array_from_vis(grid.T_loc);
 }
+
+
+void IO_utils::read_T_tmp(Grid& grid) {
+    if (!subdom_main) return;
+
+    if (output_format == OUTPUT_FORMAT_HDF5) {
+        // read traveltime field from HDF5 file
+#ifdef USE_HDF5
+        // temporally replice a filename for T_tmp
+        std::string h5_fname_back = h5_output_fname;
+        h5_output_fname = h5_output_fname_tmp;
+
+        // h5_group_name_data = "src_" + std::to_string(id_sim_src);
+        h5_group_name_data = "src_" + name_sim_src;
+        std::string h5_dset_name = "T_tmp";
+
+        read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
+
+        // recover h5_output_fname
+        h5_output_fname = h5_fname_back;
+#else
+        std::cerr << "Error: HDF5 is not enabled." << std::endl;
+        exit(1);
+#endif
+    } else if (output_format == OUTPUT_FORMAT_ASCII) {
+        // read traveltime field from ASCII file
+        std::string dset_name = "T_tmp";
+        std::string filename = create_fname_ascii(dset_name);
+
+        read_data_ascii(grid, filename);
+    }
+
+    // set to T_loc array from grid.vis_data
+    grid.set_array_from_vis(grid.T_loc);
+}
+
+
+
 
 
 void IO_utils::read_data_ascii(Grid& grid, std::string& fname){

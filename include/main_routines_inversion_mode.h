@@ -58,7 +58,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
                         << std::endl;
             }
 
-            io.read_T(grid);
+            io.read_T_tmp(grid);
         } else {
             // We need to solve eikonal equation
             if (myrank == 0){
@@ -72,7 +72,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
             It->run_iteration_forward(IP, grid, io, first_init);
 
             // writeout travel time field
-            io.write_T(grid, 0);
+            io.write_T_tmp(grid);
 
             if (proc_store_srcrec) // only proc_store_srcrec has the src_map object
                 IP.src_map[name_sim_src].is_T_written_into_file = true;
@@ -180,7 +180,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                             << std::endl;
                 }
                 // load travel time field on grid.T_loc
-                io.read_T(grid);
+                io.read_T_tmp(grid);
             } else {
                 // We need to compute traveltime field, including such cases:
                 //  case 1. is_read_time == false;
