@@ -36,15 +36,15 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 
 #define I2V_INV_GRIDS(A,B,C,D) ((D)*n_inv_I_loc*n_inv_J_loc*n_inv_K_loc + (C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_KNL(A,B,C)     ((C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
-#define I2V_INV_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc + (A))
+#define I2V_INV_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc + (A))
 #define I2V_INV_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc*n_inv_K_loc + (B)*n_inv_J_loc + (A))
 #define I2V_INV_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc*n_inv_K_loc + (B)*n_inv_I_loc + (A))
 
 #define I2V_INV_ANI_GRIDS(A,B,C,D) ((D)*n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani + (C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
 #define I2V_INV_ANI_KNL(A,B,C)     ((C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
-#define I2V_INV_ANI_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc_ani + (A))
-#define I2V_INV_ANI_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc_ani + (A))
-#define I2V_INV_ANI_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc_ani*n_inv_K_loc_ani + (B)*n_inv_J_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc_ani*n_inv_K_loc_ani + (B)*n_inv_I_loc_ani + (A))
 
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
 //#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)

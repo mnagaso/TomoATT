@@ -297,9 +297,11 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                 r_t_ani = -_1_CR;
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc_ani-1; ii_invt++){
                     //if ((t_glob - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,i_grid)]) * (t_glob - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)]) <= _0_CR) {
-                    if (in_between(t_glob, grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,i_grid)], grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)])) {
+                    CUSTOMREAL left  = grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,  kdr_ani,i_grid)]*(1-r_r_ani) + grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,  kdr_ani+1,i_grid)]*(r_r_ani);
+                    CUSTOMREAL right = grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,kdr_ani,i_grid)]*(1-r_r_ani) + grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,kdr_ani+1,i_grid)]*(r_r_ani);
+                    if (in_between(t_glob, left, right)) {
                         jdt_ani = ii_invt;
-                        r_t_ani = calc_ratio_between(t_glob, grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,i_grid)], grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)]);
+                        r_t_ani = calc_ratio_between(t_glob, left, right);
                         break;
                     }
                 }
@@ -322,9 +324,11 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
                     r_p_ani = -_1_CR;
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc_ani-1; ii_invp++){
-                        if (in_between(p_glob, grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,i_grid)], grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)])) {
+                        CUSTOMREAL left  = grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,  kdr_ani,i_grid)]*(1-r_r_ani) + grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,  kdr_ani,i_grid)]*(r_r_ani);
+                        CUSTOMREAL right = grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,kdr_ani,i_grid)]*(1-r_r_ani) + grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,kdr_ani,i_grid)]*(r_r_ani);           
+                        if (in_between(p_glob, left, right)) {
                             idp_ani = ii_invp;
-                            r_p_ani = calc_ratio_between(p_glob, grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,i_grid)], grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)]);
+                            r_p_ani = calc_ratio_between(p_glob, left, right);
                             break;
                         }
                     }
@@ -436,19 +440,19 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc_ani; ii_invt++){
                     if (ii_invt == 0)
-                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(1,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(0,i_grid)]);
+                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(1,ii_invr,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(0,ii_invr,i_grid)]);
                     else if (ii_invt == n_inv_J_loc_ani - 1)
-                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(n_inv_J_loc_ani-1,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(n_inv_J_loc_ani-2,i_grid)]);
+                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(n_inv_J_loc_ani-1,ii_invr,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(n_inv_J_loc_ani-2,ii_invr,i_grid)]);
                     else
-                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt-1,i_grid)]);
+                        volume_t = abs(grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,ii_invr,i_grid)] - grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt-1,ii_invr,i_grid)]);
 
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc_ani; ii_invp++){
                         if (ii_invp == 0)
-                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(0,i_grid)]);
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(1,ii_invr,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(0,ii_invr,i_grid)]);
                         else if (ii_invp == n_inv_I_loc_ani - 1)
-                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-2,i_grid)]);
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-1,ii_invr,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(n_inv_I_loc_ani-2,ii_invr,i_grid)]);
                         else
-                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp-1,i_grid)]);
+                            volume_p = abs(grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,ii_invr,i_grid)] - grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp-1,ii_invr,i_grid)]);
 
                         volume = volume_r * volume_t * volume_p;
 
@@ -517,9 +521,11 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
                 r_t_ani = -_1_CR;
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc_ani-1; ii_invt++){
-                    if (in_between(t_glob, grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,i_grid)], grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)])) {
+                    CUSTOMREAL left  = grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,  kdr_ani,i_grid)]*(1-r_r_ani) + grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,  kdr_ani+1,i_grid)]*(r_r_ani);
+                    CUSTOMREAL right = grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,kdr_ani,i_grid)]*(1-r_r_ani) + grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,kdr_ani+1,i_grid)]*(r_r_ani);
+                    if (in_between(t_glob, left, right)) {
                         jdt_ani = ii_invt;
-                        r_t_ani = calc_ratio_between(t_glob, grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt,i_grid)], grid.t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(ii_invt+1,i_grid)]);
+                        r_t_ani = calc_ratio_between(t_glob, left, right);
                         break;
                     }
                 }
@@ -542,9 +548,11 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
 
                     r_p_ani = -_1_CR;
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc_ani-1; ii_invp++){
-                        if (in_between(p_glob, grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,i_grid)], grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)])) {
+                        CUSTOMREAL left  = grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,  kdr_ani,i_grid)]*(1-r_r_ani) + grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,  kdr_ani,i_grid)]*(r_r_ani);
+                        CUSTOMREAL right = grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,kdr_ani,i_grid)]*(1-r_r_ani) + grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,kdr_ani,i_grid)]*(r_r_ani);           
+                        if (in_between(p_glob, left, right)) {
                             idp_ani = ii_invp;
-                            r_p_ani = calc_ratio_between(p_glob, grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp,i_grid)], grid.p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(ii_invp+1,i_grid)]);
+                            r_p_ani = calc_ratio_between(p_glob, left, right);
                             break;
                         }
                     }

@@ -473,6 +473,71 @@ InputParams::InputParams(std::string& input_file){
                 n_inv_p_flex_ani_read = true;
             }
 
+            // trapezoid inversion grid
+            if (config["model_update"]["lat_spacing_inv_ani"] && type_invgrid_lat_ani == 2) {
+                CUSTOMREAL min_lat_spacing_inv_ani = 10000;
+                if (type_invgrid_dep_ani == 0) {
+                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_ani;
+                } else if (type_invgrid_dep_ani == 1) {
+                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_flex_ani;
+                } else {
+                    std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
+                    exit(0);
+                } 
+
+                lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
+                if((int)config["model_update"]["lat_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
+                    std::cout << "error size of lat_spacing_inv_ani: " << config["model_update"]["lat_spacing_inv_ani"].size() << ", require: " << n_lat_lon_spacing_inv_trape_ani << std::endl;
+                    exit(0);
+                }
+
+                for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++) {
+                    getNodeValue(config["model_update"], "lat_spacing_inv_ani", lat_spacing_inv_ani[i], i);
+                    min_lat_spacing_inv_ani = std::min(min_lat_spacing_inv_ani,lat_spacing_inv_ani[i]);
+                }
+
+                n_inv_t_trape_ani_read = true;
+
+                if(min_lat_spacing_inv_ani < 0.000001){
+                    std::cout << "error lat_spacing_inv_ani, minimum value is : " << min_lat_spacing_inv_ani << std::endl;
+                    exit(0);
+                } else {
+                    n_inv_t_trape_ani = std::floor((max_lat-min_lat)/min_lat_spacing_inv_ani)+5;
+                }
+            }
+
+            if (config["model_update"]["lon_spacing_inv_ani"] && type_invgrid_lon_ani == 2) {
+                CUSTOMREAL min_lon_spacing_inv_ani = 10000;
+                if (type_invgrid_dep_ani == 0) {
+                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_ani;
+                } else if (type_invgrid_dep_ani == 1) {
+                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_flex_ani;
+                } else {
+                    std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
+                    exit(0);
+                } 
+
+                lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
+                if((int)config["model_update"]["lon_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
+                    std::cout << "error size of lon_spacing_inv_ani: " << config["model_update"]["lon_spacing_inv_ani"].size() << ", require: " << n_lat_lon_spacing_inv_trape_ani << std::endl;
+                    exit(0);
+                }
+                for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++) {
+                    getNodeValue(config["model_update"], "lon_spacing_inv_ani", lon_spacing_inv_ani[i], i);
+                    min_lon_spacing_inv_ani = std::min(min_lon_spacing_inv_ani,lon_spacing_inv_ani[i]);
+                }
+
+                n_inv_p_trape_ani_read = true;
+
+                if(min_lon_spacing_inv_ani < 0.000001){
+                    std::cout << "error lon_spacing_inv_ani, minimum value is : " << min_lon_spacing_inv_ani << std::endl;
+                    exit(0);
+                } else {
+                    n_inv_p_trape_ani = std::floor((max_lon-min_lon)/min_lon_spacing_inv_ani)+5;
+                }
+            }
+
+
             if (config["model_update"]["invgrid_volume_rescale"]) {
                 getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
             }
@@ -736,6 +801,12 @@ InputParams::InputParams(std::string& input_file){
             lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
         if (!n_inv_p_trape_read)
             lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
+        
+        // allocate dummy arrays for trapezoid inv grid
+        if (!n_inv_t_trape_ani_read)
+            lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
+        if (!n_inv_p_trape_ani_read)
+            lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
 
 
         // write parameter file to output directory
@@ -877,14 +948,20 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_i_single(n_inv_t_trape, 0);
     broadcast_i_single(n_inv_p_trape, 0);
+    broadcast_i_single(n_inv_t_trape_ani, 0);
+    broadcast_i_single(n_inv_p_trape_ani, 0);
     broadcast_i_single(n_lat_lon_spacing_inv_trape, 0);
+    broadcast_i_single(n_lat_lon_spacing_inv_trape_ani, 0);
     if (world_rank != 0) {
         lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
         lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
+        lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
+        lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
     }
     broadcast_cr(lat_spacing_inv,n_lat_lon_spacing_inv_trape, 0);
     broadcast_cr(lon_spacing_inv,n_lat_lon_spacing_inv_trape, 0);
-
+    broadcast_cr(lat_spacing_inv_ani,n_lat_lon_spacing_inv_trape_ani, 0);
+    broadcast_cr(lon_spacing_inv_ani,n_lat_lon_spacing_inv_trape_ani, 0);
 
     broadcast_bool_single(invgrid_ani, 0);
     broadcast_bool_single(invgrid_volume_rescale, 0);
@@ -1266,6 +1343,32 @@ void InputParams::write_params_to_file() {
         fout << "#  lon_inv_ani: " << "[1, 1, 1]" << std::endl;
     }
     std::cout << std::endl;
+
+    fout << "  # setting for trapezoid inversion grid (if type_invgrid_lat_ani : 2 or/and type_invgrid_lon_ani : 2)" << std::endl;
+    fout << "  # The grid spacing (degree) in latitude (longitude) at each depth. The size must equal to the size of inversion grid in depth (length of <dep_inv_ani> or n_inv_dep_lat_lon_ani[0])" << std::endl;
+    if (n_inv_t_trape_ani_read){
+        fout << "  lat_spacing_inv_ani: [";
+        for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++){
+            fout << lat_spacing_inv_ani[i];
+            if (i != n_lat_lon_spacing_inv_trape_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  lat_spacing_inv_ani: " << "[0.1, 0.1, 0.1, 0.1]" << std::endl;
+    }
+    if (n_inv_p_trape_ani_read){
+        fout << "  lon_spacing_inv_ani: [";
+        for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++){
+            fout << lon_spacing_inv_ani[i];
+            if (i != n_lat_lon_spacing_inv_trape_ani-1)
+                fout << ", ";
+        }
+        fout << "]" << std::endl;
+    } else {
+        fout << "#  lon_spacing_inv_ani: " << "[0.1, 0.1, 0.1, 0.1]" << std::endl;
+    }
+    fout << std::endl;
 
     fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
     fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
