@@ -377,7 +377,7 @@ InputParams::InputParams(std::string& input_file){
                     std::cout << "error lat_spacing_inv, minimum value is : " << min_lat_spacing_inv << std::endl;
                     exit(0);
                 } else {
-                    n_inv_t_trape = std::floor((max_lat-min_lat)/min_lat_spacing_inv)+3;
+                    n_inv_t_trape = std::floor((max_lat-min_lat)/min_lat_spacing_inv)+5;
                 }
             }
 
@@ -408,7 +408,7 @@ InputParams::InputParams(std::string& input_file){
                     std::cout << "error lon_spacing_inv, minimum value is : " << min_lon_spacing_inv << std::endl;
                     exit(0);
                 } else {
-                    n_inv_p_trape = std::floor((max_lon-min_lon)/min_lon_spacing_inv)+3;
+                    n_inv_p_trape = std::floor((max_lon-min_lon)/min_lon_spacing_inv)+5;
                 }
             }
 

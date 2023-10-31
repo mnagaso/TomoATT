@@ -133,6 +133,12 @@ public:
     CUSTOMREAL* get_lat_inv_ani()     {return lat_inv_ani;};
     CUSTOMREAL* get_lon_inv_ani()     {return lon_inv_ani;};
 
+    // type = 2:
+    int         get_n_inv_t_trape(){return n_inv_t_trape;};
+    int         get_n_inv_p_trape(){return n_inv_p_trape;};
+    CUSTOMREAL* get_lat_spacing_inv()     {return lat_spacing_inv;};
+    CUSTOMREAL* get_lon_spacing_inv()     {return lon_spacing_inv;};
+
     // invgrid for ani
     bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
 
