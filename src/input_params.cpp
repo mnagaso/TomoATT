@@ -299,7 +299,7 @@ InputParams::InputParams(std::string& input_file){
             // flexible inversion grid
             if (config["model_update"]["dep_inv"] && type_invgrid_dep == 1) {
                 n_inv_r_flex = config["model_update"]["dep_inv"].size(); // TODO: further refactoring needed
-                dep_inv = new CUSTOMREAL[n_inv_r_flex];
+                dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5000);
                 for (int i = 0; i < n_inv_r_flex; i++){
                     getNodeValue(config["model_update"], "dep_inv", dep_inv[i], i);
                 }
@@ -307,7 +307,7 @@ InputParams::InputParams(std::string& input_file){
             }
             if (config["model_update"]["lat_inv"] && type_invgrid_lat == 1) {
                 n_inv_t_flex = config["model_update"]["lat_inv"].size();
-                lat_inv = new CUSTOMREAL[n_inv_t_flex];
+                lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
                 for (int i = 0; i < n_inv_t_flex; i++){
                     getNodeValue(config["model_update"], "lat_inv", lat_inv[i], i);
                 }
@@ -315,7 +315,7 @@ InputParams::InputParams(std::string& input_file){
             }
             if (config["model_update"]["lon_inv"] && type_invgrid_lon == 1) {
                 n_inv_p_flex = config["model_update"]["lon_inv"].size();
-                lon_inv = new CUSTOMREAL[n_inv_p_flex];
+                lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5002);
                 for (int i = 0; i < n_inv_p_flex; i++){
                     getNodeValue(config["model_update"], "lon_inv", lon_inv[i], i);
                 }
@@ -360,7 +360,7 @@ InputParams::InputParams(std::string& input_file){
 
             if (config["model_update"]["dep_inv_ani"] && type_invgrid_dep_ani == 1) {
                 n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
-                dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+                dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
                 for (int i = 0; i < n_inv_r_flex_ani; i++){
                     getNodeValue(config["model_update"], "dep_inv_ani", dep_inv_ani[i], i);
                 }
@@ -368,7 +368,7 @@ InputParams::InputParams(std::string& input_file){
             }
             if (config["model_update"]["lat_inv_ani"] && type_invgrid_lat_ani == 1) {
                 n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
-                lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+                lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
                 for (int i = 0; i < n_inv_t_flex_ani; i++){
                     getNodeValue(config["model_update"], "lat_inv_ani", lat_inv_ani[i], i);
                 }
@@ -376,7 +376,7 @@ InputParams::InputParams(std::string& input_file){
             }
             if (config["model_update"]["lon_inv_ani"] && type_invgrid_lon_ani == 1) {
                 n_inv_p_flex_ani = config["model_update"]["lon_inv_ani"].size();
-                lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+                lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5005);
                 for (int i = 0; i < n_inv_p_flex_ani; i++){
                     getNodeValue(config["model_update"], "lon_inv_ani", lon_inv_ani[i], i);
                 }
@@ -627,19 +627,19 @@ InputParams::InputParams(std::string& input_file){
 
         // allocate dummy arrays for flex inv grid
         if (!n_inv_r_flex_read)
-            dep_inv = new CUSTOMREAL[n_inv_r_flex];
+            dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5006);
         if (!n_inv_t_flex_read)
-            lat_inv = new CUSTOMREAL[n_inv_t_flex];
+            lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5007);
         if (!n_inv_p_flex_read)
-            lon_inv = new CUSTOMREAL[n_inv_p_flex];
+            lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5008);
 
         // allocate dummy arrays for flex inv grid
         if (!n_inv_r_flex_ani_read)
-            dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
+            dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5009);
         if (!n_inv_t_flex_ani_read)
-            lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
+            lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5010);
         if (!n_inv_p_flex_ani_read)
-            lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+            lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5011);
 
         // write parameter file to output directory
         write_params_to_file();
@@ -759,12 +759,12 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(n_inv_p_flex_ani, 0);
 
     if (world_rank != 0) {
-        dep_inv = new CUSTOMREAL[n_inv_r_flex];
-        lat_inv = new CUSTOMREAL[n_inv_t_flex];
-        lon_inv = new CUSTOMREAL[n_inv_p_flex];
-        dep_inv_ani = new CUSTOMREAL[n_inv_r_flex_ani];
-        lat_inv_ani = new CUSTOMREAL[n_inv_t_flex_ani];
-        lon_inv_ani = new CUSTOMREAL[n_inv_p_flex_ani];
+        dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5012);
+        lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5013);
+        lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5014);
+        dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5015);
+        lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5016);
+        lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5017);
     }
     broadcast_cr(dep_inv,n_inv_r_flex, 0);
     broadcast_cr(lat_inv,n_inv_t_flex, 0);
