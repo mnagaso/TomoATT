@@ -582,13 +582,13 @@ void Grid::memory_allocation() {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
         int n_total_loc_inv_grid_ani = n_inv_I_loc_ani * n_inv_J_loc_ani * n_inv_K_loc_ani;
 
-        r_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_K_loc * n_inv_grids, 84);
-        t_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_J_loc * n_inv_grids, 85);
-        p_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_I_loc * n_inv_grids, 86);
+        r_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_K_loc               * n_inv_grids, 84);
+        t_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_J_loc * n_inv_K_loc * n_inv_grids, 85);
+        p_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_I_loc * n_inv_K_loc * n_inv_grids, 86);
 
-        r_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_K_loc_ani * n_inv_grids, 87);
-        t_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_J_loc_ani * n_inv_grids, 88);
-        p_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_I_loc_ani * n_inv_grids, 89);
+        r_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_K_loc_ani                   * n_inv_grids, 87);
+        t_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_J_loc_ani * n_inv_K_loc_ani * n_inv_grids, 88);
+        p_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_I_loc_ani * n_inv_K_loc_ani * n_inv_grids, 89);
 
         Ks_loc                   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
         Kxi_loc                  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
