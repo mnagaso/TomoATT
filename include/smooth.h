@@ -4,6 +4,7 @@
 #include <iostream>
 #include "grid.h"
 #include "config.h"
+#include "utils.h"
 
 void calc_inversed_laplacian(CUSTOMREAL* d, CUSTOMREAL* Ap,
                              const int i, const int j, const int k,
@@ -65,11 +66,10 @@ void CG_smooth(Grid& grid, CUSTOMREAL* arr_in, CUSTOMREAL* arr_out, CUSTOMREAL l
     std::cout << "dr, dt, dp, lr, lt, lp = " << dr << " " << dt << " " << dp << " " << lr << " " << lt << " " << lp << std::endl;
 
     // allocate memory
-    CUSTOMREAL* x_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
-    CUSTOMREAL* r_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
-    CUSTOMREAL* p_array = new CUSTOMREAL[loc_I*loc_J*loc_K];
-    CUSTOMREAL* Ap = new CUSTOMREAL[loc_I*loc_J*loc_K];
-    //CUSTOMREAL* Ap_tmp = new CUSTOMREAL[loc_I*loc_J*loc_K];
+    CUSTOMREAL* x_array = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 3000);
+    CUSTOMREAL* r_array = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 3001);
+    CUSTOMREAL* p_array = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 3002);
+    CUSTOMREAL* Ap = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 3003);
     CUSTOMREAL pAp=_0_CR, rr_0=_0_CR, rr=_0_CR, rr_new=_0_CR, aa=_0_CR, bb=_0_CR, tmp=_0_CR;
 
     CUSTOMREAL scaling_A=_1_CR, scaling_coeff = _1_CR;
