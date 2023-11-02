@@ -342,6 +342,8 @@ void Grid::setup_inversion_grids(InputParams& IP) {
         ngrid_j_inv = IP.get_n_inv_t();
     } else if (IP.get_type_invgrid_lat() == 1) {
         ngrid_j_inv = IP.get_n_inv_t_flex();
+    } else if (IP.get_type_invgrid_lat() == 2) {
+        ngrid_j_inv = IP.get_n_inv_t_trape();
     } else {
         std::cout << "unknown type of inversion grid" << std::endl;
         exit(1);
@@ -351,6 +353,8 @@ void Grid::setup_inversion_grids(InputParams& IP) {
         ngrid_i_inv = IP.get_n_inv_p();
     } else if (IP.get_type_invgrid_lon() == 1) {
         ngrid_i_inv = IP.get_n_inv_p_flex();
+    } else if (IP.get_type_invgrid_lon() == 2) {
+        ngrid_i_inv = IP.get_n_inv_p_trape();
     } else {
         std::cout << "unknown type of inversion grid" << std::endl;
         exit(1);
@@ -374,6 +378,8 @@ void Grid::setup_inversion_grids(InputParams& IP) {
             ngrid_j_inv_ani = IP.get_n_inv_t_ani();
         else if (IP.get_type_invgrid_lat_ani() == 1)
             ngrid_j_inv_ani = IP.get_n_inv_t_flex_ani();
+        else if (IP.get_type_invgrid_lat_ani() == 2)
+            ngrid_j_inv_ani = IP.get_n_inv_t_trape_ani();
         else {
             std::cout << "unknown type of inversion grid" << std::endl;
             exit(1);
@@ -382,6 +388,8 @@ void Grid::setup_inversion_grids(InputParams& IP) {
             ngrid_i_inv_ani = IP.get_n_inv_p_ani();
         else if (IP.get_type_invgrid_lon_ani() == 1)
             ngrid_i_inv_ani = IP.get_n_inv_p_flex_ani();
+        else if (IP.get_type_invgrid_lon_ani() == 2)
+            ngrid_i_inv_ani = IP.get_n_inv_p_trape_ani();
         else {
             std::cout << "unknown type of inversion grid" << std::endl;
             exit(1);
@@ -574,69 +582,77 @@ void Grid::memory_allocation() {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
         int n_total_loc_inv_grid_ani = n_inv_I_loc_ani * n_inv_J_loc_ani * n_inv_K_loc_ani;
 
-        r_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_K_loc * n_inv_grids, 84);
-        t_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_J_loc * n_inv_grids, 85);
-        p_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_I_loc * n_inv_grids, 86);
+        r_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_K_loc               * n_inv_grids, 84);
+        t_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_J_loc * n_inv_K_loc * n_inv_grids, 85);
+        p_loc_inv       = allocateMemory<CUSTOMREAL>(n_inv_I_loc * n_inv_K_loc * n_inv_grids, 86);
 
-        r_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_K_loc_ani * n_inv_grids, 87);
-        t_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_J_loc_ani * n_inv_grids, 88);
-        p_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_I_loc_ani * n_inv_grids, 89);
+        r_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_K_loc_ani                   * n_inv_grids, 87);
+        t_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_J_loc_ani * n_inv_K_loc_ani * n_inv_grids, 88);
+        p_loc_inv_ani   = allocateMemory<CUSTOMREAL>(n_inv_I_loc_ani * n_inv_K_loc_ani * n_inv_grids, 89);
 
-        Ks_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
-        Kxi_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
-        Keta_loc        = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 92);
-        Ks_inv_loc      = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 93);
-        Kxi_inv_loc     = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 94);
-        Keta_inv_loc    = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 95);
-        Ks_update_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 96);
-        Kxi_update_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 97);
-        Keta_update_loc = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 98);
+        Ks_loc                   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
+        Kxi_loc                  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
+        Keta_loc                 = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 92);
+        Kdensity_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 93);
+        Ks_inv_loc               = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 94);
+        Kxi_inv_loc              = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 95);
+        Keta_inv_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 96);
+        Kdensity_inv_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 97);
+        Ks_update_loc            = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 98);
+        Kxi_update_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
+        Keta_update_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
+        Kdensity_update_loc      = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
+        Ks_update_loc_previous   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
+        Kxi_update_loc_previous  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
+        Keta_update_loc_previous = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
 
-        if (sub_nprocs <= 1)
-            Tadj_loc = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
+        if (sub_nprocs <= 1){
+            Tadj_loc = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 105);
+            Tadj_density_loc = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 106);
+        }
 
         if (optim_method==HALVE_STEPPING_MODE) {
-            fac_b_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
-            fac_c_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
-            fac_f_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
-            xi_loc_back  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
-            eta_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
-            fun_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 105);
+            fac_b_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 107);
+            fac_c_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 108);
+            fac_f_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 109);
+            xi_loc_back  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 110);
+            eta_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 111);
+            fun_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 112);
         }
 
         if (optim_method==LBFGS_MODE) {
-            fac_b_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 106);
-            fac_c_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 107);
-            fac_f_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 108);
-            xi_loc_back  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 109);
-            eta_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 110);
-            fun_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 111);
+            fac_b_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 113);
+            fac_c_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 114);
+            fac_f_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 115);
+            xi_loc_back  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 116);
+            eta_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 117);
+            fun_loc_back = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 118);
 
             int n_total_loc_lbfgs = n_total_loc_grid_points * Mbfgs;
-            Ks_descent_dir_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 112);
-            Kxi_descent_dir_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 113);
-            Keta_descent_dir_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 114);
+            Ks_descent_dir_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 119);
+            Kxi_descent_dir_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 120);
+            Keta_descent_dir_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 121);
             // initialize
             std::fill(Ks_descent_dir_loc,   Ks_descent_dir_loc   + n_total_loc_lbfgs, _0_CR);
             std::fill(Kxi_descent_dir_loc,  Kxi_descent_dir_loc  + n_total_loc_lbfgs, _0_CR);
             std::fill(Keta_descent_dir_loc, Keta_descent_dir_loc + n_total_loc_lbfgs, _0_CR);
 
             if (id_sim==0){
-                Ks_grad_store_loc    = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 115);
-                Kxi_grad_store_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 116);
-                Keta_grad_store_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 117);
-                Ks_model_store_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 118);
-                Kxi_model_store_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 119);
-                Keta_model_store_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 120);
-                fun_gradient_regularization_penalty_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 121);
-                xi_gradient_regularization_penalty_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 122);
-                eta_gradient_regularization_penalty_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 123);
-                fun_regularization_penalty_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 124);
-                xi_regularization_penalty_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 125);
-                eta_regularization_penalty_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 126);
-                fun_prior_loc                           = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 127);
-                xi_prior_loc                            = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 128);
-                eta_prior_loc                           = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 129);
+                Ks_grad_store_loc    = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 122);
+                Kxi_grad_store_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 123);
+                Keta_grad_store_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 124);
+                Ks_model_store_loc   = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 125);
+                Kxi_model_store_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 126);
+                Keta_model_store_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 127);
+                fun_gradient_regularization_penalty_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 128);
+                xi_gradient_regularization_penalty_loc  = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 129);
+                eta_gradient_regularization_penalty_loc = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 130);
+                fun_regularization_penalty_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 131);
+                xi_regularization_penalty_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 132);
+                eta_regularization_penalty_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 133);
+                fun_prior_loc                           = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 134);
+                xi_prior_loc                            = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 135);
+                eta_prior_loc                           = allocateMemory<CUSTOMREAL>(n_total_loc_lbfgs, 136);
 
                 // initialize
                 std::fill(Ks_grad_store_loc,                       Ks_grad_store_loc                       + n_total_loc_lbfgs, _0_CR);
@@ -694,7 +710,7 @@ void Grid::shm_memory_allocation() {
 
     // inversion
     prepare_shm_array_cr(n_total_loc_grid_points, Tadj_loc, win_Tadj_loc);
-
+    prepare_shm_array_cr(n_total_loc_grid_points, Tadj_density_loc, win_Tadj_density_loc);
 }
 
 
@@ -877,15 +893,23 @@ void Grid::memory_deallocation() {
         delete[] Ks_loc;
         delete[] Kxi_loc;
         delete[] Keta_loc;
+        delete[] Kdensity_loc;
         delete[] Ks_inv_loc;
         delete[] Kxi_inv_loc;
         delete[] Keta_inv_loc;
+        delete[] Kdensity_inv_loc;
         delete[] Ks_update_loc;
         delete[] Kxi_update_loc;
         delete[] Keta_update_loc;
+        delete[] Kdensity_update_loc;
+        delete[] Ks_update_loc_previous;
+        delete[] Kxi_update_loc_previous;
+        delete[] Keta_update_loc_previous;
 
-       if (sub_nprocs <= 1)
+       if (sub_nprocs <= 1){
             delete[] Tadj_loc;
+            delete[] Tadj_density_loc;
+       }
 
         if (optim_method==HALVE_STEPPING_MODE) {
             delete[] fac_b_loc_back;
@@ -1141,11 +1165,10 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             // shift of each set of inversion grid
             dinv_lr = dinv_r/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++) {
+            for (int l = 0; l < n_inv_grids; l++){
                 for (int k = 0; k < n_inv_K_loc_ani; k++)
                     r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(n_inv_K_loc_ani - 1 - k,l)] = r_min_inv_ani   + k*dinv_r - l*dinv_lr;
             }
-
         } else {
             // flexibly designed inversion grid for depth
             CUSTOMREAL* dep_inv_ani = IP.get_dep_inv_ani();
@@ -1178,11 +1201,14 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         // shift of each set of inversion grid
         dinv_lt = dinv_t/n_inv_grids;
 
-        for (int l = 0; l < n_inv_grids; l++) {
-            for (int j = 0; j < n_inv_J_loc; j++)
-                t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_min_inv + j*dinv_t - l*dinv_lt;
+        for (int l = 0; l < n_inv_grids; l++){
+            for (int j = 0; j < n_inv_J_loc; j++){
+                for (int k = 0; k < n_inv_K_loc; k++){
+                    t_loc_inv[I2V_INV_GRIDS_1DJ(j,k,l)] = lat_min_inv + j*dinv_t - l*dinv_lt;
+                }
+            }
         }
-    } else {                // flexibly designed inversion grid for latitude
+    } else if(IP.get_type_invgrid_lat() == 1){                // flexibly designed inversion grid for latitude
         CUSTOMREAL* lat_inv = IP.get_lat_inv();
 
         for (int j = 0; j < n_inv_J_loc; j++){
@@ -1191,10 +1217,28 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             else
                 dinv_lt = (lat_inv[n_inv_J_loc-1] - lat_inv[n_inv_J_loc-2])*DEG2RAD/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++)
-                t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)] = lat_inv[j]*DEG2RAD - l*dinv_lt;
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int k = 0; k < n_inv_K_loc; k++){
+                    t_loc_inv[I2V_INV_GRIDS_1DJ(j,k,l)] = lat_inv[j]*DEG2RAD - l*dinv_lt;
+                }
+            }
         }
+    } else if(IP.get_type_invgrid_lat() == 2){                // trapezoid designed inversion grid for latitude
+        CUSTOMREAL* lat_spacing_inv = IP.get_lat_spacing_inv();
+        for (int j = 0; j < n_inv_J_loc; j++){
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int k = 0; k < n_inv_K_loc; k++){
+                    dinv_t = lat_spacing_inv[k];
+                    dinv_lt = dinv_t*DEG2RAD/n_inv_grids;
+                    t_loc_inv[I2V_INV_GRIDS_1DJ(j,k,l)] = (IP.get_min_lat() + IP.get_max_lat())/2 + (j-n_inv_J_loc/2)*dinv_t*DEG2RAD - l*dinv_lt;
+                }
+            }
+        }
+    } else {
+        std::cout << "error type_invgrid_lat: " << IP.get_type_invgrid_lat() << std::endl;
+        exit(0);
     }
+
     // anisotropic inversion grid for latitude
     if(IP.get_invgrid_ani()){
         if (IP.get_type_invgrid_lat_ani() == 0) {
@@ -1206,11 +1250,14 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             // shift of each set of inversion grid
             dinv_lt = dinv_t/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++) {
-                for (int j = 0; j < n_inv_J_loc_ani; j++)
-                    t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)] = lat_min_inv_ani + j*dinv_t - l*dinv_lt;
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int j = 0; j < n_inv_J_loc_ani; j++){
+                    for (int k = 0; k < n_inv_K_loc_ani; k++){
+                        t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,k,l)] = lat_min_inv_ani + j*dinv_t - l*dinv_lt;
+                    }
+                }
             }
-        } else {
+        } else if(IP.get_type_invgrid_lat_ani() == 1) {
             // flexibly designed inversion grid for latitude
             CUSTOMREAL* lat_inv_ani = IP.get_lat_inv_ani();
 
@@ -1220,15 +1267,34 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 else
                     dinv_lt = (lat_inv_ani[n_inv_J_loc_ani-1] - lat_inv_ani[n_inv_J_loc_ani-2])*DEG2RAD/n_inv_grids;
 
-                for (int l = 0; l < n_inv_grids; l++)
-                    t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)] = lat_inv_ani[j]*DEG2RAD - l*dinv_lt;
+                for (int l = 0; l < n_inv_grids; l++){
+                    for (int k = 0; k < n_inv_K_loc_ani; k++)
+                        t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,k,l)] = lat_inv_ani[j]*DEG2RAD - l*dinv_lt;
+                }
             }
+        } else if(IP.get_type_invgrid_lat_ani() == 2){
+            CUSTOMREAL* lat_spacing_inv_ani = IP.get_lat_spacing_inv_ani();
+            for (int j = 0; j < n_inv_J_loc_ani; j++){
+                for (int l = 0; l < n_inv_grids; l++){
+                    for (int k = 0; k < n_inv_K_loc_ani; k++){
+                        dinv_t = lat_spacing_inv_ani[k];
+                        dinv_lt = dinv_t*DEG2RAD/n_inv_grids;
+                        t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,k,l)] = (IP.get_min_lat() + IP.get_max_lat())/2 + (j-n_inv_J_loc_ani/2)*dinv_t*DEG2RAD - l*dinv_lt;
+                    }
+                }
+            }
+        } else {
+            std::cout << "error type_invgrid_lat_ani: " << IP.get_type_invgrid_lat_ani() << std::endl;
+            exit(0);
         }
     } else {
         // use the same inversion grid of velocity for anisotropy
         for (int j = 0; j < n_inv_J_loc_ani; j++){
-            for (int l = 0; l < n_inv_grids; l++)
-                t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)] = t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)];
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int k = 0; k < n_inv_K_loc_ani; k++){
+                t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,k,l)] = t_loc_inv[I2V_INV_GRIDS_1DJ(j,k,l)];
+                }
+            }
         }
     }
 
@@ -1242,10 +1308,12 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
         dinv_lp = dinv_p/n_inv_grids;
 
         for (int l = 0; l < n_inv_grids; l++) {
-            for (int i = 0; i < n_inv_I_loc; i++)
-                p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_min_inv + i*dinv_p - l*dinv_lp;
+            for (int i = 0; i < n_inv_I_loc; i++){
+                for (int k = 0; k < n_inv_K_loc; k++)
+                    p_loc_inv[I2V_INV_GRIDS_1DI(i,k,l)] = lon_min_inv + i*dinv_p - l*dinv_lp;
+            }
         }
-    } else {
+    } else if(IP.get_type_invgrid_lon() == 1){
         CUSTOMREAL* lon_inv = IP.get_lon_inv();
 
         for (int i = 0; i < n_inv_I_loc; i++){
@@ -1254,9 +1322,25 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             else
                 dinv_lp = (lon_inv[n_inv_I_loc-1] - lon_inv[n_inv_I_loc-2])*DEG2RAD/n_inv_grids;
 
-            for (int l = 0; l < n_inv_grids; l++)
-                p_loc_inv[I2V_INV_GRIDS_1DI(i,l)] = lon_inv[i]*DEG2RAD - l*dinv_lp;
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int k = 0; k < n_inv_K_loc; k++)
+                    p_loc_inv[I2V_INV_GRIDS_1DI(i,k,l)] = lon_inv[i]*DEG2RAD - l*dinv_lp;
+            }
         }
+    } else if(IP.get_type_invgrid_lon() == 2){                // trapezoid designed inversion grid for longitude
+        CUSTOMREAL* lon_spacing_inv = IP.get_lon_spacing_inv();
+        for (int i = 0; i < n_inv_I_loc; i++){
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int k = 0; k < n_inv_K_loc; k++){
+                    dinv_p = lon_spacing_inv[k];
+                    dinv_lp = dinv_p*DEG2RAD/n_inv_grids;
+                    p_loc_inv[I2V_INV_GRIDS_1DI(i,k,l)] = (IP.get_min_lon() + IP.get_max_lon())/2 + (i-n_inv_I_loc/2)*dinv_p*DEG2RAD - l*dinv_lp;
+                }
+            }
+        }
+    } else {
+        std::cout << "error type_invgrid_lon: " << IP.get_type_invgrid_lon() << std::endl;
+        exit(0);
     }
 
     // anisotropic inversion grid for longitude
@@ -1271,10 +1355,12 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
             dinv_lp = dinv_p/n_inv_grids;
 
             for (int l = 0; l < n_inv_grids; l++) {
-                for (int i = 0; i < n_inv_I_loc_ani; i++)
-                    p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)] = lon_min_inv_ani + i*dinv_p - l*dinv_lp;
+                for (int i = 0; i < n_inv_I_loc_ani; i++){
+                    for (int k = 0; k < n_inv_K_loc_ani; k++)
+                        p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,k,l)] = lon_min_inv_ani + i*dinv_p - l*dinv_lp;
+                }
             }
-        } else {
+        } else if(IP.get_type_invgrid_lon_ani() == 1) {
             // flexibly designed inversion grid for longitude
             CUSTOMREAL* lon_inv_ani = IP.get_lon_inv_ani();
 
@@ -1284,15 +1370,35 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
                 else
                     dinv_lp = (lon_inv_ani[n_inv_I_loc_ani-1] - lon_inv_ani[n_inv_I_loc_ani-2])*DEG2RAD/n_inv_grids;
 
-                for (int l = 0; l < n_inv_grids; l++)
-                    p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)] = lon_inv_ani[i]*DEG2RAD - l*dinv_lp;
+                for (int l = 0; l < n_inv_grids; l++){
+                    for (int k = 0; k < n_inv_K_loc_ani; k++){
+                        p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,k,l)] = lon_inv_ani[i]*DEG2RAD - l*dinv_lp;
+                    }
+                }
             }
+        } else if(IP.get_type_invgrid_lon_ani() == 2){                // trapezoid designed inversion grid for longitude
+            CUSTOMREAL* lon_spacing_inv_ani = IP.get_lon_spacing_inv_ani();
+            for (int i = 0; i < n_inv_I_loc_ani; i++){
+                for (int l = 0; l < n_inv_grids; l++){
+                    for (int k = 0; k < n_inv_K_loc_ani; k++){
+                        dinv_p = lon_spacing_inv_ani[k];
+                        dinv_lp = dinv_p*DEG2RAD/n_inv_grids;
+                        p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,k,l)] = (IP.get_min_lon() + IP.get_max_lon())/2 + (i-n_inv_I_loc_ani/2)*dinv_p*DEG2RAD - l*dinv_lp;
+                    }
+                }
+            }
+        } else {
+            std::cout << "error type_invgrid_lon: " << IP.get_type_invgrid_lon() << std::endl;
+            exit(0);
         }
     } else {
         // use the same inversion grid of velocity for anisotropy
         for (int i = 0; i < n_inv_I_loc_ani; i++){
-            for (int l = 0; l < n_inv_grids; l++)
-                p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)] = p_loc_inv[I2V_INV_GRIDS_1DI(i,l)];
+            for (int l = 0; l < n_inv_grids; l++){
+                for (int k = 0; k < n_inv_K_loc_ani; k++){
+                    p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,k,l)] = p_loc_inv[I2V_INV_GRIDS_1DI(i,k,l)];
+                }
+            }
         }
     }
 
@@ -1302,10 +1408,10 @@ void Grid::setup_inv_grid_params(InputParams& IP) {
 void Grid::initialize_kernels(){
     // initialize kernels
     if (subdom_main){
-        std::fill(Ks_loc,   Ks_loc   + loc_I*loc_J*loc_K, _0_CR);
-        std::fill(Kxi_loc,  Kxi_loc  + loc_I*loc_J*loc_K, _0_CR);
-        std::fill(Keta_loc, Keta_loc + loc_I*loc_J*loc_K, _0_CR);
-
+        std::fill(Ks_loc,       Ks_loc   + loc_I*loc_J*loc_K,       _0_CR);
+        std::fill(Kxi_loc,      Kxi_loc  + loc_I*loc_J*loc_K,       _0_CR);
+        std::fill(Keta_loc,     Keta_loc + loc_I*loc_J*loc_K,       _0_CR);
+        std::fill(Kdensity_loc, Kdensity_loc + loc_I*loc_J*loc_K,   _0_CR);
         //for (int k = 0; k < loc_K; k++) {
         //    for (int j = 0; j < loc_J; j++) {
         //        for (int i = 0; i < loc_I; i++) {
@@ -1568,7 +1674,9 @@ void Grid::T2tau_old() {
 void Grid::update_Tadj() {
     std::copy(tau_loc, tau_loc+loc_I*loc_J*loc_K, Tadj_loc);
 }
-
+void Grid::update_Tadj_density() {
+    std::copy(tau_loc, tau_loc+loc_I*loc_J*loc_K, Tadj_density_loc);
+}
 
 void Grid::back_up_fun_xi_eta_bcf() {
     if (!subdom_main) return;
@@ -1674,6 +1782,30 @@ void Grid::calc_L1_and_Linf_diff_adj(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff)
     }
 }
 
+void Grid::calc_L1_and_Linf_diff_adj_density(CUSTOMREAL& L1_diff, CUSTOMREAL& Linf_diff) {
+
+    if (subdom_main) {
+        //L1_diff   = 0.0;
+        Linf_diff = 0.0;
+        CUSTOMREAL obj_func_glob = 0.0;
+        CUSTOMREAL adj_factor = 1.0;
+
+        // calculate L1 error
+        for (int k_r = k_start_loc; k_r <= k_end_loc; k_r++) {
+            for (int j_lat = j_start_loc; j_lat <= j_end_loc; j_lat++) {
+                for (int i_lon = i_start_loc; i_lon <= i_end_loc; i_lon++) {
+                    // Adjoint simulation use only Linf
+                    Linf_diff  = std::max(Linf_diff,std::abs(tau_loc[I2V(i_lon,j_lat,k_r)] - Tadj_density_loc[I2V(i_lon,j_lat,k_r)]));
+                }
+            }
+        }
+
+        // sum up the values of all processes
+        obj_func_glob=0.0;
+        allreduce_cr_single_max(Linf_diff, obj_func_glob);
+        Linf_diff = obj_func_glob*adj_factor;///(ngrid_i*ngrid_j*ngrid_k);
+    }
+}
 
 void Grid::calc_L1_and_Linf_error(CUSTOMREAL& L1_error, CUSTOMREAL& Linf_error) {
     L1_error   = 0.0;
@@ -2429,35 +2561,62 @@ void Grid::write_inversion_grid_file(){
         for(int l = 0; l < n_inv_grids; l++){
             ofs << l << " " << ngrid_k_inv << " " << ngrid_j_inv << " " << ngrid_i_inv << std::endl;    // number of ivnersion grid
             // inversion grid of depth
-            for(int k =0; k < ngrid_k_inv; k++)
+            // for(int k =0; k < ngrid_k_inv; k++)
+            //     ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+            //         << radius2depth(r_loc_inv[I2V_INV_GRIDS_1DK(k,l)]) << " ";
+            // ofs << std::endl;
+            // for(int j =0; j < ngrid_j_inv; j++)
+            //     ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+            //         << t_loc_inv[I2V_INV_GRIDS_1DJ(j,0,l)]*RAD2DEG << " ";
+            // ofs << std::endl;
+            // for(int i =0; i < ngrid_i_inv; i++)
+            //     ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+            //         << p_loc_inv[I2V_INV_GRIDS_1DI(i,0,l)]*RAD2DEG << " ";
+            // ofs << std::endl;
+            for(int k = 0; k < ngrid_k_inv; k++){
                 ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
                     << radius2depth(r_loc_inv[I2V_INV_GRIDS_1DK(k,l)]) << " ";
-            ofs << std::endl;
-            for(int j =0; j < ngrid_j_inv; j++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
-                    << t_loc_inv[I2V_INV_GRIDS_1DJ(j,l)]*RAD2DEG << " ";
-            ofs << std::endl;
-            for(int i =0; i < ngrid_i_inv; i++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
-                    << p_loc_inv[I2V_INV_GRIDS_1DI(i,l)]*RAD2DEG << " ";
-            ofs << std::endl;
+                ofs << std::endl;
+                for(int j =0; j < ngrid_j_inv; j++)
+                    ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                        << t_loc_inv[I2V_INV_GRIDS_1DJ(j,k,l)]*RAD2DEG << " ";
+                ofs << std::endl;
+                for(int i =0; i < ngrid_i_inv; i++)
+                    ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                        << p_loc_inv[I2V_INV_GRIDS_1DI(i,k,l)]*RAD2DEG << " ";
+                ofs << std::endl;
+            }
+
         }
         // inversion grid of anisotropy
         for(int l = 0; l < n_inv_grids; l++){
             ofs << l << " " << ngrid_k_inv_ani << " " << ngrid_j_inv_ani << " " << ngrid_i_inv_ani << std::endl;    // number of ivnersion grid
             // inversion grid of depth
-            for(int k =0; k < ngrid_k_inv_ani; k++)
+            // for(int k =0; k < ngrid_k_inv_ani; k++)
+            //     ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+            //         << radius2depth(r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)]) << " ";
+            // ofs << std::endl;
+            // for(int j =0; j < ngrid_j_inv_ani; j++)
+            //     ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+            //         << t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)]*RAD2DEG << " ";
+            // ofs << std::endl;
+            // for(int i =0; i < ngrid_i_inv_ani; i++)
+            //     ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+            //         << p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)]*RAD2DEG << " ";
+            // ofs << std::endl;
+            for(int k = 0; k < ngrid_k_inv_ani; k++){
                 ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
                     << radius2depth(r_loc_inv_ani[I2V_INV_ANI_GRIDS_1DK(k,l)]) << " ";
-            ofs << std::endl;
-            for(int j =0; j < ngrid_j_inv_ani; j++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
-                    << t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,l)]*RAD2DEG << " ";
-            ofs << std::endl;
-            for(int i =0; i < ngrid_i_inv_ani; i++)
-                ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
-                    << p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,l)]*RAD2DEG << " ";
-            ofs << std::endl;
+                ofs << std::endl;
+                for(int j =0; j < ngrid_j_inv_ani; j++)
+                    ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                        << t_loc_inv_ani[I2V_INV_ANI_GRIDS_1DJ(j,k,l)]*RAD2DEG << " ";
+                ofs << std::endl;
+                for(int i =0; i < ngrid_i_inv_ani; i++)
+                    ofs << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ')
+                        << p_loc_inv_ani[I2V_INV_ANI_GRIDS_1DI(i,k,l)]*RAD2DEG << " ";
+                ofs << std::endl;
+            }
         }
     }
 

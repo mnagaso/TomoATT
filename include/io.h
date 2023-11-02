@@ -107,12 +107,16 @@ public:
     void write_Kxi(Grid&, int);
     // Keta
     void write_Keta(Grid&, int);
+    // Kdensity
+    void write_Kdensity(Grid&, int);
     // Ks_update
     void write_Ks_update(Grid&, int);
     // Kxi_update
     void write_Kxi_update(Grid&, int);
     // Keta_update
     void write_Keta_update(Grid&, int);
+    // Kdensity_update
+    void write_Kdensity_update(Grid&, int);
     // Ks_descent_dir_loc
     void write_Ks_descent_dir(Grid&, int);
     // Kxi_descent_dir_loc

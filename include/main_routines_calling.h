@@ -204,6 +204,18 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // output station correction file (only for teleseismic differential data)
         IP.write_station_correction_file(i_inv + 1);
 
+        // output objective function
+        write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
+
+        // since model is update. The written traveltime field should be discraded.
+        // initialize is_T_written_into_file
+        for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
+            const std::string name_sim_src = IP.get_src_name(i_src);
+
+            if (proc_store_srcrec) // only proc_store_srcrec has the src_map object
+                IP.src_map[name_sim_src].is_T_written_into_file = false;
+        }
+
         // output updated model
         if (id_sim==0) {
             //io.change_xdmf_obj(0); // change xmf file for next src
@@ -214,6 +226,10 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 io.write_vel(grid, i_inv+1);
                 io.write_xi( grid, i_inv+1);
                 io.write_eta(grid, i_inv+1);
+                // io.write_Kdensity(grid, i_inv);
+                if (IP.get_run_mode() == DO_INVERSION) {
+                    io.write_Kdensity_update(grid, i_inv);
+                }
             }
             //io.write_zeta(grid, i_inv); // TODO
 
@@ -232,7 +248,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
         }
 
-        write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
 
         // writeout temporary xdmf file
         io.update_xdmf_file();
@@ -482,6 +497,8 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                     io.write_vel(grid, i_inv+1);
                     io.write_xi( grid, i_inv+1);
                     io.write_eta(grid, i_inv+1);
+                    // io.write_Kdensity(grid, i_inv);
+                    io.write_Kdensity_update(grid, i_inv);
                 }
                 //io.write_zeta(grid, i_inv); // TODO
 

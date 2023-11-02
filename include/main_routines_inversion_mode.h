@@ -252,7 +252,12 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             recs.calculate_adjoint_source(IP, name_sim_src);
 
             // run iteration for adjoint field calculation
-            It->run_iteration_adjoint(IP, grid, io);
+            int adj_type = 0;   // compute adjoint field 
+            It->run_iteration_adjoint(IP, grid, io, adj_type);
+
+            // run iteration for density of the adjoint field
+            adj_type = 1;   // compute adjoint field 
+            It->run_iteration_adjoint(IP, grid, io, adj_type);
 
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP, name_sim_src);
@@ -263,6 +268,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                 io.write_adjoint_field(grid,i_inv);
             }
 
+            // io.write_adjoint_field(grid,i_inv);
+            
             // check adjoint source
             // if (proc_store_srcrec){
             //     for (auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
