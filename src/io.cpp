@@ -2015,8 +2015,8 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
 
     // select hyperslab
     mem_dspace_id  = H5Screate_simple(rank, count, NULL);
-    //file_dspace_id = H5Dget_space(dset_id);
-    file_dspace_id = mem_dspace_id; // or only use mem_dspace_id instead of file_dspace_id
+    file_dspace_id = H5Dget_space(dset_id);
+    //file_dspace_id = mem_dspace_id; // or only use mem_dspace_id instead of file_dspace_id
 
     H5Sselect_hyperslab(file_dspace_id, H5S_SELECT_SET, offset, stride, count, block);
 
@@ -2056,7 +2056,7 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     H5Pclose(plist_id_dset);
     // close dataspace
     H5Sclose(mem_dspace_id);
-    //H5Sclose(file_dspace_id); // use mem_dspace_id instead of file_dspace_id
+    H5Sclose(file_dspace_id); // use mem_dspace_id instead of file_dspace_id
     // close dataset
     h5_close_dataset();
 
