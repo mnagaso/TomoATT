@@ -2023,7 +2023,7 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     // create dataset prop list
     plist_id_dset = H5Pcreate(H5P_DATASET_XFER);
     //H5Pset_buffer(plist_id_dset, BUF_SIZE, NULL, NULL); // this will be important for machine dependent tuning
-    H5Pset_dxpl_mpio(plist_id_dset, H5FD_MPIO_COLLECTIVE);
+    H5Pset_dxpl_mpio(plist_id_dset, HDF5_IO_MODE);
 
     // check if this writing is done collectively
     H5D_mpio_actual_io_mode_t actualIOMode;

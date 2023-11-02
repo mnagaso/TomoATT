@@ -193,6 +193,8 @@ inline std::string output_dir="./OUTPUT_FILES/";
 #define OUTPUT_FORMAT_ASCII 22222
 //#define OUTPUT_FORMAT_BINARY 33333 //#TODO: add
 inline int output_format = OUTPUT_FORMAT_HDF5; // 0 - ascii, 1 - hdf5, 2 - binary
+#define HDF5_IO_MODE H5FD_MPIO_COLLECTIVE
+//#define HDF5_IO_MODE H5FD_MPIO_INDEPENDENT
 
 // smooth parameters
 inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
@@ -206,7 +208,7 @@ inline const int  GRADIENT_DESCENT    = 0;
 inline const int  HALVE_STEPPING_MODE = 1;
 inline const int  LBFGS_MODE          = 2;
 inline int        optim_method        = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
-inline const CUSTOMREAL wolfe_c1     = 1e-4; 
+inline const CUSTOMREAL wolfe_c1     = 1e-4;
 inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
