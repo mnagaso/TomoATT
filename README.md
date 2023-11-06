@@ -1,9 +1,13 @@
 # TomoATT 
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
-[![CI](https://github.com/mnagaso/TomoATT/actions/workflows/CI.yml/badge.svg?branch=devel)](https://github.com/mnagaso/TomoATT/actions/workflows/CI.yml)
+[![CI](https://github.com/mnagaso/TomoATT/actions/workflows/CI.yml/badge.svg?branch=v2)](https://github.com/mnagaso/TomoATT/actions/workflows/CI.yml)
 
 ![logo](docs/logo/TomoATT_logo_2.png)
+
+This branch is intended to be used for preparing the release of TomoATT v2.0.0.
+In this version, common-source/receiver double difference travel-time tomography is implemented.
+Teleseismic events is not supported in this version.
 
 TomoATT is a library which implements an eikonal equation solver based Adjoint-state Travel-Time Tomography for a very large-scale computation, which implemens the methods described in the published works [Ping Tong (2021)](https://doi.org/10.1029/2021JB021818) and [Jing Chen (2022)](add_here_when_published).
 The slowness field and anisotropy fields are computed in spherical coordinate system.

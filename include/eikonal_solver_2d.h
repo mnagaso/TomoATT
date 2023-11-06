@@ -12,57 +12,14 @@
 #include "mpi_funcs.h"
 #include "io.h"
 
-
-class PlainGrid {
-
-public:
-    PlainGrid(Source& src, InputParams& IP);
-    ~PlainGrid();
-
-    void run_iteration(InputParams& IP);
-
-//private:
-    // grid parameters
-    CUSTOMREAL src_r, src_t, src_p;
-    CUSTOMREAL src_t_dummy;
-    CUSTOMREAL rmin_3d, rmax_3d, tmin_3d, tmax_3d, pmin_3d, pmax_3d;
-    CUSTOMREAL max_degree;
-    int nr_2d, nt_2d;
-
-    // arrays
-    // azimuth
-    CUSTOMREAL *azimuth_2d;
-    // epicentral distance
-    CUSTOMREAL *epicentral_distance_2d;
-    // activated boundaries
-    //bool *activated_boundaries;
-    // grid
-    CUSTOMREAL *r_2d, *t_2d; // coordinates
-    CUSTOMREAL *fun_2d, *fac_a_2d, *fac_b_2d, *u_2d, *T_2d; // functions
-    CUSTOMREAL *T0v_2d, *T0r_2d, *T0t_2d, *tau_2d, *tau_old_2d;
-    bool *is_changed_2d;
-
-    // member functions
-    void allocate_arrays();
-    void deallocate_arrays();
-    void load_1d_model(std::string);
-    void select_1d_model(std::string);
-    void calculate_stencil_2d(int&, int&);
-    CUSTOMREAL eps_2d = 1e-12;
-
-private:
-
-    // # TODO: make id model type selectable by input file
-    // 1D model used for 2D solver
-    std::vector<std::vector<CUSTOMREAL>> model_1d_ref = model_1d_prem;
-
-
-};
+//
+// here PlanGrid class is omitted for public version v2
+//
 
 void prepare_teleseismic_boundary_conditions(InputParams&, Grid&, IO_utils&);
-void run_2d_solver(InputParams&, Source&, IO_utils&);
-void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
+//void run_2d_solver(InputParams&, Source&, IO_utils&);
+//void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
 void load_2d_traveltime(InputParams&, Source&, Grid&, IO_utils&);
-std::string get_2d_tt_filename(const std::string&, Source&);
+//std::string get_2d_tt_filename(const std::string&, Source&);
 
 #endif // EIKONAL_SOLVER_2D_H
