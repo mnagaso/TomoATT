@@ -340,7 +340,7 @@ inline CUSTOMREAL calc_ratio_between(CUSTOMREAL const& a, CUSTOMREAL const& b, C
 }
 
 
-inline void warning_teleseimic_use(){
+inline void warning_teleseismic_use(){
     if (myrank==0){
         // teleseismic source is not supported in the public version
         std::cout << "Teleseismic source is not supported in the public version." << std::endl;

@@ -2035,17 +2035,17 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
 
 
 void Iterator::calculate_stencil_1st_order_upwind_tele(Grid&grid, int&iip, int&jjt, int&kkr){
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 }
 
 
 void Iterator::calculate_stencil_1st_order_tele(Grid& grid, int& iip, int& jjt, int&kkr){
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 }
 
 
 void Iterator::calculate_stencil_3rd_order_tele(Grid& grid, int& iip, int& jjt, int&kkr){
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 }
 
 
@@ -2071,7 +2071,7 @@ inline CUSTOMREAL Iterator::calc_LF_Hamiltonian_tele(Grid& grid, \
                                          CUSTOMREAL& pt1, CUSTOMREAL& pt2, \
                                          CUSTOMREAL& pr1, CUSTOMREAL& pr2, \
                                          int& iip, int& jjt, int& kkr) {
-    warning_teleseimic_use();
+    warning_teleseismic_use();
     // dummy
     return 0.0;
 }
@@ -2118,12 +2118,12 @@ void Iterator::calculate_boundary_nodes(Grid& grid){
 
 
 void Iterator::calculate_boundary_nodes_tele(Grid& grid, int& iip, int& jjt, int& kkr){
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 }
 
 
 void Iterator::calculate_boundary_nodes_tele_adj(Grid& grid, int& iip, int& jjt, int& kkr){
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 }
 
 

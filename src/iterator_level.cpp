@@ -54,7 +54,7 @@ Iterator_level_tele::Iterator_level_tele(InputParams& IP, Grid& grid, Source& sr
 
 
 void Iterator_level_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP){
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 }
 
 
@@ -749,7 +749,7 @@ Iterator_level_1st_order_tele::Iterator_level_1st_order_tele(InputParams& IP, Gr
 
 void Iterator_level_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }
 
@@ -762,6 +762,6 @@ Iterator_level_3rd_order_tele::Iterator_level_3rd_order_tele(InputParams& IP, Gr
 
 void Iterator_level_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }

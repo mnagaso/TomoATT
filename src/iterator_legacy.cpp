@@ -60,7 +60,7 @@ Iterator_legacy_tele::Iterator_legacy_tele(InputParams& IP, Grid& grid, Source& 
 
 void Iterator_legacy_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }
 
@@ -287,7 +287,7 @@ Iterator_legacy_1st_order_tele::Iterator_legacy_1st_order_tele(InputParams& IP, 
 // overloading virtual function
 void Iterator_legacy_1st_order_tele::do_sweep(int iswp, Grid& grid, InputParams& IP) {
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }
 
@@ -302,7 +302,7 @@ Iterator_legacy_3rd_order_tele::Iterator_legacy_3rd_order_tele(InputParams& IP, 
 
 void Iterator_legacy_3rd_order_tele::do_sweep(int iswp, Grid& grid, InputParams& IP) {
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }
 
@@ -314,7 +314,7 @@ Iterator_legacy_1st_order_upwind_tele::Iterator_legacy_1st_order_upwind_tele(Inp
 
 void Iterator_legacy_1st_order_upwind_tele::do_sweep(int iswp, Grid& grid, InputParams& IP) {
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }
 

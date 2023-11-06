@@ -3,7 +3,7 @@
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
 
     // teleseismic source is not supported in the public version
-    warning_teleseimic_use();
+    //warning_teleseismic_use();
 }
 
 //
@@ -14,7 +14,7 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
 
 void load_2d_traveltime(InputParams& IP, Source& src, Grid& grid, IO_utils& io) {
 
-    warning_teleseimic_use();
+    warning_teleseismic_use();
 
 }
 
