@@ -33,7 +33,9 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
         bool is_teleseismic = true; // the object in src_id2name_2d is always teleseismic
         // #BUG: src in src_id2name_2d includes the srcs in other sim groups.
         bool for_2d_solver = true;
-        Source src(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
+
+        Source src;
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
 
         // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
         if (proc_store_srcrec)

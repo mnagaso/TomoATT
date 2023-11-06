@@ -193,8 +193,13 @@ inline std::string output_dir="./OUTPUT_FILES/";
 #define OUTPUT_FORMAT_ASCII 22222
 //#define OUTPUT_FORMAT_BINARY 33333 //#TODO: add
 inline int output_format = OUTPUT_FORMAT_HDF5; // 0 - ascii, 1 - hdf5, 2 - binary
+
+// HDF5 io mode (independent or collective)
+#ifdef USE_HDF5_IO_COLLECTIVE
 #define HDF5_IO_MODE H5FD_MPIO_COLLECTIVE
-//#define HDF5_IO_MODE H5FD_MPIO_INDEPENDENT
+#else
+#define HDF5_IO_MODE H5FD_MPIO_INDEPENDENT
+#endif
 
 // smooth parameters
 inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing

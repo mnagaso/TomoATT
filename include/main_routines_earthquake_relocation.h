@@ -15,6 +15,7 @@
 #include "iterator_level.h"
 #include "source.h"
 #include "receiver.h"
+#include "main_routines_inversion_mode.h"
 
 
 // calculate traveltime field for all sources-receivers and write to file
@@ -37,18 +38,13 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     // loop for each source
     ///////////////////////
 
+    Source src;
+
     // iterate over sources
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
         const std::string name_sim_src = IP.get_src_name(i_src);
         const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
-
-        // set simu group id and source name for output files/dataset names
-        io.set_id_src(id_sim_src);
-        io.set_name_src(name_sim_src);
-
-        // set group name to be used for output in h5
-        io.change_group_name_for_source();
 
         // check if the source is teleseismic or not
         // because teleseismic source is not supported in this mode
@@ -59,7 +55,11 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
             exit(1);
         }
 
-        Source src(IP, grid, is_teleseismic, name_sim_src);
+        // set simu group id and source name for output files/dataset names
+        io.reset_source_info(id_sim_src, name_sim_src);
+
+        // set source position
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         bool first_init = (i_src==0);
@@ -81,13 +81,9 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
                       << std::endl;
         }
 
-        It->run_iteration_forward(IP, grid, io, first_init);
+        bool write_tmp_T = true;
+        calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src, write_tmp_T);
 
-        // writeout traveltime field
-        io.write_T_tmp(grid);
-
-        if (proc_store_srcrec)
-            IP.src_map[name_sim_src].is_T_written_into_file = true;
     }
 
     // wait for all processes to finish traveltime calculation
@@ -98,6 +94,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
 std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, Grid& grid, IO_utils& io, int i_iter){
 
     Receiver recs; // here the source is swapped to receiver
+
     // initialize source parameters (obj, kernel, )
     recs.init_vars_src_reloc(IP);
 
@@ -108,11 +105,7 @@ std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, G
         const int         id_sim_src   = IP.get_src_id(name_sim_src); // global source id
 
         // set simu group id and source name for output files/dataset names
-        io.set_id_src(id_sim_src);
-        io.set_name_src(name_sim_src);
-
-        // change target group to be read
-        io.change_group_name_for_source();
+        io.reset_source_info(id_sim_src, name_sim_src);
 
         // load travel time field on grid.T_loc
         io.read_T_tmp(grid);

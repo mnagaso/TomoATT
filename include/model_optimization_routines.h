@@ -19,109 +19,7 @@
 #include "kernel.h"
 #include "model_update.h"
 #include "lbfgs.h"
-
-
-inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUSTOMREAL>& v_misfit_inout, std::ofstream& out_main, std::string type) {
-    // output objective function
-    if (myrank==0 && id_sim==0) {
-        out_main << std::setw(5) << i_inv << ",";
-        out_main << std::setw(13) << type;
-        out_main << "," << std::setw(19) << v_misfit_inout[0];
-        out_main << "," << std::setw(19) << v_misfit_inout[1];
-        if (IP.get_is_srcrec_swap())
-            out_main << "," << std::setw(19) << v_misfit_inout[3];
-        else
-            out_main << "," << std::setw(19) << v_misfit_inout[2];
-        if (IP.get_is_srcrec_swap())
-            out_main << "," << std::setw(19) << v_misfit_inout[2];
-        else
-            out_main << "," << std::setw(19) << v_misfit_inout[3];
-        out_main << "," << std::setw(19) << v_misfit_inout[4];
-        // res
-        CUSTOMREAL mean;
-        CUSTOMREAL std;
-        std::string tmp;
-        if (IP.N_data > 0) {
-            mean = v_misfit_inout[5]/IP.N_data;
-            std  = sqrt(v_misfit_inout[6]/IP.N_data - my_square(mean));
-            tmp = std::to_string(mean);
-            tmp.append("/");
-            tmp.append(std::to_string(std));
-            out_main << "," << std::setw(24) << tmp;
-        } else {
-            out_main << "," << std::setw(24) << "0.0/0.0";
-        }
-        // res_abs
-        if (IP.N_abs_local_data > 0) {
-            mean = v_misfit_inout[7]/IP.N_abs_local_data;
-            std  = sqrt(v_misfit_inout[8]/IP.N_abs_local_data - my_square(mean));
-            tmp = std::to_string(mean);
-            tmp.append("/");
-            tmp.append(std::to_string(std));
-            out_main << "," << std::setw(24) << tmp;
-        } else {
-            out_main << "," << std::setw(24) << "0.0/0.0";
-        }
-        if (IP.get_is_srcrec_swap()){
-            if (IP.N_cr_dif_local_data > 0) {
-                mean = v_misfit_inout[11]/IP.N_cr_dif_local_data;
-                std  = sqrt(v_misfit_inout[12]/IP.N_cr_dif_local_data - my_square(mean));
-                tmp = std::to_string(mean);
-                tmp.append("/");
-                tmp.append(std::to_string(std));
-                out_main << "," << std::setw(24) << tmp;
-            } else {
-                out_main << "," << std::setw(24) << "0.0/0.0";
-            }
-            if (IP.N_cs_dif_local_data > 0) {
-                mean = v_misfit_inout[9]/IP.N_cs_dif_local_data;
-                std  = sqrt(v_misfit_inout[10]/IP.N_cs_dif_local_data - my_square(mean));
-                tmp = std::to_string(mean);
-                tmp.append("/");
-                tmp.append(std::to_string(std));
-                out_main << "," << std::setw(24) << tmp;
-            } else {
-                out_main << "," << std::setw(24) << "0.0/0.0";
-            }
-        } else {
-            if (IP.N_cs_dif_local_data > 0) {
-                mean = v_misfit_inout[9]/IP.N_cs_dif_local_data;
-                std  = sqrt(v_misfit_inout[10]/IP.N_cs_dif_local_data - my_square(mean));
-                tmp = std::to_string(mean);
-                tmp.append("/");
-                tmp.append(std::to_string(std));
-                out_main << "," << std::setw(24) << tmp;
-            } else {
-                out_main << "," << std::setw(24) << "0.0/0.0";
-            }
-            if (IP.N_cr_dif_local_data > 0) {
-                mean = v_misfit_inout[11]/IP.N_cr_dif_local_data;
-                std  = sqrt(v_misfit_inout[12]/IP.N_cr_dif_local_data - my_square(mean));
-                tmp = std::to_string(mean);
-                tmp.append("/");
-                tmp.append(std::to_string(std));
-                out_main << "," << std::setw(24) << tmp;
-            } else {
-                out_main << "," << std::setw(24) << "0.0/0.0";
-            }
-        }
-
-        if (IP.N_teleseismic_data > 0) {
-            mean = v_misfit_inout[13]/IP.N_teleseismic_data;
-            std  = sqrt(v_misfit_inout[14]/IP.N_teleseismic_data - my_square(mean));
-            tmp = std::to_string(mean);
-            tmp.append("/");
-            tmp.append(std::to_string(std));
-            out_main << "," << std::setw(24) << tmp;
-        } else {
-            out_main << "," << std::setw(24) << "0.0/0.0";
-        }
-        if(type == "model update")
-            out_main << "," << std::setw(19) << step_length_init << ",";
-
-        out_main << std::endl;
-    }
-}
+#include "objective_function_utils.h"
 
 
 // do model update by gradient descent
@@ -136,7 +34,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     // change stepsize
 
-    // Option 1: the step length is modulated when obj changes.  
+    // Option 1: the step length is modulated when obj changes.
     if (step_method == OBJ_DEFINED){
         if(i_inv != 0){
             if (v_obj_inout < old_v_obj) {
@@ -165,7 +63,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
             }
         }
     } else if (step_method == GRADIENT_DEFINED){
-        // Option 2: we modulate the step length according to the angle between the previous and current gradient directions. 
+        // Option 2: we modulate the step length according to the angle between the previous and current gradient directions.
         // If the angle is less than XX degree, which means the model update direction is successive, we should enlarge the step size
         // Otherwise, the step length should decrease
         CUSTOMREAL angle = direction_change_of_model_update(grid);

@@ -51,7 +51,12 @@ IO_utils::~IO_utils() {
     stdout_by_main("--- IO object finalization ---");
 }
 
-void IO_utils::change_group_name_for_source() {
+void IO_utils::reset_source_info(const int& id_sim_src, const std::string& name_sim_src) {
+
+    // set simulation group id and source name for output files/dataset names
+    set_id_src(id_sim_src);
+    set_name_src(name_sim_src);
+
 #ifdef USE_HDF5
     // change group name for source
     // h5_group_name_data = "src_" + std::to_string(id_sim_src);
@@ -2016,7 +2021,6 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     // select hyperslab
     mem_dspace_id  = H5Screate_simple(rank, count, NULL);
     file_dspace_id = H5Dget_space(dset_id);
-    //file_dspace_id = mem_dspace_id; // or only use mem_dspace_id instead of file_dspace_id
 
     H5Sselect_hyperslab(file_dspace_id, H5S_SELECT_SET, offset, stride, count, block);
 
@@ -2056,7 +2060,7 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     H5Pclose(plist_id_dset);
     // close dataspace
     H5Sclose(mem_dspace_id);
-    H5Sclose(file_dspace_id); // use mem_dspace_id instead of file_dspace_id
+    H5Sclose(file_dspace_id);
     // close dataset
     h5_close_dataset();
 
