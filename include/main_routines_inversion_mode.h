@@ -33,15 +33,6 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
                     << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                     << std::endl;
         }
-    if (IP.get_is_T_written_into_file(name_sim_src)){
-        // load travel time field on grid.T_loc
-        if (myrank == 0){
-            std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                    << "), for common receiver differntial traveltime. name: "
-                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
-                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
-                    << std::endl;
-        }
 
         io.read_T_tmp(grid);
 
@@ -161,19 +152,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     Source src;
     Receiver recs;
 
-    Source src;
-    Receiver recs;
-
     // iterate over sources
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
-        // check if this is the first iteration of entire inversion process
-        bool first_init = (i_inv == 0 && i_src==0);
-
-        // get source info
-        const std::string name_sim_src   = IP.get_src_name(i_src);                  // source name
-        const int         id_sim_src     = IP.get_src_id(name_sim_src);             // global source id
-        bool              is_teleseismic = IP.get_if_src_teleseismic(name_sim_src); // get is_teleseismic flag
         // check if this is the first iteration of entire inversion process
         bool first_init = (i_inv == 0 && i_src==0);
 
@@ -264,7 +245,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
 
             // calculate adjoint source
-            rec.calculate_adjoint_source(IP, name_sim_src);
+            recs.calculate_adjoint_source(IP, name_sim_src);
 
             // run iteration for adjoint field calculation
             int adj_type = 0;   // compute adjoint field
