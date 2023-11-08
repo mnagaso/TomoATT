@@ -42,6 +42,9 @@ public:
     void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
     void initialize_fields_teleseismic();
+    // calculate initial fields for attenuation
+    void initialize_fields_attenuation(Source &, InputParams&);
+
     // calculate L1 and Linf diff (sum of value change on the nodes)
     void calc_L1_and_Linf_diff(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for teleseismic source (sum of value change on the nodes)

@@ -233,13 +233,13 @@ InputParams::InputParams(std::string& input_file){
                     if (Kdensity_coe < 0.0){
                         Kdensity_coe = 0.0;
                         std::cout << std::endl;
-                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl; 
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
                     if (Kdensity_coe > 1.0){
                         Kdensity_coe = 1.0;
                         std::cout << std::endl;
-                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl; 
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
                 }
@@ -358,7 +358,7 @@ InputParams::InputParams(std::string& input_file){
                 } else {
                     std::cout << "error input: type_invgrid_dep: " << type_invgrid_lat << std::endl;
                     exit(0);
-                } 
+                }
 
                 lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
                 if((int)config["model_update"]["lat_spacing_inv"].size() != n_lat_lon_spacing_inv_trape){
@@ -390,7 +390,7 @@ InputParams::InputParams(std::string& input_file){
                 } else {
                     std::cout << "error input: type_invgrid_dep: " << type_invgrid_lat << std::endl;
                     exit(0);
-                } 
+                }
 
                 lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
                 if((int)config["model_update"]["lon_spacing_inv"].size() != n_lat_lon_spacing_inv_trape){
@@ -483,7 +483,7 @@ InputParams::InputParams(std::string& input_file){
                 } else {
                     std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
                     exit(0);
-                } 
+                }
 
                 lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
                 if((int)config["model_update"]["lat_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
@@ -515,7 +515,7 @@ InputParams::InputParams(std::string& input_file){
                 } else {
                     std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
                     exit(0);
-                } 
+                }
 
                 lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
                 if((int)config["model_update"]["lon_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
@@ -803,7 +803,7 @@ InputParams::InputParams(std::string& input_file){
             lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
         if (!n_inv_p_trape_read)
             lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-        
+
         // allocate dummy arrays for trapezoid inv grid
         if (!n_inv_t_trape_ani_read)
             lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
@@ -1194,11 +1194,11 @@ void InputParams::write_params_to_file() {
     fout << "    step_length_decay: " << step_length_decay << " # default: 0.9" << std::endl;
     fout << "    # if step_method:1. if the angle between the current and the previous gradients is greater than step_length_gradient_angle, step size -> step length * step_length_change[0]. " << std::endl;
     fout << "    #                                                                                                                otherwise, step size -> step length * step_length_change[1]. " << std::endl;
-    fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;   
-    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl; 
-    fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl; 
-    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;  
-    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;   
+    fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;
+    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl;
+    fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl;
+    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;
+    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
@@ -1467,7 +1467,7 @@ void InputParams::write_params_to_file() {
     fout << "  update_slowness : " << update_slowness << " # update slowness (velocity) or not.              default: true" << std::endl;
     fout << "  update_azi_ani  : " << update_azi_ani  << " # update azimuthal anisotropy (xi, eta) or not.   default: false" << std::endl;
     // fout << "  update_rad_ani  : " << update_rad_ani  << " # update radial anisotropy (in future) or not.    default: false" << std::endl;
-    fout << "  update_qp  : " << update_qp  << " # update Qp (attenuation factor) or not.   default: false" << std::endl;
+    fout << "  update_qp  : " << update_qp  << " # update Qp (attenuation factor) or not.   default: false  (CURRENTLY UPDATE_QP and AZIMUTHAL ANISOTROPY IS NOT FIT AT THE SAMETIME)" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- for teleseismic inversion (under development) --------------" << std::endl;
@@ -2753,13 +2753,20 @@ void InputParams::check_contradictions(){
 
     // if run_mode == 0 then the max_iter should be 1
     if (run_mode == ONLY_FORWARD && max_iter_inv > 1){
-        std::cout << "Warning: run_mode = 0, max_iter should be 1" << std::endl;
+        std::cout << "WARNING: run_mode = 0, max_iter should be 1" << std::endl;
         max_iter_inv = 1;
     }
 
     // upwind scheme cannot use with level nor 3rd order nor sweep parallelization
     if (stencil_type == UPWIND && (sweep_type != SWEEP_TYPE_LEGACY || n_subprocs != 1)){
-        std::cout << "Warning: upwind scheme cannot use with level nor 3rd order nor sweep parallelization" << std::endl;
+        std::cout << "ERROR: upwind scheme cannot use with level nor 3rd order nor sweep parallelization" << std::endl;
+        MPI_Finalize();
+        exit(1);
+    }
+
+    // update_qp and update_*_ani cannot be used together
+    if (update_qp && (update_azi_ani || update_rad_ani)){
+        std::cout << "WARNING: update_qp and update_*_ani cannot be used together" << std::endl;
         MPI_Finalize();
         exit(1);
     }

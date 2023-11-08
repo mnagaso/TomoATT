@@ -1093,10 +1093,12 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
     if (id_sim == 0){
         // read init model
         std::string f_model_path = IP.get_init_model_path();
+
+        io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
         io.read_model(f_model_path,"xi",   xi_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
         io.read_model(f_model_path,"eta",  eta_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k);
         //io.read_model(f_model_path,"zeta", zeta_loc,  tmp_offset_i, tmp_offset_j, tmp_offset_k);
-        io.read_model(f_model_path,"vel",  fun_loc,   tmp_offset_i, tmp_offset_j, tmp_offset_k); // use slowness array temprarily
+
         if (inverse_flag_qp)
             io.read_model(f_model_path,"qp",   qp_loc,    tmp_offset_i, tmp_offset_j, tmp_offset_k);
 
@@ -1121,10 +1123,11 @@ void Grid::setup_grid_params(InputParams &IP, IO_utils& io) {
 
     // broadcast
     int n_total_loc_grid_points = loc_I * loc_J * loc_K;
+
+    broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0); // here passing velocity array
     broadcast_cr_inter_sim(xi_loc,    n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(eta_loc,   n_total_loc_grid_points, 0);
     broadcast_cr_inter_sim(zeta_loc,  n_total_loc_grid_points, 0);
-    broadcast_cr_inter_sim(fun_loc,   n_total_loc_grid_points, 0); // here passing velocity array
     if (inverse_flag_qp)
         broadcast_cr_inter_sim(qp_loc,    n_total_loc_grid_points, 0);
     if(if_test)
@@ -1490,6 +1493,9 @@ void Grid::initialize_kernels(){
         std::fill(Kxi_loc,      Kxi_loc  + loc_I*loc_J*loc_K,       _0_CR);
         std::fill(Keta_loc,     Keta_loc + loc_I*loc_J*loc_K,       _0_CR);
         std::fill(Kdensity_loc, Kdensity_loc + loc_I*loc_J*loc_K,   _0_CR);
+
+        if(inverse_flag_qp)
+            std::fill(Kqp_loc,  Kqp_loc + loc_I*loc_J*loc_K, _0_CR);
     }
 }
 
@@ -1619,7 +1625,7 @@ void Grid::setup_factors_attenuation(Source &src) {
     b0   = src.get_fac_at_source(fac_b_loc);
     c0   = src.get_fac_at_source(fac_c_loc);
     f0   = src.get_fac_at_source(fac_f_loc);
-    fun0 = src.get_fac_at_source(fun_loc)*sqrt(src.get_fac_at_source(Tstar_loc));
+    fun0 = src.get_fac_at_source(fun_loc)/src.get_fac_at_source(Tstar_loc); //
 }
 
 
@@ -1732,6 +1738,50 @@ void Grid::initialize_fields_teleseismic(){
     }
 
     // setup of boundary arrival time conditions is done in iterator function
+}
+
+
+// initialize Tstar_loc for attenuation fitting
+void Grid::initialize_fields_attenuation(Source& src, InputParams& IP){
+    CUSTOMREAL inf_Tstar = 2000.0;
+
+    // get source position
+    CUSTOMREAL src_r = src.get_src_r();
+    CUSTOMREAL src_t = src.get_src_t();
+    CUSTOMREAL src_p = src.get_src_p();
+
+    // debug
+    int n_source_node = 0;
+
+    for (int k_r = 0; k_r < loc_K; k_r++) {
+        for (int j_lat = 0; j_lat < loc_J; j_lat++) {
+            for (int i_lon = 0; i_lon < loc_I; i_lon++) {
+                CUSTOMREAL dr_from_src = r_loc_1d[k_r]   - src_r;
+                CUSTOMREAL dt_from_src = t_loc_1d[j_lat] - src_t;
+                CUSTOMREAL dp_from_src = p_loc_1d[i_lon] - src_p;
+
+                is_changed[I2V(i_lon,j_lat,k_r)] = true;
+
+                if (IP.get_stencil_order() == 1){
+                    source_width = _1_CR-0.1;
+                } else {
+                    source_width = _2_CR;
+                }
+
+                if (std::abs(dr_from_src/dr) <= source_width \
+                 && std::abs(dt_from_src/dt) <= source_width \
+                 && std::abs(dp_from_src/dp) <= source_width) {
+
+                    Tstar_loc[I2V(i_lon,j_lat,k_r)] = fun0;  // = slowness / Qp
+                    is_changed[I2V(i_lon,j_lat,k_r)] = false;
+
+                    n_source_node++;
+                 } else {
+                    Tstar_loc[I2V(i_lon,j_lat,k_r)] = inf_Tstar;
+                 }
+            }
+        }
+    }
 }
 
 
