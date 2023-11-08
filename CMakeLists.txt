@@ -11,7 +11,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
   #set flag
   #set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -lstdc++fs")
   MESSAGE("Compiler type: Clang")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
@@ -72,10 +72,15 @@ if(HDF5_FOUND)
   endif()
 endif()
 
+# use collective io for HDF5: should be faster than independent io,
+#but there will be a memory overhead and may not work on some systems.
+#If you have a problem, please comment out this line.
+add_definitions(-DUSE_HDF5_IO_COLLECTIVE)
+
 # precision setting (uncomment for single precision. default is double precision.)
 #add_definitions(-DSINGLE_PRECISION)
 
-# use SIMD
+# use SIMD (SSE/AVX/AVX2/AVX512) for vectorization, which is faster than the default but use a little more memory.
 add_definitions(-DUSE_SIMD)
 
 # find cuda package if USE_CUDA is defined

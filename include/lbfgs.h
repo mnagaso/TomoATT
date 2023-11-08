@@ -82,19 +82,19 @@ void calculate_descent_direction_lbfgs(Grid& grid, int i_inv) {
         else
             imax = i_inv-1;
 
-        CUSTOMREAL* ak_store = new CUSTOMREAL[imax-imin+1];
-        CUSTOMREAL* pk_store = new CUSTOMREAL[imax-imin+1];
+        CUSTOMREAL* ak_store = allocateMemory<CUSTOMREAL>(imax-imin+1, 2000);
+        CUSTOMREAL* pk_store = allocateMemory<CUSTOMREAL>(imax-imin+1, 2001);
 
-        CUSTOMREAL* desc_wks_Ks   = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* desc_wks_Keta = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* desc_wks_Kxi  = new CUSTOMREAL[loc_I*loc_J*loc_K];
+        CUSTOMREAL* desc_wks_Ks   = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2002);
+        CUSTOMREAL* desc_wks_Keta = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2003);
+        CUSTOMREAL* desc_wks_Kxi  = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2004);
 
-        CUSTOMREAL* wks_1_Ks   = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* wks_1_Keta = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* wks_1_Kxi  = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* wks_2_Ks   = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* wks_2_Keta = new CUSTOMREAL[loc_I*loc_J*loc_K];
-        CUSTOMREAL* wks_2_Kxi  = new CUSTOMREAL[loc_I*loc_J*loc_K];
+        CUSTOMREAL* wks_1_Ks   = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2005);
+        CUSTOMREAL* wks_1_Keta = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2006);
+        CUSTOMREAL* wks_1_Kxi  = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2007);
+        CUSTOMREAL* wks_2_Ks   = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2008);
+        CUSTOMREAL* wks_2_Keta = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2009);
+        CUSTOMREAL* wks_2_Kxi  = allocateMemory<CUSTOMREAL>(loc_I*loc_J*loc_K, 2010);
 
         std::cout << "imax, imin: " << imax << ", " << imin << std::endl;
 
@@ -411,9 +411,9 @@ inline void calculate_regularization_penalty(Grid& grid) {
     if (subdom_main && id_sim==0) {
         int n_grid = loc_I*loc_J*loc_K;
 
-        CUSTOMREAL* tmp_fun = new CUSTOMREAL[n_grid];
-        CUSTOMREAL* tmp_eta = new CUSTOMREAL[n_grid];
-        CUSTOMREAL* tmp_xi  = new CUSTOMREAL[n_grid];
+        CUSTOMREAL* tmp_fun = allocateMemory<CUSTOMREAL>(n_grid, 2011);
+        CUSTOMREAL* tmp_eta = allocateMemory<CUSTOMREAL>(n_grid, 2012);
+        CUSTOMREAL* tmp_xi  = allocateMemory<CUSTOMREAL>(n_grid, 2013);
 
         for (int i = 0; i < n_grid; i++) {
             tmp_fun[i] = grid.fun_loc[i] - grid.fun_prior_loc[i];

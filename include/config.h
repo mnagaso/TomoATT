@@ -36,15 +36,15 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 
 #define I2V_INV_GRIDS(A,B,C,D) ((D)*n_inv_I_loc*n_inv_J_loc*n_inv_K_loc + (C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_KNL(A,B,C)     ((C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
-#define I2V_INV_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc + (A))
-#define I2V_INV_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc + (A))
-#define I2V_INV_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc + (A))
+#define I2V_INV_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc + (A))
+#define I2V_INV_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc*n_inv_K_loc + (B)*n_inv_J_loc + (A))
+#define I2V_INV_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc*n_inv_K_loc + (B)*n_inv_I_loc + (A))
 
 #define I2V_INV_ANI_GRIDS(A,B,C,D) ((D)*n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani + (C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
 #define I2V_INV_ANI_KNL(A,B,C)     ((C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
-#define I2V_INV_ANI_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc_ani + (A))
-#define I2V_INV_ANI_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc_ani + (A))
-#define I2V_INV_ANI_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc_ani*n_inv_K_loc_ani + (B)*n_inv_J_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc_ani*n_inv_K_loc_ani + (B)*n_inv_I_loc_ani + (A))
 
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
 //#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
@@ -98,7 +98,13 @@ inline const CUSTOMREAL r_kermel_mask  = 40.0;
 inline CUSTOMREAL       step_length_init = 0.01; // update step size limit
 inline CUSTOMREAL       step_length_init_sc = 0.001; // update step size limit (for station correction)
 inline CUSTOMREAL       step_length_decay = 0.9;
+inline CUSTOMREAL       step_length_down = 0.5;
+inline CUSTOMREAL       step_length_up = 1.2;
 inline CUSTOMREAL       step_length_lbfgs;
+inline int              step_method         = 0; // 0：modulate according to obj, modulate according to gradient direction.
+inline CUSTOMREAL       step_length_gradient_angle = 120.0;
+inline const int        OBJ_DEFINED         = 0;
+inline const int        GRADIENT_DEFINED    = 1;
 
 // halve steping params
 inline const CUSTOMREAL HALVE_STEP_RATIO = 0.7;
@@ -188,6 +194,13 @@ inline std::string output_dir="./OUTPUT_FILES/";
 //#define OUTPUT_FORMAT_BINARY 33333 //#TODO: add
 inline int output_format = OUTPUT_FORMAT_HDF5; // 0 - ascii, 1 - hdf5, 2 - binary
 
+// HDF5 io mode (independent or collective)
+#ifdef USE_HDF5_IO_COLLECTIVE
+#define HDF5_IO_MODE H5FD_MPIO_COLLECTIVE
+#else
+#define HDF5_IO_MODE H5FD_MPIO_INDEPENDENT
+#endif
+
 // smooth parameters
 inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
 inline CUSTOMREAL smooth_lp = 1.0;
@@ -206,7 +219,7 @@ inline const int        Mbfgs        = 5;            // number of gradients/mode
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
 inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 3.0; // relative step size for the second and later iteration
-
+inline CUSTOMREAL       Kdensity_coe  = 0.0;          // a preconditioner \in [0,1], kernel -> kernel / pow(kernel density, Kdensity_coe)
 // variables for test
 inline bool if_test = false;
 

@@ -7,7 +7,6 @@
 #include "config.h"
 #include "input_params.h"
 
-
 // prepare header line of objective_funciton.txt
 inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
     // prepare output for iteration status
@@ -173,7 +172,6 @@ inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUS
         out_main << std::endl;
     }
 }
-
 
 
 #endif // OBJECTIVE_FUNCTION_UTILS_H

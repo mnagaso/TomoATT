@@ -125,7 +125,6 @@ public:
     CUSTOMREAL* get_lat_inv()     {return lat_inv;};
     CUSTOMREAL* get_lon_inv()     {return lon_inv;};
 
-    bool        get_invgrid_ani()     {return invgrid_ani;};
     int         get_n_inv_r_flex_ani(){return n_inv_r_flex_ani;};
     int         get_n_inv_t_flex_ani(){return n_inv_t_flex_ani;};
     int         get_n_inv_p_flex_ani(){return n_inv_p_flex_ani;};
@@ -133,7 +132,20 @@ public:
     CUSTOMREAL* get_lat_inv_ani()     {return lat_inv_ani;};
     CUSTOMREAL* get_lon_inv_ani()     {return lon_inv_ani;};
 
+    // type = 2:
+    int         get_n_inv_t_trape()     {return n_inv_t_trape;};
+    int         get_n_inv_p_trape()     {return n_inv_p_trape;};
+    CUSTOMREAL* get_lat_spacing_inv()   {return lat_spacing_inv;};
+    CUSTOMREAL* get_lon_spacing_inv()   {return lon_spacing_inv;};
+
+    int         get_n_inv_t_trape_ani()     {return n_inv_t_trape_ani;};
+    int         get_n_inv_p_trape_ani()     {return n_inv_p_trape_ani;};
+    CUSTOMREAL* get_lat_spacing_inv_ani()   {return lat_spacing_inv_ani;};
+    CUSTOMREAL* get_lon_spacing_inv_ani()   {return lon_spacing_inv_ani;};
+
     // invgrid for ani
+    bool        get_invgrid_ani()     {return invgrid_ani;};
+
     bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
 
     int  get_max_iter_inv() {return max_iter_inv;};
@@ -350,6 +362,30 @@ private:
 
     // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
     bool invgrid_ani = false;
+
+    //
+    // variables fo type = 2: trapezoid inversion grid
+    //
+    int n_lat_lon_spacing_inv_trape=1; 
+    int n_lat_lon_spacing_inv_trape_ani=1;
+    CUSTOMREAL *lat_spacing_inv; // array for storing the spacing of inversion grid points in latitude
+    CUSTOMREAL *lon_spacing_inv; // array for storing the spacing of inversion grid points in longitude
+    CUSTOMREAL *lat_spacing_inv_ani; // array for storing the spacing of inversion grid points in latitude
+    CUSTOMREAL *lon_spacing_inv_ani; // array for storing the spacing of inversion grid points in longitude
+
+    // number of trapezoid designed inversion grid in t, p direction
+    int n_inv_t_trape=1; 
+    int n_inv_p_trape=1;
+    // number of trapezoid designed inversion grid in t, p direction
+    int n_inv_t_trape_ani=1; 
+    int n_inv_p_trape_ani=1;
+
+    // flag if n inv grid trapezoid is read or not. if false, code allocate dummy memory
+    bool n_inv_t_trape_read = false;
+    bool n_inv_p_trape_read = false;
+    // flag if n inv grid trapezoid is read or not. if false, code allocate dummy memory
+    bool n_inv_t_trape_ani_read = false;
+    bool n_inv_p_trape_ani_read = false;
 
     // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
     bool invgrid_volume_rescale = false;

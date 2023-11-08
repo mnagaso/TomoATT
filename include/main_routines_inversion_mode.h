@@ -33,6 +33,15 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
                     << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                     << std::endl;
         }
+    if (IP.get_is_T_written_into_file(name_sim_src)){
+        // load travel time field on grid.T_loc
+        if (myrank == 0){
+            std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
+                    << "), for common receiver differntial traveltime. name: "
+                    << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
+                    << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
+                    << std::endl;
+        }
 
         io.read_T_tmp(grid);
 
@@ -152,6 +161,9 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     Source src;
     Receiver recs;
 
+    Source src;
+    Receiver recs;
+
     // iterate over sources
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
@@ -162,8 +174,16 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         const std::string name_sim_src   = IP.get_src_name(i_src);                  // source name
         const int         id_sim_src     = IP.get_src_id(name_sim_src);             // global source id
         bool              is_teleseismic = IP.get_if_src_teleseismic(name_sim_src); // get is_teleseismic flag
+        // check if this is the first iteration of entire inversion process
+        bool first_init = (i_inv == 0 && i_src==0);
+
+        // get source info
+        const std::string name_sim_src   = IP.get_src_name(i_src);                  // source name
+        const int         id_sim_src     = IP.get_src_id(name_sim_src);             // global source id
+        bool              is_teleseismic = IP.get_if_src_teleseismic(name_sim_src); // get is_teleseismic flag
 
         // set simu group id and source name for output files/dataset names
+        io.reset_source_info(id_sim_src, name_sim_src);
         io.reset_source_info(id_sim_src, name_sim_src);
 
         // output initial field
@@ -182,12 +202,14 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // (re) initialize source object and set to grid
         src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
+
 
             // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
             calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src);
@@ -234,6 +256,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // calculate the arrival times at each receivers
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
+
         /////////////////////////
         // run adjoint simulation
         /////////////////////////
@@ -244,7 +267,12 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             rec.calculate_adjoint_source(IP, name_sim_src);
 
             // run iteration for adjoint field calculation
-            It->run_iteration_adjoint(IP, grid, io);
+            int adj_type = 0;   // compute adjoint field
+            It->run_iteration_adjoint(IP, grid, io, adj_type);
+
+            // run iteration for density of the adjoint field
+            adj_type = 1;   // compute adjoint field
+            It->run_iteration_adjoint(IP, grid, io, adj_type);
 
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP, name_sim_src);
@@ -254,6 +282,8 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
                 // output the result of adjoint simulation
                 io.write_adjoint_field(grid,i_inv);
             }
+
+            // io.write_adjoint_field(grid,i_inv);
 
             // check adjoint source
             // if (proc_store_srcrec){

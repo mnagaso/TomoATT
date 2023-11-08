@@ -9,6 +9,9 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <new> // for std::bad_alloc
+#include <cstdlib> // for std::exit
+
 
 // chec if compiler is gcc 7.5 or older
 #if __GNUC__ == 7 && __GNUC_MINOR__ <= 5
@@ -171,6 +174,19 @@ inline T my_square(T const& a){
 
 // defined function is more than 2 times slower than inline function
 //#define my_square(a) (a * a)
+
+
+template <typename T>
+T* allocateMemory(size_t size, int allocationID) {
+    try {
+        T* ptr = new T[size];
+        return ptr;
+    } catch (const std::bad_alloc& e) {
+        // Handle memory allocation failure
+        std::cerr << "Memory allocation failed for ID " << allocationID << ": " << e.what() << std::endl;
+        std::exit(EXIT_FAILURE); // Exit the program on allocation failure
+    }
+}
 
 
 inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL& x, CUSTOMREAL& y, CUSTOMREAL& z){

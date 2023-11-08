@@ -1255,6 +1255,25 @@ void IO_utils::write_Keta(Grid& grid, int i_inv) {
 }
 
 
+void IO_utils::write_Kdensity(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "Kdensity";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Kdensity(), i_inv, model_data);
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if (output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "Kdensity_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii_model(dset_name);
+        write_data_ascii(grid, fname, grid.get_Kdensity());
+    }
+}
+
+
 void IO_utils::write_Ks_update(Grid& grid, int i_inv) {
     if (!subdom_main) return;
 
@@ -1311,6 +1330,23 @@ void IO_utils::write_Keta_update(Grid& grid, int i_inv) {
     }
 }
 
+void IO_utils::write_Kdensity_update(Grid& grid, int i_inv) {
+    if (!subdom_main) return;
+
+    if (output_format==OUTPUT_FORMAT_HDF5){
+#ifdef USE_HDF5
+        std::string h5_dset_name = "Kdensity_update";
+        write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_Kdensity_update(), i_inv, model_data);
+#else
+        std::cout << "ERROR: HDF5 is not enabled" << std::endl;
+        exit(1);
+#endif
+    } else if (output_format==OUTPUT_FORMAT_ASCII){
+        std::string dset_name = "Kdensity_update_inv_" + int2string_zero_fill(i_inv);
+        std::string fname = create_fname_ascii_model(dset_name);
+        write_data_ascii(grid, fname, grid.get_Kdensity_update());
+    }
+}
 
 void IO_utils::write_Ks_descent_dir(Grid& grid, int i_inv) {
     if (!subdom_main) return;
@@ -1788,6 +1824,7 @@ void IO_utils::h5_open_file_collective(std::string& fname){
     H5Pset_fapl_mpio(plist_id, inter_sub_comm, MPI_INFO_NULL);
     std::string fout = output_dir + "/" + fname;
     file_id = H5Fopen(fout.c_str(), H5F_ACC_RDWR, plist_id);
+    H5Pclose(plist_id);
 }
 
 
@@ -1808,7 +1845,7 @@ void IO_utils::h5_close_file_by_group_main(){
 }
 
 void IO_utils::h5_close_file_collective(){
-    H5Pclose(plist_id);
+    //H5Pclose(plist_id);
     H5Fclose(file_id);
 }
 
@@ -2068,12 +2105,23 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     // select hyperslab
     mem_dspace_id  = H5Screate_simple(rank, count, NULL);
     file_dspace_id = H5Dget_space(dset_id);
+
     H5Sselect_hyperslab(file_dspace_id, H5S_SELECT_SET, offset, stride, count, block);
 
     // create dataset prop list
     plist_id_dset = H5Pcreate(H5P_DATASET_XFER);
     //H5Pset_buffer(plist_id_dset, BUF_SIZE, NULL, NULL); // this will be important for machine dependent tuning
-    H5Pset_dxpl_mpio(plist_id_dset, H5FD_MPIO_COLLECTIVE);
+    H5Pset_dxpl_mpio(plist_id_dset, HDF5_IO_MODE);
+
+    // check if this writing is done collectively
+    H5D_mpio_actual_io_mode_t actualIOMode;
+    H5Pget_mpio_actual_io_mode(plist_id_dset, &actualIOMode);
+
+    if (actualIOMode == H5D_MPIO_NO_COLLECTIVE) {
+        if (rank == 0) {
+            std::cout << "Warning: Collective I/O is not enabled." << std::endl;
+        }
+    }
 
     // write array
     switch (dtype)

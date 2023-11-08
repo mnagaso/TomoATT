@@ -1,6 +1,5 @@
 #include "eikonal_solver_2d.h"
 
-
 void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_utils& io) {
     bool if_teleseismic_event_exists=false;
 
@@ -34,7 +33,9 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
         bool is_teleseismic = true; // the object in src_id2name_2d is always teleseismic
         // #BUG: src in src_id2name_2d includes the srcs in other sim groups.
         bool for_2d_solver = true;
-        Source src(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
+
+        Source src;
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
 
         // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
         if (proc_store_srcrec)
@@ -108,8 +109,8 @@ PlainGrid::PlainGrid(Source& src, InputParams& IP) {
     nt_2d = std::floor((tmax_2d-tmin_2d)/dt_2d)+1;
 
     // initialize arrays
-    r_2d = new CUSTOMREAL[nr_2d];
-    t_2d = new CUSTOMREAL[nt_2d];
+    r_2d = allocateMemory<CUSTOMREAL>(nr_2d, 4000);
+    t_2d = allocateMemory<CUSTOMREAL>(nt_2d, 4001);
 
     // fill arrays
     for (int i = 0; i < nr_2d; i++) {
@@ -136,17 +137,17 @@ PlainGrid::PlainGrid(Source& src, InputParams& IP) {
     }
 
     // field setup
-    fun_2d        = new CUSTOMREAL[nr_2d*nt_2d];
-    fac_a_2d      = new CUSTOMREAL[nr_2d*nt_2d];
-    fac_b_2d      = new CUSTOMREAL[nr_2d*nt_2d];
-    u_2d          = new CUSTOMREAL[nr_2d*nt_2d];
-    T_2d          = new CUSTOMREAL[nr_2d*nt_2d];
-    T0v_2d        = new CUSTOMREAL[nr_2d*nt_2d];
-    T0r_2d        = new CUSTOMREAL[nr_2d*nt_2d];
-    T0t_2d        = new CUSTOMREAL[nr_2d*nt_2d];
-    tau_2d        = new CUSTOMREAL[nr_2d*nt_2d];
-    tau_old_2d    = new CUSTOMREAL[nr_2d*nt_2d];
-    is_changed_2d = new bool[nr_2d*nt_2d];
+    fun_2d        = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4002);
+    fac_a_2d      = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4003);
+    fac_b_2d      = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4004);
+    u_2d          = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4005);
+    T_2d          = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4006);
+    T0v_2d        = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4007);
+    T0r_2d        = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4008);
+    T0t_2d        = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4009);
+    tau_2d        = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4010);
+    tau_old_2d    = allocateMemory<CUSTOMREAL>(nr_2d*nt_2d, 4011);
+    is_changed_2d = allocateMemory<bool>(nr_2d*nt_2d, 4012);
 
     // load 1d model to 2d field
     load_1d_model(IP.get_model_1d_name());
@@ -227,16 +228,14 @@ PlainGrid::PlainGrid(Source& src, InputParams& IP) {
 
 
 void PlainGrid::allocate_arrays(){
-    azimuth_2d             = new CUSTOMREAL[4];
-    epicentral_distance_2d = new CUSTOMREAL[4];
-    //activated_boundaries   = new bool[5];
+    azimuth_2d             = allocateMemory<CUSTOMREAL>(4, 4013);
+    epicentral_distance_2d = allocateMemory<CUSTOMREAL>(4, 4014);
 }
 
 
 void PlainGrid::deallocate_arrays(){
     delete[] azimuth_2d;
     delete[] epicentral_distance_2d;
-    //delete[] activated_boundaries;
     delete[] r_2d;
     delete[] t_2d;
     delete[] fun_2d;

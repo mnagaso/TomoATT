@@ -29,7 +29,7 @@ public:
     // regional source
     void run_iteration_forward            (InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
     void run_iteration_forward_attenuation(InputParams&, Grid&, IO_utils&, bool&); // run forward-attenuation iteratiom till convergence
-    void run_iteration_adjoint            (InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
+    void run_iteration_adjoint            (InputParams&, Grid&, IO_utils&, int);        // run adjoint iteratiom till convergence
 
     void initialize_arrays(InputParams&, IO_utils&, Grid&, Source&, const std::string&); // initialize factors etc.
 
@@ -61,6 +61,7 @@ protected:
 
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
+    void init_delta_and_Tadj_density(Grid&, InputParams&);             // initialize delta and Tadj_density
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
     virtual void do_sweep_adj(int, Grid&, InputParams&){};             // do sweeping with ordinal method for adjoint field
     void calculate_stencil_adj(Grid&, int&, int&, int&);               // calculate stencil for 1st order for adjoint field
