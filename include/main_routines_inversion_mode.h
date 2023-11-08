@@ -165,7 +165,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // set simu group id and source name for output files/dataset names
         io.reset_source_info(id_sim_src, name_sim_src);
-        io.reset_source_info(id_sim_src, name_sim_src);
 
         // output initial field
         if(first_src && IP.get_if_output_source_field()) {
@@ -183,14 +182,12 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
         // (re) initialize source object and set to grid
         src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
-        src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
         // initialize iterator object
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-
 
             // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
             calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src);
