@@ -16,24 +16,27 @@ public:
     };
 
     // copy constructor
-    InvGrid1dBase(const InvGrid1dBase& rhs) : arr(new CUSTOMREAL[rhs.n]), n(rhs.n) {
-        std::copy(rhs.arr, rhs.arr + rhs.n, arr);
-    };
+    InvGrid1dBase(const InvGrid1dBase& other){
+        n = other.n;
+        dinv = other.dinv;
+        dinv_l = other.dinv_l;
+        arr = new CUSTOMREAL[n];
+        std::copy(other.arr, other.arr+n, arr);
+    }
 
     // assignment operator
-    InvGrid1dBase& operator=(const InvGrid1dBase& rhs){
-        if (this != &rhs){
-            CUSTOMREAL* newArr = new CUSTOMREAL[rhs.n];
-            std::copy(rhs.arr, rhs.arr + rhs.n, newArr);
-            delete[] arr;
-            arr = newArr;
-            n = rhs.n;
+    InvGrid1dBase& operator=(const InvGrid1dBase& other){
+        if (this != &other){
+            n = other.n;
+            dinv = other.dinv;
+            dinv_l = other.dinv_l;
+            arr = new CUSTOMREAL[n];
+            std::copy(other.arr, other.arr+n, arr);
         }
-
         return *this;
-    };
+    }
 
-    CUSTOMREAL* arr; // 1d or 2d array storing the grid coordinates
+    CUSTOMREAL* arr = nullptr; // 1d or 2d array storing the grid coordinates
     int n; // number of grid points
     CUSTOMREAL dinv; // grid spacing
     CUSTOMREAL dinv_l; // amount of shift for each inversion grid

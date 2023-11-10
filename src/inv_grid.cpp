@@ -310,9 +310,11 @@ void InvGrid::write_inversion_grid_to_file(){
 // regular grid positions for radius
 InvGrid1dRegular::InvGrid1dRegular(InputParams& IP, const int n_inv_loc,
                                   const CUSTOMREAL min_inv, const CUSTOMREAL max_inv) {
+    // set n
+    n = n_inv_loc*n_inv_grids;
 
     // allocate memory for the grid
-    arr = new CUSTOMREAL[n_inv_loc*n_inv_grids];
+    arr = new CUSTOMREAL[n];
 
     // inversion grid is defined for all processes which covers entire domain
     dinv = (max_inv - min_inv) / (n_inv_loc-2);
@@ -332,8 +334,11 @@ InvGrid1dRegular::InvGrid1dRegular(InputParams& IP, const int n_inv_loc,
                                   const CUSTOMREAL min_inv, const CUSTOMREAL max_inv,
                                   const int n_inv_loc_k) {
 
+    // set n
+    n = n_inv_loc*n_inv_loc_k*n_inv_grids;
+
     // allocate memory for the grid
-    arr = new CUSTOMREAL[n_inv_loc*n_inv_loc_k*n_inv_grids];
+    arr = new CUSTOMREAL[n];
 
     // inversion grid is defined for all processes which covers entire domain
     dinv = (max_inv - min_inv) / (n_inv_loc-2);
@@ -354,8 +359,11 @@ InvGrid1dRegular::InvGrid1dRegular(InputParams& IP, const int n_inv_loc,
 InvGrid1dFlexible::InvGrid1dFlexible(InputParams& IP, const int n_inv_loc,
                                   const CUSTOMREAL* input_pos, const int axis_id) {
 
+    // set n
+    n = n_inv_loc*n_inv_grids;
+
     // allocate memory for the grid
-    arr = new CUSTOMREAL[n_inv_loc*n_inv_grids];
+    arr = new CUSTOMREAL[n];
 
     // shift of each set of inversion grid
     dinv_l = dinv/n_inv_grids;
@@ -392,8 +400,11 @@ InvGrid1dFlexible::InvGrid1dFlexible(InputParams& IP, const int n_inv_loc,
                                   const CUSTOMREAL* input_pos, const int axis_id,
                                   const int n_inv_loc_k) {
 
+    // set n
+    n = n_inv_loc*n_inv_loc_k*n_inv_grids;
+
     // allocate memory for the grid
-    arr = new CUSTOMREAL[n_inv_loc*n_inv_loc_k*n_inv_grids];
+    arr = new CUSTOMREAL[n];
 
     // shift of each set of inversion grid
     dinv_l = dinv/n_inv_grids;
@@ -432,8 +443,11 @@ InvGrid1dTrapezoidal::InvGrid1dTrapezoidal(InputParams& IP, const int n_inv_loc,
                                   const CUSTOMREAL* input_spacing, const int axis_id,
                                   const int n_inv_loc_k) {
 
+    // set n
+    n = n_inv_loc*n_inv_loc_k*n_inv_grids;
+
     // allocate memory for the grid
-    arr = new CUSTOMREAL[n_inv_loc*n_inv_loc_k*n_inv_grids];
+    arr = new CUSTOMREAL[n];
 
     // shift of each set of inversion grid
     dinv_l = dinv/n_inv_grids;
