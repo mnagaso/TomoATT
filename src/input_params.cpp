@@ -1069,6 +1069,12 @@ InputParams::~InputParams(){
     delete [] lat_inv_ani;
     delete [] lon_inv_ani;
 
+    delete [] lat_spacing_inv;
+    delete [] lon_spacing_inv;
+
+    delete [] lat_spacing_inv_ani;
+    delete [] lon_spacing_inv_ani;
+
     // clear all src, rec, data
     src_map.clear();
     src_map_tele.clear();
