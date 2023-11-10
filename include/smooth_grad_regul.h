@@ -56,9 +56,9 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
             // CUSTOMREAL r_glob = grid.get_r_min() + k*grid.get_delta_r(); // global coordinate of r
             // r_r = -_1_CR;
             // for (int ii_invr = 0; ii_invr < n_inv_K_loc-1; ii_invr++){
-            //     if (r_glob > grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)] && r_glob <= grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) {
+            //     if (r_glob > grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)] && r_glob <= grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) {
             //         kdr = ii_invr;
-            //         r_r = (r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) / (grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]);
+            //         r_r = (r_glob - grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) / (grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]);
             //         break;
             //     }
             // }
@@ -66,9 +66,9 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
             r_r = -_1_CR;
             for (int ii_invr = 0; ii_invr < n_inv_K_loc-1; ii_invr++){
                 // increasing or decreasing order
-                if (in_between(r_glob, grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)])) {
+                if (in_between(r_glob, grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)])) {
                     kdr = ii_invr;
-                    r_r = calc_ratio_between(r_glob, grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]);
+                    r_r = calc_ratio_between(r_glob, grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]);
                     break;
                 }
             }
@@ -80,17 +80,17 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
                 // CUSTOMREAL t_glob = grid.get_lat_min() + j*grid.get_delta_lat();
                 // r_t = -_1_CR;
                 // for (int ii_invt = 0; ii_invt < n_inv_J_loc-1; ii_invt++){
-                //     if (t_glob > grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)] && t_glob <= grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)]) {
+                //     if (t_glob > grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,i_grid)] && t_glob <= grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,i_grid)]) {
                 //         jdt = ii_invt;
-                //         r_t = (t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]) / (grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]);
+                //         r_t = (t_glob - grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,i_grid)]) / (grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,i_grid)] - grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,i_grid)]);
                 //         break;
                 //     }
                 // }
                 CUSTOMREAL t_glob = grid.get_lat_min() + j*grid.get_delta_lat(); // global coordinate of t (latitude)
                 r_t = -_1_CR;
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc-1; ii_invt++){
-                    CUSTOMREAL left  = grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,  kdr,i_grid)]*(1-r_r) + grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,  kdr+1,i_grid)]*(r_r);
-                    CUSTOMREAL right = grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,kdr,i_grid)]*(1-r_r) + grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,kdr+1,i_grid)]*(r_r);
+                    CUSTOMREAL left  = grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,  kdr,i_grid)]*(1-r_r) + grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,  kdr+1,i_grid)]*(r_r);
+                    CUSTOMREAL right = grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,kdr,i_grid)]*(1-r_r) + grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,kdr+1,i_grid)]*(r_r);
                     if (in_between(t_glob, left, right)) {
                         jdt = ii_invt;
                         r_t = calc_ratio_between(t_glob, left, right);
@@ -105,17 +105,17 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
                     // CUSTOMREAL p_glob = grid.get_lon_min() + i*grid.get_delta_lon();
                     // r_p = -_1_CR;
                     // for (int ii_invp = 0; ii_invp < n_inv_I_loc-1; ii_invp++){
-                    //     if (p_glob > grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)] && p_glob <= grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)]) {
+                    //     if (p_glob > grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,i_grid)] && p_glob <= grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,i_grid)]) {
                     //         idp = ii_invp;
-                    //         r_p = (p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]) / (grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]);
+                    //         r_p = (p_glob - grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,i_grid)]) / (grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,i_grid)] - grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,i_grid)]);
                     //         break;
                     //     }
                     // }
                     CUSTOMREAL p_glob = grid.get_lon_min() + i*grid.get_delta_lon();    // global coordinate of p (longitude)
                     r_p = -_1_CR;
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc-1; ii_invp++){
-                        CUSTOMREAL left  = grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,  kdr,i_grid)]*(1-r_r) + grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,  kdr,i_grid)]*(r_r);
-                        CUSTOMREAL right = grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,kdr,i_grid)]*(1-r_r) + grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,kdr,i_grid)]*(r_r);           
+                        CUSTOMREAL left  = grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,  kdr,i_grid)]*(1-r_r) + grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,  kdr,i_grid)]*(r_r);
+                        CUSTOMREAL right = grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,kdr,i_grid)]*(1-r_r) + grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,kdr,i_grid)]*(r_r);
                         if (in_between(p_glob, left, right)) {
                             idp = ii_invp;
                             r_p = calc_ratio_between(p_glob, left, right);
@@ -185,9 +185,9 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
             // CUSTOMREAL r_glob = grid.get_r_min() + k*grid.get_delta_r(); // global coordinate of r
             // r_r = -_1_CR;
             // for (int ii_invr = 0; ii_invr < n_inv_K_loc-1; ii_invr++){
-            //     if (r_glob > grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)] && r_glob <= grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) {
+            //     if (r_glob > grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)] && r_glob <= grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]) {
             //         kdr = ii_invr;
-            //         r_r = (r_glob - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) / (grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]);
+            //         r_r = (r_glob - grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]) / (grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)] - grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)]);
             //         break;
             //     }
             // }
@@ -195,9 +195,9 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
             r_r = -_1_CR;
             for (int ii_invr = 0; ii_invr < n_inv_K_loc-1; ii_invr++){
                 // increasing or decreasing order
-                if (in_between(r_glob, grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)])) {
+                if (in_between(r_glob, grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)])) {
                     kdr = ii_invr;
-                    r_r = calc_ratio_between(r_glob, grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.r_loc_inv[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]);
+                    r_r = calc_ratio_between(r_glob, grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr,i_grid)], grid.inv_grid->r.arr[I2V_INV_GRIDS_1DK(ii_invr+1,i_grid)]);
                     break;
                 }
             }
@@ -209,17 +209,17 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
                 // CUSTOMREAL t_glob = grid.get_lat_min() + j*grid.get_delta_lat();
                 // r_t = -_1_CR;
                 // for (int ii_invt = 0; ii_invt < n_inv_J_loc-1; ii_invt++){
-                //     if (t_glob > grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)] && t_glob <= grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)]) {
+                //     if (t_glob > grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,i_grid)] && t_glob <= grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,i_grid)]) {
                 //         jdt = ii_invt;
-                //         r_t = (t_glob - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]) / (grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,i_grid)] - grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,i_grid)]);
+                //         r_t = (t_glob - grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,i_grid)]) / (grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,i_grid)] - grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,i_grid)]);
                 //         break;
                 //     }
                 // }
                 CUSTOMREAL t_glob = grid.get_lat_min() + j*grid.get_delta_lat(); // global coordinate of t (latitude)
                 r_t = -_1_CR;
                 for (int ii_invt = 0; ii_invt < n_inv_J_loc-1; ii_invt++){
-                    CUSTOMREAL left  = grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,  kdr,i_grid)]*(1-r_r) + grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt,  kdr+1,i_grid)]*(r_r);
-                    CUSTOMREAL right = grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,kdr,i_grid)]*(1-r_r) + grid.t_loc_inv[I2V_INV_GRIDS_1DJ(ii_invt+1,kdr+1,i_grid)]*(r_r);
+                    CUSTOMREAL left  = grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,  kdr,i_grid)]*(1-r_r) + grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt,  kdr+1,i_grid)]*(r_r);
+                    CUSTOMREAL right = grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,kdr,i_grid)]*(1-r_r) + grid.inv_grid->t.arr[I2V_INV_GRIDS_2DJ(ii_invt+1,kdr+1,i_grid)]*(r_r);
                     if (in_between(t_glob, left, right)) {
                         jdt = ii_invt;
                         r_t = calc_ratio_between(t_glob, left, right);
@@ -234,17 +234,17 @@ inline void smooth_gradient_regularization_orig(Grid& grid){
                     // CUSTOMREAL p_glob = grid.get_lon_min() + i*grid.get_delta_lon();
                     // r_p = -_1_CR;
                     // for (int ii_invp = 0; ii_invp < n_inv_I_loc-1; ii_invp++){
-                    //     if (p_glob > grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)] && p_glob <= grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)]) {
+                    //     if (p_glob > grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,i_grid)] && p_glob <= grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,i_grid)]) {
                     //         idp = ii_invp;
-                    //         r_p = (p_glob - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]) / (grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,i_grid)] - grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,i_grid)]);
+                    //         r_p = (p_glob - grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,i_grid)]) / (grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,i_grid)] - grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,i_grid)]);
                     //         break;
                     //     }
                     // }
                     CUSTOMREAL p_glob = grid.get_lon_min() + i*grid.get_delta_lon();    // global coordinate of p (longitude)
                     r_p = -_1_CR;
                     for (int ii_invp = 0; ii_invp < n_inv_I_loc-1; ii_invp++){
-                        CUSTOMREAL left  = grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,  kdr,i_grid)]*(1-r_r) + grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp,  kdr,i_grid)]*(r_r);
-                        CUSTOMREAL right = grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,kdr,i_grid)]*(1-r_r) + grid.p_loc_inv[I2V_INV_GRIDS_1DI(ii_invp+1,kdr,i_grid)]*(r_r);           
+                        CUSTOMREAL left  = grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,  kdr,i_grid)]*(1-r_r) + grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp,  kdr,i_grid)]*(r_r);
+                        CUSTOMREAL right = grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,kdr,i_grid)]*(1-r_r) + grid.inv_grid->p.arr[I2V_INV_GRIDS_2DI(ii_invp+1,kdr,i_grid)]*(r_r);
                         if (in_between(p_glob, left, right)) {
                             idp = ii_invp;
                             r_p = calc_ratio_between(p_glob, left, right);
