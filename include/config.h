@@ -37,8 +37,8 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 #define I2V_INV_GRIDS(A,B,C,D) ((D)*n_inv_I_loc*n_inv_J_loc*n_inv_K_loc + (C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_KNL(A,B,C)     ((C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc + (A))
-#define I2V_INV_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc*n_inv_K_loc + (B)*n_inv_J_loc + (A))
-#define I2V_INV_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc*n_inv_K_loc + (B)*n_inv_I_loc + (A))
+#define I2V_INV_GRIDS_2DJ(A,B,C)  ((C)*n_inv_J_loc*n_inv_K_loc + (B)*n_inv_J_loc + (A))
+#define I2V_INV_GRIDS_2DI(A,B,C)  ((C)*n_inv_I_loc*n_inv_K_loc + (B)*n_inv_I_loc + (A))
 
 #define I2V_INV_ANI_GRIDS(A,B,C,D) ((D)*n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani + (C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
 #define I2V_INV_ANI_KNL(A,B,C)     ((C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
@@ -46,8 +46,10 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 #define I2V_INV_ANI_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc_ani*n_inv_K_loc_ani + (B)*n_inv_J_loc_ani + (A))
 #define I2V_INV_ANI_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc_ani*n_inv_K_loc_ani + (B)*n_inv_I_loc_ani + (A))
 
+#define I2V_INV_GRIDS_1D_GENERIC(A,B,C_ninv) ((B)*C_ninv + (A))
+#define I2V_INV_GRIDS_2D_GENERIC(A,B,C,D_ninv,E_inv)  ((C)*D_ninv*E_inv + (B)*D_ninv + (A))
+
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
-//#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
 #define I2V_VIS(A,B,C)         ((C)* loc_I_vis   * loc_J_vis +    (B)* loc_I_vis    + A)
 #define I2V_3D(A,B,C)          ((C)* loc_I_excl_ghost*loc_J_excl_ghost + (B)* loc_I_excl_ghost + A)
 #define I2V_ELM_CONN(A,B,C)    ((C)*(loc_I_vis-1)*(loc_J_vis-1) + (B)*(loc_I_vis-1) + A)
@@ -140,12 +142,17 @@ inline CUSTOMREAL radius2depth(CUSTOMREAL radius) {
 inline int ngrid_i     = 0; // number of grid points in i direction
 inline int ngrid_j     = 0; // number of grid points in j direction
 inline int ngrid_k     = 0; // number of grid points in k direction
-inline int ngrid_i_inv = 0; // number of inversion grid points in i direction
-inline int ngrid_j_inv = 0; // number of inversion grid points in j direction
-inline int ngrid_k_inv = 0; // number of inversion grid points in k direction
-inline int ngrid_i_inv_ani = 0; // number of inversion grid points in i direction for anisotropy
-inline int ngrid_j_inv_ani = 0; // number of inversion grid points in j direction for anisotropy
-inline int ngrid_k_inv_ani = 0; // number of inversion grid points in k direction for anisotropy
+//inline int ngrid_i_inv = 0; // number of inversion grid points in i direction # DUPLICATED with n_inv_I_loc as all the subdomains have the same number of inversion grid points
+//inline int ngrid_j_inv = 0; // number of inversion grid points in j direction # DUPLICATED with n_inv_J_loc
+//inline int ngrid_k_inv = 0; // number of inversion grid points in k direction # DUPLICATED with n_inv_K_loc
+//inline int ngrid_i_inv_ani = 0; // number of inversion grid points in i direction for anisotropy # DUPLICATED with n_inv_I_loc_ani
+//inline int ngrid_j_inv_ani = 0; // number of inversion grid points in j direction for anisotropy # DUPLICATED with n_inv_J_loc_ani
+//inline int ngrid_k_inv_ani = 0; // number of inversion grid points in k direction for anisotropy # DUPLICATED with n_inv_K_loc_ani
+
+// inversion grid type flags
+#define INV_GRID_REGULAR 0
+#define INV_GRID_FLEX    1
+#define INV_GRID_TRAPE   2
 
 // mpi parameters
 inline int      world_nprocs;     // total number of processes (all groups)
@@ -194,6 +201,13 @@ inline std::string output_dir="./OUTPUT_FILES/";
 //#define OUTPUT_FORMAT_BINARY 33333 //#TODO: add
 inline int output_format = OUTPUT_FORMAT_HDF5; // 0 - ascii, 1 - hdf5, 2 - binary
 
+// HDF5 io mode (independent or collective)
+#ifdef USE_HDF5_IO_COLLECTIVE
+#define HDF5_IO_MODE H5FD_MPIO_COLLECTIVE
+#else
+#define HDF5_IO_MODE H5FD_MPIO_INDEPENDENT
+#endif
+
 // smooth parameters
 inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
 inline CUSTOMREAL smooth_lp = 1.0;
@@ -206,7 +220,7 @@ inline const int  GRADIENT_DESCENT    = 0;
 inline const int  HALVE_STEPPING_MODE = 1;
 inline const int  LBFGS_MODE          = 2;
 inline int        optim_method        = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
-inline const CUSTOMREAL wolfe_c1     = 1e-4; 
+inline const CUSTOMREAL wolfe_c1     = 1e-4;
 inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight

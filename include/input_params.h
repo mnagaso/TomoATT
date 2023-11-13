@@ -299,11 +299,11 @@ private:
     // inversion
     int run_mode=0;                                                 // do inversion or not (0: no, 1: yes)
     int n_inversion_grid=1;                                         // number of inversion grid
-    // uniform or flexible inversion grid (0: uniform, 1: flexible)
+    // uniform or flexible inversion grid (0: uniform, 1: flexible, 2: trapezoid)
     int type_invgrid_dep=0;
     int type_invgrid_lat=0;
     int type_invgrid_lon=0;
-    // uniform or flexible anisotropic inversion grid (0: uniform, 1: flexible)
+    // uniform or flexible anisotropic inversion grid (0: uniform, 1: flexible, 2: trapezoid)
     int type_invgrid_dep_ani=0;
     int type_invgrid_lat_ani=0;
     int type_invgrid_lon_ani=0;
@@ -369,7 +369,7 @@ private:
     //
     // variables fo type = 2: trapezoid inversion grid
     //
-    int n_lat_lon_spacing_inv_trape=1; 
+    int n_lat_lon_spacing_inv_trape=1;
     int n_lat_lon_spacing_inv_trape_ani=1;
     CUSTOMREAL *lat_spacing_inv; // array for storing the spacing of inversion grid points in latitude
     CUSTOMREAL *lon_spacing_inv; // array for storing the spacing of inversion grid points in longitude
@@ -377,10 +377,10 @@ private:
     CUSTOMREAL *lon_spacing_inv_ani; // array for storing the spacing of inversion grid points in longitude
 
     // number of trapezoid designed inversion grid in t, p direction
-    int n_inv_t_trape=1; 
+    int n_inv_t_trape=1;
     int n_inv_p_trape=1;
     // number of trapezoid designed inversion grid in t, p direction
-    int n_inv_t_trape_ani=1; 
+    int n_inv_t_trape_ani=1;
     int n_inv_p_trape_ani=1;
 
     // flag if n inv grid trapezoid is read or not. if false, code allocate dummy memory

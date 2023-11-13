@@ -51,7 +51,12 @@ IO_utils::~IO_utils() {
     stdout_by_main("--- IO object finalization ---");
 }
 
-void IO_utils::change_group_name_for_source() {
+void IO_utils::reset_source_info(const int& id_sim_src, const std::string& name_sim_src) {
+
+    // set simulation group id and source name for output files/dataset names
+    set_id_src(id_sim_src);
+    set_name_src(name_sim_src);
+
 #ifdef USE_HDF5
     // change group name for source
     // h5_group_name_data = "src_" + std::to_string(id_sim_src);
@@ -1735,6 +1740,7 @@ void IO_utils::h5_open_file_collective(std::string& fname){
     H5Pset_fapl_mpio(plist_id, inter_sub_comm, MPI_INFO_NULL);
     std::string fout = output_dir + "/" + fname;
     file_id = H5Fopen(fout.c_str(), H5F_ACC_RDWR, plist_id);
+    H5Pclose(plist_id);
 }
 
 
@@ -1755,7 +1761,7 @@ void IO_utils::h5_close_file_by_group_main(){
 }
 
 void IO_utils::h5_close_file_collective(){
-    H5Pclose(plist_id);
+    //H5Pclose(plist_id);
     H5Fclose(file_id);
 }
 
@@ -2015,12 +2021,23 @@ void IO_utils::h5_write_array(std::string& dset_name, int rank, int* dims_in, T*
     // select hyperslab
     mem_dspace_id  = H5Screate_simple(rank, count, NULL);
     file_dspace_id = H5Dget_space(dset_id);
+
     H5Sselect_hyperslab(file_dspace_id, H5S_SELECT_SET, offset, stride, count, block);
 
     // create dataset prop list
     plist_id_dset = H5Pcreate(H5P_DATASET_XFER);
     //H5Pset_buffer(plist_id_dset, BUF_SIZE, NULL, NULL); // this will be important for machine dependent tuning
-    H5Pset_dxpl_mpio(plist_id_dset, H5FD_MPIO_COLLECTIVE);
+    H5Pset_dxpl_mpio(plist_id_dset, HDF5_IO_MODE);
+
+    // check if this writing is done collectively
+    H5D_mpio_actual_io_mode_t actualIOMode;
+    H5Pget_mpio_actual_io_mode(plist_id_dset, &actualIOMode);
+
+    if (actualIOMode == H5D_MPIO_NO_COLLECTIVE) {
+        if (rank == 0) {
+            std::cout << "Warning: Collective I/O is not enabled." << std::endl;
+        }
+    }
 
     // write array
     switch (dtype)

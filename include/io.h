@@ -38,7 +38,7 @@ public:
     void update_xdmf_file();
 
     // change group name for source
-    void change_group_name_for_source();
+    void reset_source_info(const int&, const std::string&);
     // change group name for model
     void change_group_name_for_model();
     // prepare grid for each inversion iteration
