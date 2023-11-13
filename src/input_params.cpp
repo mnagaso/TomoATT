@@ -679,6 +679,17 @@ InputParams::InputParams(std::string& input_file){
                         getNodeValue(config["relocation"]["abs_time"], "distance_weight", distance_weight_abs_reloc[i], i);
                 }
             }
+            if (config["relocation"]["cs_dif_time"]){
+                getNodeValue(config["relocation"]["cs_dif_time"], "use_cs_time", use_cs_reloc);
+                if (config["relocation"]["cs_dif_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        getNodeValue(config["relocation"]["cs_dif_time"], "residual_weight", residual_weight_cs_reloc[i], i);
+                }
+                if (config["relocation"]["cs_dif_time"]["azimuthal_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        getNodeValue(config["relocation"]["cs_dif_time"], "azimuthal_weight", azimuthal_weight_cs_reloc[i], i);
+                }
+            }
             if (config["relocation"]["cr_dif_time"]){
                 getNodeValue(config["relocation"]["cr_dif_time"], "use_cr_time", use_cr_reloc);
                 if (config["relocation"]["cr_dif_time"]["residual_weight"]){
@@ -697,6 +708,9 @@ InputParams::InputParams(std::string& input_file){
                 }
                 if (config["relocation"]["global_weight"]["abs_time_weight"]) {
                     getNodeValue(config["relocation"]["global_weight"], "abs_time_weight", abs_time_local_weight_reloc);
+                }
+                if (config["relocation"]["global_weight"]["cs_dif_time_local_weight"]) {
+                    getNodeValue(config["relocation"]["global_weight"], "cs_dif_time_local_weight", cs_dif_time_local_weight_reloc);
                 }
                 if (config["relocation"]["global_weight"]["cr_dif_time_local_weight"]) {
                     getNodeValue(config["relocation"]["global_weight"], "cr_dif_time_local_weight", cr_dif_time_local_weight_reloc);
@@ -1009,12 +1023,16 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(use_abs_reloc, 0);
     broadcast_cr(residual_weight_abs_reloc, n_weight, 0);
     broadcast_cr(distance_weight_abs_reloc, n_weight, 0);
+    broadcast_bool_single(use_cs_reloc, 0);
+    broadcast_cr(residual_weight_cs_reloc, n_weight, 0);
+    broadcast_cr(azimuthal_weight_cs_reloc, n_weight, 0);
     broadcast_bool_single(use_cr_reloc, 0);
     broadcast_cr(residual_weight_cr_reloc, n_weight, 0);
     broadcast_cr(azimuthal_weight_cr_reloc, n_weight, 0);
 
     broadcast_bool_single(balance_data_weight_reloc, 0);
     broadcast_cr_single(abs_time_local_weight_reloc, 0);
+    broadcast_cr_single(cs_dif_time_local_weight_reloc, 0);
     broadcast_cr_single(cr_dif_time_local_weight_reloc, 0);
 
     broadcast_i_single(inv_mode, 0);
@@ -1499,7 +1517,7 @@ void InputParams::write_params_to_file() {
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
     fout << "  abs_time:" << std::endl;
-    fout << "    use_abs_time : " << use_abs_reloc << " # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    use_abs_time : " << use_abs_reloc << " # 'yes' for using absolute traveltime data to update ortime and location; 'no' for not using (no need to set parameters in this section)" << std::endl;
     fout << "    residual_weight : [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_abs_reloc[i];
@@ -1516,9 +1534,28 @@ void InputParams::write_params_to_file() {
     fout << "]      # XXX is epicenter distance (km) between the source and receiver related to the data" << std::endl;
     fout << std::endl;
 
+    fout << "  # -------------- using common source differential traveltime data --------------" << std::endl;
+    fout << "  cs_dif_time:" << std::endl;
+    fout << "    use_cs_time : " << use_cs_reloc <<" # 'yes' for using common source differential traveltime data to update ortime and location; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight  : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_cs_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]    # XXX is the common source differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{n,j} - t^{syn}_{n,i} + t^{syn}_{n,j})." << std::endl;
+    fout << "    azimuthal_weight : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << azimuthal_weight_cs_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]    # XXX is the azimuth difference between two separate stations related to the common source." << std::endl;
+    fout << std::endl;
+
     fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
     fout << "  cr_dif_time:" << std::endl;
-    fout << "    use_cr_time : " << use_cr_reloc <<" # 'yes' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    use_cr_time : " << use_cr_reloc <<" # 'yes' for using common receiver differential traveltime data to update ortime and location; 'no' for not using (no need to set parameters in this section)" << std::endl;
     fout << "    residual_weight  : [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_cr_reloc[i];
@@ -1540,6 +1577,7 @@ void InputParams::write_params_to_file() {
     fout << "  global_weight:" << std::endl;
     fout << "    balance_data_weight: " << balance_data_weight_reloc << " # yes: over the total weight of the each type of the data. no: use original weight (below weight for each type of data needs to be set)" << std::endl;
     fout << "    abs_time_local_weight: " << abs_time_local_weight_reloc << " # weight of absolute traveltime data for relocation after balance,     default: 1.0" << std::endl;
+    fout << "    cs_dif_time_local_weight: " << cs_dif_time_local_weight_reloc << " # weight of common source differential traveltime data for relocation after balance,   default: 1.0" << std::endl;
     fout << "    cr_dif_time_local_weight: " << cr_dif_time_local_weight_reloc << " # weight of common receiver differential traveltime data for relocation after balance,   default: 1.0" << std::endl;
     fout << std::endl;
 

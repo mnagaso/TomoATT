@@ -174,17 +174,21 @@ public:
     bool get_use_cr()                   {return use_cr;};
 
     bool get_use_abs_reloc()                  {return use_abs_reloc;};
+    bool get_use_cs_reloc()                   {return use_cs_reloc;};
     bool get_use_cr_reloc()                   {return use_cr_reloc;};
 
     CUSTOMREAL* get_residual_weight_abs()   {return residual_weight_abs;};
     CUSTOMREAL* get_distance_weight_abs()   {return distance_weight_abs;};
-    CUSTOMREAL* get_residual_weight_cr()    {return residual_weight_cr;};
-    CUSTOMREAL* get_azimuthal_weight_cr()   {return azimuthal_weight_cr;};
     CUSTOMREAL* get_residual_weight_cs()    {return residual_weight_cs;};
     CUSTOMREAL* get_azimuthal_weight_cs()   {return azimuthal_weight_cs;};
+    CUSTOMREAL* get_residual_weight_cr()    {return residual_weight_cr;};
+    CUSTOMREAL* get_azimuthal_weight_cr()   {return azimuthal_weight_cr;};
+
 
     CUSTOMREAL* get_residual_weight_abs_reloc()   {return residual_weight_abs_reloc;};
     CUSTOMREAL* get_distance_weight_abs_reloc()   {return distance_weight_abs_reloc;};
+    CUSTOMREAL* get_residual_weight_cs_reloc()    {return residual_weight_cs_reloc;};
+    CUSTOMREAL* get_azimuthal_weight_cs_reloc()   {return azimuthal_weight_cs_reloc;};
     CUSTOMREAL* get_residual_weight_cr_reloc()    {return residual_weight_cr_reloc;};
     CUSTOMREAL* get_azimuthal_weight_cr_reloc()   {return azimuthal_weight_cr_reloc;};
 
@@ -403,10 +407,13 @@ private:
 
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
+    bool use_cs_reloc  = false; // use common source double difference or not
     bool use_cr_reloc  = false; // use common source double difference or not
     CUSTOMREAL residual_weight_abs_reloc[n_weight];
-    CUSTOMREAL residual_weight_cr_reloc[n_weight];
     CUSTOMREAL distance_weight_abs_reloc[n_weight];
+    CUSTOMREAL residual_weight_cs_reloc[n_weight];
+    CUSTOMREAL azimuthal_weight_cs_reloc[n_weight];
+    CUSTOMREAL residual_weight_cr_reloc[n_weight];
     CUSTOMREAL azimuthal_weight_cr_reloc[n_weight];
 
     // convergence setting

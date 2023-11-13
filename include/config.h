@@ -236,8 +236,8 @@ inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receive
 inline CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
 inline CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
 inline CUSTOMREAL abs_time_local_weight_reloc    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
-inline CUSTOMREAL cr_dif_time_local_weight_reloc = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
 inline CUSTOMREAL cs_dif_time_local_weight_reloc = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0
+inline CUSTOMREAL cr_dif_time_local_weight_reloc = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
 inline CUSTOMREAL teleseismic_weight_reloc       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
 
 // misfit balance
