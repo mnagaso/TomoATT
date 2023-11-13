@@ -233,13 +233,13 @@ InputParams::InputParams(std::string& input_file){
                     if (Kdensity_coe < 0.0){
                         Kdensity_coe = 0.0;
                         std::cout << std::endl;
-                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl; 
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
                     if (Kdensity_coe > 1.0){
                         Kdensity_coe = 1.0;
                         std::cout << std::endl;
-                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl; 
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
                 }
@@ -323,7 +323,7 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // flexible inversion grid
-            if (config["model_update"]["dep_inv"] && type_invgrid_dep == 1) {
+            if (config["model_update"]["dep_inv"] && type_invgrid_dep == INV_GRID_FLEX) {
                 n_inv_r_flex = config["model_update"]["dep_inv"].size(); // TODO: further refactoring needed
                 dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5000);
                 for (int i = 0; i < n_inv_r_flex; i++){
@@ -331,7 +331,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_r_flex_read = true;
             }
-            if (config["model_update"]["lat_inv"] && type_invgrid_lat == 1) {
+            if (config["model_update"]["lat_inv"] && type_invgrid_lat == INV_GRID_FLEX) {
                 n_inv_t_flex = config["model_update"]["lat_inv"].size();
                 lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
                 for (int i = 0; i < n_inv_t_flex; i++){
@@ -339,7 +339,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_t_flex_read = true;
             }
-            if (config["model_update"]["lon_inv"] && type_invgrid_lon == 1) {
+            if (config["model_update"]["lon_inv"] && type_invgrid_lon == INV_GRID_FLEX) {
                 n_inv_p_flex = config["model_update"]["lon_inv"].size();
                 lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5002);
                 for (int i = 0; i < n_inv_p_flex; i++){
@@ -349,16 +349,16 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // trapezoid inversion grid
-            if (config["model_update"]["lat_spacing_inv"] && type_invgrid_lat == 2) {
+            if (config["model_update"]["lat_spacing_inv"] && type_invgrid_lat == INV_GRID_TRAPE) {
                 CUSTOMREAL min_lat_spacing_inv = 10000;
-                if (type_invgrid_dep == 0) {
+                if (type_invgrid_dep == INV_GRID_REGULAR) {
                     n_lat_lon_spacing_inv_trape = n_inv_r;
-                } else if (type_invgrid_dep == 1) {
+                } else if (type_invgrid_dep == INV_GRID_FLEX) {
                     n_lat_lon_spacing_inv_trape = n_inv_r_flex;
                 } else {
                     std::cout << "error input: type_invgrid_dep: " << type_invgrid_lat << std::endl;
                     exit(0);
-                } 
+                }
 
                 lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
                 if((int)config["model_update"]["lat_spacing_inv"].size() != n_lat_lon_spacing_inv_trape){
@@ -381,16 +381,16 @@ InputParams::InputParams(std::string& input_file){
                 }
             }
 
-            if (config["model_update"]["lon_spacing_inv"] && type_invgrid_lon == 2) {
+            if (config["model_update"]["lon_spacing_inv"] && type_invgrid_lon == INV_GRID_TRAPE) {
                 CUSTOMREAL min_lon_spacing_inv = 10000;
-                if (type_invgrid_dep == 0) {
+                if (type_invgrid_dep == INV_GRID_REGULAR) {
                     n_lat_lon_spacing_inv_trape = n_inv_r;
-                } else if (type_invgrid_dep == 1) {
+                } else if (type_invgrid_dep == INV_GRID_FLEX) {
                     n_lat_lon_spacing_inv_trape = n_inv_r_flex;
                 } else {
                     std::cout << "error input: type_invgrid_dep: " << type_invgrid_lat << std::endl;
                     exit(0);
-                } 
+                }
 
                 lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
                 if((int)config["model_update"]["lon_spacing_inv"].size() != n_lat_lon_spacing_inv_trape){
@@ -448,7 +448,7 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["model_update"], "min_max_lon_inv_ani", max_lon_inv_ani, 1);
             }
 
-            if (config["model_update"]["dep_inv_ani"] && type_invgrid_dep_ani == 1) {
+            if (config["model_update"]["dep_inv_ani"] && type_invgrid_dep_ani == INV_GRID_FLEX) {
                 n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
                 dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
                 for (int i = 0; i < n_inv_r_flex_ani; i++){
@@ -456,7 +456,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_r_flex_ani_read = true;
             }
-            if (config["model_update"]["lat_inv_ani"] && type_invgrid_lat_ani == 1) {
+            if (config["model_update"]["lat_inv_ani"] && type_invgrid_lat_ani == INV_GRID_FLEX) {
                 n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
                 lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
                 for (int i = 0; i < n_inv_t_flex_ani; i++){
@@ -464,7 +464,7 @@ InputParams::InputParams(std::string& input_file){
                 }
                 n_inv_t_flex_ani_read = true;
             }
-            if (config["model_update"]["lon_inv_ani"] && type_invgrid_lon_ani == 1) {
+            if (config["model_update"]["lon_inv_ani"] && type_invgrid_lon_ani == INV_GRID_FLEX) {
                 n_inv_p_flex_ani = config["model_update"]["lon_inv_ani"].size();
                 lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5005);
                 for (int i = 0; i < n_inv_p_flex_ani; i++){
@@ -474,16 +474,16 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // trapezoid inversion grid
-            if (config["model_update"]["lat_spacing_inv_ani"] && type_invgrid_lat_ani == 2) {
+            if (config["model_update"]["lat_spacing_inv_ani"] && type_invgrid_lat_ani == INV_GRID_TRAPE) {
                 CUSTOMREAL min_lat_spacing_inv_ani = 10000;
-                if (type_invgrid_dep_ani == 0) {
+                if (type_invgrid_dep_ani == INV_GRID_REGULAR) {
                     n_lat_lon_spacing_inv_trape_ani = n_inv_r_ani;
-                } else if (type_invgrid_dep_ani == 1) {
+                } else if (type_invgrid_dep_ani == INV_GRID_FLEX) {
                     n_lat_lon_spacing_inv_trape_ani = n_inv_r_flex_ani;
                 } else {
                     std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
                     exit(0);
-                } 
+                }
 
                 lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
                 if((int)config["model_update"]["lat_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
@@ -506,16 +506,16 @@ InputParams::InputParams(std::string& input_file){
                 }
             }
 
-            if (config["model_update"]["lon_spacing_inv_ani"] && type_invgrid_lon_ani == 2) {
+            if (config["model_update"]["lon_spacing_inv_ani"] && type_invgrid_lon_ani == INV_GRID_TRAPE) {
                 CUSTOMREAL min_lon_spacing_inv_ani = 10000;
-                if (type_invgrid_dep_ani == 0) {
+                if (type_invgrid_dep_ani == INV_GRID_REGULAR) {
                     n_lat_lon_spacing_inv_trape_ani = n_inv_r_ani;
-                } else if (type_invgrid_dep_ani == 1) {
+                } else if (type_invgrid_dep_ani == INV_GRID_FLEX) {
                     n_lat_lon_spacing_inv_trape_ani = n_inv_r_flex_ani;
                 } else {
                     std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
                     exit(0);
-                } 
+                }
 
                 lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
                 if((int)config["model_update"]["lon_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
@@ -801,7 +801,7 @@ InputParams::InputParams(std::string& input_file){
             lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
         if (!n_inv_p_trape_read)
             lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-        
+
         // allocate dummy arrays for trapezoid inv grid
         if (!n_inv_t_trape_ani_read)
             lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
@@ -1069,6 +1069,12 @@ InputParams::~InputParams(){
     delete [] lat_inv_ani;
     delete [] lon_inv_ani;
 
+    delete [] lat_spacing_inv;
+    delete [] lon_spacing_inv;
+
+    delete [] lat_spacing_inv_ani;
+    delete [] lon_spacing_inv_ani;
+
     // clear all src, rec, data
     src_map.clear();
     src_map_tele.clear();
@@ -1191,11 +1197,11 @@ void InputParams::write_params_to_file() {
     fout << "    step_length_decay: " << step_length_decay << " # default: 0.9" << std::endl;
     fout << "    # if step_method:1. if the angle between the current and the previous gradients is greater than step_length_gradient_angle, step size -> step length * step_length_change[0]. " << std::endl;
     fout << "    #                                                                                                                otherwise, step size -> step length * step_length_change[1]. " << std::endl;
-    fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;   
-    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl; 
-    fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl; 
-    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;  
-    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;   
+    fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;
+    fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl;
+    fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl;
+    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;
+    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;

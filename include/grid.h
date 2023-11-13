@@ -19,6 +19,7 @@
 #include "input_params.h"
 #include "source.h"
 #include "io.h"
+#include "inv_grid.h"
 
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
@@ -63,8 +64,7 @@ public:
     void assign_received_data_to_ghost_kosumi(CUSTOMREAL*);
 
     // inversion methods
-    void setup_inversion_grids(InputParams&);
-    void setup_inv_grid_params(InputParams&);
+    InvGrid* inv_grid; // inversion grid definitions
 
     void reinitialize_abcf();   // reinitialize factors
     void rejunenate_abcf();     // reinitialize factors for earthquake relocation
@@ -171,12 +171,6 @@ public:
     int get_j_end_loc()          {return j_end_loc;};
     int get_i_start_loc()        {return i_start_loc;};
     int get_i_end_loc()          {return i_end_loc;};
-    int get_k_start_loc_inv()    {return k_start_loc_inv;};
-    int get_k_end_loc_inv()      {return k_end_loc_inv;};
-    int get_j_start_loc_inv()    {return j_start_loc_inv;};
-    int get_j_end_loc_inv()      {return j_end_loc_inv;};
-    int get_i_start_loc_inv()    {return i_start_loc_inv;};
-    int get_i_end_loc_inv()      {return i_end_loc_inv;};
 
     // copy tau to tau old
     void tau2tau_old();
@@ -195,9 +189,7 @@ public:
     void write_inversion_grid_file();
 
 private:
-    std::string inversion_grid_file_out;     // inversion grid file to be output
 
-private:
     //
     // member variables
     //
@@ -209,16 +201,6 @@ private:
     int i_start_loc=0, j_start_loc=0, k_start_loc=0;
     // end node id for each direction expect the boundary
     int i_end_loc=0, j_end_loc=0, k_end_loc=0;
-
-    // for inversion grid
-public:
-    // starting node id for each direction expect the boundary
-    int i_start_loc_inv=0, j_start_loc_inv=0, k_start_loc_inv=0;
-    // end node id for each direction expect the boundary
-    int i_end_loc_inv=0, j_end_loc_inv=0, k_end_loc_inv=0;
-    // number of grids ecxluding the ghost grids
-    int loc_I_excl_ghost_inv, loc_J_excl_ghost_inv, loc_K_excl_ghost_inv;
-private:
 
     // neighbors domain_id (-1 if no neighbor)
     // order of directions: -i,+i,-j,+j,-k,+k
@@ -316,15 +298,7 @@ private:
     bool inverse_flag = false;
     //int n_inv_grids; // in config.h
     //int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc; // in config.h
-    CUSTOMREAL dinv_r, dinv_t, dinv_p;
-    CUSTOMREAL dinv_lr, dinv_lt, dinv_lp;
 public:
-    CUSTOMREAL *r_loc_inv;
-    CUSTOMREAL *t_loc_inv;
-    CUSTOMREAL *p_loc_inv;
-    CUSTOMREAL *r_loc_inv_ani;
-    CUSTOMREAL *t_loc_inv_ani;
-    CUSTOMREAL *p_loc_inv_ani;
     CUSTOMREAL *Ks_loc;
     CUSTOMREAL *Kxi_loc;
     CUSTOMREAL *Keta_loc;
