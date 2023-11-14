@@ -115,7 +115,7 @@ private:
     void check_increasing(CUSTOMREAL*, int, std::string);
     void check_lower_bound(CUSTOMREAL*&, int&, CUSTOMREAL, std::string);
     void check_upper_bound(CUSTOMREAL*&, int&, CUSTOMREAL, std::string);
-    
+
 public:
     // void check_dep_inv();
     // void check_lat_inv();
@@ -284,8 +284,8 @@ private:
 
     // inversion grid setting
     static const int n_trapezoid = 3;
-    CUSTOMREAL trapezoid[n_trapezoid];
-    CUSTOMREAL trapezoid_ani[n_trapezoid];
+    CUSTOMREAL trapezoid[n_trapezoid]     = {1.0, 0.0, 50.0};
+    CUSTOMREAL trapezoid_ani[n_trapezoid] = {1.0, 0.0, 50.0};
 
 
     // uniform or flexible inversion grid (0: uniform, 1: flexible, 2: trapezoid)
@@ -301,84 +301,36 @@ private:
     // variables for type = 0: uniform inversion grid
     //
     // number of uniform inversion grid nodes in r, t, p direction
-    int n_inv_r=1;
-    int n_inv_t=1;
-    int n_inv_p=1;
+    int n_inv_r=0;
+    int n_inv_t=0;
+    int n_inv_p=0;
     // number of uniform anisotropic inversion grid nodes in r, t, p direction
-    int n_inv_r_ani=1;
-    int n_inv_t_ani=1;
-    int n_inv_p_ani=1;
-
-    // // min max values of inversion grid
-    // CUSTOMREAL min_dep_inv    =-99999; // minimum depth in km
-    // CUSTOMREAL max_dep_inv    =-99999; // maximum depth in km
-    // CUSTOMREAL min_lat_inv    =-99999; // minimum latitude
-    // CUSTOMREAL max_lat_inv    =-99999; // maximum latitude
-    // CUSTOMREAL min_lon_inv    =-99999; // minimum longitude
-    // CUSTOMREAL max_lon_inv    =-99999; // maximum longitude
-    // // min max values of anisotropic inversion grid
-    // CUSTOMREAL min_dep_inv_ani=-99999; // minimum depth in km
-    // CUSTOMREAL max_dep_inv_ani=-99999; // maximum depth in km
-    // CUSTOMREAL min_lat_inv_ani=-99999; // minimum latitude
-    // CUSTOMREAL max_lat_inv_ani=-99999; // maximum latitude
-    // CUSTOMREAL min_lon_inv_ani=-99999; // minimum longitude
-    // CUSTOMREAL max_lon_inv_ani=-99999; // maximum longitude
+    int n_inv_r_ani=0;
+    int n_inv_t_ani=0;
+    int n_inv_p_ani=0;
 
     //
     // variables fo type = 1: flexible inversion grid
     //
 
-    CUSTOMREAL *dep_inv; // array for storing inversion grid points in depth
-    CUSTOMREAL *lat_inv; // array for storing inversion grid points in latitude
-    CUSTOMREAL *lon_inv; // array for storing inversion grid points in longitude
-    CUSTOMREAL *dep_inv_ani; // array for storing inversion grid points in depth for anisotropy
-    CUSTOMREAL *lat_inv_ani; // array for storing inversion grid points in latitude for anisotropy
-    CUSTOMREAL *lon_inv_ani; // array for storing inversion grid points in longitude for anisotropy
+    CUSTOMREAL *dep_inv     = nullptr; // array for storing inversion grid points in depth
+    CUSTOMREAL *lat_inv     = nullptr; // array for storing inversion grid points in latitude
+    CUSTOMREAL *lon_inv     = nullptr; // array for storing inversion grid points in longitude
+    CUSTOMREAL *dep_inv_ani = nullptr; // array for storing inversion grid points in depth for anisotropy
+    CUSTOMREAL *lat_inv_ani = nullptr; // array for storing inversion grid points in latitude for anisotropy
+    CUSTOMREAL *lon_inv_ani = nullptr; // array for storing inversion grid points in longitude for anisotropy
 
     // number of flexibly designed inversion grid in r, t, p direction
-    int n_inv_r_flex=1;
-    int n_inv_t_flex=1;
-    int n_inv_p_flex=1;
+    int n_inv_r_flex=0;
+    int n_inv_t_flex=0;
+    int n_inv_p_flex=0;
     // number of flexibly designed inversion grid in r, t, p direction
-    int n_inv_r_flex_ani=1;
-    int n_inv_t_flex_ani=1;
-    int n_inv_p_flex_ani=1;
-
-    // // flag if n inv grid flex is read or not. if false, code allocate dummy memory
-    // bool n_inv_r_flex_read = false;
-    // bool n_inv_t_flex_read = false;
-    // bool n_inv_p_flex_read = false;
-    // // flag if n inv grid flex is read or not. if false, code allocate dummy memory
-    // bool n_inv_r_flex_ani_read = false;
-    // bool n_inv_t_flex_ani_read = false;
-    // bool n_inv_p_flex_ani_read = false;
+    int n_inv_r_flex_ani=0;
+    int n_inv_t_flex_ani=0;
+    int n_inv_p_flex_ani=0;
 
     // if true, use defined inversion grid for anisotropy. Otherwise, use the same inversion grid of velocity for anisotropy
     bool invgrid_ani = false;
-
-    // //
-    // // variables fo type = 2: trapezoid inversion grid
-    // //
-    // int n_lat_lon_spacing_inv_trape=1;
-    // int n_lat_lon_spacing_inv_trape_ani=1;
-    // CUSTOMREAL *lat_spacing_inv; // array for storing the spacing of inversion grid points in latitude
-    // CUSTOMREAL *lon_spacing_inv; // array for storing the spacing of inversion grid points in longitude
-    // CUSTOMREAL *lat_spacing_inv_ani; // array for storing the spacing of inversion grid points in latitude
-    // CUSTOMREAL *lon_spacing_inv_ani; // array for storing the spacing of inversion grid points in longitude
-
-    // // number of trapezoid designed inversion grid in t, p direction
-    // int n_inv_t_trape=1;
-    // int n_inv_p_trape=1;
-    // // number of trapezoid designed inversion grid in t, p direction
-    // int n_inv_t_trape_ani=1;
-    // int n_inv_p_trape_ani=1;
-
-    // // flag if n inv grid trapezoid is read or not. if false, code allocate dummy memory
-    // bool n_inv_t_trape_read = false;
-    // bool n_inv_p_trape_read = false;
-    // // flag if n inv grid trapezoid is read or not. if false, code allocate dummy memory
-    // bool n_inv_t_trape_ani_read = false;
-    // bool n_inv_p_trape_ani_read = false;
 
     // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
     bool invgrid_volume_rescale = false;
@@ -388,23 +340,23 @@ private:
     bool use_cs  = false; // use common source double difference or not
     bool use_cr  = false; // use common receiver double difference or not
     static const int n_weight = 4;
-    CUSTOMREAL residual_weight_abs[n_weight];
-    CUSTOMREAL residual_weight_cs[n_weight];
-    CUSTOMREAL residual_weight_cr[n_weight];
-    CUSTOMREAL distance_weight_abs[n_weight];
-    CUSTOMREAL azimuthal_weight_cs[n_weight];
-    CUSTOMREAL azimuthal_weight_cr[n_weight];
+    CUSTOMREAL residual_weight_abs[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cs[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cr[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL distance_weight_abs[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cs[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cr[n_weight] = {1.0, 1.0, 1.0, 1.0};
 
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
     bool use_cs_reloc  = false; // use common source double difference or not
     bool use_cr_reloc  = false; // use common source double difference or not
-    CUSTOMREAL residual_weight_abs_reloc[n_weight];
-    CUSTOMREAL distance_weight_abs_reloc[n_weight];
-    CUSTOMREAL residual_weight_cs_reloc[n_weight];
-    CUSTOMREAL azimuthal_weight_cs_reloc[n_weight];
-    CUSTOMREAL residual_weight_cr_reloc[n_weight];
-    CUSTOMREAL azimuthal_weight_cr_reloc[n_weight];
+    CUSTOMREAL residual_weight_abs_reloc[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL distance_weight_abs_reloc[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cs_reloc[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cs_reloc[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cr_reloc[n_weight] = {1.0, 1.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cr_reloc[n_weight] = {1.0, 1.0, 1.0, 1.0};
 
     // convergence setting
     CUSTOMREAL conv_tol;       // convergence tolerance

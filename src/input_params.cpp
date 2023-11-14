@@ -60,7 +60,7 @@ InputParams::InputParams(std::string& input_file){
             }
         } else {
             std::cout << "domain is not defined. stop." << std::endl;
-            exit(0);
+            exit(1);
         }
 
         //
@@ -84,7 +84,7 @@ InputParams::InputParams(std::string& input_file){
             }
         } else {
             std::cout << "source is not defined. stop." << std::endl;
-            exit(0);
+            exit(1);
         }
 
         //
@@ -101,7 +101,7 @@ InputParams::InputParams(std::string& input_file){
             }
         } else {
             std::cout << "model is not defined. stop." << std::endl;
-            exit(0);
+            exit(1);
         }
 
         //
@@ -299,7 +299,7 @@ InputParams::InputParams(std::string& input_file){
             if (config["model_update"]["n_inversion_grid"]) {
                 getNodeValue(config["model_update"], "n_inversion_grid", n_inversion_grid);
             }
-            
+
             // flexible inversion grid for velocity
             if (config["model_update"]["dep_inv"]){
                 n_inv_r_flex = config["model_update"]["dep_inv"].size();
@@ -309,7 +309,7 @@ InputParams::InputParams(std::string& input_file){
                 }
             } else {
                 std::cout << "dep_inv is not defined. stop." << std::endl;
-                exit(0);
+                exit(1);
             }
             if (config["model_update"]["lat_inv"]) {
                 n_inv_t_flex = config["model_update"]["lat_inv"].size();
@@ -319,7 +319,7 @@ InputParams::InputParams(std::string& input_file){
                 }
             } else {
                 std::cout << "lat_inv is not defined. stop." << std::endl;
-                exit(0);
+                exit(1);
             }
             if (config["model_update"]["lon_inv"]) {
                 n_inv_p_flex = config["model_update"]["lon_inv"].size();
@@ -329,16 +329,17 @@ InputParams::InputParams(std::string& input_file){
                 }
             } else {
                 std::cout << "lon_inv is not defined. stop." << std::endl;
-                exit(0);
+                exit(1);
             }
             if (config["model_update"]["trapezoid"]) {
                 for (int i = 0; i < n_trapezoid; i++){
                     getNodeValue(config["model_update"], "trapezoid", trapezoid[i], i);
                 }
             } else {
-                trapezoid[0] =  1.0; 
-                trapezoid[1] =  0.0; 
-                trapezoid[2] = 50.0; 
+                //// this else is not reachable if model_update key is not in param file
+                //trapezoid[0] =  1.0;
+                //trapezoid[1] =  0.0;
+                //trapezoid[2] = 50.0;
             }
 
             // inversion grid for anisotropy
@@ -354,7 +355,7 @@ InputParams::InputParams(std::string& input_file){
                     getNodeValue(config["model_update"], "dep_inv_ani", dep_inv_ani[i], i);
                 }
             }
-            
+
             if (config["model_update"]["lat_inv_ani"]) {
                 n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
                 lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
@@ -374,9 +375,10 @@ InputParams::InputParams(std::string& input_file){
                     getNodeValue(config["model_update"], "trapezoid_ani", trapezoid_ani[i], i);
                 }
             } else {
-                trapezoid_ani[0] =  1.0; 
-                trapezoid_ani[1] =  0.0; 
-                trapezoid_ani[2] = 50.0; 
+                //// this else is not reachable if model_update key is not in param file
+                //trapezoid_ani[0] =  1.0;
+                //trapezoid_ani[1] =  0.0;
+                //trapezoid_ani[2] = 50.0;
             }
 
 
@@ -828,13 +830,14 @@ InputParams::InputParams(std::string& input_file){
 InputParams::~InputParams(){
     // free memory
 
-    delete [] dep_inv;
-    delete [] lat_inv;
-    delete [] lon_inv;
+    // check allocated memory
+    if (dep_inv != nullptr) delete [] dep_inv;
+    if (lat_inv != nullptr) delete [] lat_inv;
+    if (lon_inv != nullptr) delete [] lon_inv;
 
-    delete [] dep_inv_ani;
-    delete [] lat_inv_ani;
-    delete [] lon_inv_ani;
+    if (dep_inv_ani != nullptr) delete [] dep_inv_ani;
+    if (lat_inv_ani != nullptr) delete [] lat_inv_ani;
+    if (lon_inv_ani != nullptr) delete [] lon_inv_ani;
 
     // clear all src, rec, data
     src_map.clear();
@@ -991,7 +994,7 @@ void InputParams::write_params_to_file() {
             fout << ", ";
     }
     fout << "] # inversion grid for vel in depth (km)" << std::endl;
-    fout << "  lat_inv: ["; 
+    fout << "  lat_inv: [";
     for (int i = 0; i < n_inv_t_flex; i++){
         fout << lat_inv[i];
         if (i != n_inv_t_flex-1)
@@ -1073,7 +1076,7 @@ void InputParams::write_params_to_file() {
     fout << "  #                              /                                                   \\ "              << std::endl;
     fout << "  #  dep_inv[4] = trapezoid[2]  /    x          x          x          x          x    \\ "             << std::endl;
     fout << "  #                            |                                                       | "             << std::endl;
-    fout << "  #  dep_inv[5]                |     x          x          x          x          x     |  "            << std::endl;                     
+    fout << "  #  dep_inv[5]                |     x          x          x          x          x     |  "            << std::endl;
     fout << "  #                            |                                                       |  "            << std::endl;
     fout << "  #  dep_inv[6]                |     x          x          x          x          x     |  "            << std::endl;
     fout << "  #                            |<---- trapezoid[0]* (lon_inv[end] - lon_inv[0]) ------>|  "            << std::endl;
@@ -2760,11 +2763,11 @@ void InputParams::check_inv_grid(){
 void InputParams::check_lower_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL lower_bound, std::string name){
 
     if (arr[0] > lower_bound){
-        
+
         CUSTOMREAL grid2 = std::min(lower_bound, 2*arr[0] - arr[1]);
         CUSTOMREAL grid1 = 2*grid2 - arr[0];
         if(myrank == 0 && id_sim ==0){
-            std::cout << "lower bound of " << name << " inversion grid " << arr[0] << " is greater than computational domain " 
+            std::cout << "lower bound of " << name << " inversion grid " << arr[0] << " is greater than computational domain "
                   << lower_bound << std::endl;
             std::cout << "Tow additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
             std::cout << std::endl;
@@ -2778,12 +2781,12 @@ void InputParams::check_lower_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL lo
         delete[] arr;
         arr = new_arr;
         n_grid += 2;
-        
+
     } else if (arr[0] <= lower_bound && arr[1] > lower_bound){
-        
+
         CUSTOMREAL grid1 = 2*arr[0] - arr[1];
         if(myrank == 0 && id_sim ==0){
-            std::cout << "sub lower bound of " << name << " inversion grid " << arr[1] << " is greater than computational domain " 
+            std::cout << "sub lower bound of " << name << " inversion grid " << arr[1] << " is greater than computational domain "
                   << lower_bound << std::endl;
             std::cout << "One additional inversion grid: " << grid1 << " is added." << std::endl;
             std::cout << std::endl;
@@ -2796,16 +2799,16 @@ void InputParams::check_lower_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL lo
         delete[] arr;
         arr = new_arr;
         n_grid += 1;
-    } 
+    }
 }
 
 void InputParams::check_upper_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL upper_bound, std::string name){
     if (arr[n_grid-1] < upper_bound){
-        
+
         CUSTOMREAL grid1 = std::max(upper_bound, 2*arr[n_grid-1] - arr[n_grid-2]);
         CUSTOMREAL grid2 = 2*grid1 - arr[n_grid-1];
         if(myrank == 0 && id_sim ==0){
-            std::cout << "upper bound of " << name << " inversion grid " << arr[n_grid-1] << " is less than computational domain " 
+            std::cout << "upper bound of " << name << " inversion grid " << arr[n_grid-1] << " is less than computational domain "
                   << upper_bound << std::endl;
             std::cout << "Tow additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
             std::cout << std::endl;
@@ -2821,10 +2824,10 @@ void InputParams::check_upper_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL up
         n_grid += 2;
 
     } else if (arr[n_grid-1] >= upper_bound && arr[n_grid-2] < upper_bound){
-        
+
         CUSTOMREAL grid1 = 2*arr[n_grid-1] - arr[n_grid-2];
         if(myrank == 0 && id_sim ==0){
-            std::cout << "sub upper bound of " << name << " inversion grid " << arr[n_grid-2] << " is less than computational domain " 
+            std::cout << "sub upper bound of " << name << " inversion grid " << arr[n_grid-2] << " is less than computational domain "
                   << upper_bound << std::endl;
             std::cout << "One additional inversion grid: " << grid1 << " is added." << std::endl;
             std::cout << std::endl;
@@ -2837,5 +2840,5 @@ void InputParams::check_upper_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL up
         delete[] arr;
         arr = new_arr;
         n_grid += 1;
-    } 
+    }
 }
