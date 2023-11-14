@@ -42,32 +42,12 @@ public:
     CUSTOMREAL dinv_l; // amount of shift for each inversion grid
 };
 
-
-// Derived class for 1D inversion grid (regular grid)
-class InvGrid1dRegular : public InvGrid1dBase {
+// Derived class for 1D inversion grid
+class InvGrid1d : public InvGrid1dBase {
 public:
-    InvGrid1dRegular(InputParams&, const int, const CUSTOMREAL, const CUSTOMREAL); // for r grid
-    InvGrid1dRegular(InputParams&, const int, const CUSTOMREAL, const CUSTOMREAL,
-                                   const int); // function overload for t and p grids
-    ~InvGrid1dRegular() override {};
-};
-
-
-// Derived class for 1D inversion grid (flexible grid)
-class InvGrid1dFlexible : public InvGrid1dBase {
-public:
-    InvGrid1dFlexible(InputParams&, const int, const CUSTOMREAL*, const int); // for r grid
-    InvGrid1dFlexible(InputParams&, const int, const CUSTOMREAL*, const int,
-                                   const int); // function overload for t and p grids
-    ~InvGrid1dFlexible() override {};
-};
-
-
-// Derived class for 1D inversion grid (trapezoidal grid)
-class InvGrid1dTrapezoidal : public InvGrid1dBase {
-public:
-    InvGrid1dTrapezoidal(InputParams&, const int, const CUSTOMREAL, const CUSTOMREAL*, const int, const int); // function overload for t and p grids
-    ~InvGrid1dTrapezoidal() override {};
+    InvGrid1d(InputParams&, const int, const CUSTOMREAL*); // for r grid
+    InvGrid1d(InputParams&, const int, const CUSTOMREAL*, const CUSTOMREAL*, const int, const CUSTOMREAL*); // function overload for t and p grids
+    ~InvGrid1d() override {};
 };
 
 
