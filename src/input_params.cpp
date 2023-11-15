@@ -335,11 +335,6 @@ InputParams::InputParams(std::string& input_file){
                 for (int i = 0; i < n_trapezoid; i++){
                     getNodeValue(config["model_update"], "trapezoid", trapezoid[i], i);
                 }
-            } else {
-                //// this else is not reachable if model_update key is not in param file
-                //trapezoid[0] =  1.0;
-                //trapezoid[1] =  0.0;
-                //trapezoid[2] = 50.0;
             }
 
             // inversion grid for anisotropy
@@ -374,11 +369,6 @@ InputParams::InputParams(std::string& input_file){
                 for (int i = 0; i < n_trapezoid; i++){
                     getNodeValue(config["model_update"], "trapezoid_ani", trapezoid_ani[i], i);
                 }
-            } else {
-                //// this else is not reachable if model_update key is not in param file
-                //trapezoid_ani[0] =  1.0;
-                //trapezoid_ani[1] =  0.0;
-                //trapezoid_ani[2] = 50.0;
             }
 
 
