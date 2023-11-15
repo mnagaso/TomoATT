@@ -340,23 +340,23 @@ private:
     bool use_cs  = false; // use common source double difference or not
     bool use_cr  = false; // use common receiver double difference or not
     static const int n_weight = 4;
-    CUSTOMREAL residual_weight_abs[n_weight] = {1.0, 1.0,   1.0,   3.0};
-    CUSTOMREAL residual_weight_cs[n_weight]  = {1.0, 1.0,   1.0,   3.0};
-    CUSTOMREAL residual_weight_cr[n_weight]  = {1.0, 1.0,   1.0,   3.0};
-    CUSTOMREAL distance_weight_abs[n_weight] = {1.0, 1.0, 100.0, 200.0};
-    CUSTOMREAL azimuthal_weight_cs[n_weight] = {1.0, 1.0,  15.0,  30.0};
-    CUSTOMREAL azimuthal_weight_cr[n_weight] = {1.0, 1.0,  15.0,  30.0};
+    CUSTOMREAL residual_weight_abs[n_weight] = {   1.0,   3.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cs[n_weight]  = {   1.0,   3.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cr[n_weight]  = {   1.0,   3.0, 1.0, 1.0};
+    CUSTOMREAL distance_weight_abs[n_weight] = { 100.0, 200.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cs[n_weight] = {  15.0,  30.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cr[n_weight] = {  15.0,  30.0, 1.0, 1.0};
 
     // for relocation
     bool use_abs_reloc = false; // use absolute travel time or not
     bool use_cs_reloc  = false; // use common source double difference or not
     bool use_cr_reloc  = false; // use common source double difference or not
-    CUSTOMREAL residual_weight_abs_reloc[n_weight] = {1.0, 1.0,   1.0,   3.0};
-    CUSTOMREAL distance_weight_abs_reloc[n_weight] = {1.0, 1.0,   1.0,   3.0};
-    CUSTOMREAL residual_weight_cs_reloc[n_weight]  = {1.0, 1.0,   1.0,   3.0};
-    CUSTOMREAL azimuthal_weight_cs_reloc[n_weight] = {1.0, 1.0, 100.0, 200.0};
-    CUSTOMREAL residual_weight_cr_reloc[n_weight]  = {1.0, 1.0,  15.0,  30.0};
-    CUSTOMREAL azimuthal_weight_cr_reloc[n_weight] = {1.0, 1.0,  15.0,  30.0};
+    CUSTOMREAL residual_weight_abs_reloc[n_weight] = {   1.0,   3.0, 1.0, 1.0};
+    CUSTOMREAL distance_weight_abs_reloc[n_weight] = {   1.0,   3.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cs_reloc[n_weight]  = {   1.0,   3.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cs_reloc[n_weight] = { 100.0, 200.0, 1.0, 1.0};
+    CUSTOMREAL residual_weight_cr_reloc[n_weight]  = {  15.0,  30.0, 1.0, 1.0};
+    CUSTOMREAL azimuthal_weight_cr_reloc[n_weight] = {  15.0,  30.0, 1.0, 1.0};
 
     // convergence setting
     CUSTOMREAL conv_tol;       // convergence tolerance
