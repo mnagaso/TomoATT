@@ -98,7 +98,7 @@ std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, G
     // initialize source parameters (obj, kernel, )
     recs.init_vars_src_reloc(IP);
 
-    // iterate over sources
+    // iterate over sources (to obtain gradient of traveltime field T and absolute traveltime, common source differential traveltime, and common receiver differential traveltime)
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
         const std::string name_sim_src = IP.get_src_name(i_src);
@@ -110,20 +110,28 @@ std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, G
         // load travel time field on grid.T_loc
         io.read_T_tmp(grid);
 
-        // calculate travel time at the actual source location
+        // calculate travel time at the actual source location (absolute traveltime, common source differential traveltime)
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
         // calculate gradient at the actual source location
         recs.calculate_T_gradient(IP, grid, name_sim_src);
-
-        // calculate gradient of objective function with respect to location and ortime
-        recs.calculate_grad_obj_src_reloc(IP, name_sim_src);
-
     }
 
+    // wait for all processes to finish
+    synchronize_all_world();
+
     // gather all the traveltime to the main process and distribute to all processes
-    // for calculating the synthetic common receiver differential traveltime (for output)
+    // for calculating the synthetic (common receiver differential traveltime)
     IP.gather_traveltimes_and_calc_syn_diff();
+
+
+    // iterate over sources for calculating gradient of objective function
+    for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
+        const std::string name_sim_src = IP.get_src_name(i_src);
+             
+        // calculate gradient of objective function with respect to location and ortime
+        recs.calculate_grad_obj_src_reloc(IP, name_sim_src);
+    }
 
     // compute the objective function
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_reloc(IP, i_iter);

@@ -58,6 +58,9 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["domain"], "n_rtp", ngrid_j, 1);
                 getNodeValue(config["domain"], "n_rtp", ngrid_i, 2);
             }
+        } else {
+            std::cout << "domain is not defined. stop." << std::endl;
+            exit(1);
         }
 
         //
@@ -79,6 +82,9 @@ InputParams::InputParams(std::string& input_file){
             if (config["source"]["swap_src_rec"]) {
                 getNodeValue(config["source"], "swap_src_rec", swap_src_rec);
             }
+        } else {
+            std::cout << "source is not defined. stop." << std::endl;
+            exit(1);
         }
 
         //
@@ -93,6 +99,9 @@ InputParams::InputParams(std::string& input_file){
             if (config["model"]["model_1d_name"]) {
                 getNodeValue(config["model"], "model_1d_name", model_1d_name);
             }
+        } else {
+            std::cout << "model is not defined. stop." << std::endl;
+            exit(1);
         }
 
         //
@@ -290,125 +299,41 @@ InputParams::InputParams(std::string& input_file){
             if (config["model_update"]["n_inversion_grid"]) {
                 getNodeValue(config["model_update"], "n_inversion_grid", n_inversion_grid);
             }
-            // type_invgrid_dep
-            if (config["model_update"]["type_invgrid_dep"]) {
-                getNodeValue(config["model_update"], "type_invgrid_dep", type_invgrid_dep);
-            }
-            if (config["model_update"]["type_invgrid_lat"]) {
-                getNodeValue(config["model_update"], "type_invgrid_lat", type_invgrid_lat);
-            }
-            if (config["model_update"]["type_invgrid_lon"]) {
-                getNodeValue(config["model_update"], "type_invgrid_lon", type_invgrid_lon);
-            }
-            // number of inversion grid for regular grid
-            if (config["model_update"]["n_inv_dep_lat_lon"]) {
-                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_r, 0);
-                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_t, 1);
-                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_p, 2);
-            }
-            // inversion grid positions
-            if (config["model_update"]["min_max_dep_inv"]) {
-                getNodeValue(config["model_update"], "min_max_dep_inv", min_dep_inv, 0);
-                getNodeValue(config["model_update"], "min_max_dep_inv", max_dep_inv, 1);
-            }
-            // minimum and maximum latitude
-            if (config["model_update"]["min_max_lat_inv"]) {
-                getNodeValue(config["model_update"], "min_max_lat_inv", min_lat_inv, 0);
-                getNodeValue(config["model_update"], "min_max_lat_inv", max_lat_inv, 1);
-            }
-            // minimum and maximum longitude
-            if (config["model_update"]["min_max_lon_inv"]) {
-                getNodeValue(config["model_update"], "min_max_lon_inv", min_lon_inv, 0);
-                getNodeValue(config["model_update"], "min_max_lon_inv", max_lon_inv, 1);
-            }
 
-            // flexible inversion grid
-            if (config["model_update"]["dep_inv"] && type_invgrid_dep == INV_GRID_FLEX) {
-                n_inv_r_flex = config["model_update"]["dep_inv"].size(); // TODO: further refactoring needed
+            // flexible inversion grid for velocity
+            if (config["model_update"]["dep_inv"]){
+                n_inv_r_flex = config["model_update"]["dep_inv"].size();
                 dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5000);
                 for (int i = 0; i < n_inv_r_flex; i++){
                     getNodeValue(config["model_update"], "dep_inv", dep_inv[i], i);
                 }
-                n_inv_r_flex_read = true;
+            } else {
+                std::cout << "dep_inv is not defined. stop." << std::endl;
+                exit(1);
             }
-            if (config["model_update"]["lat_inv"] && type_invgrid_lat == INV_GRID_FLEX) {
+            if (config["model_update"]["lat_inv"]) {
                 n_inv_t_flex = config["model_update"]["lat_inv"].size();
                 lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
                 for (int i = 0; i < n_inv_t_flex; i++){
                     getNodeValue(config["model_update"], "lat_inv", lat_inv[i], i);
                 }
-                n_inv_t_flex_read = true;
+            } else {
+                std::cout << "lat_inv is not defined. stop." << std::endl;
+                exit(1);
             }
-            if (config["model_update"]["lon_inv"] && type_invgrid_lon == INV_GRID_FLEX) {
+            if (config["model_update"]["lon_inv"]) {
                 n_inv_p_flex = config["model_update"]["lon_inv"].size();
                 lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5002);
                 for (int i = 0; i < n_inv_p_flex; i++){
                     getNodeValue(config["model_update"], "lon_inv", lon_inv[i], i);
                 }
-                n_inv_p_flex_read = true;
+            } else {
+                std::cout << "lon_inv is not defined. stop." << std::endl;
+                exit(1);
             }
-
-            // trapezoid inversion grid
-            if (config["model_update"]["lat_spacing_inv"] && type_invgrid_lat == INV_GRID_TRAPE) {
-                CUSTOMREAL min_lat_spacing_inv = 10000;
-                if (type_invgrid_dep == INV_GRID_REGULAR) {
-                    n_lat_lon_spacing_inv_trape = n_inv_r;
-                } else if (type_invgrid_dep == INV_GRID_FLEX) {
-                    n_lat_lon_spacing_inv_trape = n_inv_r_flex;
-                } else {
-                    std::cout << "error input: type_invgrid_dep: " << type_invgrid_lat << std::endl;
-                    exit(0);
-                }
-
-                lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-                if((int)config["model_update"]["lat_spacing_inv"].size() != n_lat_lon_spacing_inv_trape){
-                    std::cout << "error size of lat_spacing_inv: " << config["model_update"]["lat_spacing_inv"].size() << ", require: " << n_lat_lon_spacing_inv_trape << std::endl;
-                    exit(0);
-                }
-
-                for (int i = 0; i < n_lat_lon_spacing_inv_trape; i++) {
-                    getNodeValue(config["model_update"], "lat_spacing_inv", lat_spacing_inv[i], i);
-                    min_lat_spacing_inv = std::min(min_lat_spacing_inv,lat_spacing_inv[i]);
-                }
-
-                n_inv_t_trape_read = true;
-
-                if(min_lat_spacing_inv < 0.000001){
-                    std::cout << "error lat_spacing_inv, minimum value is : " << min_lat_spacing_inv << std::endl;
-                    exit(0);
-                } else {
-                    n_inv_t_trape = std::floor((max_lat-min_lat)/min_lat_spacing_inv)+5;
-                }
-            }
-
-            if (config["model_update"]["lon_spacing_inv"] && type_invgrid_lon == INV_GRID_TRAPE) {
-                CUSTOMREAL min_lon_spacing_inv = 10000;
-                if (type_invgrid_dep == INV_GRID_REGULAR) {
-                    n_lat_lon_spacing_inv_trape = n_inv_r;
-                } else if (type_invgrid_dep == INV_GRID_FLEX) {
-                    n_lat_lon_spacing_inv_trape = n_inv_r_flex;
-                } else {
-                    std::cout << "error input: type_invgrid_dep: " << type_invgrid_lat << std::endl;
-                    exit(0);
-                }
-
-                lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-                if((int)config["model_update"]["lon_spacing_inv"].size() != n_lat_lon_spacing_inv_trape){
-                    std::cout << "error size of lon_spacing_inv: " << config["model_update"]["lon_spacing_inv"].size() << ", require: " << n_lat_lon_spacing_inv_trape << std::endl;
-                    exit(0);
-                }
-                for (int i = 0; i < n_lat_lon_spacing_inv_trape; i++) {
-                    getNodeValue(config["model_update"], "lon_spacing_inv", lon_spacing_inv[i], i);
-                    min_lon_spacing_inv = std::min(min_lon_spacing_inv,lon_spacing_inv[i]);
-                }
-
-                n_inv_p_trape_read = true;
-
-                if(min_lon_spacing_inv < 0.000001){
-                    std::cout << "error lon_spacing_inv, minimum value is : " << min_lon_spacing_inv << std::endl;
-                    exit(0);
-                } else {
-                    n_inv_p_trape = std::floor((max_lon-min_lon)/min_lon_spacing_inv)+5;
+            if (config["model_update"]["trapezoid"]) {
+                for (int i = 0; i < n_trapezoid; i++){
+                    getNodeValue(config["model_update"], "trapezoid", trapezoid[i], i);
                 }
             }
 
@@ -416,124 +341,33 @@ InputParams::InputParams(std::string& input_file){
             if (config["model_update"]["invgrid_ani"]) {
                 getNodeValue(config["model_update"], "invgrid_ani", invgrid_ani);
             }
-            // type_invgrid_dep_ani
-            if (config["model_update"]["type_invgrid_dep_ani"]) {
-                getNodeValue(config["model_update"], "type_invgrid_dep_ani", type_invgrid_dep_ani);
-            }
-            if (config["model_update"]["type_invgrid_lat_ani"]) {
-                getNodeValue(config["model_update"], "type_invgrid_lat_ani", type_invgrid_lat_ani);
-            }
-            if (config["model_update"]["type_invgrid_lon_ani"]) {
-                getNodeValue(config["model_update"], "type_invgrid_lon_ani", type_invgrid_lon_ani);
-            }
-            // number of inversion grid for regular grid
-            if (config["model_update"]["n_inv_dep_lat_lon_ani"]) {
-                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_r_ani, 0);
-                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_t_ani, 1);
-                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_p_ani, 2);
-            }
-            // inversion grid positions
-            if (config["model_update"]["min_max_dep_inv_ani"]) {
-                getNodeValue(config["model_update"], "min_max_dep_inv_ani", min_dep_inv_ani, 0);
-                getNodeValue(config["model_update"], "min_max_dep_inv_ani", max_dep_inv_ani, 1);
-            }
-            // minimum and maximum latitude
-            if (config["model_update"]["min_max_lat_inv_ani"]) {
-                getNodeValue(config["model_update"], "min_max_lat_inv_ani", min_lat_inv_ani, 0);
-                getNodeValue(config["model_update"], "min_max_lat_inv_ani", max_lat_inv_ani, 1);
-            }
-            // minimum and maximum longitude
-            if (config["model_update"]["min_max_lon_inv_ani"]) {
-                getNodeValue(config["model_update"], "min_max_lon_inv_ani", min_lon_inv_ani, 0);
-                getNodeValue(config["model_update"], "min_max_lon_inv_ani", max_lon_inv_ani, 1);
-            }
 
-            if (config["model_update"]["dep_inv_ani"] && type_invgrid_dep_ani == INV_GRID_FLEX) {
+            // flexible inversion grid for anisotropy
+            if (config["model_update"]["dep_inv_ani"]) {
                 n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
                 dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
                 for (int i = 0; i < n_inv_r_flex_ani; i++){
                     getNodeValue(config["model_update"], "dep_inv_ani", dep_inv_ani[i], i);
                 }
-                n_inv_r_flex_ani_read = true;
             }
-            if (config["model_update"]["lat_inv_ani"] && type_invgrid_lat_ani == INV_GRID_FLEX) {
+
+            if (config["model_update"]["lat_inv_ani"]) {
                 n_inv_t_flex_ani = config["model_update"]["lat_inv_ani"].size();
                 lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
                 for (int i = 0; i < n_inv_t_flex_ani; i++){
                     getNodeValue(config["model_update"], "lat_inv_ani", lat_inv_ani[i], i);
                 }
-                n_inv_t_flex_ani_read = true;
             }
-            if (config["model_update"]["lon_inv_ani"] && type_invgrid_lon_ani == INV_GRID_FLEX) {
+            if (config["model_update"]["lon_inv_ani"]) {
                 n_inv_p_flex_ani = config["model_update"]["lon_inv_ani"].size();
                 lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5005);
                 for (int i = 0; i < n_inv_p_flex_ani; i++){
                     getNodeValue(config["model_update"], "lon_inv_ani", lon_inv_ani[i], i);
                 }
-                n_inv_p_flex_ani_read = true;
             }
-
-            // trapezoid inversion grid
-            if (config["model_update"]["lat_spacing_inv_ani"] && type_invgrid_lat_ani == INV_GRID_TRAPE) {
-                CUSTOMREAL min_lat_spacing_inv_ani = 10000;
-                if (type_invgrid_dep_ani == INV_GRID_REGULAR) {
-                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_ani;
-                } else if (type_invgrid_dep_ani == INV_GRID_FLEX) {
-                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_flex_ani;
-                } else {
-                    std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
-                    exit(0);
-                }
-
-                lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
-                if((int)config["model_update"]["lat_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
-                    std::cout << "error size of lat_spacing_inv_ani: " << config["model_update"]["lat_spacing_inv_ani"].size() << ", require: " << n_lat_lon_spacing_inv_trape_ani << std::endl;
-                    exit(0);
-                }
-
-                for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++) {
-                    getNodeValue(config["model_update"], "lat_spacing_inv_ani", lat_spacing_inv_ani[i], i);
-                    min_lat_spacing_inv_ani = std::min(min_lat_spacing_inv_ani,lat_spacing_inv_ani[i]);
-                }
-
-                n_inv_t_trape_ani_read = true;
-
-                if(min_lat_spacing_inv_ani < 0.000001){
-                    std::cout << "error lat_spacing_inv_ani, minimum value is : " << min_lat_spacing_inv_ani << std::endl;
-                    exit(0);
-                } else {
-                    n_inv_t_trape_ani = std::floor((max_lat-min_lat)/min_lat_spacing_inv_ani)+5;
-                }
-            }
-
-            if (config["model_update"]["lon_spacing_inv_ani"] && type_invgrid_lon_ani == INV_GRID_TRAPE) {
-                CUSTOMREAL min_lon_spacing_inv_ani = 10000;
-                if (type_invgrid_dep_ani == INV_GRID_REGULAR) {
-                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_ani;
-                } else if (type_invgrid_dep_ani == INV_GRID_FLEX) {
-                    n_lat_lon_spacing_inv_trape_ani = n_inv_r_flex_ani;
-                } else {
-                    std::cout << "error input: type_invgrid_dep_ani: " << type_invgrid_lat_ani << std::endl;
-                    exit(0);
-                }
-
-                lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
-                if((int)config["model_update"]["lon_spacing_inv_ani"].size() != n_lat_lon_spacing_inv_trape_ani){
-                    std::cout << "error size of lon_spacing_inv_ani: " << config["model_update"]["lon_spacing_inv_ani"].size() << ", require: " << n_lat_lon_spacing_inv_trape_ani << std::endl;
-                    exit(0);
-                }
-                for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++) {
-                    getNodeValue(config["model_update"], "lon_spacing_inv_ani", lon_spacing_inv_ani[i], i);
-                    min_lon_spacing_inv_ani = std::min(min_lon_spacing_inv_ani,lon_spacing_inv_ani[i]);
-                }
-
-                n_inv_p_trape_ani_read = true;
-
-                if(min_lon_spacing_inv_ani < 0.000001){
-                    std::cout << "error lon_spacing_inv_ani, minimum value is : " << min_lon_spacing_inv_ani << std::endl;
-                    exit(0);
-                } else {
-                    n_inv_p_trape_ani = std::floor((max_lon-min_lon)/min_lon_spacing_inv_ani)+5;
+            if (config["model_update"]["trapezoid_ani"]) {
+                for (int i = 0; i < n_trapezoid; i++){
+                    getNodeValue(config["model_update"], "trapezoid_ani", trapezoid_ani[i], i);
                 }
             }
 
@@ -679,6 +513,17 @@ InputParams::InputParams(std::string& input_file){
                         getNodeValue(config["relocation"]["abs_time"], "distance_weight", distance_weight_abs_reloc[i], i);
                 }
             }
+            if (config["relocation"]["cs_dif_time"]){
+                getNodeValue(config["relocation"]["cs_dif_time"], "use_cs_time", use_cs_reloc);
+                if (config["relocation"]["cs_dif_time"]["residual_weight"]){
+                    for (int i = 0; i < n_weight; i++)
+                        getNodeValue(config["relocation"]["cs_dif_time"], "residual_weight", residual_weight_cs_reloc[i], i);
+                }
+                if (config["relocation"]["cs_dif_time"]["azimuthal_weight"]) {
+                    for (int i = 0; i < n_weight; i++)
+                        getNodeValue(config["relocation"]["cs_dif_time"], "azimuthal_weight", azimuthal_weight_cs_reloc[i], i);
+                }
+            }
             if (config["relocation"]["cr_dif_time"]){
                 getNodeValue(config["relocation"]["cr_dif_time"], "use_cr_time", use_cr_reloc);
                 if (config["relocation"]["cr_dif_time"]["residual_weight"]){
@@ -697,6 +542,9 @@ InputParams::InputParams(std::string& input_file){
                 }
                 if (config["relocation"]["global_weight"]["abs_time_weight"]) {
                     getNodeValue(config["relocation"]["global_weight"], "abs_time_weight", abs_time_local_weight_reloc);
+                }
+                if (config["relocation"]["global_weight"]["cs_dif_time_local_weight"]) {
+                    getNodeValue(config["relocation"]["global_weight"], "cs_dif_time_local_weight", cs_dif_time_local_weight_reloc);
                 }
                 if (config["relocation"]["global_weight"]["cr_dif_time_local_weight"]) {
                     getNodeValue(config["relocation"]["global_weight"], "cr_dif_time_local_weight", cr_dif_time_local_weight_reloc);
@@ -771,43 +619,6 @@ InputParams::InputParams(std::string& input_file){
         std::cout << "ndiv_rtp: " << ndiv_k << " "  << ndiv_j  << " " << ndiv_i << std::endl;
         std::cout << "n_subprocs: " << n_subprocs << std::endl;
         std::cout << "n_sims: " << n_sims << std::endl;
-
-        // set inversion grid definition if not set by user
-        if (min_dep_inv <= -99999) min_dep_inv = min_dep;
-        if (max_dep_inv <= -99999) max_dep_inv = max_dep;
-        if (min_lat_inv <= -99999) min_lat_inv = min_lat;
-        if (max_lat_inv <= -99999) max_lat_inv = max_lat;
-        if (min_lon_inv <= -99999) min_lon_inv = min_lon;
-        if (max_lon_inv <= -99999) max_lon_inv = max_lon;
-
-        // allocate dummy arrays for flex inv grid
-        if (!n_inv_r_flex_read)
-            dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5006);
-        if (!n_inv_t_flex_read)
-            lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5007);
-        if (!n_inv_p_flex_read)
-            lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5008);
-
-        // allocate dummy arrays for flex inv grid
-        if (!n_inv_r_flex_ani_read)
-            dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5009);
-        if (!n_inv_t_flex_ani_read)
-            lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5010);
-        if (!n_inv_p_flex_ani_read)
-            lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5011);
-
-        // allocate dummy arrays for trapezoid inv grid
-        if (!n_inv_t_trape_read)
-            lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-        if (!n_inv_p_trape_read)
-            lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-
-        // allocate dummy arrays for trapezoid inv grid
-        if (!n_inv_t_trape_ani_read)
-            lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
-        if (!n_inv_p_trape_ani_read)
-            lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
-
 
         // write parameter file to output directory
         write_params_to_file();
@@ -900,33 +711,11 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(smooth_lp, 0);
 
     broadcast_i_single(n_inversion_grid, 0);
-    broadcast_i_single(type_invgrid_dep, 0);
-    broadcast_i_single(type_invgrid_lat, 0);
-    broadcast_i_single(type_invgrid_lon, 0);
-    broadcast_i_single(type_invgrid_dep_ani, 0);
-    broadcast_i_single(type_invgrid_lat_ani, 0);
-    broadcast_i_single(type_invgrid_lon_ani, 0);
-    broadcast_i_single(n_inv_r, 0);
-    broadcast_i_single(n_inv_t, 0);
-    broadcast_i_single(n_inv_p, 0);
-    broadcast_i_single(n_inv_r_ani, 0);
-    broadcast_i_single(n_inv_t_ani, 0);
-    broadcast_i_single(n_inv_p_ani, 0);
-    broadcast_cr_single(min_dep_inv, 0);
-    broadcast_cr_single(max_dep_inv, 0);
-    broadcast_cr_single(min_lat_inv, 0);
-    broadcast_cr_single(max_lat_inv, 0);
-    broadcast_cr_single(min_lon_inv, 0);
-    broadcast_cr_single(max_lon_inv, 0);
+
     broadcast_i_single(n_inv_r_flex, 0);
     broadcast_i_single(n_inv_t_flex, 0);
     broadcast_i_single(n_inv_p_flex, 0);
-    broadcast_cr_single(min_dep_inv_ani, 0);
-    broadcast_cr_single(max_dep_inv_ani, 0);
-    broadcast_cr_single(min_lat_inv_ani, 0);
-    broadcast_cr_single(max_lat_inv_ani, 0);
-    broadcast_cr_single(min_lon_inv_ani, 0);
-    broadcast_cr_single(max_lon_inv_ani, 0);
+
     broadcast_i_single(n_inv_r_flex_ani, 0);
     broadcast_i_single(n_inv_t_flex_ani, 0);
     broadcast_i_single(n_inv_p_flex_ani, 0);
@@ -942,26 +731,11 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr(dep_inv,n_inv_r_flex, 0);
     broadcast_cr(lat_inv,n_inv_t_flex, 0);
     broadcast_cr(lon_inv,n_inv_p_flex, 0);
+    broadcast_cr(trapezoid,n_trapezoid, 0);
     broadcast_cr(dep_inv_ani,n_inv_r_flex_ani, 0);
     broadcast_cr(lat_inv_ani,n_inv_t_flex_ani, 0);
     broadcast_cr(lon_inv_ani,n_inv_p_flex_ani, 0);
-
-    broadcast_i_single(n_inv_t_trape, 0);
-    broadcast_i_single(n_inv_p_trape, 0);
-    broadcast_i_single(n_inv_t_trape_ani, 0);
-    broadcast_i_single(n_inv_p_trape_ani, 0);
-    broadcast_i_single(n_lat_lon_spacing_inv_trape, 0);
-    broadcast_i_single(n_lat_lon_spacing_inv_trape_ani, 0);
-    if (world_rank != 0) {
-        lat_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-        lon_spacing_inv = new CUSTOMREAL[n_lat_lon_spacing_inv_trape];
-        lat_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
-        lon_spacing_inv_ani = new CUSTOMREAL[n_lat_lon_spacing_inv_trape_ani];
-    }
-    broadcast_cr(lat_spacing_inv,n_lat_lon_spacing_inv_trape, 0);
-    broadcast_cr(lon_spacing_inv,n_lat_lon_spacing_inv_trape, 0);
-    broadcast_cr(lat_spacing_inv_ani,n_lat_lon_spacing_inv_trape_ani, 0);
-    broadcast_cr(lon_spacing_inv_ani,n_lat_lon_spacing_inv_trape_ani, 0);
+    broadcast_cr(trapezoid_ani,n_trapezoid, 0);
 
     broadcast_bool_single(invgrid_ani, 0);
     broadcast_bool_single(invgrid_volume_rescale, 0);
@@ -1009,12 +783,16 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(use_abs_reloc, 0);
     broadcast_cr(residual_weight_abs_reloc, n_weight, 0);
     broadcast_cr(distance_weight_abs_reloc, n_weight, 0);
+    broadcast_bool_single(use_cs_reloc, 0);
+    broadcast_cr(residual_weight_cs_reloc, n_weight, 0);
+    broadcast_cr(azimuthal_weight_cs_reloc, n_weight, 0);
     broadcast_bool_single(use_cr_reloc, 0);
     broadcast_cr(residual_weight_cr_reloc, n_weight, 0);
     broadcast_cr(azimuthal_weight_cr_reloc, n_weight, 0);
 
     broadcast_bool_single(balance_data_weight_reloc, 0);
     broadcast_cr_single(abs_time_local_weight_reloc, 0);
+    broadcast_cr_single(cs_dif_time_local_weight_reloc, 0);
     broadcast_cr_single(cr_dif_time_local_weight_reloc, 0);
 
     broadcast_i_single(inv_mode, 0);
@@ -1041,39 +819,15 @@ InputParams::InputParams(std::string& input_file){
 
 InputParams::~InputParams(){
     // free memory
-    //if (subdom_main) {
-    //    for (auto iter = src_map.begin(); iter != src_map.end(); iter++){
-    //        SrcRecInfo& src = iter->second;
-    //        if (src.is_out_of_region){
-    //            //if (j_last && src.arr_times_bound_N != nullptr)
-    //            //    free(src.arr_times_bound_N);
-    //            //if (j_first && src.arr_times_bound_S != nullptr)
-    //            //    free(src.arr_times_bound_S);
-    //            //if (i_last && src.arr_times_bound_E != nullptr)
-    //            //    free(src.arr_times_bound_E);
-    //            //if (i_first && src.arr_times_bound_W != nullptr)
-    //            //    free(src.arr_times_bound_W);
-    //            //if (k_first && src.arr_times_bound_Bot != nullptr)
-    //            //    free(src.arr_times_bound_Bot);
 
-    //            //free(src.is_bound_src);
-    //        }
-    //    }
-    //}
+    // check allocated memory
+    if (dep_inv != nullptr) delete [] dep_inv;
+    if (lat_inv != nullptr) delete [] lat_inv;
+    if (lon_inv != nullptr) delete [] lon_inv;
 
-    delete [] dep_inv;
-    delete [] lat_inv;
-    delete [] lon_inv;
-
-    delete [] dep_inv_ani;
-    delete [] lat_inv_ani;
-    delete [] lon_inv_ani;
-
-    delete [] lat_spacing_inv;
-    delete [] lon_spacing_inv;
-
-    delete [] lat_spacing_inv_ani;
-    delete [] lon_spacing_inv_ani;
+    if (dep_inv_ani != nullptr) delete [] dep_inv_ani;
+    if (lat_inv_ani != nullptr) delete [] lat_inv_ani;
+    if (lon_inv_ani != nullptr) delete [] lon_inv_ani;
 
     // clear all src, rec, data
     src_map.clear();
@@ -1222,159 +976,102 @@ void InputParams::write_params_to_file() {
     fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
     fout << std::endl;
 
-    fout << "  # inversion grid type" << std::endl;
-    fout << "  type_invgrid_dep: " << type_invgrid_dep << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "  type_invgrid_lat: " << type_invgrid_lat << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "  type_invgrid_lon: " << type_invgrid_lon << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << std::endl;
-
-    fout << "  # settings for uniform inversion grid (if type_invgrid_* : 0)" << std::endl;
-    fout << "  n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
-    fout << "  min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "]" << " # depth in km (Radius of the earth is defined in config.h/R_earth)"  << std::endl;
-    fout << "  min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "]" << " # latitude in degree"  << std::endl;
-    fout << "  min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "]" << " # longitude in degree" << std::endl;
-    fout << std::endl;
-
-    fout << "  # settings for flexible inversion grid (if type_invgrid_* : 1)" << std::endl;
-    if (n_inv_r_flex_read) {
-        fout << "  dep_inv: [";
-        for (int i = 0; i < n_inv_r_flex; i++){
-            fout << dep_inv[i];
-            if (i != n_inv_r_flex-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  dep_inv: " << "[1, 1, 1]" << std::endl;
+    fout << "  # settings for flexible inversion grid" << std::endl;
+    fout << "  dep_inv: [";
+    for (int i = 0; i < n_inv_r_flex; i++){
+        fout << dep_inv[i];
+        if (i != n_inv_r_flex-1)
+            fout << ", ";
     }
-    if (n_inv_t_flex_read) {
-        fout << "  lat_inv: [";
-        for (int i = 0; i < n_inv_t_flex; i++){
-            fout << lat_inv[i];
-            if (i != n_inv_t_flex-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lat_inv: " << "[1, 1, 1]" << std::endl;
+    fout << "] # inversion grid for vel in depth (km)" << std::endl;
+    fout << "  lat_inv: [";
+    for (int i = 0; i < n_inv_t_flex; i++){
+        fout << lat_inv[i];
+        if (i != n_inv_t_flex-1)
+            fout << ", ";
     }
-    if (n_inv_p_flex_read) {
-        fout << "  lon_inv: [";
-        for (int i = 0; i < n_inv_p_flex; i++){
-            fout << lon_inv[i];
-            if (i != n_inv_p_flex-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lon_inv: " << "[1, 1, 1]" << std::endl;
+    fout << "] # inversion grid for vel in latitude (degree)" << std::endl;
+    fout << "  lon_inv: [";
+    for (int i = 0; i < n_inv_p_flex; i++){
+        fout << lon_inv[i];
+        if (i != n_inv_p_flex-1)
+            fout << ", ";
     }
-    fout << std::endl;
-
-    fout << "  # setting for trapezoid inversion grid (if type_invgrid_lat : 2 or/and type_invgrid_lon : 2)" << std::endl;
-    fout << "  # The grid spacing (degree) in latitude (longitude) at each depth. The size must equal to the size of inversion grid in depth (length of <dep_inv> or n_inv_dep_lat_lon[0])" << std::endl;
-    if (n_inv_t_trape_read){
-        fout << "  lat_spacing_inv: [";
-        for (int i = 0; i < n_lat_lon_spacing_inv_trape; i++){
-            fout << lat_spacing_inv[i];
-            if (i != n_lat_lon_spacing_inv_trape-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lat_spacing_inv: " << "[0.1, 0.1, 0.1, 0.1]" << std::endl;
+    fout << "] # inversion grid for vel in longitude (degree)" << std::endl;
+    fout << "  trapezoid: [";
+    for (int i = 0; i < n_trapezoid; i++){
+        fout << trapezoid[i];
+        if (i != n_trapezoid-1)
+            fout << ", ";
     }
-    if (n_inv_p_trape_read){
-        fout << "  lon_spacing_inv: [";
-        for (int i = 0; i < n_lat_lon_spacing_inv_trape; i++){
-            fout << lon_spacing_inv[i];
-            if (i != n_lat_lon_spacing_inv_trape-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lon_spacing_inv: " << "[0.1, 0.1, 0.1, 0.1]" << std::endl;
-    }
+    fout << "]  # usually set as [1.0, 0.0, 50.0] (default)" << std::endl;
     fout << std::endl;
 
     fout << "  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)" << std::endl;
     fout << "  invgrid_ani: " << invgrid_ani << std::endl;
-    fout << "  # settings for flexible inversion grid for anisotropy (only flexible grid input is provided)" << std::endl;
 
-    fout << "  # anisotropic inversion grid type (used only if invgrid_ani : true)" << std::endl;
-    fout << "  type_invgrid_dep_ani: " << type_invgrid_dep_ani << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "  type_invgrid_lat_ani: " << type_invgrid_lat_ani << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
-    fout << "  type_invgrid_lon_ani: " << type_invgrid_lon_ani << " # 0: uniform inversion grid, 1: flexible grid" <<std::endl;
+    fout << "  # settings for flexible inversion grid for anisotropy" << std::endl;
+    fout << "  dep_inv_ani: [";
+    for (int i = 0; i < n_inv_r_flex_ani; i++){
+        fout << dep_inv_ani[i];
+        if (i != n_inv_r_flex_ani-1)
+            fout << ", ";
+    }
+    fout << "] # inversion grid for ani in depth (km)" << std::endl;
+    fout << "  lat_inv_ani: [";
+    for (int i = 0; i < n_inv_t_flex_ani; i++){
+        fout << lat_inv_ani[i];
+        if (i != n_inv_t_flex_ani-1)
+            fout << ", ";
+    }
+    fout << "] # inversion grid for ani in latitude (degree)" << std::endl;
+    fout << "  lon_inv_ani: [";
+    for (int i = 0; i < n_inv_p_flex_ani; i++){
+        fout << lon_inv_ani[i];
+        if (i != n_inv_p_flex_ani-1)
+            fout << ", ";
+    }
+    fout << "] # inversion grid for ani in longitude (degree)" << std::endl;
+    fout << "  trapezoid_ani: [";
+    for (int i = 0; i < n_trapezoid; i++){
+        fout << trapezoid_ani[i];
+        if (i != n_trapezoid-1)
+            fout << ", ";
+    }
+    fout << "]  # usually set as [1.0, 0.0, 50.0] (default)" << std::endl;
     fout << std::endl;
 
-    fout << "  # settings for uniform anisotropic inversion grid (used only if invgrid_ani : true)" << std::endl;
-    fout << "  n_inv_dep_lat_lon_ani: [" << n_inv_r_ani << ", " << n_inv_t_ani << ", " << n_inv_p_ani << "] # number of the base inversion grid points" << std::endl;
-    fout << "  min_max_dep_inv_ani: [" << min_dep_inv_ani << ", " << max_dep_inv_ani << "]" << " # depth in km (Radius of the earth is defined in config.h/R_earth)"  << std::endl;
-    fout << "  min_max_lat_inv_ani: [" << min_lat_inv_ani << ", " << max_lat_inv_ani << "]" << " # latitude in degree"  << std::endl;
-    fout << "  min_max_lon_inv_ani: [" << min_lon_inv_ani << ", " << max_lon_inv_ani << "]" << " # longitude in degree" << std::endl;
+    fout << "  # Carefully change trapezoid and trapezoid_ani, if you really want to use trapezoid inversion grid, increasing the inversion grid spacing with depth to account for the worse data coverage in greater depths." << std::endl;
+    fout << "  # The trapezoid_ inversion grid with index (i,j,k) in longitude, latitude, and depth is defined as:"         << std::endl;
+    fout << "  # if                 dep_inv[k] < trapezoid[1], lon = lon_inv[i];                   "                        << std::endl;
+    fout << "  #                                               lat = lat_inv[j];              "                             << std::endl;
+    fout << "  #                                               dep = dep_inv[k];"                                           << std::endl;
+    fout << "  # if trapezoid[1] <= dep_inv[k] < trapezoid[2], lon = mid_lon_inv+(lon_inv[i]-mid_lon_inv)*(dep_inv[k]-trapezoid[1])/(trapezoid[2]-trapezoid[1])*trapezoid[0]; " << std::endl;
+    fout << "  #                                               lat = mid_lat_inv+(lat_inv[i]-mid_lat_inv)*(dep_inv[k]-trapezoid[1])/(trapezoid[2]-trapezoid[1])*trapezoid[0]; " << std::endl;
+    fout << "  #                                               dep = dep_inv[k];"                                           << std::endl;
+    fout << "  # if trapezoid[2] <= dep_inv[k],                lon = mid_lon_inv+(lon_inv[i]-mid_lon_inv)*trapezoid[0]; "   << std::endl;
+    fout << "  #                                               lat = mid_lat_inv+(lat_inv[i]-mid_lat_inv)*trapezoid[0]; "   << std::endl;
+    fout << "  #                                               dep = dep_inv[k];"                                   << std::endl;
+    fout << "  # The shape of trapezoid inversion gird (x) looks like:"                                             << std::endl;
+    fout << "  #"                                                                                                   << std::endl;
+    fout << "  #                                 lon_inv[0]   [1]      [2]      [3]      [4]"                       << std::endl;
+    fout << "  #                                  |<-------- (lon_inv[end] - lon_inv[0]) ---->|   "                 << std::endl;
+    fout << "  #  dep_inv[0]                      |   x        x        x        x        x   |   "                 << std::endl;
+    fout << "  #                                  |                                           |   "                 << std::endl;
+    fout << "  #  dep_inv[1]                      |   x        x        x        x        x   |   "                 << std::endl;
+    fout << "  #                                  |                                           |   "                 << std::endl;
+    fout << "  #  dep_inv[2] = trapezoid[1]      /    x        x        x        x        x    \\ "                 << std::endl;
+    fout << "  #                                /                                               \\ "                << std::endl;
+    fout << "  #  dep_inv[3]                   /    x         x         x         x         x    \\ "               << std::endl;
+    fout << "  #                              /                                                   \\ "              << std::endl;
+    fout << "  #  dep_inv[4] = trapezoid[2]  /    x          x          x          x          x    \\ "             << std::endl;
+    fout << "  #                            |                                                       | "             << std::endl;
+    fout << "  #  dep_inv[5]                |     x          x          x          x          x     |  "            << std::endl;
+    fout << "  #                            |                                                       |  "            << std::endl;
+    fout << "  #  dep_inv[6]                |     x          x          x          x          x     |  "            << std::endl;
+    fout << "  #                            |<---- trapezoid[0]* (lon_inv[end] - lon_inv[0]) ------>|  "            << std::endl;
     fout << std::endl;
 
-    fout << "  # settings for flexible inversion grid for anisotropy (used only if invgrid_ani : true)" << std::endl;
-    if (n_inv_r_flex_ani_read){
-        fout << "  dep_inv_ani: [";
-        for (int i = 0; i < n_inv_r_flex_ani; i++){
-            fout << dep_inv_ani[i];
-            if (i != n_inv_r_flex_ani-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  dep_inv_ani: " << "[1, 1, 1]" << std::endl;
-    }
-    if (n_inv_t_flex_ani_read){
-        fout << "  lat_inv_ani: [";
-        for (int i = 0; i < n_inv_t_flex_ani; i++){
-            fout << lat_inv_ani[i];
-            if (i != n_inv_t_flex_ani-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lat_inv_ani: " << "[1, 1, 1]" << std::endl;
-    }
-    if (n_inv_p_flex_ani_read){
-        fout << "  lon_inv_ani: [";
-        for (int i = 0; i < n_inv_p_flex_ani; i++){
-            fout << lon_inv_ani[i];
-            if (i != n_inv_p_flex_ani-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lon_inv_ani: " << "[1, 1, 1]" << std::endl;
-    }
-    std::cout << std::endl;
-
-    fout << "  # setting for trapezoid inversion grid (if type_invgrid_lat_ani : 2 or/and type_invgrid_lon_ani : 2)" << std::endl;
-    fout << "  # The grid spacing (degree) in latitude (longitude) at each depth. The size must equal to the size of inversion grid in depth (length of <dep_inv_ani> or n_inv_dep_lat_lon_ani[0])" << std::endl;
-    if (n_inv_t_trape_ani_read){
-        fout << "  lat_spacing_inv_ani: [";
-        for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++){
-            fout << lat_spacing_inv_ani[i];
-            if (i != n_lat_lon_spacing_inv_trape_ani-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lat_spacing_inv_ani: " << "[0.1, 0.1, 0.1, 0.1]" << std::endl;
-    }
-    if (n_inv_p_trape_ani_read){
-        fout << "  lon_spacing_inv_ani: [";
-        for (int i = 0; i < n_lat_lon_spacing_inv_trape_ani; i++){
-            fout << lon_spacing_inv_ani[i];
-            if (i != n_lat_lon_spacing_inv_trape_ani-1)
-                fout << ", ";
-        }
-        fout << "]" << std::endl;
-    } else {
-        fout << "#  lon_spacing_inv_ani: " << "[0.1, 0.1, 0.1, 0.1]" << std::endl;
-    }
-    fout << std::endl;
 
     fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
     fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
@@ -1386,7 +1083,7 @@ void InputParams::write_params_to_file() {
     if (sta_correction_file_exist)
         fout << "  sta_correction_file: " << sta_correction_file;
     else
-        fout << "#  sta_correction_file: " << "dummy_sta_correction_file";
+        fout << "  # sta_correction_file: " << "dummy_sta_correction_file";
     fout << "  # station correction file path" << std::endl;
     fout << "  step_length_sc: " << step_length_init_sc << " # step length relate to the update of station correction terms" << std::endl;
     fout << std::endl;
@@ -1505,7 +1202,7 @@ void InputParams::write_params_to_file() {
 
     fout << "  # -------------- using absolute traveltime data --------------" << std::endl;
     fout << "  abs_time:" << std::endl;
-    fout << "    use_abs_time : " << use_abs_reloc << " # 'yes' for using absolute traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    use_abs_time : " << use_abs_reloc << " # 'yes' for using absolute traveltime data to update ortime and location; 'no' for not using (no need to set parameters in this section)" << std::endl;
     fout << "    residual_weight : [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_abs_reloc[i];
@@ -1522,9 +1219,28 @@ void InputParams::write_params_to_file() {
     fout << "]      # XXX is epicenter distance (km) between the source and receiver related to the data" << std::endl;
     fout << std::endl;
 
+    fout << "  # -------------- using common source differential traveltime data --------------" << std::endl;
+    fout << "  cs_dif_time:" << std::endl;
+    fout << "    use_cs_time : " << use_cs_reloc <<" # 'yes' for using common source differential traveltime data to update ortime and location; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    residual_weight  : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << residual_weight_cs_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]    # XXX is the common source differential traveltime residual (second) = abs(t^{obs}_{n,i} - t^{obs}_{n,j} - t^{syn}_{n,i} + t^{syn}_{n,j})." << std::endl;
+    fout << "    azimuthal_weight : [";
+    for (int i = 0; i < n_weight; i++){
+        fout << azimuthal_weight_cs_reloc[i];
+        if (i != n_weight-1)
+            fout << ", ";
+    }
+    fout << "]    # XXX is the azimuth difference between two separate stations related to the common source." << std::endl;
+    fout << std::endl;
+
     fout << "  # -------------- using common receiver differential traveltime data --------------" << std::endl;
     fout << "  cr_dif_time:" << std::endl;
-    fout << "    use_cr_time : " << use_cr_reloc <<" # 'yes' for using common receiver differential traveltime data to update model parameters; 'no' for not using (no need to set parameters in this section)" << std::endl;
+    fout << "    use_cr_time : " << use_cr_reloc <<" # 'yes' for using common receiver differential traveltime data to update ortime and location; 'no' for not using (no need to set parameters in this section)" << std::endl;
     fout << "    residual_weight  : [";
     for (int i = 0; i < n_weight; i++){
         fout << residual_weight_cr_reloc[i];
@@ -1546,6 +1262,7 @@ void InputParams::write_params_to_file() {
     fout << "  global_weight:" << std::endl;
     fout << "    balance_data_weight: " << balance_data_weight_reloc << " # yes: over the total weight of the each type of the data. no: use original weight (below weight for each type of data needs to be set)" << std::endl;
     fout << "    abs_time_local_weight: " << abs_time_local_weight_reloc << " # weight of absolute traveltime data for relocation after balance,     default: 1.0" << std::endl;
+    fout << "    cs_dif_time_local_weight: " << cs_dif_time_local_weight_reloc << " # weight of common source differential traveltime data for relocation after balance,   default: 1.0" << std::endl;
     fout << "    cr_dif_time_local_weight: " << cr_dif_time_local_weight_reloc << " # weight of common receiver differential traveltime data for relocation after balance,   default: 1.0" << std::endl;
     fout << std::endl;
 
@@ -2987,5 +2704,131 @@ void InputParams::allreduce_rec_map_grad_src(){
                 allreduce_rec_map_var(dummy_int);
             }
         }
+    }
+}
+
+void InputParams::check_increasing(CUSTOMREAL* arr_inv_grid, int n_grid, std::string name){
+    for (int i = 0; i < n_grid-1; i++){
+        if(arr_inv_grid[i] >= arr_inv_grid[i+1]){
+            std::cout << "ERROR: inversion grid of " << name << " should be monotonically increasing: " << arr_inv_grid[i] << ", " << arr_inv_grid[i+1] << std::endl;
+            exit(1);
+        }
+    }
+}
+
+void InputParams::check_inv_grid(){
+    // check point 1, inversion grid should be monotonically increasing
+    check_increasing(dep_inv, n_inv_r_flex, "depth");
+    check_increasing(lat_inv, n_inv_t_flex, "latitude");
+    check_increasing(lon_inv, n_inv_p_flex, "longitude");
+    if(invgrid_ani){
+        check_increasing(dep_inv_ani, n_inv_r_flex_ani, "depth_ani");
+        check_increasing(lat_inv_ani, n_inv_t_flex_ani, "latitude_ani");
+        check_increasing(lon_inv_ani, n_inv_p_flex_ani, "longitude_ani");
+    }
+
+    // check point 2, inversion grid should cover the model
+    if(myrank == 0 && id_sim ==0){
+        std::cout << "checking the inversion grid ..." << std::endl;
+        std::cout << std::endl;
+    }
+
+    check_lower_bound(dep_inv, n_inv_r_flex, min_dep, "depth");
+    check_upper_bound(dep_inv, n_inv_r_flex, max_dep, "depth");
+    check_lower_bound(lat_inv, n_inv_t_flex, min_lat, "latitude");
+    check_upper_bound(lat_inv, n_inv_t_flex, max_lat, "latitude");
+    check_lower_bound(lon_inv, n_inv_p_flex, min_lon, "longitude");
+    check_upper_bound(lon_inv, n_inv_p_flex, max_lon, "longitude");
+    if(invgrid_ani){
+        check_lower_bound(dep_inv_ani, n_inv_r_flex_ani, min_dep, "depth_ani");
+        check_upper_bound(dep_inv_ani, n_inv_r_flex_ani, max_dep, "depth_ani");
+        check_lower_bound(lat_inv_ani, n_inv_t_flex_ani, min_lat, "latitude_ani");
+        check_upper_bound(lat_inv_ani, n_inv_t_flex_ani, max_lat, "latitude_ani");
+        check_lower_bound(lon_inv_ani, n_inv_p_flex_ani, min_lon, "longitude_ani");
+        check_upper_bound(lon_inv_ani, n_inv_p_flex_ani, max_lon, "longitude_ani");
+    }
+
+}
+
+void InputParams::check_lower_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL lower_bound, std::string name){
+
+    if (arr[0] > lower_bound){
+
+        CUSTOMREAL grid2 = std::min(lower_bound, 2*arr[0] - arr[1]);
+        CUSTOMREAL grid1 = 2*grid2 - arr[0];
+        if(myrank == 0 && id_sim ==0){
+            std::cout << "lower bound of " << name << " inversion grid " << arr[0] << " is greater than computational domain "
+                  << lower_bound << std::endl;
+            std::cout << "Tow additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
+            std::cout << std::endl;
+        }
+        CUSTOMREAL* new_arr = new CUSTOMREAL[n_grid+2];
+        new_arr[0] = grid1;
+        new_arr[1] = grid2;
+        for (int i = 0; i < n_grid; i++){
+            new_arr[i+2] = arr[i];
+        }
+        delete[] arr;
+        arr = new_arr;
+        n_grid += 2;
+
+    } else if (arr[0] <= lower_bound && arr[1] > lower_bound){
+
+        CUSTOMREAL grid1 = 2*arr[0] - arr[1];
+        if(myrank == 0 && id_sim ==0){
+            std::cout << "sub lower bound of " << name << " inversion grid " << arr[1] << " is greater than computational domain "
+                  << lower_bound << std::endl;
+            std::cout << "One additional inversion grid: " << grid1 << " is added." << std::endl;
+            std::cout << std::endl;
+        }
+        CUSTOMREAL* new_arr = new CUSTOMREAL[n_grid+1];
+        new_arr[0] = grid1;
+        for (int i = 0; i < n_grid; i++){
+            new_arr[i+1] = arr[i];
+        }
+        delete[] arr;
+        arr = new_arr;
+        n_grid += 1;
+    }
+}
+
+void InputParams::check_upper_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL upper_bound, std::string name){
+    if (arr[n_grid-1] < upper_bound){
+
+        CUSTOMREAL grid1 = std::max(upper_bound, 2*arr[n_grid-1] - arr[n_grid-2]);
+        CUSTOMREAL grid2 = 2*grid1 - arr[n_grid-1];
+        if(myrank == 0 && id_sim ==0){
+            std::cout << "upper bound of " << name << " inversion grid " << arr[n_grid-1] << " is less than computational domain "
+                  << upper_bound << std::endl;
+            std::cout << "Tow additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
+            std::cout << std::endl;
+        }
+        CUSTOMREAL* new_arr = new CUSTOMREAL[n_grid+2];
+        for (int i = 0; i < n_grid; i++){
+            new_arr[i] = arr[i];
+        }
+        new_arr[n_grid]     = grid1;
+        new_arr[n_grid+1]   = grid2;
+        delete[] arr;
+        arr = new_arr;
+        n_grid += 2;
+
+    } else if (arr[n_grid-1] >= upper_bound && arr[n_grid-2] < upper_bound){
+
+        CUSTOMREAL grid1 = 2*arr[n_grid-1] - arr[n_grid-2];
+        if(myrank == 0 && id_sim ==0){
+            std::cout << "sub upper bound of " << name << " inversion grid " << arr[n_grid-2] << " is less than computational domain "
+                  << upper_bound << std::endl;
+            std::cout << "One additional inversion grid: " << grid1 << " is added." << std::endl;
+            std::cout << std::endl;
+        }
+        CUSTOMREAL* new_arr = new CUSTOMREAL[n_grid+1];
+        for (int i = 0; i < n_grid; i++){
+            new_arr[i] = arr[i];
+        }
+        new_arr[n_grid] = grid1;
+        delete[] arr;
+        arr = new_arr;
+        n_grid += 1;
     }
 }
