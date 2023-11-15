@@ -34,7 +34,7 @@ mpirun --oversubscribe -n 2 ../../build/bin/TOMOATT -i input_params/input_params
 
 and run all cells of `5_plot_location_result.ipynb` to show the location result in `img`:
 
-![](img/reloc_abs.jpg)
+![](img/inv_abs_reloc_abs.jpg)
 
 6. you can run all cells of `6_plot_ckb_model.ipynb` to plot the checkerboard model 
 
