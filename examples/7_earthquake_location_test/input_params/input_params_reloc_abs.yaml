@@ -33,8 +33,8 @@ parallel: # parameters for parallel computation
 #            output file setting           #
 ############################################
 output_setting:
-  output_dir: OUTPUT_FILES/OUTPUT_FILES_reloc_abs # path to output director (default is ./OUTPUT_FILES/)
-  output_in_process_data:  true # output src_rec_file at each inv iteration or not.                       
+  output_dir: OUTPUT_FILES/OUTPUT_FILES_reloc_abs # path to output director (default is ./OUTPUT_FILES/)      
+  output_in_process_data:  false # output src_rec_file at each inv iteration or not.                                        
   output_file_format: 0
 
 #################################################
