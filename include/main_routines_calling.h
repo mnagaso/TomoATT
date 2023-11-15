@@ -100,8 +100,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // skip for the mode with sub-iteration
         if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
         } else {
-            bool is_read_time = false;
-            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_read_time);
+            bool is_save_T = false;
+            v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_save_T);
             v_obj = v_obj_misfit[0];
         }
 
@@ -262,18 +262,27 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
         // write objective functions
         write_objective_function(IP, i_iter, v_obj_misfit, out_main, "relocation");
+
+        // write out new src_rec_file
+        if (IP.get_if_output_in_process_data()){
+            IP.write_src_rec_file(0,i_iter);
+        } 
+
+        // modify the receiver's location for output
+        IP.modify_swapped_source_location();
+
+
         if (finished)
             break;
 
         // new iteration
         i_iter++;
-
     }
 
     // modify the receiver's location
     IP.modify_swapped_source_location();
     // write out new src_rec_file
-    IP.write_src_rec_file(0,0);
+    IP.write_src_rec_file(0,i_iter);
     // close xdmf file
     io.finalize_data_output_file();
 
@@ -337,50 +346,240 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     Receiver recs;
 
     /////////////////////
-    // main loop for model update and relocation
+    // initializae objective function
     /////////////////////
 
-    CUSTOMREAL v_obj = 0.0, old_v_obj = 10000000000.0;
+    CUSTOMREAL v_obj = 0.0,         old_v_obj = 10000000000.0;
     std::vector<CUSTOMREAL> v_obj_misfit(20, 0.0);
 
-    int model_update_step = 0;
-    int relocation_step = 0;
+    if (inv_mode == ITERATIVE){
 
-    for (int i_loop = 0; i_loop < IP.get_max_loop(); i_loop++){
         /////////////////////
-        // stage 1, update model parameters
+        // main loop for model update and relocation
         /////////////////////
 
-        for (int one_loop_i_inv = 0; one_loop_i_inv < IP.get_model_update_N_iter(); one_loop_i_inv++){
-            // the actural step index of model update
-            int i_inv = i_loop * IP.get_model_update_N_iter() + one_loop_i_inv;
+        int model_update_step = 0;
+        int relocation_step = 0;
+
+        for (int i_loop = 0; i_loop < IP.get_max_loop_mode0(); i_loop++){
+            /////////////////////
+            // stage 1, update model parameters
+            /////////////////////
+
+            for (int one_loop_i_inv = 0; one_loop_i_inv < IP.get_model_update_N_iter(); one_loop_i_inv++){
+                // the actural step index of model update
+                int i_inv = i_loop * IP.get_model_update_N_iter() + one_loop_i_inv;
+
+                if(myrank == 0 && id_sim ==0){
+                    std::cout   << std::endl;
+                    std::cout   << "loop " << i_loop+1 << ", model update iteration " << one_loop_i_inv+1
+                                << " ( the " << i_inv+1 << "-th model update) starting ... " << std::endl;
+                    std::cout   << std::endl;
+                }
+
+
+                // prepare inverstion iteration group in xdmf file
+                io.prepare_grid_inv_xdmf(i_inv);
+
+                ///////////////////////////////////////////////////////
+                // run (forward and adjoint) simulation for each source
+                ///////////////////////////////////////////////////////
+
+                // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel for all sources
+                line_search_mode = false;
+                // skip for the mode with sub-iteration
+                if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
+                } else {
+                    bool is_save_T = false;
+                    v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_save_T);
+                    v_obj = v_obj_misfit[0];
+                }
+
+                // wait for all processes to finish
+                synchronize_all_world();
+
+                // check if v_obj is nan
+                if (std::isnan(v_obj)) {
+                    if (myrank == 0)
+                        std::cout << "v_obj is nan, stop inversion" << std::endl;
+                    // stop inversion
+                    break;
+                }
+
+                ///////////////
+                // model update
+                ///////////////
+
+                if (optim_method == GRADIENT_DESCENT)
+                    model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
+                else if (optim_method == HALVE_STEPPING_MODE)
+                    v_obj_misfit = model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                else if (optim_method == LBFGS_MODE) {
+                    bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
+
+                    if (!found_next_step)
+                        break;
+                }
+
+                // define old_v_obj
+                old_v_obj = v_obj;
+
+                // output objective function
+                write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
+
+                // since model is update. The written traveltime field should be discraded.
+                // initialize is_T_written_into_file
+                for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
+                    const std::string name_sim_src = IP.get_src_name(i_src);
+
+                    if (proc_store_srcrec) // only proc_store_srcrec has the src_map object
+                        IP.src_map[name_sim_src].is_T_written_into_file = false;
+                }
+
+                // output updated model
+                if (id_sim==0) {
+                    //io.change_xdmf_obj(0); // change xmf file for next src
+                    io.change_group_name_for_model();
+
+                    // write out model info
+                    if (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop_mode0()*IP.get_model_update_N_iter() - 2){
+                        io.write_vel(grid, i_inv+1);
+                        io.write_xi( grid, i_inv+1);
+                        io.write_eta(grid, i_inv+1);
+                        // io.write_Kdensity(grid, i_inv);
+                        io.write_Kdensity_update(grid, i_inv);
+                    }
+                    //io.write_zeta(grid, i_inv); // TODO
+
+                    if (IP.get_verbose_output_level()){
+                        io.write_a(grid,   i_inv+1);
+                        io.write_b(grid,   i_inv+1);
+                        io.write_c(grid,   i_inv+1);
+                        io.write_f(grid,   i_inv+1);
+                        io.write_fun(grid, i_inv+1);
+                    }
+
+                    // output model_parameters_inv_0000.dat
+                    if (IP.get_if_output_model_dat() \
+                    && (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop_mode0()*IP.get_model_update_N_iter() - 2))
+                        io.write_concerning_parameters(grid, i_inv + 1, IP);
+
+                } // end output updated model
+
+                // writeout temporary xdmf file
+                io.update_xdmf_file();
+
+                // write src rec files
+                if (IP.get_if_output_in_process_data()){
+                    IP.write_src_rec_file(model_update_step,relocation_step);
+                } else if (i_inv == IP.get_max_loop_mode0() * IP.get_model_update_N_iter()-1 || i_inv==0) {
+                    IP.write_src_rec_file(model_update_step,relocation_step);
+                }
+                model_update_step += 1;
+
+                // wait for all processes to finish
+                synchronize_all_world();
+
+            }   // end model update in one loop
+
+
+            /////////////////////
+            // stage 2, update earthquake locations
+            /////////////////////
 
             if(myrank == 0 && id_sim ==0){
                 std::cout   << std::endl;
-                std::cout   << "loop " << i_loop+1 << ", model update iteration " << one_loop_i_inv+1
-                            << " ( the " << i_inv+1 << "-th model update) starting ... " << std::endl;
+                std::cout   << "loop " << i_loop+1 << ", computing traveltime field for relocation" << std::endl;
                 std::cout   << std::endl;
             }
 
+            // calculate traveltime for each receiver (swapped from source) and write in output file
+            if (IP.get_relocation_N_iter() > 0) // we really do relocation
+                calculate_traveltime_for_all_src_rec(IP, grid, io);
 
-            // prepare inverstion iteration group in xdmf file
-            io.prepare_grid_inv_xdmf(i_inv);
 
-            ///////////////////////////////////////////////////////
-            // run (forward and adjoint) simulation for each source
-            ///////////////////////////////////////////////////////
+            // initilize all earthquakes
+            if (proc_store_srcrec){
+                for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+                    iter->second.is_stop = false;
+                }
+            }
+
+            // iterate
+            for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){
+                int i_iter = i_loop * IP.get_relocation_N_iter() + one_loop_i_iter;
+
+                if(myrank == 0 && id_sim ==0){
+                    std::cout   << std::endl;
+                    std::cout   << "loop " << i_loop+1 << ", relocation iteration " << one_loop_i_iter+1
+                                << " ( the " << i_iter+1 << "-th relocation) starting ... " << std::endl;
+                    std::cout   << std::endl;
+                }
+
+
+                // calculate gradient of objective function at sources
+                v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_iter);
+                v_obj = v_obj_misfit[0];
+
+                // update source location
+                recs.update_source_location(IP, grid);
+
+                synchronize_all_world();
+
+
+                // output location information
+                if(id_sim == 0 && myrank == 0){
+                    std::cout << "objective function: "              << v_obj << std::endl;
+                }
+
+                // write objective functions
+                write_objective_function(IP, i_iter, v_obj_misfit, out_main, "relocation");
+
+                // write out new src_rec_file
+                if (IP.get_if_output_in_process_data()){
+                    IP.write_src_rec_file(model_update_step,relocation_step);
+                } else if (i_iter == IP.get_max_loop_mode0() * IP.get_relocation_N_iter()-1 || i_iter==0) {
+                    IP.write_src_rec_file(model_update_step,relocation_step);
+                }
+
+                // modify the receiver's location for output
+                IP.modify_swapped_source_location();
+
+                relocation_step += 1;
+            } // end relocation loop
+
+            grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
+
+        } // end loop for model update and relocation
+    } else if (inv_mode == SIMULTANEOUS) {
+
+        for (int i_loop = 0; i_loop < IP.get_max_loop_mode1(); i_loop++){
+
+            if(myrank == 0 && id_sim ==0){
+                std::cout   << std::endl;
+                std::cout   << "loop " << i_loop+1 << ", model update and relocation starting ... " << std::endl;
+                std::cout   << std::endl;
+            }
+
+            /////////////////////
+            // stage 1, update model parameters
+            /////////////////////
+
+
+            // prepare inversion iteration group in xdmf file
+            io.prepare_grid_inv_xdmf(i_loop);
+
+                ///////////////////////////////////////////////////////
+                // run (forward and adjoint) simulation for each source
+                ///////////////////////////////////////////////////////
 
             // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel for all sources
             line_search_mode = false;
             // skip for the mode with sub-iteration
-            if (i_inv > 0 && optim_method != GRADIENT_DESCENT) {
+            if (i_loop > 0 && optim_method != GRADIENT_DESCENT) {
             } else {
-                bool is_read_time;
-                if (i_loop > 0 && one_loop_i_inv == 0)
-                    is_read_time = true;
-                else
-                    is_read_time = false;
-                v_obj_misfit = run_simulation_one_step(IP, grid, io, i_inv, first_src, line_search_mode, is_read_time);
+                bool is_save_T = true;
+                v_obj_misfit = run_simulation_one_step(IP, grid, io, i_loop, first_src, line_search_mode, is_save_T);
                 v_obj = v_obj_misfit[0];
             }
 
@@ -391,30 +590,57 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             if (std::isnan(v_obj)) {
                 if (myrank == 0)
                     std::cout << "v_obj is nan, stop inversion" << std::endl;
+
                 // stop inversion
                 break;
             }
 
-            ///////////////
-            // model update
-            ///////////////
+                ///////////////
+                // model update
+                ///////////////
 
             if (optim_method == GRADIENT_DESCENT)
-                model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);
+                model_optimize(IP, grid, io, i_loop, v_obj, old_v_obj, first_src, out_main);
             else if (optim_method == HALVE_STEPPING_MODE)
-                v_obj_misfit = model_optimize_halve_stepping(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                v_obj_misfit = model_optimize_halve_stepping(IP, grid, io, i_loop, v_obj, first_src, out_main);
             else if (optim_method == LBFGS_MODE) {
-                bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_inv, v_obj, first_src, out_main);
+                bool found_next_step = model_optimize_lbfgs(IP, grid, io, i_loop, v_obj, first_src, out_main);
 
                 if (!found_next_step)
                     break;
             }
 
-            // define old_v_obj
-            old_v_obj = v_obj;
 
-            // output objective function
-            write_objective_function(IP, i_inv, v_obj_misfit, out_main, "model update");
+            // output objective function (model update part)
+            write_objective_function(IP, i_loop, v_obj_misfit, out_main, "model update");
+
+            /////////////////////
+            // stage 2, update earthquake locations
+            /////////////////////
+
+
+            // initilize all earthquakes
+            if (proc_store_srcrec){
+                for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
+                    iter->second.is_stop = false;
+                }
+            }
+
+            // calculate gradient of objective function at sources
+            v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_loop);
+
+            // update source location
+            recs.update_source_location(IP, grid);
+
+            synchronize_all_world();
+
+            // output objective function (relocation part)
+            write_objective_function(IP, i_loop, v_obj_misfit, out_main, "relocation");
+
+
+            // define old_v_obj
+            old_v_obj   = v_obj;
+
 
             // since model is update. The written traveltime field should be discraded.
             // initialize is_T_written_into_file
@@ -431,27 +657,27 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 io.change_group_name_for_model();
 
                 // write out model info
-                if (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop()*IP.get_model_update_N_iter() - 2){
-                    io.write_vel(grid, i_inv+1);
-                    io.write_xi( grid, i_inv+1);
-                    io.write_eta(grid, i_inv+1);
+                if (IP.get_if_output_in_process() || i_loop >= IP.get_max_loop_mode1() - 2){
+                    io.write_vel(grid, i_loop+1);
+                    io.write_xi( grid, i_loop+1);
+                    io.write_eta(grid, i_loop+1);
                     // io.write_Kdensity(grid, i_inv);
-                    io.write_Kdensity_update(grid, i_inv);
+                    io.write_Kdensity_update(grid, i_loop);
                 }
                 //io.write_zeta(grid, i_inv); // TODO
 
                 if (IP.get_verbose_output_level()){
-                    io.write_a(grid,   i_inv+1);
-                    io.write_b(grid,   i_inv+1);
-                    io.write_c(grid,   i_inv+1);
-                    io.write_f(grid,   i_inv+1);
-                    io.write_fun(grid, i_inv+1);
+                    io.write_a(grid,   i_loop+1);
+                    io.write_b(grid,   i_loop+1);
+                    io.write_c(grid,   i_loop+1);
+                    io.write_f(grid,   i_loop+1);
+                    io.write_fun(grid, i_loop+1);
                 }
 
                 // output model_parameters_inv_0000.dat
                 if (IP.get_if_output_model_dat() \
-                && (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop()*IP.get_model_update_N_iter() - 2))
-                    io.write_concerning_parameters(grid, i_inv + 1, IP);
+                && (IP.get_if_output_in_process() || i_loop >= IP.get_max_loop_mode1() - 2))
+                    io.write_concerning_parameters(grid, i_loop + 1, IP);
 
             } // end output updated model
 
@@ -460,88 +686,25 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             // write src rec files
             if (IP.get_if_output_in_process_data()){
-                IP.write_src_rec_file(model_update_step,relocation_step);
-            } else if (i_inv == IP.get_max_loop() * IP.get_model_update_N_iter()-1 || i_inv==0) {
-                IP.write_src_rec_file(model_update_step,relocation_step);
-            }
-            model_update_step += 1;
-
-            // wait for all processes to finish
-            synchronize_all_world();
-
-        }   // end model update in one loop
-
-
-
-
-        /////////////////////
-        // stage 2, update earthquake locations
-        /////////////////////
-
-        if(myrank == 0 && id_sim ==0){
-            std::cout   << std::endl;
-            std::cout   << "loop " << i_loop+1 << ", computing traveltime field for relocation" << std::endl;
-            std::cout   << std::endl;
-        }
-
-        // calculate traveltime for each receiver (swapped from source) and write in output file
-        calculate_traveltime_for_all_src_rec(IP, grid, io);
-
-
-        // initilize all earthquakes
-        if (proc_store_srcrec){
-            for(auto iter = IP.rec_map.begin(); iter != IP.rec_map.end(); iter++){
-                iter->second.is_stop = false;
-            }
-        }
-
-        // iterate
-        for (int one_loop_i_iter = 0; one_loop_i_iter < IP.get_relocation_N_iter(); one_loop_i_iter++){
-            int i_iter = i_loop * IP.get_relocation_N_iter() + one_loop_i_iter;
-
-            if(myrank == 0 && id_sim ==0){
-                std::cout   << std::endl;
-                std::cout   << "loop " << i_loop+1 << ", relocation iteration " << one_loop_i_iter+1
-                            << " ( the " << i_iter+1 << "-th relocation) starting ... " << std::endl;
-                std::cout   << std::endl;
-            }
-
-
-            // calculate gradient of objective function at sources
-            v_obj_misfit = calculate_gradient_objective_function(IP, grid, io, i_iter);
-            v_obj = v_obj_misfit[0];
-
-            // update source location
-            recs.update_source_location(IP, grid);
-
-            synchronize_all_world();
-
-
-            // output location information
-            if(id_sim == 0 && myrank == 0){
-                std::cout << "objective function: "              << v_obj << std::endl;
-            }
-
-            // write objective functions
-            write_objective_function(IP, i_iter, v_obj_misfit, out_main, "relocation");
-
-            // write out new src_rec_file
-            if (IP.get_if_output_in_process_data()){
-                IP.write_src_rec_file(model_update_step,relocation_step);
-            } else if (i_iter == IP.get_max_loop() * IP.get_relocation_N_iter()-1 || i_iter==0) {
-                IP.write_src_rec_file(model_update_step,relocation_step);
+                IP.write_src_rec_file(i_loop,i_loop);
+            } else if (i_loop == IP.get_max_loop_mode1() -1 || i_loop==0) {
+                IP.write_src_rec_file(i_loop,i_loop);
             }
 
             // modify the receiver's location for output
             IP.modify_swapped_source_location();
 
-            relocation_step += 1;
-        } // end relocation loop
+            // wait for all processes to finish
+            synchronize_all_world();
 
-        grid.rejunenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
+            grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
-    } // end loop for model update and relocation
+        } // end loop for model update and relocation     
 
+    } else {
+        std::cout << "Error: inv_mode is not defined" << std::endl;
+        exit(1);
+    }
     // close xdmf file
     io.finalize_data_output_file();
 

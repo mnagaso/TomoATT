@@ -570,7 +570,14 @@ InputParams::InputParams(std::string& input_file){
                     getNodeValue(config["inversion_strategy"]["inv_mode_0"], "relocation_N_iter", relocation_N_iter);
                 // max_loop
                 if (config["inversion_strategy"]["inv_mode_0"]["max_loop"])
-                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "max_loop", max_loop);
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "max_loop", max_loop_mode0);
+            }
+
+            // paramters for inv_mode == 1
+            if (config["inversion_strategy"]["inv_mode_0"]){
+                // max_loop
+                if (config["inversion_strategy"]["inv_mode_0"]["max_loop"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "max_loop", max_loop_mode1);
             }
         }
 
@@ -798,7 +805,8 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(inv_mode, 0);
     broadcast_i_single(model_update_N_iter, 0);
     broadcast_i_single(relocation_N_iter, 0);
-    broadcast_i_single(max_loop, 0);
+    broadcast_i_single(max_loop_mode0, 0);
+    broadcast_i_single(max_loop_mode1, 0);
 
     broadcast_cr_single(conv_tol, 0);
     broadcast_i_single(max_iter, 0);
@@ -942,7 +950,7 @@ void InputParams::write_params_to_file() {
     fout << "  optim_method: "   << optim_method << " # optimization method. 0 : grad_descent, 1 : halve-stepping, 2 : lbfgs (EXPERIMENTAL)" << std::endl;
     fout << std::endl;
     fout << "  #common parameters for all optim methods" << std::endl;
-    fout << "  step_length: "             << step_length_init << " # step length of model perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
+    fout << "  step_length: "             << step_length_init << " # the initial step length of model perturbation. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 0 (gradient_descent)" << std::endl;
     fout << "  optim_method_0:" << std::endl;
@@ -1186,7 +1194,7 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
 
     fout << "  # relocation_strategy" << std::endl;
-    fout << "  step_length : " << step_length_src_reloc << " # step length of relocation perturbation at each iteration. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
+    fout << "  step_length : " << step_length_src_reloc << " # initial step length of relocation perturbation. 0.01 means maximum 1% perturbation for each iteration." << std::endl;
     fout << "  step_length_decay : " << step_length_decay_src_reloc << " # if objective function increase, step size -> step length * step_length_decay. default: 0.9" << std::endl;
 
     fout << "  rescaling_dep_lat_lon_ortime  : [";
@@ -1272,16 +1280,21 @@ void InputParams::write_params_to_file() {
     fout << "####################################################################" << std::endl;
     fout << "inversion_strategy: # update model parameters and earthquake hypocenter iteratively (when run_mode : 3)" << std::endl;
     fout << std::endl;
-    fout << "  inv_mode : " << inv_mode << " # 0 for update model parameters and relocation iteratively. (other options for future work)" << std::endl;
+    fout << "  inv_mode : " << inv_mode << " # 0 for update model parameters and relocation iteratively. 1 for update model parameters and relocation simultaneously." << std::endl;
     fout << std::endl;
     fout << "  # for inv_mode : 0, parameters below are required" << std::endl;
     fout << "  inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops." << std::endl;
     fout << "    model_update_N_iter : " << model_update_N_iter << std::endl;
     fout << "    relocation_N_iter : " << relocation_N_iter << std::endl;
-    fout << "    max_loop : " << max_loop << std::endl;
+    fout << "    max_loop : " << max_loop_mode0 << std::endl;
     fout << std::endl;
 
+    fout << "  # for inv_mode : 1, parameters below are required" << std::endl;
+    fout << "  inv_mode_1: # update model and location simultaneously for <max_loop> loops." << std::endl;
+    fout << "    max_loop : " << max_loop_mode1 << std::endl;
+    fout << std::endl;
 
+    fout << "# keep these setting unchanged, unless you are familiar with the eikonal solver in this code" << std::endl;
     fout << "calculation:" << std::endl;
     fout << "   convergence_tolerance: " << conv_tol << " # threshold value for checking the convergence for each forward/adjoint run"<< std::endl;
     fout << "   max_iterations: " << max_iter << " # number of maximum iteration for each forward/adjoint run" << std::endl;
@@ -2124,7 +2137,7 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
             } else if (run_mode == TELESEIS_PREPROCESS) {
                 src_rec_file_out = output_dir + "/src_rec_file_teleseis_pre.dat";
             } else if (run_mode == SRC_RELOCATION) {
-                src_rec_file_out = output_dir + "/src_rec_file_reloc_syn.dat";
+                src_rec_file_out = output_dir + "/src_rec_file_reloc_" + int2string_zero_fill(i_iter)+".dat";
             } else {
                 std::cerr << "Error: run_mode is not defined" << std::endl;
                 exit(1);
@@ -2292,7 +2305,7 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                 if (run_mode == INV_RELOC)
                     src_rec_file_out = output_dir + "/src_rec_file_inv_" + int2string_zero_fill(i_inv) +"_reloc_" + int2string_zero_fill(i_iter)+"_obs.dat";
                 else if (run_mode == SRC_RELOCATION)
-                    src_rec_file_out = output_dir + "/src_rec_file_reloc_obs.dat";
+                    src_rec_file_out = output_dir + "/src_rec_file_reloc_" + int2string_zero_fill(i_iter)+"_obs.dat";
 
                 // open file
                 ofs.open(src_rec_file_out);

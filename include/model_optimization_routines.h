@@ -83,7 +83,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
                     std::cout << std::endl;
                     std::cout << "The angle between two update darections is " << angle
                             << ". Because the angle is less than " << step_length_gradient_angle << " degree, the step length increases from "
-                            << step_length_init/step_length_up << " to " << step_length_init << std::endl;
+                            << std::max(step_length_init,step_length_init/step_length_up) << " to " << step_length_init << std::endl;
                     std::cout << std::endl;
                 }
             }
@@ -181,8 +181,7 @@ inline std::vector<CUSTOMREAL> model_optimize_halve_stepping(InputParams& IP, Gr
     while (sub_iter_count < max_sub_iterations) {
         // check the new objective function value
         // v_obj_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true); // run simulations with line search mode
-        bool is_read_time = false;
-        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true, is_read_time); // run simulations with line search mode
+        v_obj_misfit_new = run_simulation_one_step(IP, grid, io, i_inv, first_src, true, false); // run simulations with line search mode
         v_obj_new = v_obj_misfit_new[0];
         // if the new objective function value is larger than the old one, make the step width to be half of the previous one
         diff_obj = v_obj_new - v_obj_old;

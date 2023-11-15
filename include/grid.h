@@ -67,7 +67,7 @@ public:
     InvGrid* inv_grid; // inversion grid definitions
 
     void reinitialize_abcf();   // reinitialize factors
-    void rejunenate_abcf();     // reinitialize factors for earthquake relocation
+    void rejuvenate_abcf();     // reinitialize factors for earthquake relocation
     void initialize_kernels();  // fill 0 to kernels
 
     //

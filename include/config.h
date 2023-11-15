@@ -103,7 +103,7 @@ inline CUSTOMREAL       step_length_decay = 0.9;
 inline CUSTOMREAL       step_length_down = 0.5;
 inline CUSTOMREAL       step_length_up = 1.2;
 inline CUSTOMREAL       step_length_lbfgs;
-inline int              step_method         = 0; // 0：modulate according to obj, modulate according to gradient direction.
+inline int              step_method         = 1; // 0：modulate according to obj, 1: modulate according to gradient direction.
 inline CUSTOMREAL       step_length_gradient_angle = 120.0;
 inline const int        OBJ_DEFINED         = 0;
 inline const int        GRADIENT_DEFINED    = 1;
@@ -299,10 +299,15 @@ inline bool             ortime_local_search         = true;
 inline int              min_Ndata_reloc             = 4;    // if an earthquake is recorded by less than <min_Ndata> times, relocation is not allowed.
 
 // inversion strategy parameters
-inline int inv_mode                     = 0;
+inline int inv_mode                     = 1;
 inline int model_update_N_iter          = 1;
 inline int relocation_N_iter            = 1;
-inline int max_loop                       = 10;
+inline int max_loop_mode0               = 10;
+inline int max_loop_mode1               = 10;
+
+// INV MODE TYPE FLAG
+inline const int ITERATIVE        = 0;
+inline const int SIMULTANEOUS     = 1;
 
 // source receiver weight calculation
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation
