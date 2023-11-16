@@ -1140,7 +1140,7 @@ void Grid::reinitialize_abcf(){
 }
 
 
-void Grid::rejunenate_abcf(){
+void Grid::rejuvenate_abcf(){
     if (subdom_main) {
         for (int k_r = 0; k_r < loc_K; k_r++) {
             for (int j_lat = 0; j_lat < loc_J; j_lat++) {

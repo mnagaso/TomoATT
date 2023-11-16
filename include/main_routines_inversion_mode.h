@@ -111,7 +111,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
 
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
-inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode, bool is_read_time){
+inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode, bool is_save_T){
 
 
     // initialize kernel arrays
@@ -180,7 +180,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
 
             // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
-            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src, is_save_T);
         } else {
             // hybrid stencil mode
             std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
@@ -190,13 +190,13 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             IP.set_stencil_order(1);
             IP.set_conv_tol(IP.get_conv_tol()*100.0);
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It_pre, false);
-            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It_pre, name_sim_src);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It_pre, name_sim_src, is_save_T);
 
             // run 3rd order forward simulation
             IP.set_stencil_order(3);
             IP.set_conv_tol(IP.get_conv_tol()/100.0);
             select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, true);
-            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src, is_save_T);
         }
 
         // output the result of forward simulation

@@ -134,7 +134,8 @@ public:
 
     int  get_model_update_N_iter(){return model_update_N_iter;};
     int  get_relocation_N_iter()  {return relocation_N_iter;};
-    int  get_max_loop()           {return max_loop;};
+    int  get_max_loop_mode0()           {return max_loop_mode0;};
+    int  get_max_loop_mode1()           {return max_loop_mode1;};
 
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
@@ -359,13 +360,13 @@ private:
     CUSTOMREAL azimuthal_weight_cr_reloc[n_weight] = {  15.0,  30.0, 1.0, 1.0};
 
     // convergence setting
-    CUSTOMREAL conv_tol;       // convergence tolerance
-    int        max_iter;       // maximum number of iterations
-    int        max_iter_inv=1; // maximum number of iterations for inversion
+    CUSTOMREAL conv_tol = 1e-05;     // convergence tolerance
+    int        max_iter = 500;       // maximum number of iterations
+    int        max_iter_inv=1;       // maximum number of iterations for inversion
 
     // calculation method
-    int stencil_order = 3; // stencil order
-    int stencil_type  = 0; // stencil type  (0: non upwind; 1: upwind)
+    int stencil_order = 1; // stencil order
+    int stencil_type  = 1; // stencil type  (0: non upwind; 1: upwind)
     int sweep_type    = 0; // sweep type (0: legacy, 1: cuthil-mckee with shm parallelization)
 
     // gather all arrival times to a main process
@@ -403,6 +404,7 @@ private:
 
     // single precision (float) output mode
     bool single_precision_output = false;
+
 
 };
 
