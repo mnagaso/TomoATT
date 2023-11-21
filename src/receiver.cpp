@@ -528,17 +528,28 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
         CUSTOMREAL e_r   = std::min({_1_CR,(rec_r   - dis_rec_r)  /delta_r});
 
         // numerical precision error of std::floor
-        if (e_lon == _1_CR) {
-            e_lon = 0.0;
+        if (e_lon >= _1_CR) {
+            e_lon = e_lon - _1_CR;
             i_rec++;
+        } else if (e_lon < 0) {
+            e_lon = e_lon + _1_CR;
+            i_rec--;
         }
+        
         if (e_lat == _1_CR) {
             e_lat = 0.0;
             j_rec++;
+        } else if (e_lat < 0) {
+            e_lat = e_lat + _1_CR;
+            j_rec--;
         }
+
         if (e_r == _1_CR) {
             e_r = 0.0;
             k_rec++;
+        } else if (e_r < 0) {
+            e_r = e_r + _1_CR;
+            k_rec--;
         }
 
 //        if(if_verbose){
@@ -551,6 +562,10 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
 //            std::cout << "loc_K. k_rec: " << loc_K << "," << k_rec << std::endl;
 //            std::cout << "r_loc_1d[loc_K-1]: " << grid.r_loc_1d[loc_K-1] << std::endl;
 //        }
+
+        std::cout << "DEBUG: i_rec, j_rec, k_rec: " << i_rec << ", " << j_rec << ", " << k_rec << std::endl;
+        std::cout << "DEBUG: loc_I, loc_J, loc_K: " << loc_I << ", " << loc_J << ", " << loc_K << std::endl;
+        std::cout << "DEBUG: e_lon, e_lat, e_r: " << e_lon << ", " << e_lat << ", " << e_r << std::endl;
 
         int i_rec_p1 = i_rec + 1;
         int j_rec_p1 = j_rec + 1;
@@ -826,18 +841,29 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
         CUSTOMREAL e_lat = std::min({_1_CR,(rec_lat - dis_rec_lat)/delta_lat});
         CUSTOMREAL e_r   = std::min({_1_CR,(rec_r   - dis_rec_r)  /delta_r});
 
-        // numerical precision error on std::floor
-        if (e_lon == _1_CR){
-            e_lon = _0_CR;
+        // numerical precision errors on std::floor
+        if (e_lon >= _1_CR) {
+            e_lon = e_lon - _1_CR;
             i_rec++;
+        } else if (e_lon < 0) {
+            e_lon = e_lon + _1_CR;
+            i_rec--;
         }
-        if (e_lat == _1_CR){
-            e_lat = _0_CR;
+        
+        if (e_lat == _1_CR) {
+            e_lat = 0.0;
             j_rec++;
+        } else if (e_lat < 0) {
+            e_lat = e_lat + _1_CR;
+            j_rec--;
         }
-        if (e_r == _1_CR){
-            e_r = _0_CR;
+
+        if (e_r == _1_CR) {
+            e_r = 0.0;
             k_rec++;
+        } else if (e_r < 0) {
+            e_r = e_r + _1_CR;
+            k_rec--;
         }
 
         int i_rec_p1 = i_rec + 1;
