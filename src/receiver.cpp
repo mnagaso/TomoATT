@@ -563,10 +563,6 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
 //            std::cout << "r_loc_1d[loc_K-1]: " << grid.r_loc_1d[loc_K-1] << std::endl;
 //        }
 
-        std::cout << "DEBUG: i_rec, j_rec, k_rec: " << i_rec << ", " << j_rec << ", " << k_rec << std::endl;
-        std::cout << "DEBUG: loc_I, loc_J, loc_K: " << loc_I << ", " << loc_J << ", " << loc_K << std::endl;
-        std::cout << "DEBUG: e_lon, e_lat, e_r: " << e_lon << ", " << e_lat << ", " << e_r << std::endl;
-
         int i_rec_p1 = i_rec + 1;
         int j_rec_p1 = j_rec + 1;
         int k_rec_p1 = k_rec + 1;

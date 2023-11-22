@@ -219,7 +219,6 @@ CUSTOMREAL direction_change_of_model_update(Grid& grid){
     CUSTOMREAL cos_angle = _0_CR;
     CUSTOMREAL angle = _0_CR;
     if (subdom_main) {
-        
         // initiaize update params
         for (int k = 0; k < loc_K; k++) {
             for (int j = 0; j < loc_J; j++) {
@@ -231,6 +230,16 @@ CUSTOMREAL direction_change_of_model_update(Grid& grid){
             }
         }
 
+        CUSTOMREAL tmp;
+        allreduce_cr_single(inner_product,tmp);
+        inner_product = tmp;
+
+        allreduce_cr_single(norm_grad,tmp);
+        norm_grad = tmp;
+
+        allreduce_cr_single(norm_grad_previous,tmp);
+        norm_grad_previous = tmp;
+        
         cos_angle = inner_product / (std::sqrt(norm_grad) * std::sqrt(norm_grad_previous));
         angle     = acos(cos_angle) * RAD2DEG;
     }
