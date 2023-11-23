@@ -1,4 +1,6 @@
 #include "input_params.h"
+#include <chrono>
+#include <ctime>
 
 // Base case of the variadic template function
 template <typename T>
@@ -2118,6 +2120,36 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     src_map_back[iter->first].lon   =   iter->second.lon;
                     src_map_back[iter->first].dep   =   iter->second.dep;
                     src_map_back[iter->first].sec   =   iter->second.sec + iter->second.tau_opt;
+
+                    // correct the output ortime:
+                    SrcRecInfo  src      = src_map_back[iter->first];
+                    // step 1, create a time stamp
+                    std::tm timeInfo = {};
+                    timeInfo.tm_year = src.year - 1900;
+                    timeInfo.tm_mon  = src.month - 1;
+                    timeInfo.tm_mday = src.day;
+                    timeInfo.tm_hour = src.hour;
+                    timeInfo.tm_min  = src.min;
+                    if (src.sec >= - 1.0 && src.sec < 0.0)
+                        timeInfo.tm_sec  = static_cast<int>(src.sec) - 1.0;
+                    else
+                        timeInfo.tm_sec  = static_cast<int>(src.sec);
+                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&timeInfo));
+
+                    std::time_t timestamp = std::chrono::system_clock::to_time_t(tp);
+                    std::tm newTimeInfo = *std::localtime(&timestamp);
+
+                    // step 2, correct the output ortime:
+                    src_map_back[iter->first].year = newTimeInfo.tm_year + 1900;
+                    src_map_back[iter->first].month = newTimeInfo.tm_mon + 1;
+                    src_map_back[iter->first].day = newTimeInfo.tm_mday;
+                    src_map_back[iter->first].hour = newTimeInfo.tm_hour;
+                    src_map_back[iter->first].min = newTimeInfo.tm_min;
+                    if (src.sec >= - 1.0 && src.sec < 0.0)
+                        src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec + 1.0 - static_cast<int>(src.sec));
+                    else
+                        src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec       - static_cast<int>(src.sec));
+
                 }
             }
         }

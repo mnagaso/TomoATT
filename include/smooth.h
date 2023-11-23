@@ -503,6 +503,7 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
                 weight = _1_CR;
             }
 
+
             // continue if r is out of the inversion grid
             if (r_r < _0_CR || r_r_ani < _0_CR) continue;
 
