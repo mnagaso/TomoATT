@@ -576,30 +576,6 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
 #endif
         }
 
-        // std::cout << "grid1, T0v_loc: " << grid.T0v_loc[I2V(23,29,40)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(23,29,40)]
-        //           << std::endl;
-        // std::cout << "grid2, T0v_loc: " << grid.T0v_loc[I2V(24,29,40)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(24,29,40)]
-        //           << std::endl;
-        // std::cout << "grid3, T0v_loc: " << grid.T0v_loc[I2V(23,30,40)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(23,30,40)]
-        //           << std::endl;
-        // std::cout << "grid4, T0v_loc: " << grid.T0v_loc[I2V(24,30,40)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(24,30,40)]
-        //           << std::endl;
-        // std::cout << "grid5, T0v_loc: " << grid.T0v_loc[I2V(23,29,41)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(23,29,41)]
-        //           << std::endl;
-        // std::cout << "grid6, T0v_loc: " << grid.T0v_loc[I2V(24,29,41)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(24,29,41)]
-        //           << std::endl;
-        // std::cout << "grid7, T0v_loc: " << grid.T0v_loc[I2V(23,30,41)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(23,30,41)]
-        //           << std::endl;
-        // std::cout << "grid8, T0v_loc: " << grid.T0v_loc[I2V(24,30,41)]
-        //           << ", tau_loc: " << grid.tau_loc[I2V(24,30,41)]
-        //           << std::endl;
 
 #ifndef FREQ_SYNC_GHOST
         // synchronize ghost cells everytime after sweeping of all directions
@@ -637,7 +613,7 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         //if (iter_count==0)
         // MNMN: please don't leave this line active when pushing your commit.
         // MNMN: because std::cout/endl is very slow when called in the loop.
-        // std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
+        std::cout << "id_sim, sub_rank, cur_diff_L1, cur_diff_Linf: " << id_sim << ", " << sub_rank << ", " << cur_diff_L1 << ", " << cur_diff_Linf << std::endl;
 
         // debug store temporal T fields
         //io.write_tmp_tau_h5(grid, iter_count);
