@@ -99,6 +99,8 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 
     }
 
+    std::cout << "world_rank: " << world_rank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain << std::endl;
+
     // wait for all processes to finish
     synchronize_all_world();
 
