@@ -27,7 +27,7 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
         // load travel time field on grid.T_loc
         if (myrank == 0){
             std::cout << "reading source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                    << "), for common receiver differntial traveltime. name: "
+                    << "), name: "
                     << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                     << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                     << std::endl;
@@ -39,7 +39,7 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
         // We need to solve eikonal equation
         if (myrank == 0){
             std::cout << "calculating source (" << i_src+1 << "/" << (int)IP.src_id2name.size()
-                    << "), for common receiver differntial traveltime. name: "
+                    << "), name: "
                     << name_sim_src << ", lat: " << IP.src_map[name_sim_src].lat
                     << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                     << std::endl;
@@ -62,6 +62,8 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
 
 
 inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int i_inv){
+    if(world_rank == 0)
+        std::cout << "preparing traveltimes of common receiver data ..." << std::endl;
 
     Source src;
     Receiver recs;
@@ -100,7 +102,8 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
     // wait for all processes to finish
     synchronize_all_world();
 
-    std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
+    if(world_rank == 0)
+        std::cout << "synthetic traveltimes of common receiver data have been prepared." << std::endl;
 
     // gather all the traveltime to the main process and distribute to all processes
     // for calculating the synthetic common receiver differential traveltime
@@ -142,7 +145,10 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
     Source src;
     Receiver recs;
 
-     // iterate over sources
+    if(world_rank == 0)
+        std::cout << "computing traveltime field, adjoint field and kernel ..." << std::endl;
+
+    // iterate over sources
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
 
         // check if this is the first iteration of entire inversion process

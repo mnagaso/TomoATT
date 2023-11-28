@@ -26,11 +26,47 @@
 inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, \
                     CUSTOMREAL& v_obj_inout, CUSTOMREAL& old_v_obj, bool& first_src, std::ofstream& out_main) {
 
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm localTime = *std::localtime(&now);                    
+
+    if(world_rank == 0){
+        std::cout << "ckp4-1, ";
+        std::cout << "Local Time: "
+            << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+            << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+            << localTime.tm_mday << " "
+            << localTime.tm_hour << ":"
+            << localTime.tm_min << ":"
+            << localTime.tm_sec << std::endl;
+    }                    
+
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
 
+    if(world_rank == 0){
+        std::cout << "ckp4-2, ";
+        std::cout << "Local Time: "
+            << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+            << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+            << localTime.tm_mday << " "
+            << localTime.tm_hour << ":"
+            << localTime.tm_min << ":"
+            << localTime.tm_sec << std::endl;
+    }     
+
     // smooth kernels
     smooth_kernels(grid, IP);
+
+    if(world_rank == 0){
+        std::cout << "ckp4-3, ";
+        std::cout << "Local Time: "
+            << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+            << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+            << localTime.tm_mday << " "
+            << localTime.tm_hour << ":"
+            << localTime.tm_min << ":"
+            << localTime.tm_sec << std::endl;
+    }     
 
     // change stepsize
 

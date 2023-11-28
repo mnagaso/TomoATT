@@ -22,6 +22,8 @@
 #include "model_update.h"
 #include "lbfgs.h"
 #include "objective_function_utils.h"
+#include <chrono>
+#include <ctime>
 
 //
 // run forward-only or inversion mode
@@ -105,16 +107,51 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             v_obj = v_obj_misfit[0];
         }
 
+        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::tm localTime = *std::localtime(&now);
+        if(world_rank == 0){
+            std::cout << "ckp1, ";
+            std::cout << "Local Time: "
+                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+                << localTime.tm_mday << " "
+                << localTime.tm_hour << ":"
+                << localTime.tm_min << ":"
+                << localTime.tm_sec << std::endl;
+        }
+        
+
         // wait for all processes to finish
         synchronize_all_world();
+
+        if(world_rank == 0){
+            std::cout << "ckp2, ";
+            std::cout << "Local Time: "
+                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+                << localTime.tm_mday << " "
+                << localTime.tm_hour << ":"
+                << localTime.tm_min << ":"
+                << localTime.tm_sec << std::endl;
+        }
 
         // check if v_obj is nan
         if (std::isnan(v_obj)) {
             if (myrank == 0)
                 std::cout << "v_obj is nan, stop inversion" << std::endl;
-
             // stop inversion
             break;
+        }
+
+        if(world_rank == 0){
+            std::cout << "ckp3, ";
+            std::cout << "Local Time: "
+                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+                << localTime.tm_mday << " "
+                << localTime.tm_hour << ":"
+                << localTime.tm_min << ":"
+                << localTime.tm_sec << std::endl;
         }
 
         // output src rec file with the result arrival times
@@ -122,6 +159,17 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             IP.write_src_rec_file(i_inv,0);
         } else if (i_inv == IP.get_max_iter_inv()-1 || i_inv==0) {
             IP.write_src_rec_file(i_inv,0);
+        }
+
+        if(world_rank == 0){
+            std::cout << "ckp4, ";
+            std::cout << "Local Time: "
+                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+                << localTime.tm_mday << " "
+                << localTime.tm_hour << ":"
+                << localTime.tm_min << ":"
+                << localTime.tm_sec << std::endl;
         }
 
         ///////////////
@@ -137,6 +185,17 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 if (!found_next_step)
                     goto end_of_inversion;
             }
+        }
+
+        if(world_rank == 0){
+            std::cout << "ckp5, ";
+            std::cout << "Local Time: "
+                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
+                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
+                << localTime.tm_mday << " "
+                << localTime.tm_hour << ":"
+                << localTime.tm_min << ":"
+                << localTime.tm_sec << std::endl;
         }
 
         // output station correction file (only for teleseismic differential data)
