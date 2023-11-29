@@ -25,9 +25,7 @@
 #include <chrono>
 #include <ctime>
 
-//
 // run forward-only or inversion mode
-//
 inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils &io) {
 
     // for check if the current source is the first source
@@ -35,6 +33,13 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     if(myrank == 0)
         std::cout << "id_sim: " << id_sim << ", size of src_map: " << IP.src_map.size() << std::endl;
+
+
+    std::chrono::system_clock::time_point start_time_pt = std::chrono::system_clock::now();
+    std::time_t start_time = std::chrono::system_clock::to_time_t(start_time_pt);
+    if (id_sim == 0 && myrank == 0)
+        std::cout << "Forward_or_inversion start at " << std::ctime(&start_time) << std::endl;
+    
 
     // prepare objective_function file
     std::ofstream out_main; // close() is not mandatory
@@ -66,7 +71,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
     }
 
 
-
     // output station correction file (only for teleseismic differential data)
     IP.write_station_correction_file(0);
 
@@ -88,6 +92,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             std::cout << "iteration " << i_inv << " starting ... " << std::endl;
         }
 
+        synchronize_all_world();
+
         old_v_obj = v_obj;
 
         // prepare inverstion iteration group in xdmf file
@@ -107,33 +113,8 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             v_obj = v_obj_misfit[0];
         }
 
-        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::tm localTime = *std::localtime(&now);
-        if(world_rank == 0){
-            std::cout << "ckp1, ";
-            std::cout << "Local Time: "
-                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
-                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
-                << localTime.tm_mday << " "
-                << localTime.tm_hour << ":"
-                << localTime.tm_min << ":"
-                << localTime.tm_sec << std::endl;
-        }
-        
-
         // wait for all processes to finish
         synchronize_all_world();
-
-        if(world_rank == 0){
-            std::cout << "ckp2, ";
-            std::cout << "Local Time: "
-                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
-                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
-                << localTime.tm_mday << " "
-                << localTime.tm_hour << ":"
-                << localTime.tm_min << ":"
-                << localTime.tm_sec << std::endl;
-        }
 
         // check if v_obj is nan
         if (std::isnan(v_obj)) {
@@ -143,33 +124,11 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             break;
         }
 
-        if(world_rank == 0){
-            std::cout << "ckp3, ";
-            std::cout << "Local Time: "
-                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
-                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
-                << localTime.tm_mday << " "
-                << localTime.tm_hour << ":"
-                << localTime.tm_min << ":"
-                << localTime.tm_sec << std::endl;
-        }
-
         // output src rec file with the result arrival times
         if (IP.get_if_output_in_process_data()){
             IP.write_src_rec_file(i_inv,0);
         } else if (i_inv == IP.get_max_iter_inv()-1 || i_inv==0) {
             IP.write_src_rec_file(i_inv,0);
-        }
-
-        if(world_rank == 0){
-            std::cout << "ckp4, ";
-            std::cout << "Local Time: "
-                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
-                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
-                << localTime.tm_mday << " "
-                << localTime.tm_hour << ":"
-                << localTime.tm_min << ":"
-                << localTime.tm_sec << std::endl;
         }
 
         ///////////////
@@ -185,17 +144,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 if (!found_next_step)
                     goto end_of_inversion;
             }
-        }
-
-        if(world_rank == 0){
-            std::cout << "ckp5, ";
-            std::cout << "Local Time: "
-                << localTime.tm_year + 1900 << "-"  // 年份是从1900开始的
-                << localTime.tm_mon + 1 << "-"       // 月份是从0开始的
-                << localTime.tm_mday << " "
-                << localTime.tm_hour << ":"
-                << localTime.tm_min << ":"
-                << localTime.tm_sec << std::endl;
         }
 
         // output station correction file (only for teleseismic differential data)
@@ -252,6 +200,25 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // wait for all processes to finish
         synchronize_all_world();
 
+
+        // estimate running time
+        if (id_sim == 0 && myrank == 0 && i_inv < IP.get_max_iter_inv()-1) {
+            std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
+            std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
+            int has_run_time = duration.count();
+            int will_run_time = (int)(has_run_time/(i_inv + 1) * (IP.get_max_iter_inv() - i_inv - 1));
+            auto end_time_estimated = std::chrono::system_clock::to_time_t(end_time_pt + std::chrono::seconds(will_run_time));
+
+            std::cout << std::endl;
+            std::cout << "The program begins at " << std::ctime(&start_time);
+            std::cout << "Iteration (" << i_inv + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << std::ctime(&end_time);     
+            std::cout << i_inv + 1 << " iterations run " << duration.count() << " seconds, the rest of " << IP.get_max_iter_inv() - i_inv - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
+            std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
+            std::cout << std::endl;
+        }
+
+
     } // end loop inverse
 
 end_of_inversion:
@@ -259,6 +226,17 @@ end_of_inversion:
     // close xdmf file
     io.finalize_data_output_file();
 
+    if (id_sim == 0 && myrank == 0) {
+        std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
+        std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
+
+        std::cout << std::endl;
+        std::cout << "The program begin at " << std::ctime(&start_time);
+        std::cout << "Forward_or_inversion end at " << std::ctime(&end_time);
+        std::cout << "It has run " << duration.count() << " seconds in total." << std::endl;
+        std::cout << std::endl;
+    }
 }
 
 
@@ -351,6 +329,11 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 // run earthquake relocation mode
 inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
+    std::chrono::system_clock::time_point start_time_pt = std::chrono::system_clock::now();
+    std::time_t start_time = std::chrono::system_clock::to_time_t(start_time_pt);
+    if (id_sim == 0 && myrank == 0)
+        std::cout << "Inv_and_reloc start at " << std::ctime(&start_time) << std::endl;
+    
     /////////////////////
     // preparation of model update
     /////////////////////
@@ -609,6 +592,23 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
+            // estimate running time
+            if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode0()-1) {
+                std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
+                std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
+                auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
+                int has_run_time = duration.count();
+                int will_run_time = (int)(has_run_time/(i_loop + 1) * (IP.get_max_loop_mode0() - i_loop - 1));
+                auto end_time_estimated = std::chrono::system_clock::to_time_t(end_time_pt + std::chrono::seconds(will_run_time));
+
+                std::cout << std::endl;
+                std::cout << "The program begins at " << std::ctime(&start_time);
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode0() << ") finished at " << std::ctime(&end_time);     
+                std::cout << i_loop + 1 << " loops run " << duration.count() << " seconds, the rest of " << IP.get_max_loop_mode0() - i_loop - 1 << " loops require " << will_run_time << " seconds." << std::endl;
+                std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
+                std::cout << std::endl;
+            }
+
         } // end loop for model update and relocation
     } else if (inv_mode == SIMULTANEOUS) {
 
@@ -758,6 +758,23 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
+             // estimate running time
+            if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode1()-1) {
+                std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
+                std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
+                auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
+                int has_run_time = duration.count();
+                int will_run_time = (int)(has_run_time/(i_loop + 1) * (IP.get_max_loop_mode1() - i_loop - 1));
+                auto end_time_estimated = std::chrono::system_clock::to_time_t(end_time_pt + std::chrono::seconds(will_run_time));
+
+                std::cout << std::endl;
+                std::cout << "The program begins at " << std::ctime(&start_time);
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode1() << ") finished at " << std::ctime(&end_time);     
+                std::cout << i_loop + 1 << " loops run " << duration.count() << " seconds, the rest of " << IP.get_max_loop_mode1() - i_loop - 1 << " loops require " << will_run_time << " seconds." << std::endl;
+                std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
+                std::cout << std::endl;
+            }
+
         } // end loop for model update and relocation     
 
     } else {
@@ -766,6 +783,18 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     }
     // close xdmf file
     io.finalize_data_output_file();
+
+    if (id_sim == 0 && myrank == 0) {
+        std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
+        std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
+        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
+
+        std::cout << std::endl;
+        std::cout << "The program begin at " << std::ctime(&start_time);
+        std::cout << "Inv_and_reloc end at " << std::ctime(&end_time);
+        std::cout << "It has run " << duration.count() << " seconds in total." << std::endl;
+        std::cout << std::endl;
+    }
 
 }
 

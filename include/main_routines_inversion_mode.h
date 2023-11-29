@@ -95,8 +95,6 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
         // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
-        
-
     }
 
 
