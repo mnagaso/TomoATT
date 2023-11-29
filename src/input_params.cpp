@@ -576,10 +576,10 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // paramters for inv_mode == 1
-            if (config["inversion_strategy"]["inv_mode_0"]){
+            if (config["inversion_strategy"]["inv_mode_1"]){
                 // max_loop
-                if (config["inversion_strategy"]["inv_mode_0"]["max_loop"])
-                    getNodeValue(config["inversion_strategy"]["inv_mode_0"], "max_loop", max_loop_mode1);
+                if (config["inversion_strategy"]["inv_mode_1"]["max_loop"])
+                    getNodeValue(config["inversion_strategy"]["inv_mode_1"], "max_loop", max_loop_mode1);
             }
         }
 

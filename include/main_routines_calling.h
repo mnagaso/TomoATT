@@ -33,13 +33,14 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     if(myrank == 0)
         std::cout << "id_sim: " << id_sim << ", size of src_map: " << IP.src_map.size() << std::endl;
-
-
+    
+    // estimate running time
     std::chrono::system_clock::time_point start_time_pt = std::chrono::system_clock::now();
     std::time_t start_time = std::chrono::system_clock::to_time_t(start_time_pt);
-    if (id_sim == 0 && myrank == 0)
+    if (id_sim == 0 && myrank == 0){
+        std::cout << std::endl;
         std::cout << "Forward_or_inversion start at " << std::ctime(&start_time) << std::endl;
-    
+    }
 
     // prepare objective_function file
     std::ofstream out_main; // close() is not mandatory
@@ -331,9 +332,11 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
     std::chrono::system_clock::time_point start_time_pt = std::chrono::system_clock::now();
     std::time_t start_time = std::chrono::system_clock::to_time_t(start_time_pt);
-    if (id_sim == 0 && myrank == 0)
-        std::cout << "Inv_and_reloc start at " << std::ctime(&start_time) << std::endl;
     
+    if (id_sim == 0 && myrank == 0){
+        std::cout << std::endl;
+        std::cout << "Inv_and_reloc starts at " << std::ctime(&start_time) << std::endl;
+    }
     /////////////////////
     // preparation of model update
     /////////////////////
