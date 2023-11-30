@@ -36,8 +36,15 @@ IO_utils::IO_utils(InputParams& IP) {
                 xdmf_output_fname = "./out_data_sim_group_0.xmf";
                 h5_output_fname_tmp = "./tmp_db_sim_group_0.h5";
             }
+
+            // MNMN: below is for initiliazing data file for each simulation group
+            // if the file is not created in here, hdf5 will try to use preexisting file and dataset structures,
+            // then error will occur if the dataset size for the later simulation group is larger than the previous one.
+
             // create data file
             h5_create_file_by_group_main(h5_output_fname);
+            // create temporary data file
+            h5_create_file_by_group_main(h5_output_fname_tmp);
 #else
             std::cout << "Error: TOMOATT was not compiled with HDF5" << std::endl;
             std::cout << "Exiting..." << std::endl;
