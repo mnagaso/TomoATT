@@ -92,7 +92,7 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         // calculate or read traveltime field
         bool prerun_mode = true;
         calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_comm_rec_this_sim_group, first_init, It, name_sim_src, prerun_mode);
-        
+    
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
         // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
     }
