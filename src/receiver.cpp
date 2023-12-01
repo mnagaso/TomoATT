@@ -456,6 +456,24 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
 }
 
 
+bool check_if_receiver_is_in_this_subdomain(Grid& grid, const CUSTOMREAL& rec_lon, const CUSTOMREAL& rec_lat, const CUSTOMREAL& rec_r) {
+    if (grid.get_lon_min_loc() <= rec_lon && rec_lon < grid.get_lon_max_loc() && \
+        grid.get_lat_min_loc() <= rec_lat && rec_lat < grid.get_lat_max_loc() && \
+        grid.get_r_min_loc()   <= rec_r   && rec_r   < grid.get_r_max_loc()   ) {
+
+        // check if the receiver is on the upper boundary of the subdomain
+        // if so, the interpolation will be failed because *_rec_p1 cannot be defined.
+        if (isZero(rec_lon - grid.get_lon_max_loc())
+         || isZero(rec_lat - grid.get_lat_max_loc())
+         || isZero(rec_r - grid.get_r_max_loc())) {
+            return false;
+         } else {
+            return true;
+         }
+    }
+}
+
+
 CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::string name_src, std::string name_rec) {
     // calculate the travel time of the receiver by 3d linear interpolation
 
@@ -473,12 +491,7 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
     CUSTOMREAL rec_r = depth2radius(rec.dep); // r in km
 
     // check if the receiver is in this subdomain
-    bool is_in_subdomain = false;
-    if (grid.get_lon_min_loc() <= rec_lon && rec_lon < grid.get_lon_max_loc() && \
-        grid.get_lat_min_loc() <= rec_lat && rec_lat < grid.get_lat_max_loc() && \
-        grid.get_r_min_loc()   <= rec_r   && rec_r   < grid.get_r_max_loc()   ) {
-        is_in_subdomain = true;
-    }
+    bool is_in_subdomain = check_if_receiver_is_in_this_subdomain(grid, rec_lon, rec_lat, rec_r);
 
     // check the rank where the source is located
     int rec_rank = -1;
@@ -767,12 +780,7 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
     CUSTOMREAL rec_r = depth2radius(rec.dep); // r in km
 
     // check if the receiver is in this subdomain
-    bool is_in_subdomain = false;
-    if (grid.get_lon_min_loc() <= rec_lon && rec_lon < grid.get_lon_max_loc() && \
-        grid.get_lat_min_loc() <= rec_lat && rec_lat < grid.get_lat_max_loc() && \
-        grid.get_r_min_loc()   <= rec_r   && rec_r   < grid.get_r_max_loc()   ) {
-        is_in_subdomain = true;
-    }
+    bool is_in_subdomain = check_if_receiver_is_in_this_subdomain(grid, rec_lon, rec_lat, rec_r);
 
     // check the rank where the source is located
     int rec_rank = -1;
@@ -1288,7 +1296,7 @@ void Receiver::calculate_grad_obj_src_reloc(InputParams& IP, const std::string& 
                     IP.rec_map[name_rec].grad_chi_i += (syn_dif_time - obs_dif_time) * data.DTi * data.weight_reloc * local_weight;
                     IP.rec_map[name_rec].grad_tau   += 0;       // common swapped source, so ortime is cancelled.
                     IP.rec_map[name_rec].Ndata      += 1;
-                    
+
                     // The DTijk of the second source (swapped receiver) will be considered when the loop goes to the other common receiver data with the other source as the key value
 
                 } else {    // unsupported data (swapped common receiver, or others)
