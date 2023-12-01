@@ -115,7 +115,7 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Kdensity_update_loc, loc_I*loc_J*loc_K, 0);
-        
+
         // send the previous updated model to all the simultaneous run
         broadcast_cr_inter_sim(grid.Ks_update_loc_previous, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Kxi_update_loc_previous, loc_I*loc_J*loc_K, 0);
@@ -220,15 +220,9 @@ CUSTOMREAL direction_change_of_model_update(Grid& grid){
     CUSTOMREAL angle = _0_CR;
     if (subdom_main) {
         // initiaize update params
-        for (int k = 0; k < loc_K; k++) {
-            for (int j = 0; j < loc_J; j++) {
-                for (int i = 0; i < loc_I; i++) {
-                    inner_product       += grid.Ks_update_loc_previous[I2V(i,j,k)]  * grid.Ks_update_loc[I2V(i,j,k)];
-                    norm_grad           += grid.Ks_update_loc[I2V(i,j,k)]           * grid.Ks_update_loc[I2V(i,j,k)];
-                    norm_grad_previous  += grid.Ks_update_loc_previous[I2V(i,j,k)]  * grid.Ks_update_loc_previous[I2V(i,j,k)];
-                }
-            }
-        }
+        inner_product      = dot_product(grid.Ks_update_loc_previous, grid.Ks_update_loc, loc_I*loc_J*loc_K);
+        norm_grad          = dot_product(grid.Ks_update_loc, grid.Ks_update_loc, loc_I*loc_J*loc_K);
+        norm_grad_previous = dot_product(grid.Ks_update_loc_previous, grid.Ks_update_loc_previous, loc_I*loc_J*loc_K);
 
         CUSTOMREAL tmp;
         allreduce_cr_single(inner_product,tmp);
@@ -239,7 +233,7 @@ CUSTOMREAL direction_change_of_model_update(Grid& grid){
 
         allreduce_cr_single(norm_grad_previous,tmp);
         norm_grad_previous = tmp;
-        
+
         cos_angle = inner_product / (std::sqrt(norm_grad) * std::sqrt(norm_grad_previous));
         angle     = acos(cos_angle) * RAD2DEG;
     }
