@@ -416,7 +416,28 @@ inline void split_mpi_comm(){
                                                        << ", sub_rank/total: "  << sub_rank     << "/" << sub_nprocs \
             << std::endl;
     }
+    std::cout << std::endl;
     synchronize_all_world();
+
+    // // check processors
+    // for (int irank = 0; irank < world_nprocs; irank++){
+    //     synchronize_all_world();
+    //     if (irank == world_rank) {
+    //         std::cout   << "global rank: " << world_rank << ", node name: " << mpi_node_names[world_rank]
+    //                     << ", world_rank: " << world_rank << ", world_nprocs: " << world_nprocs
+    //                     << ", sim_rank: " << sim_rank << ", sim_nprocs: " << sim_nprocs
+    //                     << ", sub_rank: " << sub_rank << ", sub_nprocs: " << sub_nprocs
+    //                     << ", inter_sim_rank: " << inter_sim_rank
+    //                     << ", inter_sub_rank: " << inter_sub_rank << ", inter_sub_nprocs: " << inter_sub_nprocs
+    //                     << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
+    //                     << ", subdom_main: " << subdom_main
+    //                     << ", id_proc_in_subdomain: " << id_proc_in_subdomain
+    //                     << ", id_subdomain: " << id_subdomain
+    //                     << std::endl;
+    //         std::cout << std::endl;
+    //     }
+    // }
+    // synchronize_all_world();
 
 }
 

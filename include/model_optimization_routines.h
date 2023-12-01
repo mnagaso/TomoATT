@@ -39,7 +39,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         if(i_inv != 0){
             if (v_obj_inout < old_v_obj) {
                 step_length_init    = std::min((CUSTOMREAL)0.02, step_length_init);
-                if(id_sim == 0){
+                if(myrank == 0 && id_sim == 0){
                     std::cout << std::endl;
                     std::cout << "The obj keeps decreasing, from " << old_v_obj << " to " << v_obj_inout
                             << ", the step length is " << step_length_init << std::endl;
@@ -47,7 +47,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
                 }
             } else if (v_obj_inout >= old_v_obj) {
                 step_length_init    = std::max((CUSTOMREAL)0.0001, step_length_init*step_length_decay);
-                if(id_sim == 0){
+                if(myrank == 0 && id_sim == 0){
                     std::cout << std::endl;
                     std::cout << "The obj keep increases, from " << old_v_obj << " to " << v_obj_inout
                             << ", the step length decreases from " << step_length_init/step_length_decay
@@ -56,7 +56,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
                 }
             }
         } else {
-            if(id_sim == 0){
+            if(myrank == 0 && id_sim == 0){
                 std::cout << std::endl;
                 std::cout << "At the first iteration, the step length is " << step_length_init << std::endl;
                 std::cout << std::endl;
@@ -70,7 +70,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         if(i_inv != 0){
             if (angle > step_length_gradient_angle){
                 step_length_init    = std::max((CUSTOMREAL)0.0001, step_length_init * step_length_down);
-                if(id_sim == 0){
+                if(myrank == 0 && id_sim == 0){
                     std::cout << std::endl;
                     std::cout << "The angle between two update darections is " << angle
                             << ". Because the angle is greater than " << step_length_gradient_angle << " degree, the step length decreases from "
@@ -79,7 +79,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
                 }
             } else if (angle <= step_length_gradient_angle) {
                 step_length_init    = std::min((CUSTOMREAL)0.02, step_length_init * step_length_up);
-                if(id_sim == 0){
+                if(myrank == 0 && id_sim == 0){
                     std::cout << std::endl;
                     std::cout << "The angle between two update darections is " << angle
                             << ". Because the angle is less than " << step_length_gradient_angle << " degree, the step length increases from "
@@ -88,7 +88,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
                 }
             }
         } else {
-            if(id_sim == 0){
+            if(myrank == 0 && id_sim == 0){
                 std::cout << std::endl;
                 std::cout << "At the first iteration, the step length is " << step_length_init << std::endl;
                 std::cout << std::endl;
@@ -102,6 +102,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
 
     // broadcast the step_length
     broadcast_cr_single(step_length_init,0);
+
 
     // update the model with the initial step size
     set_new_model(grid, step_length_init);

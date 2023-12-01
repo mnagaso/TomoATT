@@ -82,7 +82,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         }
 
         bool write_tmp_T = true;
-        calculate_or_read_traveltime_field(IP, grid, io, i_src, first_init, It, name_sim_src, write_tmp_T);
+        calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_this_sim_group, first_init, It, name_sim_src, write_tmp_T);
 
     }
 

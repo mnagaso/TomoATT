@@ -22,10 +22,9 @@
 #include "model_update.h"
 #include "lbfgs.h"
 #include "objective_function_utils.h"
+#include "timer.h"
 
-//
 // run forward-only or inversion mode
-//
 inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils &io) {
 
     // for check if the current source is the first source
@@ -33,6 +32,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     if(myrank == 0)
         std::cout << "id_sim: " << id_sim << ", size of src_map: " << IP.src_map.size() << std::endl;
+
+    // estimate running time
+    Timer timer("Forward_or_inversion", true);
 
     // prepare objective_function file
     std::ofstream out_main; // close() is not mandatory
@@ -62,7 +64,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         if (IP.get_if_output_model_dat())
             io.write_concerning_parameters(grid, 0, IP);
     }
-
 
 
     // output station correction file (only for teleseismic differential data)
@@ -112,7 +113,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         if (std::isnan(v_obj)) {
             if (myrank == 0)
                 std::cout << "v_obj is nan, stop inversion" << std::endl;
-
             // stop inversion
             break;
         }
@@ -193,6 +193,22 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         // wait for all processes to finish
         synchronize_all_world();
 
+
+        // estimate running time
+        CUSTOMREAL time_elapsed = timer.get_t();
+        if (id_sim == 0 && myrank == 0 && i_inv < IP.get_max_iter_inv()-1) {
+            const time_t end_time_estimated = time_elapsed / (i_inv + 1) * (IP.get_max_iter_inv() - i_inv - 1) + timer.get_start();
+            auto will_run_time = (int)(time_elapsed/(i_inv + 1) * (IP.get_max_iter_inv() - i_inv - 1));
+
+            std::cout << std::endl;
+            std::cout << "The program begins at " << timer.get_start_t() << std::endl;
+            std::cout << "Iteration (" << i_inv + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+            std::cout << i_inv + 1 << " iterations run " << timer.get_t() << " seconds, the rest of " << IP.get_max_iter_inv() - i_inv - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
+            std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
+            std::cout << std::endl;
+        }
+
+
     } // end loop inverse
 
 end_of_inversion:
@@ -200,6 +216,14 @@ end_of_inversion:
     // close xdmf file
     io.finalize_data_output_file();
 
+    timer.stop_timer();
+    if (id_sim == 0 && myrank == 0) {
+        std::cout << std::endl;
+        std::cout << "The program begin at " << timer.get_start_t() << std::endl;
+        std::cout << "Forward_or_inversion end at " << timer.get_end_t() << std::endl;
+        std::cout << "It has run " << timer.get_elapsed_t() << " seconds in total." << std::endl;
+        std::cout << std::endl;
+    }
 }
 
 
@@ -266,7 +290,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         // write out new src_rec_file
         if (IP.get_if_output_in_process_data()){
             IP.write_src_rec_file(0,i_iter);
-        } 
+        }
 
         // modify the receiver's location for output
         IP.modify_swapped_source_location();
@@ -291,6 +315,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 
 // run earthquake relocation mode
 inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
+
+    Timer timer("Inv_and_reloc", true);
 
     /////////////////////
     // preparation of model update
@@ -550,6 +576,20 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
+            // estimate running time
+            CUSTOMREAL time_elapsed = timer.get_t();
+            if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode0()-1) {
+                const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode0() - i_loop - 1) + timer.get_start();
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
+
+                std::cout << std::endl;
+                std::cout << "The program begins at " << timer.get_start_t() << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode0() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
+                std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
+                std::cout << std::endl;
+            }
+
         } // end loop for model update and relocation
     } else if (inv_mode == SIMULTANEOUS) {
 
@@ -699,7 +739,21 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
-        } // end loop for model update and relocation     
+            // estimate running time
+            CUSTOMREAL time_elapsed = timer.get_t();
+            if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode1()-1) {
+                const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode1() - i_loop - 1) + timer.get_start();
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
+
+                std::cout << std::endl;
+                std::cout << "The program begins at " << timer.get_start_t() << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode1() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
+                std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
+                std::cout << std::endl;
+            }
+
+        } // end loop for model update and relocation
 
     } else {
         std::cout << "Error: inv_mode is not defined" << std::endl;
@@ -707,6 +761,15 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     }
     // close xdmf file
     io.finalize_data_output_file();
+
+    timer.stop_timer();
+    if (id_sim == 0 && myrank == 0) {
+        std::cout << std::endl;
+        std::cout << "The program begin at " << timer.get_start_t();
+        std::cout << "Inv_and_reloc end at " << timer.get_end_t();
+        std::cout << "It has run " << timer.get_elapsed_t() << " seconds in total." << std::endl;
+        std::cout << std::endl;
+    }
 
 }
 
