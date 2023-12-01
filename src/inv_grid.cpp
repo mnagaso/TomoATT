@@ -105,12 +105,12 @@ void InvGrid::get_inv_grid_params(InputParams& IP) {
 
 
 void InvGrid::write_inversion_grid_to_file(){
-    std::ofstream ofs;
+    if(world_rank == 0){
+        std::ofstream ofs;
 
-    std::string inversion_grid_file_out = output_dir + "/inversion_grid.txt";
-    ofs.open(inversion_grid_file_out);
+        std::string inversion_grid_file_out = output_dir + "/inversion_grid.txt";
+        ofs.open(inversion_grid_file_out);
 
-    if(subdom_main && id_subdomain == 0){       // main processor of subdomain && the first id of subdoumains
         // inversion grid of velocity
         for(int l = 0; l < n_inv_grids; l++){
             ofs << l << " " << n_inv_K_loc << " " << n_inv_J_loc << " " << n_inv_I_loc << std::endl;    // number of ivnersion grid

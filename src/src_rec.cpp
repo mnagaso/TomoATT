@@ -353,7 +353,7 @@ void parse_src_rec_file(std::string& src_rec_file, \
         std::cout << "\nReading src_rec_file finished." << std::endl;
         std::cout << "number of sources: "   << src_map.size()  << std::endl;
         std::cout << "number of receivers: " << rec_map.size()  << std::endl;
-        std::cout << "number of data: "      << data_map.size() << "\n" << std::endl;
+        // std::cout << "number of data: "      << data_map.size() << "\n" << std::endl;
     }
 
     // indicate elapsed time

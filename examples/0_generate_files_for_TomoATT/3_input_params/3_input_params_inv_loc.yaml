@@ -158,14 +158,6 @@ relocation: # update earthquake hypocenter and origin time (when run_mode : 2 an
 ####################################################################
 inversion_strategy: # update model parameters and earthquake hypocenter iteratively (when run_mode : 3)
 
-  inv_mode : 1 # 0 for update model parameters and relocation iteratively; 1 for update model parameters and relocation simultaneously.
-
-  # for inv_mode : 0, parameters below are required
-  inv_mode_0: # update model for <model_update_N_iter> steps, then update location for <relocation_N_iter> steps, and repeat the process for <max_loop> loops.
-    model_update_N_iter : 1
-    relocation_N_iter : 5
-    max_loop : 40
-
   # for inv_mode : 1, parameters below are required
   inv_mode_1: # update model and location simultaneously for <max_loop> loops.
     max_loop : 40 # maximum number of iterations

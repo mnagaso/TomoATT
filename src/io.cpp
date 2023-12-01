@@ -32,9 +32,9 @@ IO_utils::IO_utils(InputParams& IP) {
                 h5_output_fname_tmp = "./tmp_db_sim_group_" + std::to_string(id_sim) + ".h5";
             } else {
                 // otherwise, only one single data file is created for storing model params
-                h5_output_fname = "./out_data_sim.h5";
-                xdmf_output_fname = "./out_data_sim.xmf";
-                h5_output_fname_tmp = "./tmp_db_sim.h5";
+                h5_output_fname = "./out_data_sim_group_0.h5";      // add _groud_0 to ensure consistency
+                xdmf_output_fname = "./out_data_sim_group_0.xmf";
+                h5_output_fname_tmp = "./tmp_db_sim_group_0.h5";
             }
 
             // MNMN: below is for initiliazing data file for each simulation group
