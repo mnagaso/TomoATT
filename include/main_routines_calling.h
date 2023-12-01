@@ -22,8 +22,7 @@
 #include "model_update.h"
 #include "lbfgs.h"
 #include "objective_function_utils.h"
-#include <chrono>
-#include <ctime>
+#include "timer.h"
 
 // run forward-only or inversion mode
 inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils &io) {
@@ -33,14 +32,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
     if(myrank == 0)
         std::cout << "id_sim: " << id_sim << ", size of src_map: " << IP.src_map.size() << std::endl;
-    
+
     // estimate running time
-    std::chrono::system_clock::time_point start_time_pt = std::chrono::system_clock::now();
-    std::time_t start_time = std::chrono::system_clock::to_time_t(start_time_pt);
-    if (id_sim == 0 && myrank == 0){
-        std::cout << std::endl;
-        std::cout << "Forward_or_inversion start at " << std::ctime(&start_time) << std::endl;
-    }
+    Timer timer("Forward_or_inversion", true);
 
     // prepare objective_function file
     std::ofstream out_main; // close() is not mandatory
@@ -92,8 +86,6 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         if(myrank == 0 && id_sim ==0){
             std::cout << "iteration " << i_inv << " starting ... " << std::endl;
         }
-
-        synchronize_all_world();
 
         old_v_obj = v_obj;
 
@@ -203,18 +195,15 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
 
 
         // estimate running time
+        CUSTOMREAL time_elapsed = timer.get_t();
         if (id_sim == 0 && myrank == 0 && i_inv < IP.get_max_iter_inv()-1) {
-            std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
-            std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
-            int has_run_time = duration.count();
-            int will_run_time = (int)(has_run_time/(i_inv + 1) * (IP.get_max_iter_inv() - i_inv - 1));
-            auto end_time_estimated = std::chrono::system_clock::to_time_t(end_time_pt + std::chrono::seconds(will_run_time));
+            const time_t end_time_estimated = time_elapsed / (i_inv + 1) * (IP.get_max_iter_inv() - i_inv - 1) + timer.get_start();
+            auto will_run_time = (int)(time_elapsed/(i_inv + 1) * (IP.get_max_iter_inv() - i_inv - 1));
 
             std::cout << std::endl;
-            std::cout << "The program begins at " << std::ctime(&start_time);
-            std::cout << "Iteration (" << i_inv + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << std::ctime(&end_time);     
-            std::cout << i_inv + 1 << " iterations run " << duration.count() << " seconds, the rest of " << IP.get_max_iter_inv() - i_inv - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
+            std::cout << "The program begins at " << timer.get_start_t() << std::endl;
+            std::cout << "Iteration (" << i_inv + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+            std::cout << i_inv + 1 << " iterations run " << timer.get_t() << " seconds, the rest of " << IP.get_max_iter_inv() - i_inv - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
             std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
             std::cout << std::endl;
         }
@@ -227,15 +216,12 @@ end_of_inversion:
     // close xdmf file
     io.finalize_data_output_file();
 
+    timer.stop_timer();
     if (id_sim == 0 && myrank == 0) {
-        std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
-        std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
-
         std::cout << std::endl;
-        std::cout << "The program begin at " << std::ctime(&start_time);
-        std::cout << "Forward_or_inversion end at " << std::ctime(&end_time);
-        std::cout << "It has run " << duration.count() << " seconds in total." << std::endl;
+        std::cout << "The program begin at " << timer.get_start_t() << std::endl;
+        std::cout << "Forward_or_inversion end at " << timer.get_end_t() << std::endl;
+        std::cout << "It has run " << timer.get_elapsed_t() << " seconds in total." << std::endl;
         std::cout << std::endl;
     }
 }
@@ -304,7 +290,7 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
         // write out new src_rec_file
         if (IP.get_if_output_in_process_data()){
             IP.write_src_rec_file(0,i_iter);
-        } 
+        }
 
         // modify the receiver's location for output
         IP.modify_swapped_source_location();
@@ -330,13 +316,8 @@ inline void run_earthquake_relocation(InputParams& IP, Grid& grid, IO_utils& io)
 // run earthquake relocation mode
 inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& io) {
 
-    std::chrono::system_clock::time_point start_time_pt = std::chrono::system_clock::now();
-    std::time_t start_time = std::chrono::system_clock::to_time_t(start_time_pt);
-    
-    if (id_sim == 0 && myrank == 0){
-        std::cout << std::endl;
-        std::cout << "Inv_and_reloc starts at " << std::ctime(&start_time) << std::endl;
-    }
+    Timer timer("Inv_and_reloc", true);
+
     /////////////////////
     // preparation of model update
     /////////////////////
@@ -596,18 +577,15 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
             // estimate running time
+            CUSTOMREAL time_elapsed = timer.get_t();
             if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode0()-1) {
-                std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
-                std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
-                auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
-                int has_run_time = duration.count();
-                int will_run_time = (int)(has_run_time/(i_loop + 1) * (IP.get_max_loop_mode0() - i_loop - 1));
-                auto end_time_estimated = std::chrono::system_clock::to_time_t(end_time_pt + std::chrono::seconds(will_run_time));
+                const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode0() - i_loop - 1) + timer.get_start();
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
 
                 std::cout << std::endl;
-                std::cout << "The program begins at " << std::ctime(&start_time);
-                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode0() << ") finished at " << std::ctime(&end_time);     
-                std::cout << i_loop + 1 << " loops run " << duration.count() << " seconds, the rest of " << IP.get_max_loop_mode0() - i_loop - 1 << " loops require " << will_run_time << " seconds." << std::endl;
+                std::cout << "The program begins at " << timer.get_start_t() << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode0() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
                 std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
                 std::cout << std::endl;
             }
@@ -761,24 +739,21 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
 
             grid.rejuvenate_abcf();     // (a,b/r^2,c/(r^2*cos^2),f/(r^2*cos)) -> (a,b,c,f)
 
-             // estimate running time
+            // estimate running time
+            CUSTOMREAL time_elapsed = timer.get_t();
             if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode1()-1) {
-                std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
-                std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
-                auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
-                int has_run_time = duration.count();
-                int will_run_time = (int)(has_run_time/(i_loop + 1) * (IP.get_max_loop_mode1() - i_loop - 1));
-                auto end_time_estimated = std::chrono::system_clock::to_time_t(end_time_pt + std::chrono::seconds(will_run_time));
+                const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode1() - i_loop - 1) + timer.get_start();
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
 
                 std::cout << std::endl;
-                std::cout << "The program begins at " << std::ctime(&start_time);
-                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode1() << ") finished at " << std::ctime(&end_time);     
-                std::cout << i_loop + 1 << " loops run " << duration.count() << " seconds, the rest of " << IP.get_max_loop_mode1() - i_loop - 1 << " loops require " << will_run_time << " seconds." << std::endl;
+                std::cout << "The program begins at " << timer.get_start_t() << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode1() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
                 std::cout << "The program is estimated to stop at " << std::ctime(&end_time_estimated) << std::endl;
                 std::cout << std::endl;
             }
 
-        } // end loop for model update and relocation     
+        } // end loop for model update and relocation
 
     } else {
         std::cout << "Error: inv_mode is not defined" << std::endl;
@@ -787,15 +762,12 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
     // close xdmf file
     io.finalize_data_output_file();
 
+    timer.stop_timer();
     if (id_sim == 0 && myrank == 0) {
-        std::chrono::system_clock::time_point end_time_pt = std::chrono::system_clock::now();
-        std::time_t end_time = std::chrono::system_clock::to_time_t(end_time_pt);
-        auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time_pt - start_time_pt);
-
         std::cout << std::endl;
-        std::cout << "The program begin at " << std::ctime(&start_time);
-        std::cout << "Inv_and_reloc end at " << std::ctime(&end_time);
-        std::cout << "It has run " << duration.count() << " seconds in total." << std::endl;
+        std::cout << "The program begin at " << timer.get_start_t();
+        std::cout << "Inv_and_reloc end at " << timer.get_end_t();
+        std::cout << "It has run " << timer.get_elapsed_t() << " seconds in total." << std::endl;
         std::cout << std::endl;
     }
 

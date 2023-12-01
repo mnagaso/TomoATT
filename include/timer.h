@@ -1,47 +1,87 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include<iostream>
-#include<ctime>
-#include<chrono>
-#include<string>
+
+#include <iostream>
+#include <chrono>
+#include <iomanip>
+#include <ctime>
+#include <string>
 
 class Timer {
 public:
-    Timer(std::string name){
-        this->name = name;
-        this->start_timer();
-    };
-    ~Timer(){};
+    Timer(std::string name, bool show_start_time = false) : name(name), show_start_time(show_start_time) {
+        start_timer();
+    }
+
+    ~Timer() {}
 
     std::string name;
-    std::clock_t start;
-    std::clock_t end;
-    std::clock_t tmp_delta;
-    std::clock_t time_back;
+    std::chrono::high_resolution_clock::time_point start;
+    std::chrono::high_resolution_clock::time_point end;
+    std::chrono::duration<double> elapsed_time;
+    bool show_start_time = false;
 
-    void start_timer(){
-        start = std::clock();
+    void start_timer() {
+        start = std::chrono::high_resolution_clock::now();
         time_back = start;
-    };
-    void stop_timer(){
-        end = std::clock();
+        if (show_start_time) {
+            std::cout << this->name << " started at " << get_current_utc_time() << std::endl;
+        }
+    }
 
-        // print time
-        if (if_verbose)
-            std::cout << "Time for " << name << ": " << (double)(end - start) / CLOCKS_PER_SEC << " sec" << std::endl;
-    };
+    void stop_timer() {
+        end = std::chrono::high_resolution_clock::now();
+        elapsed_time = end - start;
+        print_elapsed_time();
+    }
 
-    double get_t_delta(){
-        tmp_delta = std::clock() - time_back;
-        time_back = std::clock();
-        return (double) tmp_delta / CLOCKS_PER_SEC;
-    };
+    double get_start() {
+        return std::chrono::duration<double>(start.time_since_epoch()).count();
+    }
+
+    double get_t_delta() {
+        auto current_time = std::chrono::high_resolution_clock::now();
+        auto delta = current_time - time_back;
+        time_back = current_time;
+        return std::chrono::duration<double>(delta).count();
+    }
 
     double get_t() {
-        return (double) (std::clock() - start) / CLOCKS_PER_SEC;
-    };
+        return std::chrono::duration<double>(std::chrono::high_resolution_clock::now() - start).count();
+    }
+
+    std::string get_start_t() {
+        return get_current_utc_time();
+    }
+
+    std::string get_end_t() {
+        return get_current_utc_time(end);
+    }
+
+    std::string get_elapsed_t() {
+        return std::to_string(elapsed_time.count()) + " sec";
+    }
+
+private:
+    std::chrono::high_resolution_clock::time_point time_back;
+
+    void print_elapsed_time() {
+        if (if_verbose)
+            std::cout << "Time for " << name << ": " << elapsed_time.count() << " sec" << std::endl;
+    }
+
+    std::string get_current_utc_time(std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now()) {
+        std::time_t time_t = std::chrono::system_clock::to_time_t(time);
+        std::tm utc_tm = *std::gmtime(&time_t);
+
+        std::ostringstream oss;
+        oss << std::put_time(&utc_tm, "%F %T") << " UTC";
+        return oss.str();
+    }
+
 };
+
 
 
 #endif // TIMER_H
