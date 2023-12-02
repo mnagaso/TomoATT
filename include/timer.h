@@ -63,6 +63,14 @@ public:
         return std::to_string(elapsed_time.count()) + " sec";
     }
 
+    std::string get_utc_from_time_t(std::time_t time_t) {
+        std::tm utc_tm = *std::gmtime(&time_t);
+
+        std::ostringstream oss;
+        oss << std::put_time(&utc_tm, "%F %T") << " UTC";
+        return oss.str();
+    }
+
 private:
     std::chrono::high_resolution_clock::time_point time_back;
 
