@@ -456,7 +456,10 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
 }
 
 
-bool check_if_receiver_is_in_this_subdomain(Grid& grid, const CUSTOMREAL& rec_lon, const CUSTOMREAL& rec_lat, const CUSTOMREAL& rec_r) {
+bool Receiver::check_if_receiver_is_in_this_subdomain(Grid& grid, const CUSTOMREAL& rec_lon, const CUSTOMREAL& rec_lat, const CUSTOMREAL& rec_r) {
+
+    bool is_in_subdomain = false;
+
     if (grid.get_lon_min_loc() <= rec_lon && rec_lon < grid.get_lon_max_loc() && \
         grid.get_lat_min_loc() <= rec_lat && rec_lat < grid.get_lat_max_loc() && \
         grid.get_r_min_loc()   <= rec_r   && rec_r   < grid.get_r_max_loc()   ) {
@@ -466,11 +469,13 @@ bool check_if_receiver_is_in_this_subdomain(Grid& grid, const CUSTOMREAL& rec_lo
         if (isZero(rec_lon - grid.get_lon_max_loc())
          || isZero(rec_lat - grid.get_lat_max_loc())
          || isZero(rec_r - grid.get_r_max_loc())) {
-            return false;
-         } else {
-            return true;
-         }
+            is_in_subdomain = false;
+        } else {
+            is_in_subdomain = true;
+        }
     }
+
+    return is_in_subdomain;
 }
 
 
@@ -548,7 +553,7 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
             e_lon = e_lon + _1_CR;
             i_rec--;
         }
-        
+
         if (e_lat == _1_CR) {
             e_lat = 0.0;
             j_rec++;
@@ -853,7 +858,7 @@ void Receiver::calculate_T_gradient_one_rec(Grid& grid, InputParams& IP, std::st
             e_lon = e_lon + _1_CR;
             i_rec--;
         }
-        
+
         if (e_lat == _1_CR) {
             e_lat = 0.0;
             j_rec++;
