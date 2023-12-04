@@ -1164,8 +1164,7 @@ void Grid::setup_factors(Source &src){
     b0   = src.get_fac_at_source(fac_b_loc);
     c0   = src.get_fac_at_source(fac_c_loc);
     f0   = src.get_fac_at_source(fac_f_loc);
-    fun0 = src.get_fac_at_source(fun_loc);
-
+    fun0 = src.get_fac_at_source(fun_loc, false); // true for debug
 }
 
 

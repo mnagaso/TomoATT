@@ -52,7 +52,7 @@ public:
     }
 
     std::string get_start_t() {
-        return get_current_utc_time();
+        return get_current_utc_time(start);
     }
 
     std::string get_end_t() {
@@ -61,6 +61,14 @@ public:
 
     std::string get_elapsed_t() {
         return std::to_string(elapsed_time.count()) + " sec";
+    }
+
+    std::string get_utc_from_time_t(std::time_t time_t) {
+        std::tm utc_tm = *std::gmtime(&time_t);
+
+        std::ostringstream oss;
+        oss << std::put_time(&utc_tm, "%F %T") << " UTC";
+        return oss.str();
     }
 
 private:

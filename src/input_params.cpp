@@ -2804,7 +2804,7 @@ void InputParams::check_lower_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL lo
         if(myrank == 0 && id_sim ==0){
             std::cout << "lower bound of " << name << " inversion grid " << arr[0] << " is greater than computational domain "
                   << lower_bound << std::endl;
-            std::cout << "Tow additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
+            std::cout << "Two additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
             std::cout << std::endl;
         }
         CUSTOMREAL* new_arr = new CUSTOMREAL[n_grid+2];
@@ -2845,7 +2845,7 @@ void InputParams::check_upper_bound(CUSTOMREAL*& arr, int& n_grid, CUSTOMREAL up
         if(myrank == 0 && id_sim ==0){
             std::cout << "upper bound of " << name << " inversion grid " << arr[n_grid-1] << " is less than computational domain "
                   << upper_bound << std::endl;
-            std::cout << "Tow additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
+            std::cout << "Two additional inversion grid: " << grid1 << ", " << grid2 << " are added." << std::endl;
             std::cout << std::endl;
         }
         CUSTOMREAL* new_arr = new CUSTOMREAL[n_grid+2];

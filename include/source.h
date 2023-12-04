@@ -32,7 +32,7 @@ public:
     //
     // parallel getters
     //
-    CUSTOMREAL get_fac_at_source(CUSTOMREAL*);
+    CUSTOMREAL get_fac_at_source(CUSTOMREAL*, bool check=false);
     CUSTOMREAL get_fac_at_point(CUSTOMREAL*, int, int, int);
 
 private:
@@ -59,6 +59,7 @@ private:
     bool is_in_subdomain = false;
     int  src_rank;
     bool *src_flags;
+    int n_dom_src = 0;
 
     // position error by discretization for each direction
     CUSTOMREAL error_lon, error_lat, error_r;
