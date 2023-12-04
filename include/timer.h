@@ -52,7 +52,7 @@ public:
     }
 
     std::string get_start_t() {
-        return get_current_utc_time();
+        return get_current_utc_time(start);
     }
 
     std::string get_end_t() {
