@@ -500,12 +500,14 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
 
     // check the rank where the source is located
     int rec_rank = -1;
+    int n_subdom_rec = 0;
     bool* rec_flags = new bool[nprocs];
     allgather_bool_single(&is_in_subdomain, rec_flags);
     for (int i = 0; i < nprocs; i++) {
         if (rec_flags[i]) {
             rec_rank = i;
-            break; // this break means that the first subdomain is used if the receiver is in multiple subdomains (ghost layer)
+            //break; // this break means that the first subdomain is used if the receiver is in multiple subdomains (ghost layer)
+            n_subdom_rec++;
         }
     }
     delete[] rec_flags;
@@ -628,12 +630,17 @@ CUSTOMREAL Receiver::interpolate_travel_time(Grid& grid, InputParams& IP, std::s
         //           << std::endl;
 
         // broadcast interpolated travel time
-        broadcast_cr_single(vinterp, rec_rank);
+        //broadcast_cr_single(vinterp, rec_rank);
+        allreduce_cr_inplace(&vinterp, 1);
 
     } else {
         // receive the calculated traveltime
-        broadcast_cr_single(vinterp, rec_rank);
+        //broadcast_cr_single(vinterp, rec_rank);
+        allreduce_cr_inplace(&vinterp, 1);
     }
+
+    // use an averaged value if the receiver is in multiple subdomains
+    vinterp /= n_subdom_rec;
 
     // return the calculated travel time
     return vinterp;

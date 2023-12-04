@@ -41,21 +41,29 @@ void Source::set_source_position(InputParams &IP, Grid &grid, bool& is_teleseism
             k_src_loc = loc_K - 2;
 
         // check if the source is in this subdomain (including the ghost nodes)
-        if (grid.get_lon_min_loc() <= src_lon && src_lon <= grid.get_lon_max_loc()  && \
-            grid.get_lat_min_loc() <= src_lat && src_lat <= grid.get_lat_max_loc()  && \
-            grid.get_r_min_loc()   <= src_r   && src_r   <= grid.get_r_max_loc()   ) {
+        if (grid.get_lon_min_loc() <= src_lon && src_lon < grid.get_lon_max_loc()  && \
+            grid.get_lat_min_loc() <= src_lat && src_lat < grid.get_lat_max_loc()  && \
+            grid.get_r_min_loc()   <= src_r   && src_r   < grid.get_r_max_loc()   ) {
             is_in_subdomain = true;
+
+            // if source position id is negative, this subdomain is not responsible for the source
+            if (i_src_loc < 0 || j_src_loc < 0 || k_src_loc < 0) {
+                is_in_subdomain = false;
+            }
         }
 
         // check the rank where the source is located
         src_flags = new bool[nprocs];
         allgather_bool_single(&is_in_subdomain, src_flags);
+        int n_dom_src_tmp = 0;
         for (int i = 0; i < nprocs; i++) {
             if (src_flags[i]) {
                 src_rank = i;
-                break;
+                n_dom_src_tmp++;
+                //break;
             }
         }
+        n_dom_src = n_dom_src_tmp;
 
         delete[] src_flags;
 
@@ -119,7 +127,7 @@ Source::~Source() {
 }
 
 
-CUSTOMREAL Source::get_fac_at_source(CUSTOMREAL *loc_array) {
+CUSTOMREAL Source::get_fac_at_source(CUSTOMREAL *loc_array, bool check) {
 
     // calculate factor by the rank where the source is located and broadcast to all
 
@@ -138,8 +146,36 @@ CUSTOMREAL Source::get_fac_at_source(CUSTOMREAL *loc_array) {
         // do nothing
     }
 
-    broadcast_cr_single(fac, src_rank);
+    //if (check && fac<0 && src_rank==myrank){
+    if (check && is_in_subdomain){
+            std::cout << "src positions lon lat r                  :    " << src_lon     << " " << src_lat     << " " << src_r     << std::endl;
+            std::cout << "src positions lon(deg) lat(deg) depth(km):    " << src_lon*RAD2DEG << " " << src_lat*RAD2DEG << " " << radius2depth(src_r) << std::endl;
+            std::cout << "src discretized position id i j k        :    " << i_src_loc       << " " << j_src_loc       << " " << k_src_loc    << std::endl;
+            std::cout << "src discretized position lon lat r       :    " << dis_src_lon << " " << dis_src_lat << " " << dis_src_r << std::endl;
+            std::cout << "src position bias lon lat r             :    " << error_lon   << " " << error_lat   << " " << error_r   << std::endl;
+            std::cout << "src relative position bias lon lat r    :    " << dis_src_err_lon << " " << dis_src_err_lat << " " << dis_src_err_r << std::endl;
+            std::cout << "delta lon lat r                          :    " << delta_lon   << " " << delta_lat   << " " << delta_r   << std::endl;
+            std::cout << "source is in the subdomain of rank " << myrank << std::endl;
+
+            // check loc_array value
+            std::cout << "loc_array value: " << std::endl;
+            std::cout << get_fac_at_point(loc_array,0,0,0) << ' ' << get_fac_at_point(loc_array,1,0,0) << ' ' << get_fac_at_point(loc_array,0,1,0) << ' ' << get_fac_at_point(loc_array,1,1,0) << std::endl;
+            std::cout << get_fac_at_point(loc_array,0,0,1) << ' ' << get_fac_at_point(loc_array,1,0,1) << ' ' << get_fac_at_point(loc_array,0,1,1) << ' ' << get_fac_at_point(loc_array,1,1,1) << std::endl;
+            std::cout << "fac: " << fac << std::endl;
+
+            //exit(1);
+    }
+
+    //broadcast_cr_single(fac, src_rank);
     // std::cout << "interp: " << dis_src_err_r << ' ' << dis_src_err_lat << ' ' << dis_src_err_lon << ' ' << get_fac_at_point(loc_array,0,0,0) << std::endl;
+
+    allreduce_cr_inplace(&fac, 1);
+    fac /= n_dom_src;
+
+    if (check)
+        std::cout << "n_dom_src: " << n_dom_src << ", fac at last: " << fac << std::endl;
+
+
     return fac;
 
 
