@@ -41,15 +41,15 @@ void Source::set_source_position(InputParams &IP, Grid &grid, bool& is_teleseism
             k_src_loc = loc_K - 2;
 
         // check if the source is in this subdomain (including the ghost nodes)
-        if (grid.get_lon_min_loc() <= src_lon && src_lon < grid.get_lon_max_loc()  && \
-            grid.get_lat_min_loc() <= src_lat && src_lat < grid.get_lat_max_loc()  && \
-            grid.get_r_min_loc()   <= src_r   && src_r   < grid.get_r_max_loc()   ) {
+        if (grid.get_lon_min_loc() <= src_lon && src_lon <= grid.get_lon_max_loc()  && \
+            grid.get_lat_min_loc() <= src_lat && src_lat <= grid.get_lat_max_loc()  && \
+            grid.get_r_min_loc()   <= src_r   && src_r   <= grid.get_r_max_loc()   ) {
             is_in_subdomain = true;
-
-            // if source position id is negative, this subdomain is not responsible for the source
-            if (i_src_loc < 0 || j_src_loc < 0 || k_src_loc < 0) {
-                is_in_subdomain = false;
-            }
+        } else {
+            // this flag should be reinitialized here
+            // because the src object is now reused by multiple events
+            // thus the flag is not reinitialized in the constructor
+            is_in_subdomain = false;
         }
 
         // check the rank where the source is located
@@ -110,8 +110,8 @@ void Source::set_source_position(InputParams &IP, Grid &grid, bool& is_teleseism
                 std::cout << "src positions lon(deg) lat(deg) depth(km):    " << src_lon*RAD2DEG << " " << src_lat*RAD2DEG << " " << radius2depth(src_r) << std::endl;
                 std::cout << "src discretized position id i j k        :    " << i_src_loc       << " " << j_src_loc       << " " << k_src_loc    << std::endl;
                 std::cout << "src discretized position lon lat r       :    " << dis_src_lon << " " << dis_src_lat << " " << dis_src_r << std::endl;
-                std::cout << "src position bias lon lat r             :    " << error_lon   << " " << error_lat   << " " << error_r   << std::endl;
-                std::cout << "src relative position bias lon lat r    :    " << dis_src_err_lon << " " << dis_src_err_lat << " " << dis_src_err_r << std::endl;
+                std::cout << "src position bias lon lat r              :    " << error_lon   << " " << error_lat   << " " << error_r   << std::endl;
+                std::cout << "src relative position bias lon lat r     :    " << dis_src_err_lon << " " << dis_src_err_lat << " " << dis_src_err_r << std::endl;
                 std::cout << "delta lon lat r                          :    " << delta_lon   << " " << delta_lat   << " " << delta_r   << std::endl;
             }
             if(if_verbose) std::cout << "source is in the subdomain of rank " << myrank << std::endl;

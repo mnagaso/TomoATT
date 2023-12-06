@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <ctime>
 #include <string>
+#include "config.h"
 
 class Timer {
 public:
@@ -25,7 +26,7 @@ public:
     void start_timer() {
         start = std::chrono::high_resolution_clock::now();
         time_back = start;
-        if (show_start_time) {
+        if (show_start_time && proc_read_srcrec) {
             std::cout << this->name << " started at " << get_current_utc_time() << std::endl;
         }
     }
