@@ -416,7 +416,7 @@ inline void split_mpi_comm(){
                                                        << ", sub_rank/total: "  << sub_rank     << "/" << sub_nprocs \
             << std::endl;
     }
-    std::cout << std::endl;
+
     synchronize_all_world();
 
     // // check processors
