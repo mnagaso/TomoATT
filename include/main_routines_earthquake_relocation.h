@@ -64,10 +64,6 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         // initialize iterator object
         bool first_init = (i_src==0);
 
-        // initialize iterator object
-        std::unique_ptr<Iterator> It;
-        select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-
         /////////////////////////
         // run forward simulation
         /////////////////////////
@@ -82,7 +78,8 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
         }
 
         bool write_tmp_T = true;
-        calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_this_sim_group, first_init, It, name_sim_src, write_tmp_T);
+        std::unique_ptr<Iterator> It_dummy;
+        calculate_or_read_traveltime_field(IP, grid, io, It_dummy, i_src, src, is_teleseismic, IP.n_src_this_sim_group, first_init, name_sim_src, write_tmp_T);
 
     }
 
@@ -128,7 +125,7 @@ std::vector<CUSTOMREAL> calculate_gradient_objective_function(InputParams& IP, G
     // iterate over sources for calculating gradient of objective function
     for (int i_src = 0; i_src < IP.n_src_this_sim_group; i_src++){
         const std::string name_sim_src = IP.get_src_name(i_src);
-             
+
         // calculate gradient of objective function with respect to location and ortime
         recs.calculate_grad_obj_src_reloc(IP, name_sim_src);
     }
