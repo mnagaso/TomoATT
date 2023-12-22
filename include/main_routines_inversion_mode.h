@@ -20,9 +20,8 @@
 #include "lbfgs.h"
 
 
-inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_utils& io, std::unique_ptr<Iterator>& It,
-                                               const int i_src, Source& src, const bool& is_teleseismic, const int N_src, bool first_init,
-                                               const std::string& name_sim_src, const bool& prerun=false){
+inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_utils& io, const int i_src, const int N_src, bool first_init,
+                                               std::unique_ptr<Iterator>& It, const std::string& name_sim_src, const bool& prerun=false){
 
     if (IP.get_is_T_written_into_file(name_sim_src)){
         // load travel time field on grid.T_loc
@@ -45,10 +44,6 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
                     << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                     << std::endl;
         }
-
-        // initialize iterator object
-        select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
-
         // solve travel time field on grid.T_loc
         It->run_iteration_forward(IP, grid, io, first_init);
 
@@ -89,11 +84,15 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
         // set source position
         src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
-        // calculate or read traveltime field
-        std::unique_ptr<Iterator> It_dummy;
-        bool prerun_mode = true;
-        calculate_or_read_traveltime_field(IP, grid, io, It_dummy, i_src, src, is_teleseismic, IP.n_src_comm_rec_this_sim_group, first_init, name_sim_src, prerun_mode);
+     // initialize iterator object
+        std::unique_ptr<Iterator> It;
 
+        select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
+
+        // calculate or read traveltime field
+        bool prerun_mode = true;
+        calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_comm_rec_this_sim_group, first_init, It, name_sim_src, prerun_mode);
+    
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
         // CHS: At this point, all the synthesised arrival times for all the co-located stations are recorded in syn_time_map_sr. When you need to use it later, you can just look it up.
     }
@@ -176,14 +175,17 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // run forward simulation
         /////////////////////////
 
-        std::unique_ptr<Iterator> It;
-
         // (re) initialize source object and set to grid
         src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
+        // initialize iterator object
+        std::unique_ptr<Iterator> It;
+
         if (!hybrid_stencil_order){
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
+
             // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
-            calculate_or_read_traveltime_field(IP, grid, io, It, i_src, src, is_teleseismic, IP.n_src_this_sim_group, first_init, name_sim_src, is_save_T);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_this_sim_group, first_init, It, name_sim_src, is_save_T);
         } else {
             // hybrid stencil mode
             std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
@@ -192,12 +194,14 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             std::unique_ptr<Iterator> It_pre;
             IP.set_stencil_order(1);
             IP.set_conv_tol(IP.get_conv_tol()*100.0);
-            calculate_or_read_traveltime_field(IP, grid, io, It_pre, i_src, src, is_teleseismic, IP.n_src_this_sim_group, first_init, name_sim_src, is_save_T);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It_pre, false);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_this_sim_group, first_init, It_pre, name_sim_src, is_save_T);
 
             // run 3rd order forward simulation
             IP.set_stencil_order(3);
             IP.set_conv_tol(IP.get_conv_tol()/100.0);
-            calculate_or_read_traveltime_field(IP, grid, io, It, i_src, src, is_teleseismic, IP.n_src_this_sim_group, first_init, name_sim_src, is_save_T);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, true);
+            calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_this_sim_group, first_init, It, name_sim_src, is_save_T);
         }
 
         // output the result of forward simulation
