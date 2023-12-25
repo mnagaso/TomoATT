@@ -580,11 +580,11 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             CUSTOMREAL time_elapsed = timer.get_t();
             if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode0()-1) {
                 const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode0() - i_loop - 1) + timer.get_start();
-                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_loop_mode0() - i_loop - 1));
 
                 std::cout << std::endl;
                 std::cout << "The program begins at " << timer.get_start_t() << std::endl;
-                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode0() << ") finished at " << time_elapsed << " seconds" << std::endl;
                 std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode0() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
                 std::cout << "The program is estimated to stop at " << timer.get_utc_from_time_t(end_time_estimated) << std::endl;
                 std::cout << std::endl;
@@ -743,11 +743,11 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             CUSTOMREAL time_elapsed = timer.get_t();
             if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode1()-1) {
                 const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode1() - i_loop - 1) + timer.get_start();
-                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_loop_mode1() - i_loop - 1));
 
                 std::cout << std::endl;
                 std::cout << "The program begins at " << timer.get_start_t() << std::endl;
-                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode1() << ") finished at " << time_elapsed << " seconds" << std::endl;
                 std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode1() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
                 std::cout << "The program is estimated to stop at " << timer.get_utc_from_time_t(end_time_estimated) << std::endl;
                 std::cout << std::endl;
