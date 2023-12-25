@@ -928,7 +928,7 @@ void InputParams::write_params_to_file() {
         std::cout << "Error: output_format is not defined!" << std::endl;
         exit(1);
     }
-    fout << "  output_file_format: " << ff_flag << std::endl;
+    fout << "  output_file_format: " << ff_flag << " # 0: hdf5, 1: ascii" << std::endl;
 
 
     fout << std::endl;
