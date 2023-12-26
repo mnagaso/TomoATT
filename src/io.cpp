@@ -130,6 +130,7 @@ void IO_utils::write_grid(Grid& grid) {
             write_xdmf_file_grid();
 
         if (id_sim == 0) {
+
             // open file
             h5_open_file_by_group_main(h5_output_grid_fname);
 
