@@ -157,6 +157,9 @@ InputParams::InputParams(std::string& input_file){
             if (config["output_setting"]["output_final_model"])
                 getNodeValue(config["output_setting"], "output_final_model", output_final_model);
 
+            if (config["output_setting"]["output_middle_model"])
+                getNodeValue(config["output_setting"], "output_middle_model", output_middle_model);
+
             if (config["output_setting"]["output_in_process"])
                 getNodeValue(config["output_setting"], "output_in_process", output_in_process);
 
@@ -692,6 +695,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(output_model_dat, 0);
     broadcast_i_single(verbose_output_level, 0);
     broadcast_bool_single(output_final_model, 0);
+    broadcast_bool_single(output_middle_model, 0);
     broadcast_bool_single(output_in_process, 0);
     broadcast_bool_single(output_in_process_data, 0);
     broadcast_bool_single(single_precision_output, 0);
@@ -917,6 +921,7 @@ void InputParams::write_params_to_file() {
     fout << "  output_source_field:     " << output_source_field         << " # output the calculated field of all sources                       " << std::endl;
     fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat (data in text format) or not.                     " << std::endl;
     fout << "  output_final_model:      " << output_final_model          << " # output merged final model (final_model.h5) or not.                                " << std::endl;
+    fout << "  output_middle_model:     " << output_middle_model         << " # output merged moddle model (middle_model_stepX.h5) or not.                                " << std::endl;
     fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
     fout << "  output_in_process_data:  " << output_in_process_data      << " # output src_rec_file at each inv iteration or not.                       " << std::endl;
     fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;

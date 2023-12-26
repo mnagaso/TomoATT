@@ -1383,15 +1383,15 @@ void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
 }
 
 
-void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
-
+// void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
+void IO_utils::write_merged_model(Grid& grid, InputParams& IP, std::string fname) {
     // this function is called only from simulation group == 0
     if (id_sim == 0 && subdom_main) {
 
         if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
             // create file
-            std::string fname = "final_model.h5";
+            // std::string fname = "final_model.h5";
             h5_create_file_by_group_main(fname);
 
             std::string gname_dummy = "dummy";

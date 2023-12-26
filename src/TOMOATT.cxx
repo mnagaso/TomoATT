@@ -98,10 +98,11 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // // output final state of the model
-    // if (IP.get_if_output_final_model()) {
-    //     io.write_final_model(grid, IP);
-    // }
+    // output final state of the model
+    if (IP.get_if_output_final_model()) {
+        // io.write_final_model(grid, IP);
+        io.write_merged_model(grid, IP, "final_model.h5");
+    }
 
 
     // finalize cuda
