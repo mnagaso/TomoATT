@@ -621,14 +621,16 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
         if (cur_diff_L1 < IP.get_conv_tol()) {
             //stdout_by_main("--- iteration converged. ---");
+            iter_count++;
             goto iter_end;
         } else if (IP.get_max_iter() <= iter_count) {
             stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
+            iter_count++;
             goto iter_end;
         } else {
+            iter_count++;
             if(myrank==0 && if_verbose)
                 std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
-            iter_count++;
         }
     }
 
