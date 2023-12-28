@@ -1992,10 +1992,10 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
     CUSTOMREAL c2p = (c2 + std::abs(c2))/_2_CR;
 
     // stabilize the calculation on the boundary
-    if (kkr == 1 && grid.k_first() && a1p > 0 ){
-        a1m = -a1p;
-        a1p = 0;
-    }
+    // if (kkr == 1 && grid.k_first() && a1p > 0 ){
+    //     a1m = -a1p;
+    //     a1p = 0;
+    // }
 
     // coe
     CUSTOMREAL coe = (a2p-a1m)/dr + (b2p-b1m)/dt + (c2p-c1m)/dp;
