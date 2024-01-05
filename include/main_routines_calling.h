@@ -780,7 +780,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             }
             if (IP.get_if_output_middle_model()) {
                 std::string tmp_fname = "middle_model_" + std::to_string(i_loop + 1) + ".h5";
-                io.write_merged_model(grid, IP, "final_model.h5");
+                io.write_merged_model(grid, IP, tmp_fname);
             }
         } // end loop for model update and relocation
 
