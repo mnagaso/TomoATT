@@ -1414,7 +1414,14 @@ void IO_utils::write_merged_model(Grid& grid, InputParams& IP, std::string fname
             exit(1);
 #endif
         } else if (output_format==OUTPUT_FORMAT_ASCII){
-            std::string fname = "final_model";
+            //std::string fname = "final_model";
+
+            // check if the fname finish with .h5
+            if (fname.find(".h5") != std::string::npos) {
+                // remove .h5
+                fname.erase(fname.end()-3, fname.end());
+            }
+
             fname = create_fname_ascii_model(fname);
             write_data_merged_ascii(grid, fname);
         }
