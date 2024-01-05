@@ -618,17 +618,17 @@ void Iterator::run_iteration_forward(InputParams& IP, Grid& grid, IO_utils& io, 
         // debug store temporal T fields
         //io.write_tmp_tau_h5(grid, iter_count);
 
+
+        iter_count++;
+
         //if (cur_diff_L1 < IP.get_conv_tol() && cur_diff_Linf < IP.get_conv_tol()) { // MNMN: let us use only L1 because Linf stop decreasing when using numbers of subdomains.
         if (cur_diff_L1 < IP.get_conv_tol()) {
             //stdout_by_main("--- iteration converged. ---");
-            iter_count++;
             goto iter_end;
         } else if (IP.get_max_iter() <= iter_count) {
             stdout_by_main("--- iteration reached to the maximum number of iterations. ---");
-            iter_count++;
             goto iter_end;
         } else {
-            iter_count++;
             if(myrank==0 && if_verbose)
                 std::cout << "iteration " << iter_count << ": " << cur_diff_L1 << ", " << cur_diff_Linf << ", " << timer_iter.get_t_delta() << "\n";
         }
@@ -677,7 +677,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io, 
         if (adj_type == 0)  init_delta_and_Tadj(grid, IP);          // run iteration for adjoint field
         if (adj_type == 1)  init_delta_and_Tadj_density(grid, IP);  // run iteration for the density of adjoint field (adjoint source -> abs(adjoint source))
     }
-        
+
 
     if(if_verbose) std::cout << "checker point 1, myrank: " << myrank << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
                << ", subdom_main:" << subdom_main << ", world_rank: " << world_rank << std::endl;
@@ -729,7 +729,7 @@ void Iterator::run_iteration_adjoint(InputParams& IP, Grid& grid, IO_utils& io, 
             if(adj_type == 0)   grid.update_Tadj();
             if(adj_type == 1)   grid.update_Tadj_density();
         }
-            
+
 
         if (cur_diff_Linf < IP.get_conv_tol()) {
             //stdout_by_main("--- adjoint iteration converged. ---");
@@ -759,7 +759,7 @@ iter_end:
         if(adj_type == 0)   grid.send_recev_boundary_data_kosumi(grid.Tadj_loc);
         if(adj_type == 1)   grid.send_recev_boundary_data_kosumi(grid.Tadj_density_loc);
     }
-    
+
 
     // check the time for iteration
     if (inter_sub_rank==0 && subdom_main) timer_iter.stop_timer();
