@@ -135,7 +135,7 @@ public:
 
     // merged model
     void write_T_merged(Grid&, InputParams&, int);
-    void write_final_model(Grid&, InputParams&);
+    void write_merged_model(Grid&, InputParams&, std::string);
     bool node_of_this_subdomain(int*, const int&, const int&, const int&);
 
     //

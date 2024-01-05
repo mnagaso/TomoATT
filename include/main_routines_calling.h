@@ -208,6 +208,16 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             std::cout << std::endl;
         }
 
+        // output current state of the model
+        if (IP.get_if_output_final_model()) {
+            // io.write_final_model(grid, IP);
+            io.write_merged_model(grid, IP, "final_model.h5");
+        }
+        if (IP.get_if_output_middle_model()) {
+            std::string tmp_fname = "middle_model_" + std::to_string(i_inv + 1) + ".h5";
+            io.write_merged_model(grid, IP, tmp_fname);
+        }
+        
 
     } // end loop inverse
 
@@ -506,6 +516,16 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 // wait for all processes to finish
                 synchronize_all_world();
 
+                // output current state of the model
+                if (IP.get_if_output_final_model()) {
+                    // io.write_final_model(grid, IP);
+                    io.write_merged_model(grid, IP, "final_model.h5");
+                }
+                if (IP.get_if_output_middle_model()) {
+                    std::string tmp_fname = "middle_model_" + std::to_string(i_inv + 1) + ".h5";
+                    io.write_merged_model(grid, IP, tmp_fname);
+                }
+
             }   // end model update in one loop
 
 
@@ -580,11 +600,11 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             CUSTOMREAL time_elapsed = timer.get_t();
             if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode0()-1) {
                 const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode0() - i_loop - 1) + timer.get_start();
-                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_loop_mode0() - i_loop - 1));
 
                 std::cout << std::endl;
                 std::cout << "The program begins at " << timer.get_start_t() << std::endl;
-                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode0() << ") finished at " << time_elapsed << " seconds" << std::endl;
                 std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode0() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
                 std::cout << "The program is estimated to stop at " << timer.get_utc_from_time_t(end_time_estimated) << std::endl;
                 std::cout << std::endl;
@@ -743,16 +763,25 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             CUSTOMREAL time_elapsed = timer.get_t();
             if (id_sim == 0 && myrank == 0 && i_loop < IP.get_max_loop_mode1()-1) {
                 const time_t end_time_estimated = time_elapsed / (i_loop + 1) * (IP.get_max_loop_mode1() - i_loop - 1) + timer.get_start();
-                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_iter_inv() - i_loop - 1));
+                auto will_run_time = (int)(time_elapsed/(i_loop + 2) * (IP.get_max_loop_mode1() - i_loop - 1));
 
                 std::cout << std::endl;
                 std::cout << "The program begins at " << timer.get_start_t() << std::endl;
-                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_iter_inv() << ") finished at " << time_elapsed << " seconds" << std::endl;
+                std::cout << "Loop (" << i_loop + 1 << "/" << IP.get_max_loop_mode1() << ") finished at " << time_elapsed << " seconds" << std::endl;
                 std::cout << i_loop + 1 << " loop run " << timer.get_t() << " seconds, the rest of " << IP.get_max_loop_mode1() - i_loop - 1 << " iterations require " << will_run_time << " seconds." << std::endl;
                 std::cout << "The program is estimated to stop at " << timer.get_utc_from_time_t(end_time_estimated) << std::endl;
                 std::cout << std::endl;
             }
 
+            // output current state of the model
+            if (IP.get_if_output_final_model()) {
+                // io.write_final_model(grid, IP);
+                io.write_merged_model(grid, IP, "final_model.h5");
+            }
+            if (IP.get_if_output_middle_model()) {
+                std::string tmp_fname = "middle_model_" + std::to_string(i_loop + 1) + ".h5";
+                io.write_merged_model(grid, IP, tmp_fname);
+            }
         } // end loop for model update and relocation
 
     } else {

@@ -20,6 +20,7 @@ public:
     ~PlainGrid();
 
     void run_iteration(InputParams& IP);
+    void run_iteration_upwind(InputParams& IP);
 
 //private:
     // grid parameters
@@ -28,6 +29,15 @@ public:
     CUSTOMREAL rmin_3d, rmax_3d, tmin_3d, tmax_3d, pmin_3d, pmax_3d;
     CUSTOMREAL max_degree;
     int nr_2d, nt_2d;
+
+    // for eikonal solver
+    int count_cand;
+    int ii,ii_nr,ii_n2r,ii_pr,ii_p2r,ii_nt,ii_n2t,ii_pt,ii_p2t;
+    CUSTOMREAL ar,br,at,bt,ar1,ar2,at1,at2,br1,br2,bt1,bt2;
+    CUSTOMREAL eqn_a, eqn_b, eqn_c, eqn_Delta;
+    CUSTOMREAL tmp_tau, T_r, T_t, charact_r, charact_t;
+    bool is_causality;
+    std::vector<CUSTOMREAL> canditate = std::vector<CUSTOMREAL>(60);
 
     // arrays
     // azimuth
@@ -48,6 +58,7 @@ public:
     void load_1d_model(std::string);
     void select_1d_model(std::string);
     void calculate_stencil_2d(int&, int&);
+    void calculate_stencil_upwind_2d(int&, int&);
     CUSTOMREAL eps_2d = 1e-12;
 
 private:

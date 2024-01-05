@@ -142,6 +142,7 @@ public:
     bool get_if_output_source_field()    {return output_source_field;};
     bool get_if_output_model_dat()       {return output_model_dat;};
     bool get_if_output_final_model()     {return output_final_model;};
+    bool get_if_output_middle_model()     {return output_middle_model;};
     bool get_if_output_in_process()      {return output_in_process;};
     bool get_if_output_in_process_data() {return output_in_process_data;};
     bool get_if_single_precision_output(){return single_precision_output;};
@@ -390,7 +391,8 @@ private:
     bool output_source_field    = false; // output out_data_sim_X.h or not.
     bool output_model_dat       = false; // output model_parameters_inv_0000.dat or not.
     bool output_final_model     = true;  // output merged final model or not.
-    bool output_in_process      = true;  // output merged model at each inv iteration or not.
+    bool output_middle_model    = false; // output merged model at each inv iteration or not.
+    bool output_in_process      = true;  // output model at each inv iteration or not.
     bool output_in_process_data = true;  // output src_rec_file at each inv iteration or not.
     int  verbose_output_level   = 0;     // output verbose information or not.
 

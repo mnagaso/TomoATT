@@ -130,6 +130,7 @@ void IO_utils::write_grid(Grid& grid) {
             write_xdmf_file_grid();
 
         if (id_sim == 0) {
+
             // open file
             h5_open_file_by_group_main(h5_output_grid_fname);
 
@@ -1382,15 +1383,13 @@ void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
 }
 
 
-void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
-
+void IO_utils::write_merged_model(Grid& grid, InputParams& IP, std::string fname) {
     // this function is called only from simulation group == 0
     if (id_sim == 0 && subdom_main) {
 
         if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
             // create file
-            std::string fname = "final_model.h5";
             h5_create_file_by_group_main(fname);
 
             std::string gname_dummy = "dummy";
@@ -1413,7 +1412,12 @@ void IO_utils::write_final_model(Grid& grid, InputParams& IP) {
             exit(1);
 #endif
         } else if (output_format==OUTPUT_FORMAT_ASCII){
-            std::string fname = "final_model";
+            // check if the fname finish with .h5
+            if (fname.find(".h5") != std::string::npos) {
+                // remove .h5
+                fname.erase(fname.end()-3, fname.end());
+            }
+
             fname = create_fname_ascii_model(fname);
             write_data_merged_ascii(grid, fname);
         }
