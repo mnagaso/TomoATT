@@ -217,7 +217,6 @@ PlainGrid::PlainGrid(Source& src, InputParams& IP) {
                 tau_2d[irt] = TAU_INITIAL_VAL;
                 is_changed_2d[irt] = false;
             } else {
-                // tau_2d[irt] = TAU_INITIAL_VAL;
                 tau_2d[irt] = TAU_INF_VAL;  // upwind scheme, initial tau should be large enough
                 is_changed_2d[irt] = true;
             }
@@ -675,7 +674,7 @@ void PlainGrid::calculate_stencil_upwind_2d(int& ir, int& it){
         ar2 =  T0r_2d[ii] - T0v_2d[ii]/dr_2d;
         br2 =  T0v_2d[ii]/dr_2d*tau_2d[ii_pr];
     }
-    
+
     // start to find candidate solutions
 
     // first catalog: characteristic travels through sector in 2D volume (4 cases)
@@ -770,7 +769,7 @@ void PlainGrid::calculate_stencil_upwind_2d(int& ir, int& it){
 
     // second catalog: characteristic travels through lines in 1D volume (4 cases)
     // case: 1-2
-    // characteristic travels along r-axis, force H_p2, H_p3 = 0, that is, T_t = 0 
+    // characteristic travels along r-axis, force H_p2, H_p3 = 0, that is, T_t = 0
     // plug the constraint into eikonal equation, we have the equation:   a*T_r^2 = s^2
     for (int i_case = 0; i_case < 2; i_case++){
         switch (i_case){
@@ -974,7 +973,6 @@ void run_2d_solver(InputParams& IP, Source& src, IO_utils& io) {
     } else { // if not, calculate and store it
         // run iteration
         std::cout << "start run iteration myrank: " << myrank << std::endl;
-        // plain_grid.run_iteration(IP);
         plain_grid.run_iteration_upwind(IP);
 
         // write out calculated 2D travel time field
