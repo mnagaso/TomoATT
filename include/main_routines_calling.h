@@ -127,6 +127,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
         ///////////////
         // model update
         ///////////////
+        if(myrank == 0 && id_sim ==0)
+            std::cout << "mode update starting ... " << std::endl;
+        
         if (IP.get_run_mode() == DO_INVERSION) {
             if (optim_method == GRADIENT_DESCENT)
                 model_optimize(IP, grid, io, i_inv, v_obj, old_v_obj, first_src, out_main);

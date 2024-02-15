@@ -152,12 +152,19 @@ void parse_src_rec_file(std::string& src_rec_file, \
                 ndata_tmp = src.n_data;
                 src_name_list.push_back(src_name); // store order of sources in the file
 
-                // source with no receiver is allowed for solver_only model
-                if (ndata_tmp==0) {
+                // source with no receiver is allowed (cc = 1, ndata_tmp = 0)
+                if (cc > ndata_tmp) {
                     // go to the next source
                     cc = 0;
+                    i_src_now++;
+
+                    // store the receiver name list for the source
+                    srcrec_name_list.push_back(rec_name_list);
+                    // clear the temporary receiver name list
+                    rec_name_list.clear();
+
                     // timer
-                    if (i_src_now % 100 == 0 && world_rank == 0) {
+                    if (i_src_now % 1000 == 0 && world_rank == 0) {
                         std::cout << "reading source " << i_src_now << " finished in " << timer.get_t() << " seconds. dt = " << timer.get_t_delta() << " seconds. \n";
                     }
                 }
