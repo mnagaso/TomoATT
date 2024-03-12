@@ -376,6 +376,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
 
                         // because a pair of sources are counted twice, thus * 0.5
                         obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        
                     } else if (data.is_rec_pair) {
 
                         std::string name_src  = data.name_src;
@@ -406,7 +407,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
 
                         obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
-
+                        
                     }
 
                 } // end of loop over data
