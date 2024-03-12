@@ -2204,6 +2204,7 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     << std::fixed << std::setprecision(4) << std::setw(6) << std::right << std::setfill(' ') << 1.0     // the weight of source is assigned to data
                     << std::endl;
 
+
                 // iterate data lines of i_src
                 for (auto& name_data : rec_id2name_back[i_src]){
                     // name_data has one receiver (r0), or a receiver pair (r0+r1), or one source and one receiver (r0+s1)
