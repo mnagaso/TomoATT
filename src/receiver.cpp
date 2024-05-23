@@ -111,6 +111,8 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
 
         // loop all data related to this source MNMN: use reference(auto&) to avoid copy
         for (auto it_src = IP.data_map[name_sim_src].begin(); it_src != IP.data_map[name_sim_src].end(); ++it_src) {
+            bool is_tele = IP.src_map[name_sim_src].is_out_of_region;
+
             for (auto& data: it_src->second){
                 //
                 // absolute traveltime
@@ -157,8 +159,9 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                 // common receiver differential traveltime && we use this data
                 //
                 } else if (data.is_src_pair) {
-                    if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))
-                        continue;   // if we do not use this data (cr + not swap) or (cs + swap), ignore to consider the adjoint source
+                    if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || 
+                          (IP.get_use_cs() &&  IP.get_is_srcrec_swap())))
+                        continue;   // if we do not use this data (cr + not swap) or (cs + swap) or (cs + tele), ignore to consider the adjoint source
 
                     std::string name_src1 = data.name_src_pair[0];
                     std::string name_src2 = data.name_src_pair[1];
@@ -222,7 +225,9 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                 // common source differential traveltime
                 //
                 } else if (data.is_rec_pair) {
-                    if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))
+                    if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || 
+                          (IP.get_use_cr() &&  IP.get_is_srcrec_swap()) ||
+                          (IP.get_use_cs() &&  is_tele                )))
                         continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
 
                     std::string name_src  = data.name_src;
@@ -238,8 +243,8 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     // evaluate residual_weight_abs (see the remark in absolute traveltime data for considering tau_opt here)
                     CUSTOMREAL  local_residual = abs(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                     CUSTOMREAL* res_weight;
-                    if (IP.get_is_srcrec_swap())    res_weight = IP.get_residual_weight_cr();
-                    else                            res_weight = IP.get_residual_weight_cs();
+                    if (IP.get_is_srcrec_swap() && !is_tele)    res_weight = IP.get_residual_weight_cr();
+                    else                                        res_weight = IP.get_residual_weight_cs();
 
                     if      (local_residual < res_weight[0])    local_weight *= res_weight[2];
                     else if (local_residual > res_weight[1])    local_weight *= res_weight[3];
@@ -256,8 +261,8 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
 
 
                     CUSTOMREAL* azi_weight;
-                    if (IP.get_is_srcrec_swap())    azi_weight = IP.get_azimuthal_weight_cr();
-                    else                            azi_weight = IP.get_azimuthal_weight_cs();
+                    if (IP.get_is_srcrec_swap() && !is_tele)    azi_weight = IP.get_azimuthal_weight_cr();
+                    else                                        azi_weight = IP.get_azimuthal_weight_cs();
 
                     if      (local_azi < azi_weight[0])         local_weight *= azi_weight[2];
                     else if (local_azi > azi_weight[1])         local_weight *= azi_weight[3];
@@ -376,6 +381,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
 
                         // because a pair of sources are counted twice, thus * 0.5
                         obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
+                        
                     } else if (data.is_rec_pair) {
 
                         std::string name_src  = data.name_src;
@@ -406,7 +412,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                             continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
 
                         obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
-
+                        
                     }
 
                 } // end of loop over data

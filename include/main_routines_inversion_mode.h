@@ -222,7 +222,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             //if (if_test)
             //    io.write_residual(grid); // this will over write the u_loc, so we need to call write_u_h5 first
         }
-
+        
         // calculate the arrival times at each receivers
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
@@ -236,6 +236,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         //             << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
         //             << std::endl;
         // }
+        
         if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
 
             // calculate adjoint source
