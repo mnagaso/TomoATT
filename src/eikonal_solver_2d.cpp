@@ -38,8 +38,11 @@ void prepare_teleseismic_boundary_conditions(InputParams& IP, Grid& grid, IO_uti
         src.set_source_position(IP, grid, is_teleseismic, name_sim_src, for_2d_solver);
 
         // run 2d eikonal solver for teleseismic boundary conditions if teleseismic event
-        if (proc_store_srcrec)
+        if (proc_store_srcrec){
+            if (myrank==0)
+                std::cout << "solve 2d eikonal equation for src: " << name_sim_src << std::endl;
             run_2d_solver(IP, src, io);
+        }
     }
 
     synchronize_all_world();
@@ -432,7 +435,7 @@ void PlainGrid::run_iteration(InputParams& IP){
             goto iter_end;
         } else {
             if (myrank==0 && if_verbose)
-                std::cout << "Iteration " << iter << ": L1 error = " << L1_err << ", Linf error = " << Linf_err << std::endl;
+                std::cout << "Iteration " << iter << "L_1(Tnew-Told)= " << L1_dif << " , L_inf(Tnew-Told) = " << Linf_dif << std::endl;
             iter++;
         }
         // if (myrank==0){
@@ -972,7 +975,7 @@ void run_2d_solver(InputParams& IP, Source& src, IO_utils& io) {
         std::cout << "2d solver skipped the src because traveltime data already exists: " << fname_2d_src << std::endl;
     } else { // if not, calculate and store it
         // run iteration
-        std::cout << "start run iteration myrank: " << myrank << std::endl;
+        std::cout << "start run iteration myrank: " << myrank << ", for file: " << fname_2d_src << std::endl;
         plain_grid.run_iteration_upwind(IP);
 
         // write out calculated 2D travel time field

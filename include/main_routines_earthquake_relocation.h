@@ -24,7 +24,7 @@ void calculate_traveltime_for_all_src_rec(InputParams& IP, Grid& grid, IO_utils&
     // check if this run is in source receiver swap mode
     // if not, stop the program
     if (IP.get_is_srcrec_swap() == false){
-        std::cout << "Error: Source relocation mode must run with swap_src_rec = 1" << std::endl;
+        std::cout << "Error: Source relocation mode must run with swap_src_rec = true" << std::endl;
         exit(1);
     }
 
