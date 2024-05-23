@@ -886,7 +886,7 @@ void InputParams::write_params_to_file() {
     fout << "#################################################" << std::endl;
     fout << "source:" << std::endl;
     fout << "  src_rec_file: " << src_rec_file     << " # source receiver file path" << std::endl;
-    fout << "  swap_src_rec: " << swap_src_rec << " # swap source and receiver" << std::endl;
+    fout << "  swap_src_rec: " << swap_src_rec << " # swap source and receiver (only valid for regional source and receiver, those of tele remain unchanged)" << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
