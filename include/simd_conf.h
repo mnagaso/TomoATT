@@ -81,6 +81,20 @@ const int NSIMD = svcntd(); // Vector Length
 //#define _mmT_sqrt_pT svsqrt_f64_m
 //#define _mmT_store_pT svst1_f64
 
+#elif USE_NEON
+const int ALIGN = 16;
+const int NSIMD = 4;
+#define __mT float32x4_t
+#define _mmT_set1_pT vdupq_n_f32
+#define _mmT_loadu_pT vld1q_f32
+#define _mmT_mul_pT vmulq_f32
+#define _mmT_sub_pT vsubq_f32
+#define _mmT_add_pT vaddq_f32
+#define _mmT_div_pT vdivq_f32
+#define _mmT_min_pT vminq_f32
+#define _mmT_sqrt_pT vsqrtq_f32
+#define _mmT_store_pT vst1q_f32
+
 #endif // __ARM_FEATURE_SVE
 
 
