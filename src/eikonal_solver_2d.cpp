@@ -435,7 +435,7 @@ void PlainGrid::run_iteration(InputParams& IP){
             goto iter_end;
         } else {
             if (myrank==0 && if_verbose)
-                std::cout << "Iteration " << iter << ": L1 error = " << L1_err << ", Linf error = " << Linf_err << std::endl;
+                std::cout << "Iteration " << iter << "L_1(Tnew-Told)= " << L1_dif << " , L_inf(Tnew-Told) = " << Linf_dif << std::endl;
             iter++;
         }
         // if (myrank==0){

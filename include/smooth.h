@@ -629,8 +629,6 @@ inline void smooth_inv_kernels_orig(Grid& grid, InputParams& IP){
     } // end i_grid
 
 
-
-
 }
 
 

@@ -174,6 +174,7 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
 void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&,
+                               std::vector<std::string>&,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&);

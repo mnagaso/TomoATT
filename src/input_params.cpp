@@ -1583,7 +1583,9 @@ void InputParams::prepare_src_map(){
 
         // check if src positions are within the domain or not (teleseismic source)
         // detected teleseismic source is separated into tele_src_points and tele_rec_points
-        std::cout << "separate regional and teleseismic src/rec points" << std::endl;
+        
+        std::cout << std::endl << "separate regional and teleseismic src/rec points" << std::endl;
+
         separate_region_and_tele_src_rec_data(src_map_back, rec_map_back, data_map_back,
                                               src_map_all,  rec_map_all,  data_map_all,
                                               src_map_tele, rec_map_tele, data_map_tele,
@@ -1635,7 +1637,10 @@ void InputParams::prepare_src_map(){
         // rec_map  = rec_map_all  + rec_map_tele
         // data_map = data_map_all + data_map_tele
         // *_map_tele will be empty after this function
-        merge_region_and_tele_src(src_map_all,  rec_map_all,  data_map_all,
+
+        std::cout << std::endl << "merge regional and teleseismic src/rec points" << std::endl;
+
+        merge_region_and_tele_src(src_map_all,  rec_map_all,  data_map_all, src_id2name_all, 
                                   src_map_tele, rec_map_tele, data_map_tele);
 
         // abort if number of src_points are less than n_sims
@@ -1677,8 +1682,14 @@ void InputParams::prepare_src_map(){
         //     src_id2name      includes only src names of this simultaneous run group
         //     src_id2name_back includes only src names of this simultaneous run group before swapping src and rec
 
+        if (world_rank==0)
+            std::cout << "\ngenerate src map with common receiver\n" <<std::endl;
+
         // create source list for common receiver double difference traveltime
         generate_src_map_with_common_receiver(data_map, src_map_comm_rec, src_id2name_comm_rec);
+
+        if (world_rank==0)
+            std::cout << "\nprepare src map for 2d solver\n" <<std::endl;
 
         // prepare source list for teleseismic source
         prepare_src_map_for_2d_solver(src_map_all, src_map, src_id2name_2d, src_map_2d);
