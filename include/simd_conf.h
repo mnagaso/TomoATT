@@ -179,6 +179,8 @@ inline void print_simd_type() {
     std::cout << "AVX512" << std::endl;
 #elif USE_ARM_SVE
     std::cout << "ARM SVE" << std::endl;
+#elif USE_NEON
+    std::cout << "NEON" << std::endl;
 #endif // __ARM_FEATURE_SVE
 }
 
