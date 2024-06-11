@@ -81,7 +81,9 @@ private:
     }
 
     std::string get_current_utc_time(std::chrono::high_resolution_clock::time_point time = std::chrono::high_resolution_clock::now()) {
-        std::time_t time_t = std::chrono::system_clock::to_time_t(time);
+        std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch());
+        std::time_t time_t = ms.count() / 1000;
+
         std::tm utc_tm = *std::gmtime(&time_t);
 
         std::ostringstream oss;
