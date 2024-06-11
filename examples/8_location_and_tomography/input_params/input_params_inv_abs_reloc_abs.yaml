@@ -13,7 +13,7 @@ domain:
 #            traveltime data file path          #
 #################################################
 source:
-  src_rec_file: src_rec_obs.dat # source receiver file path
+  src_rec_file: OUTPUT_FILES/OUTPUT_FILES_reloc_abs/src_rec_file_reloc_0200_obs.dat # source receiver file path
   swap_src_rec: true # swap source and receiver
 
 #################################################
