@@ -339,5 +339,32 @@ inline CUSTOMREAL calc_ratio_between(CUSTOMREAL const& a, CUSTOMREAL const& b, C
     //    return (a - b) / (b - c);
 }
 
+template<typename T>
+std::vector<CUSTOMREAL> linspace(T start_in, T end_in, int num_in)
+{
+
+  std::vector<CUSTOMREAL> linspaced;
+
+  double start = static_cast<CUSTOMREAL>(start_in);
+  double end = static_cast<CUSTOMREAL>(end_in);
+  double num = static_cast<CUSTOMREAL>(num_in);
+
+  if (num == 0) { return linspaced; }
+  if (num == 1) 
+    {
+      linspaced.push_back(start);
+      return linspaced;
+    }
+
+  double delta = (end - start) / (num - 1);
+
+  for(int i=0; i < num-1; ++i)
+    {
+      linspaced.push_back(start + delta * i);
+    }
+  linspaced.push_back(end); // I want to ensure that start and end
+                            // are exactly the same as the input
+  return linspaced;
+}
 
 #endif // UTILS_H
