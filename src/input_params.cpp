@@ -2123,7 +2123,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
 
         // main process calculates differences of synthetic data and send them to other processes
         if (id_sim==0){
-            int n_total_src_pair = 0;
+            // int n_total_src_pair = 0;
 
             // calculate differences of synthetic data
             for (auto iter = data_map_all.begin(); iter != data_map_all.end(); iter++){
@@ -2132,7 +2132,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                         if (data.is_src_pair){
                             data.cr_dif_travel_time = data_map_all[data.name_src_pair[0]][data.name_rec].at(0).travel_time \
                                                     - data_map_all[data.name_src_pair[1]][data.name_rec].at(0).travel_time;
-                            n_total_src_pair++;
+                            // n_total_src_pair++;
                        }
                     }
                 }

@@ -311,13 +311,13 @@ private:
 
 
     // uniform or flexible inversion grid (0: uniform, 1: flexible, 2: trapezoid)
-    int type_invgrid_dep=0;
-    int type_invgrid_lat=0;
-    int type_invgrid_lon=0;
+    // int type_invgrid_dep=0;
+    // int type_invgrid_lat=0;
+    // int type_invgrid_lon=0;
     // uniform or flexible anisotropic inversion grid (0: uniform, 1: flexible, 2: trapezoid)
-    int type_invgrid_dep_ani=0;
-    int type_invgrid_lat_ani=0;
-    int type_invgrid_lon_ani=0;
+    // int type_invgrid_dep_ani=0;
+    // int type_invgrid_lat_ani=0;
+    // int type_invgrid_lon_ani=0;
 
     //
     // variables for type = 0: uniform inversion grid
@@ -420,9 +420,9 @@ private:
                                              std::map<std::string, SrcRecInfo>&,
                                              std::vector<std::string>&);
 
-    bool i_first=false, i_last=false, \
-         j_first=false, j_last=false, \
-         k_first=false; // store info if this subdomain has outer boundary
+    // bool i_first=false, i_last=false, \
+        //  j_first=false, j_last=false, \
+        //  k_first=false; // store info if this subdomain has outer boundary
 
     // check contradictions in input parameters
     void check_contradictions();
