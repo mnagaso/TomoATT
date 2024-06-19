@@ -420,9 +420,9 @@ private:
                                              std::map<std::string, SrcRecInfo>&,
                                              std::vector<std::string>&);
 
-    // bool i_first=false, i_last=false, \
-        //  j_first=false, j_last=false, \
-        //  k_first=false; // store info if this subdomain has outer boundary
+    bool i_first=false, i_last=false, \
+         j_first=false, j_last=false, \
+         k_first=false; // store info if this subdomain has outer boundary
 
     // check contradictions in input parameters
     void check_contradictions();
