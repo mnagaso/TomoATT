@@ -90,6 +90,26 @@ public:
     // invgrid for vel
     int get_n_inversion_grid(){return n_inversion_grid;};
 
+    bool       get_uniform_inv_grid() {return uniform_inv_grid;};
+    int        get_n_inv_r()    {return n_inv_r;};
+    int        get_n_inv_t()    {return n_inv_t;};
+    int        get_n_inv_p()    {return n_inv_p;};
+    int        get_n_inv_r_ani(){return n_inv_r_ani;};
+    int        get_n_inv_t_ani(){return n_inv_t_ani;};
+    int        get_n_inv_p_ani(){return n_inv_p_ani;};
+    CUSTOMREAL get_min_dep_inv(){return min_dep_inv;};
+    CUSTOMREAL get_max_dep_inv(){return max_dep_inv;};
+    CUSTOMREAL get_min_lat_inv(){return min_lat_inv*DEG2RAD;};
+    CUSTOMREAL get_max_lat_inv(){return max_lat_inv*DEG2RAD;};
+    CUSTOMREAL get_min_lon_inv(){return min_lon_inv*DEG2RAD;};
+    CUSTOMREAL get_max_lon_inv(){return max_lon_inv*DEG2RAD;};
+    CUSTOMREAL get_min_dep_inv_ani(){return min_dep_inv_ani;};
+    CUSTOMREAL get_max_dep_inv_ani(){return max_dep_inv_ani;};
+    CUSTOMREAL get_min_lat_inv_ani(){return min_lat_inv_ani*DEG2RAD;};
+    CUSTOMREAL get_max_lat_inv_ani(){return max_lat_inv_ani*DEG2RAD;};
+    CUSTOMREAL get_min_lon_inv_ani(){return min_lon_inv_ani*DEG2RAD;};
+    CUSTOMREAL get_max_lon_inv_ani(){return max_lon_inv_ani*DEG2RAD;};
+
     int         get_n_inv_r_flex(){return n_inv_r_flex;};
     int         get_n_inv_t_flex(){return n_inv_t_flex;};
     int         get_n_inv_p_flex(){return n_inv_p_flex;};
@@ -291,17 +311,19 @@ private:
 
 
     // uniform or flexible inversion grid (0: uniform, 1: flexible, 2: trapezoid)
-    int type_invgrid_dep=0;
-    int type_invgrid_lat=0;
-    int type_invgrid_lon=0;
+    // int type_invgrid_dep=0;
+    // int type_invgrid_lat=0;
+    // int type_invgrid_lon=0;
     // uniform or flexible anisotropic inversion grid (0: uniform, 1: flexible, 2: trapezoid)
-    int type_invgrid_dep_ani=0;
-    int type_invgrid_lat_ani=0;
-    int type_invgrid_lon_ani=0;
+    // int type_invgrid_dep_ani=0;
+    // int type_invgrid_lat_ani=0;
+    // int type_invgrid_lon_ani=0;
 
     //
     // variables for type = 0: uniform inversion grid
     //
+
+    bool uniform_inv_grid = false; // automatically generate inversion grid or not
     // number of uniform inversion grid nodes in r, t, p direction
     int n_inv_r=0;
     int n_inv_t=0;
@@ -310,6 +332,24 @@ private:
     int n_inv_r_ani=0;
     int n_inv_t_ani=0;
     int n_inv_p_ani=0;
+
+    // type = 0: uniform inversion grid
+    // inversion grid
+    CUSTOMREAL min_dep_inv=-99999; // minimum depth in km
+    CUSTOMREAL max_dep_inv=-99999; // maximum depth in km
+    CUSTOMREAL min_lat_inv=-99999; // minimum latitude
+    CUSTOMREAL max_lat_inv=-99999; // maximum latitude
+    CUSTOMREAL min_lon_inv=-99999; // minimum longitude
+    CUSTOMREAL max_lon_inv=-99999; // maximum longitude
+
+    // inversion grid for anisotropic parameters
+    CUSTOMREAL min_dep_inv_ani=-99999; // minimum depth in km
+    CUSTOMREAL max_dep_inv_ani=-99999; // maximum depth in km
+    CUSTOMREAL min_lat_inv_ani=-99999; // minimum latitude
+    CUSTOMREAL max_lat_inv_ani=-99999; // maximum latitude
+    CUSTOMREAL min_lon_inv_ani=-99999; // minimum longitude
+    CUSTOMREAL max_lon_inv_ani=-99999; // maximum longitude
+    void setup_uniform_inv_grid();
 
     //
     // variables fo type = 1: flexible inversion grid
