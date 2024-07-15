@@ -69,6 +69,14 @@ model_update:
   # inversion grid can be viewed in OUTPUT_FILES/inversion_grid.txt
   n_inversion_grid: 5 # number of inversion grid sets
 
+  uniform_inv_grid: true # true for using uniform inversion grid; false for using flexible inversion grid
+  
+  # settings for uniform inversion grid
+  n_inv_dep_lat_lon: [12, 11, 11] # number of inversion grid in depth, latitude, and longitude direction
+  min_max_dep_inv: [-7, 63] # inversion grid for vel in depth (km)
+  min_max_lat_inv: [30, 32] # inversion grid for vel in latitude (degree)
+  min_max_lon_inv: [30, 32] # inversion grid for vel in longitude (degree)
+
   # settings for flexible inversion grid
   dep_inv:    [-7.0, -3.0,  0.0,  3.0,  7.0, 12.0, 18.0, 25.0, 33.0, 42.0, 52.0, 63.0]   # inversion grid for vel in depth (km)
   lat_inv:    [30.0, 30.2, 30.4, 30.6, 30.8, 31.0, 31.2, 31.4, 31.6, 31.8, 32.0]         # inversion grid for vel in latitude (degree)
@@ -77,6 +85,12 @@ model_update:
 
   # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false). Otherwise, the inversion grid for isotropy will be the same as that for velocity.
   invgrid_ani: true
+
+  # settings for uniform inversion grid
+  n_inv_dep_lat_lon_ani: [12, 11, 11] # number of inversion grid in depth, latitude, and longitude direction for anisotropy
+  min_max_dep_inv_ani: [-7, 63] # inversion grid for ani in depth (km)
+  min_max_lat_inv_ani: [30, 32] # inversion grid for ani in latitude (degree)
+  min_max_lon_inv_ani: [30, 32] # inversion grid for ani in longitude (degree)
 
   # settings for flexible inversion grid for anisotropy
   dep_inv_ani:    [-7.0, -3.0,  0.0,  3.0,  7.0, 12.0, 18.0, 25.0, 33.0, 42.0, 52.0, 63.0]   # inversion grid for ani in depth (km)
