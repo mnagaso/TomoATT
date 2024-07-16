@@ -44,11 +44,13 @@ pta setpar $output_fname output_setting output_dir OUTPUT_FILES/OUTPUT_FILES_inv
 NPROC=8
 
 # For Linux and Mac
+# do forward simulation
+mpirun -np $NPROC ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
 
+# do ckb inversion using abs data
+mpirun -np $NPROC ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yaml
 
-
-# For Wsl
-
+# For WSL
 # do forward simulation
 # mpirun -n $NPROC --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
 
