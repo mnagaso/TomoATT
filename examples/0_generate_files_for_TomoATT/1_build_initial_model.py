@@ -12,7 +12,6 @@ class BuildInitialModel():
         self.ip = ATTPara(par_file)
         self.dep, self.lat, self.lon, self.dd, self.dt, self.dp = self.ip.init_axis()
         self.output_dir = output_dir
-        os.makedirs(output_dir, exist_ok=True)
 
     def build_initial_model(self):
         """
@@ -44,6 +43,7 @@ class BuildInitialModel():
         """
         write out in hdf5 format
         """
+        os.makedirs(self.output_dir, exist_ok=True)
         with h5py.File('{}/model_init_N{:d}_{:d}_{:d}.h5'.format(self.output_dir, *self.ip.input_params['domain']['n_rtp']), 'w') as fout_init:
         # write out the arrays eta_init, xi_init, zeta_init, fun_init, a_init, b_init, c_init, f_init
             fout_init.create_dataset('eta', data=self.eta_init)

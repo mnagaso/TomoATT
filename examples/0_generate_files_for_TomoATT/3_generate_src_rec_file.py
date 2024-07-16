@@ -1,9 +1,9 @@
-import yaml
 import numpy as np
 from datetime import datetime
 import pandas as pd
 from pytomoatt.src_rec import SrcRec
 from pytomoatt.para import ATTPara
+import os
 
 OTIME = datetime(1970, 1, 1, 0, 0, 0)
 
@@ -82,6 +82,7 @@ class GenerateSrcRecFile():
         self.sr.generate_double_difference('cr', max_azi_gap=azimuth_gap, max_dist_gap=dist_gap_cr)
 
     def write(self):
+        os.makedirs(self.output_dir, exist_ok=True)
         self.sr.write(f"{self.output_dir}/src_rec_config.dat")
 
 
