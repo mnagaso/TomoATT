@@ -23,7 +23,7 @@ The velocity of this model is:
     - common-source differential traveltime data;
     - common-receiver differential traveltime data;
     
-4. You can run `src_rec_visulization_pygmt_is_needed.ipynb` or python script `src_rec_visulization_pygmt_is_needed.py` (pygmt is required) to check the distribution of earthquakes (star) and stations (triangle) in img/src_rec.jpg
+4. You can run `src_rec_visulization_pygmt_is_needed.ipynb` or python script to check the distribution of earthquakes (dot) and stations (triangle) in img/src_rec.jpg
 
 You can run `bash run_this_example.sh` to proceed steps 1-3
 
