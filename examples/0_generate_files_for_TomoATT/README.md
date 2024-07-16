@@ -22,7 +22,9 @@ The velocity of this model is:
     - absoulte traveltime data;
     - common-source differential traveltime data;
     - common-receiver differential traveltime data;
-    
+
+![src_ref_file_instruction](https://github.com/user-attachments/assets/89691889-83c3-4056-a6e4-0d828f4dcffa)
+
 4. You can run `src_rec_visulization_pygmt_is_needed.ipynb` or python script to check the distribution of earthquakes (dot) and stations (triangle) in img/src_rec.jpg
 
 You can run `bash run_this_example.sh` to proceed steps 1-3
