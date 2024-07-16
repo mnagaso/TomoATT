@@ -13,22 +13,17 @@ You can check the distribution of earthquakes (star) and stations (triangle) in 
 
 ![](../0_generate_files_for_TomoATT/img/src_rec.jpg)
 
-2. run all cells of "1_generate_input_params.ipynb" to generate the necessary input_params files:
+2. Run bash script `bash run_this_example.sh` to proceed the following steps:
+
+  1) generate the necessary input_params files:
     - `input_params/input_params_signal.yaml`
     - `input_params/input_params_inv_abs.yaml`
 
-3. run TOMOATT forward with `input_params/input_params_signal.yaml` to compute traveltime data in checkerboard model
-``` bash
-mpirun --oversubscribe -n 8 ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
-```
-4. run TOMOATT forward with `input_params/input_params_inv_abs.yaml` to invert for Vp and anisotropy using absolute traveltime data from the initial model
-``` bash
-mpirun --oversubscribe -n 8 ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yaml
-```
-5. finally, you can run all cells of `3_plot_ckb_model.ipynb` to plot the checkerboard model 
-``` bash
-python  plot_ckb_model.py
-```
+  2) forward simulation with `input_params/input_params_signal.yaml` to compute traveltime data in checkerboard model
+  
+  3) inversion for Vp and anisotropy using absolute traveltime data from the initial model.
+
+3. finally, you can run all cells of `plot_ckb_model.ipynb` to plot the checkerboard model.
 
 The checkerboard model:
 
