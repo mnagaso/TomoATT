@@ -1044,18 +1044,18 @@ void InputParams::write_params_to_file() {
     fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
     fout << std::endl;
 
-    fout << " uniform_inv_grid: " << uniform_inv_grid << " # true if use uniform inversion grid, false if use flexible inversion grid" << std::endl;
+    fout << "  uniform_inv_grid: " << uniform_inv_grid << " # true if use uniform inversion grid, false if use flexible inversion grid" << std::endl;
     fout << std::endl;
 
-    fout << " # -------------- uniform inversion grid setting -------------- " << std::endl;
-    fout << " # settings for uniform inversion grid" << std::endl;
-    fout << " n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
-    fout << " min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "] # depth in km (Radius of the earth is defined in config.h/R_earth)" << std::endl;
-    fout << " min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "] # latitude in degree" << std::endl;
-    fout << " min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "] # longitude in degree" << std::endl;
+    fout << "  # -------------- uniform inversion grid setting -------------- " << std::endl;
+    fout << "  # settings for uniform inversion grid" << std::endl;
+    fout << "  n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
+    fout << "  min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "] # depth in km (Radius of the earth is defined in config.h/R_earth)" << std::endl;
+    fout << "  min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "] # latitude in degree" << std::endl;
+    fout << "  min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "] # longitude in degree" << std::endl;
     fout << std::endl;
 
-    fout << " # -------------- flexible inversion grid setting -------------- " << std::endl;
+    fout << "  # -------------- flexible inversion grid setting -------------- " << std::endl;
     fout << "  # settings for flexible inversion grid" << std::endl;
     fout << "  dep_inv: [";
     for (int i = 0; i < n_inv_r_flex; i++){
