@@ -2333,14 +2333,21 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     timeInfo.tm_mday = src.day;
                     timeInfo.tm_hour = src.hour;
                     timeInfo.tm_min  = src.min;
+                    
+                    // std::cout << "before, src.hour = " <<  src.hour << std::endl;
+                    
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         timeInfo.tm_sec  = static_cast<int>(src.sec) - 1.0;
                     else
                         timeInfo.tm_sec  = static_cast<int>(src.sec);
-                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&timeInfo));
+                    
+                    // Convert to time_point
+                    std::time_t rawTime = timegm(&timeInfo); // use timegm for UTC
+                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(rawTime);
 
-                    std::time_t timestamp = std::chrono::system_clock::to_time_t(tp);
-                    std::tm newTimeInfo = *std::localtime(&timestamp);
+                   // Get new time info
+                   std::time_t timestamp = std::chrono::system_clock::to_time_t(tp);
+                   std::tm newTimeInfo = *std::gmtime(&timestamp); // use gmtime to keep it in UTC
 
                     // step 2, correct the output ortime:
                     src_map_back[iter->first].year = newTimeInfo.tm_year + 1900;
@@ -2348,10 +2355,13 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     src_map_back[iter->first].day = newTimeInfo.tm_mday;
                     src_map_back[iter->first].hour = newTimeInfo.tm_hour;
                     src_map_back[iter->first].min = newTimeInfo.tm_min;
+                    
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec + 1.0 - static_cast<int>(src.sec));
                     else
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec       - static_cast<int>(src.sec));
+                    
+                    // std::cout << "after, src.hour = " <<  src_map_back[iter->first].hour << std::endl;
 
                 }
             }
