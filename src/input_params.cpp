@@ -2322,6 +2322,11 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     src_map_back[iter->first].lat   =   iter->second.lat;
                     src_map_back[iter->first].lon   =   iter->second.lon;
                     src_map_back[iter->first].dep   =   iter->second.dep;
+                    src_map_back[iter->first].year  =   iter->second.year;
+                    src_map_back[iter->first].month =   iter->second.month;
+                    src_map_back[iter->first].day   =   iter->second.day;
+                    src_map_back[iter->first].hour  =   iter->second.hour;
+                    src_map_back[iter->first].min   =   iter->second.min;
                     src_map_back[iter->first].sec   =   iter->second.sec + iter->second.tau_opt;
 
                     // correct the output ortime:
@@ -2334,7 +2339,9 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     timeInfo.tm_hour = src.hour;
                     timeInfo.tm_min  = src.min;
                     
-                    // std::cout << "before, src.hour = " <<  src.hour << std::endl;
+                    // std::cout   << "before, src.hour = " <<  src.hour 
+                    //             << ", src.min = " <<  src.min
+                    //             << ", src.sec = " <<  src.sec << std::endl;
                     
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         timeInfo.tm_sec  = static_cast<int>(src.sec) - 1.0;
@@ -2361,7 +2368,9 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     else
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec       - static_cast<int>(src.sec));
                     
-                    // std::cout << "after, src.hour = " <<  src_map_back[iter->first].hour << std::endl;
+                    // std::cout << "after, src.hour = " <<  src_map_back[iter->first].hour 
+                    //           << ", src.min = " <<  src_map_back[iter->first].min
+                    //           << ", src.sec = " <<  src_map_back[iter->first].sec << std::endl;
 
                 }
             }
