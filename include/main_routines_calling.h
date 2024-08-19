@@ -60,9 +60,9 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             io.write_fun(grid, 0);
         }
 
-        // output model_parameters_inv_0000.dat
-        if (IP.get_if_output_model_dat())
-            io.write_concerning_parameters(grid, 0, IP);
+        // // output model_parameters_inv_0000.dat
+        // if (IP.get_if_output_model_dat())
+        //     io.write_concerning_parameters(grid, 0, IP);
     }
 
 
@@ -182,10 +182,10 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
                 io.write_fun(grid, i_inv+1);
             }
 
-            // output model_parameters_inv_0000.dat
-            if (IP.get_if_output_model_dat() \
-            && (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2))
-                io.write_concerning_parameters(grid, i_inv + 1, IP);
+            // // output model_parameters_inv_0000.dat
+            // if (IP.get_if_output_model_dat()
+            // && (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2))
+            //     io.write_concerning_parameters(grid, i_inv + 1, IP);
 
         }
 
@@ -217,7 +217,7 @@ inline void run_forward_only_or_inversion(InputParams &IP, Grid &grid, IO_utils 
             io.write_merged_model(grid, IP, "final_model.h5");
         }
         if (IP.get_if_output_middle_model()) {
-            std::string tmp_fname = "middle_model_" + std::to_string(i_inv + 1) + ".h5";
+            std::string tmp_fname = "middle_model_step_" + int2string_zero_fill(i_inv + 1) + ".h5";
             io.write_merged_model(grid, IP, tmp_fname);
         }
         
@@ -366,9 +366,9 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
             io.write_fun(grid, 0);
         }
 
-        // output model_parameters_inv_0000.dat
-        if (IP.get_if_output_model_dat())
-            io.write_concerning_parameters(grid, 0, IP);
+        // // output model_parameters_inv_0000.dat
+        // if (IP.get_if_output_model_dat())
+        //     io.write_concerning_parameters(grid, 0, IP);
     }
 
     // output station correction file (only for teleseismic differential data)
@@ -498,10 +498,10 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                         io.write_fun(grid, i_inv+1);
                     }
 
-                    // output model_parameters_inv_0000.dat
-                    if (IP.get_if_output_model_dat() \
-                    && (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop_mode0()*IP.get_model_update_N_iter() - 2))
-                        io.write_concerning_parameters(grid, i_inv + 1, IP);
+                    // // output model_parameters_inv_0000.dat
+                    // if (IP.get_if_output_model_dat()
+                    // && (IP.get_if_output_in_process() || i_inv >= IP.get_max_loop_mode0()*IP.get_model_update_N_iter() - 2))
+                    //     io.write_concerning_parameters(grid, i_inv + 1, IP);
 
                 } // end output updated model
 
@@ -525,7 +525,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                     io.write_merged_model(grid, IP, "final_model.h5");
                 }
                 if (IP.get_if_output_middle_model()) {
-                    std::string tmp_fname = "middle_model_" + std::to_string(i_inv + 1) + ".h5";
+                    std::string tmp_fname = "middle_model_step_" + int2string_zero_fill(i_inv + 1) + ".h5";
                     io.write_merged_model(grid, IP, tmp_fname);
                 }
 
@@ -737,10 +737,10 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                     io.write_fun(grid, i_loop+1);
                 }
 
-                // output model_parameters_inv_0000.dat
-                if (IP.get_if_output_model_dat() \
-                && (IP.get_if_output_in_process() || i_loop >= IP.get_max_loop_mode1() - 2))
-                    io.write_concerning_parameters(grid, i_loop + 1, IP);
+                // // output model_parameters_inv_0000.dat
+                // if (IP.get_if_output_model_dat()
+                // && (IP.get_if_output_in_process() || i_loop >= IP.get_max_loop_mode1() - 2))
+                //     io.write_concerning_parameters(grid, i_loop + 1, IP);
 
             } // end output updated model
 
@@ -782,7 +782,7 @@ inline void run_inversion_and_relocation(InputParams& IP, Grid& grid, IO_utils& 
                 io.write_merged_model(grid, IP, "final_model.h5");
             }
             if (IP.get_if_output_middle_model()) {
-                std::string tmp_fname = "middle_model_" + std::to_string(i_loop + 1) + ".h5";
+                std::string tmp_fname = "middle_model_step_" + int2string_zero_fill(i_loop + 1) + ".h5";
                 io.write_merged_model(grid, IP, tmp_fname);
             }
         } // end loop for model update and relocation

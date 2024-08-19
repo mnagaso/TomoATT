@@ -141,8 +141,8 @@ InputParams::InputParams(std::string& input_file){
             if (config["output_setting"]["output_source_field"])
                 getNodeValue(config["output_setting"], "output_source_field", output_source_field);
 
-            if (config["output_setting"]["output_model_dat"])
-                getNodeValue(config["output_setting"], "output_model_dat", output_model_dat);
+            // if (config["output_setting"]["output_model_dat"])
+            //     getNodeValue(config["output_setting"], "output_model_dat", output_model_dat);
 
             if (config["output_setting"]["verbose_output_level"]){
                 getNodeValue(config["output_setting"], "verbose_output_level", verbose_output_level);
@@ -743,7 +743,7 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_str(output_dir, 0);
     broadcast_bool_single(output_source_field, 0);
-    broadcast_bool_single(output_model_dat, 0);
+    // broadcast_bool_single(output_model_dat, 0);
     broadcast_i_single(verbose_output_level, 0);
     broadcast_bool_single(output_final_model, 0);
     broadcast_bool_single(output_middle_model, 0);
@@ -971,14 +971,14 @@ void InputParams::write_params_to_file() {
     fout << "############################################" << std::endl;
     fout << "output_setting:" << std::endl;
     fout << "  output_dir: "              << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
-    fout << "  output_source_field:     " << output_source_field         << " # output the calculated field of all sources                       " << std::endl;
-    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat (data in text format) or not.                     " << std::endl;
-    fout << "  output_final_model:      " << output_final_model          << " # output merged final model (final_model.h5) or not.                                " << std::endl;
-    fout << "  output_middle_model:     " << output_middle_model         << " # output merged moddle model (middle_model_stepX.h5) or not.                                " << std::endl;
-    fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
-    fout << "  output_in_process_data:  " << output_in_process_data      << " # output src_rec_file at each inv iteration or not.                       " << std::endl;
-    fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
-    fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, if no, only model parameters are out." << std::endl;
+    fout << "  output_source_field:     " << output_source_field         << " # True: output the traveltime field and adjoint field of all sources at each iteration. Default: false. File: 'out_data_sim_group_X'." << std::endl;
+    // fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat (data in text format) or not.                     " << std::endl;
+    fout << "  output_final_model:      " << output_final_model          << " # True: output merged final model. This file can be used as the input model for TomoATT. Default: true. File: 'model_final.h5'." << std::endl;
+    fout << "  output_middle_model:     " << output_middle_model         << " # True: output merged intermediate models during inversion. This file can be used as the input model for TomoATT. Default: false. File: 'middle_model_step_XXXX.h5'" << std::endl;
+    fout << "  output_in_process:       " << output_in_process           << " # True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: 'out_data_sim_group_0'." << std::endl;
+    fout << "  output_in_process_data:  " << output_in_process_data      << " # True: output src_rec_file at each inv iteration, otherwise, only output step 0, Niter-2, Niter-1. Default: true. File: 'src_rec_file_step_XXXX.dat'" << std::endl;
+    fout << "  single_precision_output: " << single_precision_output     << " # True: output results in single precision. Default: false.   " << std::endl;
+    fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, (to do)." << std::endl;
     int ff_flag=0;
     if (output_format == OUTPUT_FORMAT_HDF5) ff_flag = 0;
     else if (output_format == OUTPUT_FORMAT_ASCII) ff_flag = 1;
@@ -987,8 +987,27 @@ void InputParams::write_params_to_file() {
         exit(1);
     }
     fout << "  output_file_format: " << ff_flag << " # 0: hdf5, 1: ascii" << std::endl;
-
-
+    fout << std::endl;
+    fout << "# output files:" << std::endl;
+    fout << "# File: 'out_data_grid.h5'. Keys: ['Mesh']['elem_conn'], element index; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_p'], phi coordinates of nodes; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_t'], theta coordinates of nodes; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_r'], r coordinates of nodes;" << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_x'], phi coordinates of elements; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_y'], theta coordinates of elements; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_z'], r coordinates of elements; " << std::endl;
+    fout << "# File: 'out_data_sim_group_0'. Keys: ['model']['Kdensity_update_inv_XXXX'], kernel density for model update; " << std::endl;
+    fout << "#                                     ['model']['vel_inv_XXXX'], velocity model; " << std::endl;
+    fout << "#                                     ['model']['xi_inv_XXXX'], xi model; " << std::endl;
+    fout << "#                                     ['model']['eta_inv_XXXX'], eta model" << std::endl;
+    fout << "# File: 'src_rec_file_step_XXXX.dat' or 'src_rec_file_forward.dat'. The synthetic traveltime data file." << std::endl;
+    fout << "# File: 'final_model.h5'. Keys: ['eta'], ['xi'], ['vel'], the final model." << std::endl;
+    fout << "# File: 'middle_model_step_XXXX.h5'. Keys: ['eta'], ['xi'], ['vel'], the model at step XXXX." << std::endl;
+    fout << "# File: 'inversion_grid.txt'. The location of inversion grid nodes" << std::endl;
+    fout << "# File: 'objective_function.txt'. The objective function value at each iteration" << std::endl;
+    fout << "# File: 'out_data_sim_group_X'. Keys: ['src_$src_name']['T_res_inv_XXXX'], traveltime field for source $src_name at iteration XXXX;" << std::endl;
+    fout << "#                                     ['src_$src_name']['adjoint_field_inv_XXXX'], adjoint field for source $src_name at iteration XXXX;" << std::endl;
+    fout << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
