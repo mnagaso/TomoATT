@@ -438,25 +438,29 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
 
         // read a line
         //if (sim_rank == 0){
-            if (!std::getline(ss_whole,line))
+            if (!std::getline(ss_whole,line)){
                 end_of_file = true;
+            }
         //}
 
         //broadcast_bool_single(end_of_file, 0);
 
-        if (end_of_file)
+        if (end_of_file){
             break;
+        }
 
         // skip this line if it is a comment line
         //if (sim_rank == 0){
-            if (line[0] == '#' || line.empty())
+            if (line[0] == '#' || line.empty()){
                 skip_this_line = true;
+            }
         //}
 
         //broadcast_bool_single(skip_this_line, 0);
 
-        if (skip_this_line)
+        if (skip_this_line) {
             continue;
+        }
 
         // parse the line
         //int ntokens = 0;

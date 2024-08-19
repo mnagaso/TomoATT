@@ -305,6 +305,35 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["model_update"], "n_inversion_grid", n_inversion_grid);
             }
 
+            // auto inversion grid
+            if (config["model_update"]["uniform_inv_grid"]) {
+                getNodeValue(config["model_update"], "uniform_inv_grid", uniform_inv_grid);
+            }
+
+            // number of inversion grid for regular grid
+            if (config["model_update"]["n_inv_dep_lat_lon"]) {
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_r, 0);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_t, 1);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon", n_inv_p, 2);
+            }
+
+                // inversion grid positions
+            if (config["model_update"]["min_max_dep_inv"]) {
+                getNodeValue(config["model_update"], "min_max_dep_inv", min_dep_inv, 0);
+                getNodeValue(config["model_update"], "min_max_dep_inv", max_dep_inv, 1);
+            }
+            // minimum and maximum latitude
+            if (config["model_update"]["min_max_lat_inv"]) {
+                getNodeValue(config["model_update"], "min_max_lat_inv", min_lat_inv, 0);
+                getNodeValue(config["model_update"], "min_max_lat_inv", max_lat_inv, 1);
+            }
+            // minimum and maximum longitude
+            if (config["model_update"]["min_max_lon_inv"]) {
+                getNodeValue(config["model_update"], "min_max_lon_inv", min_lon_inv, 0);
+                getNodeValue(config["model_update"], "min_max_lon_inv", max_lon_inv, 1);
+            }
+
+
             // flexible inversion grid for velocity
             if (config["model_update"]["dep_inv"]){
                 n_inv_r_flex = config["model_update"]["dep_inv"].size();
@@ -347,6 +376,27 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["model_update"], "invgrid_ani", invgrid_ani);
             }
 
+            if (config["model_update"]["n_inv_dep_lat_lon_ani"]) {
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_r_ani, 0);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_t_ani, 1);
+                getNodeValue(config["model_update"], "n_inv_dep_lat_lon_ani", n_inv_p_ani, 2);
+            }
+
+            if (config["model_update"]["min_max_dep_inv_ani"]) {
+                getNodeValue(config["model_update"], "min_max_dep_inv_ani", min_dep_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_dep_inv_ani", max_dep_inv_ani, 1);
+            }
+
+            if (config["model_update"]["min_max_lat_inv_ani"]) {
+                getNodeValue(config["model_update"], "min_max_lat_inv_ani", min_lat_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_lat_inv_ani", max_lat_inv_ani, 1);
+            }
+
+            if (config["model_update"]["min_max_lon_inv_ani"]) {
+                getNodeValue(config["model_update"], "min_max_lon_inv_ani", min_lon_inv_ani, 0);
+                getNodeValue(config["model_update"], "min_max_lon_inv_ani", max_lon_inv_ani, 1);
+            }
+
             // flexible inversion grid for anisotropy
             if (config["model_update"]["dep_inv_ani"]) {
                 n_inv_r_flex_ani = config["model_update"]["dep_inv_ani"].size();
@@ -376,6 +426,7 @@ InputParams::InputParams(std::string& input_file){
                 }
             }
 
+            setup_uniform_inv_grid();
 
             if (config["model_update"]["invgrid_volume_rescale"]) {
                 getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
@@ -725,6 +776,8 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_i_single(n_inversion_grid, 0);
 
+    broadcast_bool_single(uniform_inv_grid, 0);
+
     broadcast_i_single(n_inv_r_flex, 0);
     broadcast_i_single(n_inv_t_flex, 0);
     broadcast_i_single(n_inv_p_flex, 0);
@@ -991,6 +1044,18 @@ void InputParams::write_params_to_file() {
     fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
     fout << std::endl;
 
+    fout << "  uniform_inv_grid: " << uniform_inv_grid << " # true if use uniform inversion grid, false if use flexible inversion grid" << std::endl;
+    fout << std::endl;
+
+    fout << "  # -------------- uniform inversion grid setting -------------- " << std::endl;
+    fout << "  # settings for uniform inversion grid" << std::endl;
+    fout << "  n_inv_dep_lat_lon: [" << n_inv_r << ", " << n_inv_t << ", " << n_inv_p << "] # number of the base inversion grid points" << std::endl;
+    fout << "  min_max_dep_inv: [" << min_dep_inv << ", " << max_dep_inv << "] # depth in km (Radius of the earth is defined in config.h/R_earth)" << std::endl;
+    fout << "  min_max_lat_inv: [" << min_lat_inv << ", " << max_lat_inv << "] # latitude in degree" << std::endl;
+    fout << "  min_max_lon_inv: [" << min_lon_inv << ", " << max_lon_inv << "] # longitude in degree" << std::endl;
+    fout << std::endl;
+
+    fout << "  # -------------- flexible inversion grid setting -------------- " << std::endl;
     fout << "  # settings for flexible inversion grid" << std::endl;
     fout << "  dep_inv: [";
     for (int i = 0; i < n_inv_r_flex; i++){
@@ -1024,7 +1089,16 @@ void InputParams::write_params_to_file() {
 
     fout << "  # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)" << std::endl;
     fout << "  invgrid_ani: " << invgrid_ani << std::endl;
+    fout << std::endl;
 
+    fout << "  # ---------- uniform inversion grid setting for anisotropy ----------" << std::endl;
+    fout << "  n_inv_dep_lat_lon_ani: [" << n_inv_r_ani << ", " << n_inv_t_ani << ", " << n_inv_p_ani << "] # number of the base inversion grid points" << std::endl;
+    fout << "  min_max_dep_inv_ani: [" << min_dep_inv_ani << ", " << max_dep_inv_ani << "] # depth in km (Radius of the earth is defined in config.h/R_earth)" << std::endl;
+    fout << "  min_max_lat_inv_ani: [" << min_lat_inv_ani << ", " << max_lat_inv_ani << "] # latitude in degree" << std::endl;
+    fout << "  min_max_lon_inv_ani: [" << min_lon_inv_ani << ", " << max_lon_inv_ani << "] # longitude in degree" << std::endl;
+    fout << std::endl;
+
+    fout << "  # ---------- flexible inversion grid setting for anisotropy ----------" << std::endl;
     fout << "  # settings for flexible inversion grid for anisotropy" << std::endl;
     fout << "  dep_inv_ani: [";
     for (int i = 0; i < n_inv_r_flex_ani; i++){
@@ -1315,6 +1389,119 @@ void InputParams::write_params_to_file() {
 
 
 }
+
+void InputParams::setup_uniform_inv_grid() {
+    // set the number of inversion grid points
+    if (uniform_inv_grid){
+        if (min_dep_inv == -9999.0 || max_dep_inv == -9999.0){
+            std::cout << "Error: please setup min_max_dep_inv" << std::endl;
+            exit(1);
+        }
+        if (max_dep_inv < min_dep_inv){
+            std::cout << "Error: max_dep_inv should be larger than min_dep_inv" << std::endl;
+            exit(1);
+        }
+        if (min_lat_inv == -9999.0 || max_lat_inv == -9999.0){
+            std::cout << "Error: please setup min_max_lat_inv_ani" << std::endl;
+            exit(1);
+        }
+        if (max_lat_inv < min_lat_inv){
+            std::cout << "Error: max_lat_inv should be larger than min_lat_inv" << std::endl;
+            exit(1);
+        }
+        if (min_lon_inv == -9999.0 || max_lon_inv == -9999.0){
+            std::cout << "Error: please setup min_max_lon_inv_ani" << std::endl;
+            exit(1);
+        }
+        if (max_lon_inv < min_lon_inv){
+            std::cout << "Error: max_lon_inv should be larger than min_lon_inv" << std::endl;
+            exit(1);
+        }
+        n_inv_r_flex = n_inv_r;
+        n_inv_t_flex = n_inv_t;
+        n_inv_p_flex = n_inv_p;
+        
+        std::vector<CUSTOMREAL> tmp_dep_inv = linspace(min_dep_inv, max_dep_inv, n_inv_r_flex);
+        std::vector<CUSTOMREAL> tmp_lat_inv = linspace(min_lat_inv, max_lat_inv, n_inv_t_flex);
+        std::vector<CUSTOMREAL> tmp_lon_inv = linspace(min_lon_inv, max_lon_inv, n_inv_p_flex);
+
+        if (dep_inv != nullptr) delete[] dep_inv;
+        if (lat_inv != nullptr) delete[] lat_inv;
+        if (lon_inv != nullptr) delete[] lon_inv;
+
+        dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5000);
+        lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
+        lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5002);
+
+        for (int i = 0; i < n_inv_r_flex; i++){
+            dep_inv[i] = tmp_dep_inv[i];
+        }
+        for (int i = 0; i < n_inv_t_flex; i++){
+            lat_inv[i] = tmp_lat_inv[i];
+        }
+        for (int i = 0; i < n_inv_p_flex; i++){
+            lon_inv[i] = tmp_lon_inv[i];
+        }
+
+        if (invgrid_ani) {
+            if (min_dep_inv_ani == -9999.0 || max_dep_inv_ani == -9999.0){
+                std::cout << "Error: please setup min_max_dep_inv_ani" << std::endl;
+                exit(1);
+            }
+            if (max_dep_inv_ani < min_dep_inv_ani){
+                std::cout << "Error: max_dep_inv_ani should be larger than min_dep_inv_ani" << std::endl;
+                exit(1);
+            }
+            if (min_lat_inv_ani == -9999.0 || max_lat_inv_ani == -9999.0){
+                std::cout << "Error: please setup min_max_lat_inv_ani" << std::endl;
+                exit(1);
+            }
+            if (max_lat_inv_ani < min_lat_inv_ani){
+                std::cout << "Error: max_lat_inv_ani should be larger than min_lat_inv_ani" << std::endl;
+                exit(1);
+            }
+            if (min_lon_inv_ani == -9999.0 || max_lon_inv_ani == -9999.0){
+                std::cout << "Error: please setup min_max_lon_inv_ani" << std::endl;
+                exit(1);
+            }
+            if (max_lon_inv_ani < min_lon_inv_ani){
+                std::cout << "Error: max_lon_inv_ani should be larger than min_lon_inv_ani" << std::endl;
+                exit(1);
+            }
+            
+            n_inv_r_flex_ani = n_inv_r_ani;
+            n_inv_t_flex_ani = n_inv_t_ani;
+            n_inv_p_flex_ani = n_inv_p_ani;
+            
+            if (dep_inv_ani != nullptr) delete[] dep_inv_ani;
+            if (lat_inv_ani != nullptr) delete[] lat_inv_ani;
+            if (lon_inv_ani != nullptr) delete[] lon_inv_ani;
+
+            dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
+            lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
+            lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5005);
+            
+            tmp_dep_inv = linspace(min_dep_inv_ani, max_dep_inv_ani, n_inv_r_flex_ani);
+            tmp_lat_inv = linspace(min_lat_inv_ani, max_lat_inv_ani, n_inv_t_flex_ani);
+            tmp_lon_inv = linspace(min_lon_inv_ani, max_lon_inv_ani, n_inv_p_flex_ani);
+
+            for (int i = 0; i < n_inv_r_flex_ani; i++){
+                dep_inv_ani[i] = tmp_dep_inv[i];
+            }
+            for (int i = 0; i < n_inv_t_flex_ani; i++){
+                lat_inv_ani[i] = tmp_lat_inv[i];
+            }
+            for (int i = 0; i < n_inv_p_flex_ani; i++){
+                lon_inv_ani[i] = tmp_lon_inv[i];
+            }
+        
+        }
+        tmp_dep_inv.clear();
+        tmp_lat_inv.clear();
+        tmp_lon_inv.clear();
+    }
+}
+
 
 
 // return radious
@@ -1967,7 +2154,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
 
         // main process calculates differences of synthetic data and send them to other processes
         if (id_sim==0){
-            int n_total_src_pair = 0;
+            // int n_total_src_pair = 0;
 
             // calculate differences of synthetic data
             for (auto iter = data_map_all.begin(); iter != data_map_all.end(); iter++){
@@ -1976,7 +2163,7 @@ void InputParams::gather_traveltimes_and_calc_syn_diff(){
                         if (data.is_src_pair){
                             data.cr_dif_travel_time = data_map_all[data.name_src_pair[0]][data.name_rec].at(0).travel_time \
                                                     - data_map_all[data.name_src_pair[1]][data.name_rec].at(0).travel_time;
-                            n_total_src_pair++;
+                            // n_total_src_pair++;
                        }
                     }
                 }
@@ -2135,6 +2322,11 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     src_map_back[iter->first].lat   =   iter->second.lat;
                     src_map_back[iter->first].lon   =   iter->second.lon;
                     src_map_back[iter->first].dep   =   iter->second.dep;
+                    src_map_back[iter->first].year  =   iter->second.year;
+                    src_map_back[iter->first].month =   iter->second.month;
+                    src_map_back[iter->first].day   =   iter->second.day;
+                    src_map_back[iter->first].hour  =   iter->second.hour;
+                    src_map_back[iter->first].min   =   iter->second.min;
                     src_map_back[iter->first].sec   =   iter->second.sec + iter->second.tau_opt;
 
                     // correct the output ortime:
@@ -2146,14 +2338,23 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     timeInfo.tm_mday = src.day;
                     timeInfo.tm_hour = src.hour;
                     timeInfo.tm_min  = src.min;
+                    
+                    // std::cout   << "before, src.hour = " <<  src.hour 
+                    //             << ", src.min = " <<  src.min
+                    //             << ", src.sec = " <<  src.sec << std::endl;
+                    
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         timeInfo.tm_sec  = static_cast<int>(src.sec) - 1.0;
                     else
                         timeInfo.tm_sec  = static_cast<int>(src.sec);
-                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(std::mktime(&timeInfo));
+                    
+                    // Convert to time_point
+                    std::time_t rawTime = timegm(&timeInfo); // use timegm for UTC
+                    std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(rawTime);
 
-                    std::time_t timestamp = std::chrono::system_clock::to_time_t(tp);
-                    std::tm newTimeInfo = *std::localtime(&timestamp);
+                   // Get new time info
+                   std::time_t timestamp = std::chrono::system_clock::to_time_t(tp);
+                   std::tm newTimeInfo = *std::gmtime(&timestamp); // use gmtime to keep it in UTC
 
                     // step 2, correct the output ortime:
                     src_map_back[iter->first].year = newTimeInfo.tm_year + 1900;
@@ -2161,10 +2362,15 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     src_map_back[iter->first].day = newTimeInfo.tm_mday;
                     src_map_back[iter->first].hour = newTimeInfo.tm_hour;
                     src_map_back[iter->first].min = newTimeInfo.tm_min;
+                    
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec + 1.0 - static_cast<int>(src.sec));
                     else
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec       - static_cast<int>(src.sec));
+                    
+                    // std::cout << "after, src.hour = " <<  src_map_back[iter->first].hour 
+                    //           << ", src.min = " <<  src_map_back[iter->first].min
+                    //           << ", src.sec = " <<  src_map_back[iter->first].sec << std::endl;
 
                 }
             }
