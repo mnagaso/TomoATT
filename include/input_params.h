@@ -160,7 +160,7 @@ public:
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
     bool get_if_output_source_field()    {return output_source_field;};
-    // bool get_if_output_model_dat()       {return output_model_dat;};
+    bool get_if_output_kernel()          {return output_kernel;};
     bool get_if_output_final_model()     {return output_final_model;};
     bool get_if_output_middle_model()     {return output_middle_model;};
     bool get_if_output_in_process()      {return output_in_process;};
@@ -429,7 +429,7 @@ private:
 
     // output setting
     bool output_source_field    = false; // output out_data_sim_X.h or not.
-    // bool output_model_dat       = false; // output model_parameters_inv_0000.dat or not.
+    bool output_kernel          = false; // output kernel or not.
     bool output_final_model     = true;  // output merged final model or not.
     bool output_middle_model    = false; // output merged model at each inv iteration or not.
     bool output_in_process      = true;  // True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: "out_data_sim_group_0". Keys: "Kdensity_update_inv_XXXX", "vel_inv_0000", "xi_inv_0000", "eta_inv_0000"

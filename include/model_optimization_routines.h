@@ -113,25 +113,31 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // make station correction
     IP.station_correction_update(step_length_init_sc);
 
-    // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
-    if (IP.get_verbose_output_level()) {
-        // store kernel only in the first src datafile
-        io.change_group_name_for_model();
+    // output updated model
+    if (id_sim==0) {
+        if (IP.get_if_output_kernel()) {
+            if (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2 || i_inv == 0){
+                // store kernel only in the first src datafile
+                io.change_group_name_for_model();
 
-        // output updated velocity models
-        io.write_Ks(grid, i_inv);
-        io.write_Keta(grid, i_inv);
-        io.write_Kxi(grid, i_inv);
+                // output updated velocity models
+                io.write_Ks(grid, i_inv);
+                io.write_Keta(grid, i_inv);
+                io.write_Kxi(grid, i_inv);
 
-        // output descent direction
-        io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
+                // output descent direction
+                io.write_Ks_update(grid, i_inv);
+                io.write_Keta_update(grid, i_inv);
+                io.write_Kxi_update(grid, i_inv);
+            }
+        }
     }
 
     // writeout temporary xdmf file
     if (IP.get_verbose_output_level())
         io.update_xdmf_file();
+
+    
 
     synchronize_all_world();
 }

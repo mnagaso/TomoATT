@@ -35,6 +35,7 @@ parallel: # parameters for parallel computation
 output_setting:
   output_dir: OUTPUT_FILES/OUTPUT_FILES_fields # path to output director (default is ./OUTPUT_FILES/)
   output_source_field:     true # True: output the traveltime field and adjoint field of all sources at each iteration. Default: false. File: 'out_data_sim_group_X'.                                         
+  output_kernel:           true
   output_final_model:      true # True: output merged final model. This file can be used as the input model for TomoATT. Default: true. File: 'model_final.h5'.                                
   output_middle_model:     true # True: output merged intermediate models during inversion. This file can be used as the input model for TomoATT. Default: false. File: 'middle_model_step_XXXX.h5'                                
   output_in_process:       true # True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: 'out_data_sim_group_0'. 
@@ -96,10 +97,10 @@ model_update:
   uniform_inv_grid: true # true for using uniform inversion grid; false for using flexible inversion grid
   
   # settings for uniform inversion grid
-  n_inv_dep_lat_lon: [12, 11, 11] # number of inversion grid in depth, latitude, and longitude direction
-  min_max_dep_inv: [-7, 63] # inversion grid for vel in depth (km)
-  min_max_lat_inv: [30, 32] # inversion grid for vel in latitude (degree)
-  min_max_lon_inv: [30, 32] # inversion grid for vel in longitude (degree)
+  n_inv_dep_lat_lon: [3, 11, 11] # number of inversion grid in depth, latitude, and longitude direction
+  min_max_dep_inv: [-1,  1] # inversion grid for vel in depth (km)
+  min_max_lat_inv: [0, 1] # inversion grid for vel in latitude (degree)
+  min_max_lon_inv: [0, 1] # inversion grid for vel in longitude (degree)
 
   # settings for flexible inversion grid
   dep_inv: [-7, -3, 0, 3, 7, 12, 18, 25, 33, 42, 52, 63] # inversion grid for vel in depth (km)
@@ -108,7 +109,7 @@ model_update:
   trapezoid: [1, 0, 50]  # usually set as [1.0, 0.0, 50.0] (default)
 
   # if we want to use another inversion grid for inverting anisotropy, set invgrid_ani: true (default: false)
-  invgrid_ani: true
+  invgrid_ani: false
 
   # settings for uniform inversion grid
   n_inv_dep_lat_lon_ani: [12, 11, 11] # number of inversion grid in depth, latitude, and longitude direction for anisotropy
