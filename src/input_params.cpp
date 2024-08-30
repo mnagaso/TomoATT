@@ -203,6 +203,10 @@ InputParams::InputParams(std::string& input_file){
             }
         }
 
+        if (config["have_tele_data"]) {
+            getNodeValue(config, "have_tele_data", have_tele_data);
+        }
+
         //
         // model update
         //
@@ -250,10 +254,10 @@ InputParams::InputParams(std::string& input_file){
                         std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
-                    if (Kdensity_coe > 1.0){
-                        Kdensity_coe = 1.0;
+                    if (Kdensity_coe > 0.95){
+                        Kdensity_coe = 0.95;
                         std::cout << std::endl;
-                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl;
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.95 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
                 }
@@ -753,6 +757,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(output_format, 0);
 
     broadcast_i_single(run_mode, 0);
+    broadcast_bool_single(have_tele_data, 0);
 
     broadcast_i_single(max_iter_inv, 0);
     broadcast_i_single(optim_method, 0);
@@ -1003,10 +1008,13 @@ void InputParams::write_params_to_file() {
     fout << "#                                     ['model']['Kxi_inv_XXXX'], sensitivity kernel related to xi" << std::endl;
     fout << "#                                     ['model']['Keta_inv_XXXX'], sensitivity kernel related to eta" << std::endl;
     fout << "#                                     ['model']['Kdensity_inv_XXXX'], kernel density " << std::endl;
-    fout << "#                                     ['model']['Ks_update_inv_XXXX'], slowness update (smoothed by inversion model)" << std::endl;
-    fout << "#                                     ['model']['Kxi_update_inv_XXXX'], xi update (smoothed by inversion model)" << std::endl;
-    fout << "#                                     ['model']['Keta_update_inv_XXXX'], eta update (smoothed by inversion model)" << std::endl;
-    fout << "#                                     ['model']['Kdensity_update_inv_XXXX'], model update density (smoothed by inversion model)" << std::endl;
+    fout << "#                                     ['model']['Ks_over_Kden_inv_XXXX'], slowness kernel over kernel density" << std::endl;
+    fout << "#                                     ['model']['Kxi_over_Kden_inv_XXXX'], xi kernel over kernel density" << std::endl;
+    fout << "#                                     ['model']['Keta_over_Kden_inv_XXXX'], eta kernel over kernel density" << std::endl;
+    fout << "#                                     ['model']['Ks_update_inv_XXXX'], slowness kernel over kernel density, smoothed by inversion grid" << std::endl;
+    fout << "#                                     ['model']['Kxi_update_inv_XXXX'], xi kernel over kernel density, smoothed by inversion grid" << std::endl;
+    fout << "#                                     ['model']['Keta_update_inv_XXXX'], eta kernel over kernel density, smoothed by inversion grid" << std::endl;
+    fout << "#                                     ['model']['Kdensity_update_inv_XXXX'], kernel density, smoothed by inversion grid" << std::endl;
     fout << "# File: 'src_rec_file_step_XXXX.dat' or 'src_rec_file_forward.dat'. The synthetic traveltime data file." << std::endl;
     fout << "# File: 'final_model.h5'. Keys: ['eta'], ['xi'], ['vel'], the final model." << std::endl;
     fout << "# File: 'middle_model_step_XXXX.h5'. Keys: ['eta'], ['xi'], ['vel'], the model at step XXXX." << std::endl;
@@ -1028,6 +1036,10 @@ void InputParams::write_params_to_file() {
     fout << "run_mode: " << run_mode << std::endl;
     fout << std::endl;
 
+    fout << "have_tele_data: " << have_tele_data << " # An error will be reported if false but source out of study region is used. Default: false." << std::endl;
+    fout << std::endl;
+    fout << std::endl;
+    
     fout << "###################################################" << std::endl;
     fout << "#          model update parameters setting        #" << std::endl;
     fout << "###################################################" << std::endl;
@@ -1048,8 +1060,8 @@ void InputParams::write_params_to_file() {
     fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;
     fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl;
     fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl;
-    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;
-    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;
+    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is fully normalized. 0.5 or less is recommended if really required." << std::endl;
+    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  limited range: 0.0 - 0.95 " << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
@@ -1808,7 +1820,8 @@ void InputParams::prepare_src_map(){
                                               N_cs_dif_local_data,
                                               N_teleseismic_data,
                                               N_data,
-                                              min_lat, max_lat, min_lon, max_lon, min_dep, max_dep);
+                                              min_lat, max_lat, min_lon, max_lon, min_dep, max_dep, 
+                                              have_tele_data);
 
         if (swap_src_rec) {
             // we swap the source and receviver for regional earthquakes. After that, we have new data structure:

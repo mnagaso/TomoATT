@@ -109,6 +109,12 @@ public:
     void write_Keta(Grid&, int);
     // Kdensity
     void write_Kdensity(Grid&, int);
+    // Ks_over_Kden
+    void write_Ks_over_Kden(Grid&, int);
+    // Kxi_over_Kden
+    void write_Kxi_over_Kden(Grid&, int);
+    // Keta_over_Kden
+    void write_Keta_over_Kden(Grid&, int);
     // Ks_update
     void write_Ks_update(Grid&, int);
     // Kxi_update

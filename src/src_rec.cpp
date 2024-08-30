@@ -542,7 +542,8 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                                            int                        &N_data,
                                            const CUSTOMREAL min_lat, const CUSTOMREAL max_lat,
                                            const CUSTOMREAL min_lon, const CUSTOMREAL max_lon,
-                                           const CUSTOMREAL min_dep, const CUSTOMREAL max_dep){
+                                           const CUSTOMREAL min_dep, const CUSTOMREAL max_dep,
+                                           bool have_tele_data){
     // check if the source is inside the simulation boundary
 
     // initialize vectors for teleseismic events
@@ -684,6 +685,33 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
             } // end loop std::vector<datainfo>
         } // end it_rec
     } // end it_src
+
+    if((!have_tele_data) && (src_map_tele.size() > 0)){
+        std::cout << "ERROR: have_tele_data is false, but there are earthquakes out of study region:" << std::endl;
+        for(auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++){
+            std::cout   << "source name: " << iter->second.name 
+                        <<  ", lat: " << iter->second.lat
+                        <<  ", lon: " << iter->second.lon
+                        <<  ", dep: " << iter->second.dep
+                        <<  std::endl;
+        }
+        std::cout << "Please set have_tele_data in InputParams.yaml to be TRUE, or remove above earthquakes" << std::endl;
+        exit(1);
+    }
+
+    if((!have_tele_data) && (rec_map_tele.size() > 0)){
+        std::cout << "ERROR: have_tele_data is false, but there are stations out of study region:" << std::endl;
+        for(auto iter = rec_map_tele.begin(); iter != rec_map_tele.end(); iter++){
+            std::cout   << "receiver name: " << iter->second.name
+                        <<  ", lat: " << iter->second.lat
+                        <<  ", lon: " << iter->second.lon
+                        <<  ", dep: " << iter->second.dep
+                        <<  std::endl;
+        }
+        std::cout << "Please set have_tele_data in InputParams.yaml to be TRUE, or remove above stations" << std::endl;
+        exit(1);
+    }
+
 
     //
     // balance the data weight
