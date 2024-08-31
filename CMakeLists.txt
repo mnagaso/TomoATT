@@ -131,10 +131,17 @@ add_definitions(-DFREQ_SYNC_GHOST)
 
 # submodules
 # yaml parser
+# yaml parser
 find_package(yaml-cpp)
-if (NOT yaml-cpp_FOUND)
+if (yaml-cpp_FOUND)
+  message(STATUS "yaml-cpp found")
+  message(STATUS "YAML_CPP_INCLUDE_DIR: ${YAML_CPP_INCLUDE_DIR}")
+  message(STATUS "YAML_CPP_LIBRARIES: ${YAML_CPP_LIBRARIES}")
+else()
   message(STATUS "yaml-cpp not found. Using external_libs/yaml-cpp ...")
   add_subdirectory(external_libs)
+  set(YAML_CPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  set(YAML_CPP_LIBRARIES yaml-cpp)
 endif()
 
 # add include directory
@@ -153,7 +160,7 @@ file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 if (CUDA_FOUND)
   include_directories(${CUDA_INCLUDE_DIRS})
   add_library(${CUDA_LIBRARY_NAME} STATIC ${SOURCES_CUDA} ${HEADERS_CUDA} )
-  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${YAML_CPP_INCLUDE_DIR})
   target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
   target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
 endif()
@@ -201,8 +208,8 @@ foreach( execsourcefile ${APP_SOURCES} )
   target_link_libraries(${EXEC_NAME} PUBLIC MPI::MPI_CXX)
 
   # link yaml-app:
-  target_link_libraries(${EXEC_NAME} PUBLIC yaml-cpp)
-  target_include_directories(${EXEC_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  target_link_libraries(${EXEC_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
+  target_include_directories(${EXEC_NAME} PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
   # link HDF5
   if(HDF5_FOUND)
