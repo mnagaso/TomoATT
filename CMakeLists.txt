@@ -131,7 +131,11 @@ add_definitions(-DFREQ_SYNC_GHOST)
 
 # submodules
 # yaml parser
-add_subdirectory(external_libs)
+find_package(yaml-cpp)
+if (NOT yaml-cpp_FOUND)
+  message(STATUS "yaml-cpp not found. Downloading from source code...")
+  add_subdirectory(external_libs)
+endif()
 
 # add include directory
 include_directories(include cuda)
