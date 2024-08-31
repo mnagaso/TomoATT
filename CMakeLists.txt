@@ -133,7 +133,7 @@ add_definitions(-DFREQ_SYNC_GHOST)
 # yaml parser
 find_package(yaml-cpp)
 if (NOT yaml-cpp_FOUND)
-  message(STATUS "yaml-cpp not found. Downloading from source code...")
+  message(STATUS "yaml-cpp not found. Using external_libs/yaml-cpp ...")
   add_subdirectory(external_libs)
 endif()
 
