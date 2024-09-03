@@ -977,7 +977,7 @@ void InputParams::write_params_to_file() {
     fout << "output_setting:" << std::endl;
     fout << "  output_dir: "              << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
     fout << "  output_source_field:     " << output_source_field         << " # True: output the traveltime field and adjoint field of all sources at each iteration. Default: false. File: 'out_data_sim_group_X'." << std::endl;
-    fout << "  output_kernel:           " << output_kernel               << " # True: output sensitivity kernel. Default: false. File: 'out_data_sim_group_X'." << std::endl;
+    fout << "  output_kernel:           " << output_kernel               << " # True: output sensitivity kernel and kernel density. Default: false. File: 'out_data_sim_group_X'." << std::endl;
     fout << "  output_final_model:      " << output_final_model          << " # True: output merged final model. This file can be used as the input model for TomoATT. Default: true. File: 'model_final.h5'." << std::endl;
     fout << "  output_middle_model:     " << output_middle_model         << " # True: output merged intermediate models during inversion. This file can be used as the input model for TomoATT. Default: false. File: 'middle_model_step_XXXX.h5'" << std::endl;
     fout << "  output_in_process:       " << output_in_process           << " # True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: 'out_data_sim_group_0'." << std::endl;
@@ -1007,14 +1007,15 @@ void InputParams::write_params_to_file() {
     fout << "#                                     ['model']['Ks_inv_XXXX'], sensitivity kernel related to slowness" << std::endl;
     fout << "#                                     ['model']['Kxi_inv_XXXX'], sensitivity kernel related to xi" << std::endl;
     fout << "#                                     ['model']['Keta_inv_XXXX'], sensitivity kernel related to eta" << std::endl;
-    fout << "#                                     ['model']['Kdensity_inv_XXXX'], kernel density " << std::endl;
+    fout << "#                                     ['model']['Ks_density_inv_XXXX'], kernel density of Ks " << std::endl;
+    fout << "#                                     ['model']['Kxi_density_inv_XXXX'], kernel density of Kxi " << std::endl;
+    fout << "#                                     ['model']['Keta_density_inv_XXXX'], kernel density of Keta " << std::endl;
     fout << "#                                     ['model']['Ks_over_Kden_inv_XXXX'], slowness kernel over kernel density" << std::endl;
     fout << "#                                     ['model']['Kxi_over_Kden_inv_XXXX'], xi kernel over kernel density" << std::endl;
     fout << "#                                     ['model']['Keta_over_Kden_inv_XXXX'], eta kernel over kernel density" << std::endl;
     fout << "#                                     ['model']['Ks_update_inv_XXXX'], slowness kernel over kernel density, smoothed by inversion grid" << std::endl;
     fout << "#                                     ['model']['Kxi_update_inv_XXXX'], xi kernel over kernel density, smoothed by inversion grid" << std::endl;
     fout << "#                                     ['model']['Keta_update_inv_XXXX'], eta kernel over kernel density, smoothed by inversion grid" << std::endl;
-    fout << "#                                     ['model']['Kdensity_update_inv_XXXX'], kernel density, smoothed by inversion grid" << std::endl;
     fout << "# File: 'src_rec_file_step_XXXX.dat' or 'src_rec_file_forward.dat'. The synthetic traveltime data file." << std::endl;
     fout << "# File: 'final_model.h5'. Keys: ['eta'], ['xi'], ['vel'], the final model." << std::endl;
     fout << "# File: 'middle_model_step_XXXX.h5'. Keys: ['eta'], ['xi'], ['vel'], the model at step XXXX." << std::endl;

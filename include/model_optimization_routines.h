@@ -34,9 +34,15 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         // store kernel only in the first src datafile
         io.change_group_name_for_model();
 
+        // write kernel
         io.write_Ks(grid, i_inv);
         io.write_Keta(grid, i_inv);
         io.write_Kxi(grid, i_inv);
+
+        // write kernel density
+        io.write_Ks_density(grid, i_inv);
+        io.write_Kxi_density(grid, i_inv);
+        io.write_Keta_density(grid, i_inv);
     }
 
     // smooth kernels (multigrid, and kdensity normalization)
