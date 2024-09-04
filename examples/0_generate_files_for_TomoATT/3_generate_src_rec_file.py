@@ -55,7 +55,6 @@ class GenerateSrcRecFile():
         # generate source receiver pairs
         data = []
         for i, src in self.sr.src_points.iterrows():
-            count = 0
             for j, rec in self.sr.receivers.iterrows():
                 trace = {
                     "src_index": i,
@@ -68,10 +67,9 @@ class GenerateSrcRecFile():
                     "tt": 1.0,
                     "weight": 1.0,
                 }
-                count += 1
                 data.append(trace)
-            src['num_rec'] = count
         self.sr.rec_points = pd.DataFrame(data)
+        self.sr.update()
 
     def generate_double_diff_data(self, azimuth_gap=15, dist_gap_cs=0.5, dist_gap_cr=0.1):
         self.sr.generate_double_difference('cs', max_azi_gap=azimuth_gap, max_dist_gap=dist_gap_cs)
