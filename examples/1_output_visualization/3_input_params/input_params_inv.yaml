@@ -88,7 +88,7 @@ model_update:
     #                                                                                                                otherwise, step size -> step length * step_length_change[1]. 
     step_length_gradient_angle: 120 # default: 120.0 
     step_length_change: [0.5, 1.2] # default: [0.5,1.2] 
-
+    Kdensity_coe: 0.8 # default: 0.0,  range: 0.0 - 1.0
 
   # parameters for smooth method 0 (multigrid model parametrization)
   # inversion grid can be viewed in OUTPUT_FILES/inversion_grid.txt

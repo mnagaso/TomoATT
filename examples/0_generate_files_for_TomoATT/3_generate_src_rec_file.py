@@ -8,36 +8,35 @@ import os
 OTIME = datetime(1970, 1, 1, 0, 0, 0)
 
 class GenerateSrcRecFile():
-    def __init__(self, nsrc:int, nrec_x:int, nrec_y:int,
+    def __init__(self, nsrc_x, nsrc_y:int, nrec_x:int, nrec_y:int,
                  par_file="./3_input_params/0_input_params_forward_simulation.yaml",
                  output_dir="./1_src_rec_files") -> None:
         self.ip = ATTPara(par_file)
         self.sr = SrcRec('')
         self.output_dir = output_dir
-        self.nsrc = nsrc
+        self.nsrc_x = nsrc_x
+        self.nsrc_y = nsrc_y
         self.nrec_x = nrec_x
         self.nrec_y = nrec_y
 
-    def generate_src_rec(self, margin=0.2, dep_range=[2, 35], accept_thd_abs=0.5):
+    def generate_src_rec(self, dep_range=[2, 35]):
         srcs = []
-        for i in range(self.nsrc):
-            src = {
-                "origin_time": OTIME,
-                "evla": np.random.uniform(
-                    self.ip.input_params['domain']['min_max_lat'][0]+margin,
-                    self.ip.input_params['domain']['min_max_lat'][1]-margin
-                ),
-                "evlo": np.random.uniform(
-                    self.ip.input_params['domain']['min_max_lon'][0]+margin,
-                    self.ip.input_params['domain']['min_max_lon'][1]-margin
-                ),
-                "evdp": np.random.uniform(*dep_range),
-                "mag": 2.0,
-                "num_rec": 0,
-                "event_id": f"MX{i:03d}",
-                "weight": 1.0,
-            }
-            srcs.append(src)
+        count = 0
+        for i in range(self.nsrc_x):
+            for j in range(self.nsrc_y):
+                for k in range(3):
+                    src = {
+                        "origin_time": OTIME,
+                        "evla": self.ip.input_params['domain']['min_max_lat'][0] + 0.2 + i/(self.nsrc_x-1)*1.6,
+                        "evlo": self.ip.input_params['domain']['min_max_lat'][0] + 0.2 + j/(self.nsrc_y-1)*1.6,
+                        "evdp": 10 + k*10,
+                        "mag": 2.0,
+                        "num_rec": 0,
+                        "event_id": f"MX{count:04d}",
+                        "weight": 1.0,
+                    }
+                    srcs.append(src)
+                    count += 1
         self.sr.src_points = pd.DataFrame(srcs)
 
         recs = []
@@ -45,9 +44,9 @@ class GenerateSrcRecFile():
             for j in range(self.nrec_y):
                 rec = {
                     "staname": f"JC{i*self.nrec_y+j:02d}",
-                    "stla": self.ip.input_params['domain']['min_max_lat'][0]+margin + i/4*1.6 + np.random.uniform(-0.1, 0.1),
-                    "stlo": self.ip.input_params['domain']['min_max_lon'][0]+margin + j/4*1.6 + np.random.uniform(-0.1, 0.1),
-                    "stel": 200.0,
+                    "stla": self.ip.input_params['domain']['min_max_lat'][0] + 0.2 + i/(self.nrec_x-1)*1.6,
+                    "stlo": self.ip.input_params['domain']['min_max_lon'][0] + 0.2 + j/(self.nrec_y-1)*1.6,
+                    "stel": 0.0,
                 }
                 recs.append(rec)
         self.sr.receivers = pd.DataFrame(recs)
@@ -57,9 +56,6 @@ class GenerateSrcRecFile():
         data = []
         for i, src in self.sr.src_points.iterrows():
             for j, rec in self.sr.receivers.iterrows():
-                accept = np.random.uniform(0, 1)
-                if accept < accept_thd_abs:
-                    continue
                 trace = {
                     "src_index": i,
                     "rec_index": j,
@@ -75,7 +71,7 @@ class GenerateSrcRecFile():
         self.sr.rec_points = pd.DataFrame(data)
         self.sr.update()
 
-    def generate_double_diff_data(self, azimuth_gap=15, dist_gap_cs=0.5, dist_gap_cr=0.2):
+    def generate_double_diff_data(self, azimuth_gap=15, dist_gap_cs=0.5, dist_gap_cr=0.1):
         self.sr.generate_double_difference('cs', max_azi_gap=azimuth_gap, max_dist_gap=dist_gap_cs)
         self.sr.generate_double_difference('cr', max_azi_gap=azimuth_gap, max_dist_gap=dist_gap_cr)
 
@@ -85,7 +81,7 @@ class GenerateSrcRecFile():
 
 
 if __name__ == "__main__":
-    gsr = GenerateSrcRecFile(nsrc=600, nrec_x=5, nrec_y=5)
+    gsr = GenerateSrcRecFile(nsrc_x=17, nsrc_y=17, nrec_x=5, nrec_y=5)
     gsr.generate_src_rec()
     gsr.generate_double_diff_data()
     gsr.write()

@@ -171,7 +171,9 @@ public:
     bool get_update_slowness()        {return update_slowness;};
     bool get_update_azi_ani()         {return update_azi_ani;};
     bool get_update_rad_ani()         {return update_rad_ani;};
-    CUSTOMREAL * get_depth_taper()   {return depth_taper;};
+    CUSTOMREAL * get_depth_taper()    {return depth_taper;};
+
+    bool get_have_tele_data()         {return have_tele_data;};
 
     bool get_use_abs()                  {return use_abs;};
     bool get_use_cs()                   {return use_cs;};
@@ -440,6 +442,9 @@ private:
     bool update_slowness = true;  // update slowness (velocity) or not.
     bool update_azi_ani  = false; // update azimuthal anisotropy (xi, eta) or not.
     bool update_rad_ani  = false; // update radial anisotropy (in future) or not.
+
+    // have have_tele_data or not?
+    bool have_tele_data = false;  // default is false. Error will occur if teleseismic data is include but false.
 
     CUSTOMREAL depth_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
     bool use_sta_correction = false; // apply station correction or not.

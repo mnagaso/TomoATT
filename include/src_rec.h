@@ -169,7 +169,8 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
                                            int                               &,
                                            const CUSTOMREAL, const CUSTOMREAL,
                                            const CUSTOMREAL, const CUSTOMREAL,
-                                           const CUSTOMREAL, const CUSTOMREAL);
+                                           const CUSTOMREAL, const CUSTOMREAL,
+                                           bool);
 
 void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
