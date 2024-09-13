@@ -34,10 +34,15 @@ parallel: # parameters for parallel computation
 ############################################
 output_setting:
   output_dir: set_output_path # path to output director (default is ./OUTPUT_FILES/)                                     
-  output_final_model:      true # output merged final model (final_model.h5) or not.                                
-  output_in_process:       true # output model at each inv iteration or not.                       
-  output_in_process_data:  true # output src_rec_file at each inv iteration or not.                       
-  output_file_format: 0
+  output_source_field:     false # True: output the traveltime field and adjoint field of all sources at each iteration. Default: false. File: 'out_data_sim_group_X'.
+  output_kernel:           false # True: output sensitivity kernel. Default: false. File: 'out_data_sim_group_X'.
+  output_final_model:      true # True: output merged final model. This file can be used as the input model for TomoATT. Default: true. File: 'model_final.h5'.
+  output_middle_model:     false # True: output merged intermediate models during inversion. This file can be used as the input model for TomoATT. Default: false. File: 'middle_model_step_XXXX.h5'
+  output_in_process:       true # True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: 'out_data_sim_group_0'.
+  output_in_process_data:  true # True: output src_rec_file at each inv iteration, otherwise, only output step 0, Niter-2, Niter-1. Default: true. File: 'src_rec_file_step_XXXX.dat'
+  single_precision_output: false # True: output results in single precision. Default: false.   
+  verbose_output_level:    0 # output internal parameters, (to do).
+  output_file_format: 0 # 0: hdf5, 1: ascii                     
 
 #################################################
 #          inversion or forward modeling        #

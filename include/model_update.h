@@ -28,17 +28,9 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                         grid.Ks_update_loc[I2V(i,j,k)]   = _0_CR;
                         grid.Keta_update_loc[I2V(i,j,k)] = _0_CR;
                         grid.Kxi_update_loc[I2V(i,j,k)]  = _0_CR;
-                        grid.Kdensity_update_loc[I2V(i,j,k)]  = _0_CR;
-                        // make checkerboard pattern for debug
-                        //if ((i/10+j/10+k/10)%2 == 0) {
-                        //    grid.Ks_loc[I2V(i,j,k)]   = 100.0;
-                        //    grid.Keta_loc[I2V(i,j,k)] = 100.0;
-                        //    grid.Kxi_loc[I2V(i,j,k)]  = 100.0;
-                        //} else {
-                        //    grid.Ks_loc[I2V(i,j,k)]   = 50.0;
-                        //    grid.Keta_loc[I2V(i,j,k)] = 50.0;
-                        //    grid.Kxi_loc[I2V(i,j,k)]  = 50.0;
-                        //}
+                        // grid.Ks_density_update_loc[I2V(i,j,k)]  = _0_CR;
+                        // grid.Kxi_density_update_loc[I2V(i,j,k)] = _0_CR;
+                        // grid.Keta_density_update_loc[I2V(i,j,k)] = _0_CR;
                     }
                 }
             }
@@ -54,37 +46,49 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                                 grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
                                 grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
                                 grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
-                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Ks_density_loc[I2V(i,j,k)]     = _0_CR;
+                                grid.Kxi_density_loc[I2V(i,j,k)]    = _0_CR;
+                                grid.Keta_density_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (i == loc_I-1 && !grid.i_last()) {
                                 grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
                                 grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
                                 grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
-                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Ks_density_loc[I2V(i,j,k)]     = _0_CR;
+                                grid.Kxi_density_loc[I2V(i,j,k)]    = _0_CR;
+                                grid.Keta_density_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (j == 0 && !grid.j_first()) {
                                 grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
                                 grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
                                 grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
-                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Ks_density_loc[I2V(i,j,k)]     = _0_CR;
+                                grid.Kxi_density_loc[I2V(i,j,k)]    = _0_CR;
+                                grid.Keta_density_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (j == loc_J-1 && !grid.j_last()) {
                                 grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
                                 grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
                                 grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
-                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Ks_density_loc[I2V(i,j,k)]     = _0_CR;
+                                grid.Kxi_density_loc[I2V(i,j,k)]    = _0_CR;
+                                grid.Keta_density_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (k == 0 && !grid.k_first()) {
                                 grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
                                 grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
                                 grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
-                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Ks_density_loc[I2V(i,j,k)]     = _0_CR;
+                                grid.Kxi_density_loc[I2V(i,j,k)]    = _0_CR;
+                                grid.Keta_density_loc[I2V(i,j,k)]   = _0_CR;
                             }
                             if (k == loc_K-1 && !grid.k_last()) {
                                 grid.Ks_loc[I2V(i,j,k)]         = _0_CR;
                                 grid.Keta_loc[I2V(i,j,k)]       = _0_CR;
                                 grid.Kxi_loc[I2V(i,j,k)]        = _0_CR;
-                                grid.Kdensity_loc[I2V(i,j,k)]   = _0_CR;
+                                grid.Ks_density_loc[I2V(i,j,k)]     = _0_CR;
+                                grid.Kxi_density_loc[I2V(i,j,k)]    = _0_CR;
+                                grid.Keta_density_loc[I2V(i,j,k)]   = _0_CR;
                             }
                         }
                     }
@@ -101,12 +105,16 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
             grid.send_recev_boundary_data(grid.Ks_update_loc);
             grid.send_recev_boundary_data(grid.Keta_update_loc);
             grid.send_recev_boundary_data(grid.Kxi_update_loc);
-            grid.send_recev_boundary_data(grid.Kdensity_update_loc);
+            // grid.send_recev_boundary_data(grid.Ks_density_update_loc);
+            // grid.send_recev_boundary_data(grid.Kxi_density_update_loc);
+            // grid.send_recev_boundary_data(grid.Keta_density_update_loc);
 
             grid.send_recev_boundary_data_kosumi(grid.Ks_update_loc);
             grid.send_recev_boundary_data_kosumi(grid.Keta_update_loc);
             grid.send_recev_boundary_data_kosumi(grid.Kxi_update_loc);
-            grid.send_recev_boundary_data_kosumi(grid.Kdensity_update_loc);
+            // grid.send_recev_boundary_data_kosumi(grid.Ks_density_update_loc);
+            // grid.send_recev_boundary_data_kosumi(grid.Kxi_density_update_loc);
+            // grid.send_recev_boundary_data_kosumi(grid.Keta_density_update_loc);
 
         } // end if id_sim == 0
 
@@ -114,7 +122,9 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
         broadcast_cr_inter_sim(grid.Ks_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Kxi_update_loc, loc_I*loc_J*loc_K, 0);
         broadcast_cr_inter_sim(grid.Keta_update_loc, loc_I*loc_J*loc_K, 0);
-        broadcast_cr_inter_sim(grid.Kdensity_update_loc, loc_I*loc_J*loc_K, 0);
+        // broadcast_cr_inter_sim(grid.Ks_density_update_loc, loc_I*loc_J*loc_K, 0);
+        // broadcast_cr_inter_sim(grid.Kxi_density_update_loc, loc_I*loc_J*loc_K, 0);
+        // broadcast_cr_inter_sim(grid.Keta_density_update_loc, loc_I*loc_J*loc_K, 0);
 
         // send the previous updated model to all the simultaneous run
         broadcast_cr_inter_sim(grid.Ks_update_loc_previous, loc_I*loc_J*loc_K, 0);
@@ -249,45 +259,53 @@ void set_new_model(Grid& grid, CUSTOMREAL step_length_new, bool init_bfgs=false)
         // for LBFGS mode. K*_update_loc is not directly the descent direction but smoothed gradient
         // so for non LBFGS_mode, nextstep will be calculated with K*_update_loc
         if (optim_method != LBFGS_MODE) {
-            // get the scaling factor
-            CUSTOMREAL Linf_Ks = _0_CR, Linf_Keta = _0_CR, Linf_Kxi = _0_CR;
-            for (int k = 1; k < loc_K-1; k++) {
-                for (int j = 1; j < loc_J-1; j++) {
-                    for (int i = 1; i < loc_I-1; i++) {
-                        Linf_Ks   = std::max(Linf_Ks,   std::abs(grid.Ks_update_loc[I2V(i,j,k)]));
-                        Linf_Keta = std::max(Linf_Keta, std::abs(grid.Keta_update_loc[I2V(i,j,k)]));
-                        Linf_Kxi  = std::max(Linf_Kxi,  std::abs(grid.Kxi_update_loc[I2V(i,j,k)]));
-                    }
-                }
-            }
+            // // get the scaling factor
+            // CUSTOMREAL Linf_Ks = _0_CR, Linf_Keta = _0_CR, Linf_Kxi = _0_CR;
+            // for (int k = 1; k < loc_K-1; k++) {
+            //     for (int j = 1; j < loc_J-1; j++) {
+            //         for (int i = 1; i < loc_I-1; i++) {
+            //             Linf_Ks   = std::max(Linf_Ks,   std::abs(grid.Ks_update_loc[I2V(i,j,k)]));
+            //             Linf_Keta = std::max(Linf_Keta, std::abs(grid.Keta_update_loc[I2V(i,j,k)]));
+            //             Linf_Kxi  = std::max(Linf_Kxi,  std::abs(grid.Kxi_update_loc[I2V(i,j,k)]));
+            //         }
+            //     }
+            // }
 
-            // get the maximum scaling factor among subdomains
-            CUSTOMREAL Linf_tmp;
-            allreduce_cr_single_max(Linf_Ks, Linf_tmp);   Linf_Ks = Linf_tmp;
-            allreduce_cr_single_max(Linf_Keta, Linf_tmp); Linf_Keta = Linf_tmp;
-            allreduce_cr_single_max(Linf_Kxi, Linf_tmp);  Linf_Kxi = Linf_tmp;
+            // // get the maximum scaling factor among subdomains
+            // CUSTOMREAL Linf_tmp;
+            // allreduce_cr_single_max(Linf_Ks, Linf_tmp);   Linf_Ks = Linf_tmp;
+            // allreduce_cr_single_max(Linf_Keta, Linf_tmp); Linf_Keta = Linf_tmp;
+            // allreduce_cr_single_max(Linf_Kxi, Linf_tmp);  Linf_Kxi = Linf_tmp;
 
-            CUSTOMREAL Linf_all = _0_CR;
-            Linf_all = std::max(Linf_Ks, std::max(Linf_Keta, Linf_Kxi));
+            // CUSTOMREAL Linf_all = _0_CR;
+            // Linf_all = std::max(Linf_Ks, std::max(Linf_Keta, Linf_Kxi));
 
-            // if (myrank == 0 && id_sim == 0)
-            //    std::cout << "Scaling factor for all kernels: " << Linf_all << std::endl;
-            //    std::cout << "Scaling factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
+            // // if (myrank == 0 && id_sim == 0)
+            // //    std::cout << "Scaling factor for all kernels: " << Linf_all << std::endl;
+            // //    std::cout << "Scaling factor for model update for Ks, Keta, Kx, stepsize: " << Linf_Ks << ", " << Linf_Keta << ", " << Linf_Kxi << ", " << step_length_new << std::endl;
 
 
-            Linf_Ks = Linf_all;
-            Linf_Keta = Linf_all;
-            Linf_Kxi = Linf_all;
+            // Linf_Ks = Linf_all;
+            // Linf_Keta = Linf_all;
+            // Linf_Kxi = Linf_all;
+
+            // kernel update has been rescaled in "smooth_inv_kernels_orig"
 
             // update the model
             for (int k = 0; k < loc_K; k++) {
                 for (int j = 0; j < loc_J; j++) {
                     for (int i = 0; i < loc_I; i++) {
 
+                        // // update
+                        // grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_update_loc[I2V(i,j,k)  ] / (Linf_Ks   /step_length_new) );
+                        // grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_update_loc[I2V(i,j,k) ] / (Linf_Kxi  /step_length_new)  ;
+                        // grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_update_loc[I2V(i,j,k)] / (Linf_Keta /step_length_new)  ;
+
                         // update
-                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_update_loc[I2V(i,j,k)  ] / (Linf_Ks   /step_length_new) );
-                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_update_loc[I2V(i,j,k) ] / (Linf_Kxi  /step_length_new)  ;
-                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_update_loc[I2V(i,j,k)] / (Linf_Keta /step_length_new)  ;
+                        grid.fun_loc[I2V(i,j,k)] *= (_1_CR - grid.Ks_update_loc[I2V(i,j,k)  ] * step_length_new);
+                        grid.xi_loc[I2V(i,j,k)]  -=          grid.Kxi_update_loc[I2V(i,j,k) ] * step_length_new;
+                        grid.eta_loc[I2V(i,j,k)] -=          grid.Keta_update_loc[I2V(i,j,k)] * step_length_new;
+
 
                         // grid.fac_b_loc[I2V(i,j,k)] = _1_CR - _2_CR * grid.xi_loc[I2V(i,j,k)];
                         // grid.fac_c_loc[I2V(i,j,k)] = _1_CR + _2_CR * grid.xi_loc[I2V(i,j,k)];

@@ -107,8 +107,18 @@ public:
     void write_Kxi(Grid&, int);
     // Keta
     void write_Keta(Grid&, int);
-    // Kdensity
-    void write_Kdensity(Grid&, int);
+    // Ks_density
+    void write_Ks_density(Grid&, int);
+    // Kxi_density
+    void write_Kxi_density(Grid&, int);
+    // Keta_density
+    void write_Keta_density(Grid&, int);
+    // Ks_over_Kden
+    void write_Ks_over_Kden(Grid&, int);
+    // Kxi_over_Kden
+    void write_Kxi_over_Kden(Grid&, int);
+    // Keta_over_Kden
+    void write_Keta_over_Kden(Grid&, int);
     // Ks_update
     void write_Ks_update(Grid&, int);
     // Kxi_update
@@ -116,7 +126,7 @@ public:
     // Keta_update
     void write_Keta_update(Grid&, int);
     // Kdensity_update
-    void write_Kdensity_update(Grid&, int);
+    // void write_Kdensity_update(Grid&, int);
     // Ks_descent_dir_loc
     void write_Ks_descent_dir(Grid&, int);
     // Kxi_descent_dir_loc
@@ -126,7 +136,7 @@ public:
 
     // write all concerning parameters
     std::vector<CUSTOMREAL> get_grid_data(CUSTOMREAL * data);
-    void write_concerning_parameters(Grid&, int, InputParams&);
+    // void write_concerning_parameters(Grid&, int, InputParams&);
 
     // 2d traveltime field for teleseismic source
     void write_2d_travel_time_field(CUSTOMREAL*, CUSTOMREAL*, CUSTOMREAL*, int, int, CUSTOMREAL);

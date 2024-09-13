@@ -160,7 +160,7 @@ public:
     bool get_is_srcrec_swap() {return swap_src_rec;};
 
     bool get_if_output_source_field()    {return output_source_field;};
-    bool get_if_output_model_dat()       {return output_model_dat;};
+    bool get_if_output_kernel()          {return output_kernel;};
     bool get_if_output_final_model()     {return output_final_model;};
     bool get_if_output_middle_model()     {return output_middle_model;};
     bool get_if_output_in_process()      {return output_in_process;};
@@ -171,7 +171,9 @@ public:
     bool get_update_slowness()        {return update_slowness;};
     bool get_update_azi_ani()         {return update_azi_ani;};
     bool get_update_rad_ani()         {return update_rad_ani;};
-    CUSTOMREAL * get_depth_taper()   {return depth_taper;};
+    CUSTOMREAL * get_depth_taper()    {return depth_taper;};
+
+    bool get_have_tele_data()         {return have_tele_data;};
 
     bool get_use_abs()                  {return use_abs;};
     bool get_use_cs()                   {return use_cs;};
@@ -429,10 +431,10 @@ private:
 
     // output setting
     bool output_source_field    = false; // output out_data_sim_X.h or not.
-    bool output_model_dat       = false; // output model_parameters_inv_0000.dat or not.
+    bool output_kernel          = false; // output kernel or not.
     bool output_final_model     = true;  // output merged final model or not.
     bool output_middle_model    = false; // output merged model at each inv iteration or not.
-    bool output_in_process      = true;  // output model at each inv iteration or not.
+    bool output_in_process      = true;  // True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: "out_data_sim_group_0". Keys: "Kdensity_update_inv_XXXX", "vel_inv_0000", "xi_inv_0000", "eta_inv_0000"
     bool output_in_process_data = true;  // output src_rec_file at each inv iteration or not.
     int  verbose_output_level   = 0;     // output verbose information or not.
 
@@ -440,6 +442,9 @@ private:
     bool update_slowness = true;  // update slowness (velocity) or not.
     bool update_azi_ani  = false; // update azimuthal anisotropy (xi, eta) or not.
     bool update_rad_ani  = false; // update radial anisotropy (in future) or not.
+
+    // have have_tele_data or not?
+    bool have_tele_data = false;  // default is false. Error will occur if teleseismic data is include but false.
 
     CUSTOMREAL depth_taper[2] = {-9999999, -9999998};   // kernel weight:  0: -inf ~ taper[0]; 0 ~ 1 : taper[0] ~ taper[1]; 1 : taper[1] ~ inf
     bool use_sta_correction = false; // apply station correction or not.

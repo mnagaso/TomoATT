@@ -501,14 +501,15 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
 
             if (rec_map.find(tmp_sta_name) == rec_map.end()){
                 // new station
-                SrcRecInfo tmp_rec;
-                tmp_rec.name = tmp_sta_name;
-                tmp_rec.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
-                tmp_rec.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
-                tmp_rec.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
-                tmp_rec.sta_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
-                tmp_rec.sta_correct_kernel = 0.0;
-                rec_map[tmp_sta_name] = tmp_rec;
+                // SrcRecInfo tmp_rec;
+                // tmp_rec.name = tmp_sta_name;
+                // tmp_rec.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
+                // tmp_rec.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
+                // tmp_rec.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
+                // tmp_rec.sta_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
+                // tmp_rec.sta_correct_kernel = 0.0;
+                // rec_map[tmp_sta_name] = tmp_rec;
+                std::cout << "Did not find station " << tmp_sta_name << " in the src_rec file. Omit this station correction." << std::endl;
             } else {
                 // pre exist station
                 rec_map[tmp_sta_name].sta_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
@@ -542,7 +543,8 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
                                            int                        &N_data,
                                            const CUSTOMREAL min_lat, const CUSTOMREAL max_lat,
                                            const CUSTOMREAL min_lon, const CUSTOMREAL max_lon,
-                                           const CUSTOMREAL min_dep, const CUSTOMREAL max_dep){
+                                           const CUSTOMREAL min_dep, const CUSTOMREAL max_dep,
+                                           bool have_tele_data){
     // check if the source is inside the simulation boundary
 
     // initialize vectors for teleseismic events
@@ -684,6 +686,33 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo>    
             } // end loop std::vector<datainfo>
         } // end it_rec
     } // end it_src
+
+    if((!have_tele_data) && (src_map_tele.size() > 0)){
+        std::cout << "ERROR: have_tele_data is false, but there are earthquakes out of study region:" << std::endl;
+        for(auto iter = src_map_tele.begin(); iter != src_map_tele.end(); iter++){
+            std::cout   << "source name: " << iter->second.name 
+                        <<  ", lat: " << iter->second.lat
+                        <<  ", lon: " << iter->second.lon
+                        <<  ", dep: " << iter->second.dep
+                        <<  std::endl;
+        }
+        std::cout << "Please set have_tele_data in InputParams.yaml to be TRUE, or remove above earthquakes" << std::endl;
+        exit(1);
+    }
+
+    if((!have_tele_data) && (rec_map_tele.size() > 0)){
+        std::cout << "ERROR: have_tele_data is false, but there are stations out of study region:" << std::endl;
+        for(auto iter = rec_map_tele.begin(); iter != rec_map_tele.end(); iter++){
+            std::cout   << "receiver name: " << iter->second.name
+                        <<  ", lat: " << iter->second.lat
+                        <<  ", lon: " << iter->second.lon
+                        <<  ", dep: " << iter->second.dep
+                        <<  std::endl;
+        }
+        std::cout << "Please set have_tele_data in InputParams.yaml to be TRUE, or remove above stations" << std::endl;
+        exit(1);
+    }
+
 
     //
     // balance the data weight

@@ -122,11 +122,13 @@ public:
     CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc,   false);}; // Ks
     CUSTOMREAL* get_Kxi()          {return get_array_for_vis(Kxi_loc,         false);}; // Kxi
     CUSTOMREAL* get_Keta()         {return get_array_for_vis(Keta_loc,        false);}; // Keta
-    CUSTOMREAL* get_Kdensity()     {return get_array_for_vis(Kdensity_loc,    false);}; // Kdensity
+    CUSTOMREAL* get_Ks_density()   {return get_array_for_vis(Ks_density_loc,    false);}; // Ks_density
+    CUSTOMREAL* get_Kxi_density()  {return get_array_for_vis(Kxi_density_loc,   false);}; // Kxi_density
+    CUSTOMREAL* get_Keta_density() {return get_array_for_vis(Keta_density_loc,  false);}; // Keta_density
     CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc,   false);}; // Ks_update
     CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc,  false);}; // Kxi_update
     CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc, false);}; // Keta_update
-    CUSTOMREAL* get_Kdensity_update(){return get_array_for_vis(Kdensity_update_loc,false);}; // Kdensity_update
+    // CUSTOMREAL* get_Kdensity_update(){return get_array_for_vis(Kdensity_update_loc,false);}; // Kdensity_update
     CUSTOMREAL* get_Ks_descent_dir() {return get_array_for_vis(Ks_descent_dir_loc, false);}; // Ks_descent_dir
     CUSTOMREAL* get_Kxi_descent_dir(){return get_array_for_vis(Kxi_descent_dir_loc,false);}; // Kxi_descent_dir
     CUSTOMREAL* get_Keta_descent_dir(){return get_array_for_vis(Keta_descent_dir_loc,false);}; // Keta_descent_dir
@@ -302,18 +304,24 @@ public:
     CUSTOMREAL *Ks_loc;
     CUSTOMREAL *Kxi_loc;
     CUSTOMREAL *Keta_loc;
-    CUSTOMREAL *Kdensity_loc;
+    CUSTOMREAL *Ks_density_loc;
+    CUSTOMREAL *Kxi_density_loc;
+    CUSTOMREAL *Keta_density_loc;
     CUSTOMREAL *Tadj_loc; // timetable for adjoint source
     CUSTOMREAL *Tadj_density_loc; // timetable for density of adjoint source
     CUSTOMREAL *Ks_inv_loc;
     CUSTOMREAL *Kxi_inv_loc;
     CUSTOMREAL *Keta_inv_loc;
-    CUSTOMREAL *Kdensity_inv_loc;
+    // CUSTOMREAL *Ks_density_inv_loc;
+    // CUSTOMREAL *Kxi_density_inv_loc;
+    // CUSTOMREAL *Keta_density_inv_loc;
     // model update para
     CUSTOMREAL *Ks_update_loc;
     CUSTOMREAL *Kxi_update_loc;
     CUSTOMREAL *Keta_update_loc;
-    CUSTOMREAL *Kdensity_update_loc;
+    // CUSTOMREAL *Ks_density_update_loc;
+    // CUSTOMREAL *Kxi_density_update_loc;
+    // CUSTOMREAL *Keta_density_update_loc;
     // model update para of the previous step
     CUSTOMREAL *Ks_update_loc_previous;
     CUSTOMREAL *Kxi_update_loc_previous;

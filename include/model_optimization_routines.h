@@ -29,11 +29,42 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // sum kernels among all simultaneous runs
     sumup_kernels(grid);
 
-    // smooth kernels
+    // write out original kernels
+    if (id_sim==0 && subdom_main && IP.get_if_output_kernel() && (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2 || i_inv == 0)) {
+        // store kernel only in the first src datafile
+        io.change_group_name_for_model();
+
+        // write kernel
+        io.write_Ks(grid, i_inv);
+        io.write_Keta(grid, i_inv);
+        io.write_Kxi(grid, i_inv);
+
+        // write kernel density
+        io.write_Ks_density(grid, i_inv);
+        io.write_Kxi_density(grid, i_inv);
+        io.write_Keta_density(grid, i_inv);
+    }
+
+    // smooth kernels (multigrid, and kdensity normalization)
     smooth_kernels(grid, IP);
 
-    // change stepsize
+    // write out modified kernels
+    if (id_sim==0 && subdom_main && IP.get_if_output_kernel() && (IP.get_if_output_in_process() || i_inv >= IP.get_max_iter_inv() - 2 || i_inv == 0)) {
+        // store kernel only in the first src datafile
+        io.change_group_name_for_model();
 
+        // kernel over density
+        io.write_Ks_over_Kden(grid, i_inv);
+        io.write_Keta_over_Kden(grid, i_inv);
+        io.write_Kxi_over_Kden(grid, i_inv);
+
+        // kernel over density with smoothing 
+        io.write_Ks_update(grid, i_inv);
+        io.write_Keta_update(grid, i_inv);
+        io.write_Kxi_update(grid, i_inv);
+    }
+
+    // change stepsize
     // Option 1: the step length is modulated when obj changes.
     if (step_method == OBJ_DEFINED){
         if(i_inv != 0){
@@ -105,29 +136,11 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
     // broadcast the step_length
     broadcast_cr_single(step_length_init,0);
 
-
     // update the model with the initial step size
     set_new_model(grid, step_length_init);
 
-
     // make station correction
     IP.station_correction_update(step_length_init_sc);
-
-    // # TODO: only the first simultanoue run group should output the model. but now ever group outputs the model.
-    if (IP.get_verbose_output_level()) {
-        // store kernel only in the first src datafile
-        io.change_group_name_for_model();
-
-        // output updated velocity models
-        io.write_Ks(grid, i_inv);
-        io.write_Keta(grid, i_inv);
-        io.write_Kxi(grid, i_inv);
-
-        // output descent direction
-        io.write_Ks_update(grid, i_inv);
-        io.write_Keta_update(grid, i_inv);
-        io.write_Kxi_update(grid, i_inv);
-    }
 
     // writeout temporary xdmf file
     if (IP.get_verbose_output_level())

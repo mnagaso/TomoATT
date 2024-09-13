@@ -237,6 +237,10 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     CUSTOMREAL syn_dif_time = data.cs_dif_travel_time;
                     CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
+                    if(is_tele){    // station correction for teleseismic data
+                        syn_dif_time = syn_dif_time + IP.rec_map[name_rec1].sta_correct - IP.rec_map[name_rec2].sta_correct;
+                    }
+
                     // assign local weight
                     CUSTOMREAL  local_weight = _1_CR;
 
@@ -330,24 +334,35 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                         CUSTOMREAL syn_time       = data.travel_time;
                         CUSTOMREAL obs_time       = data.travel_time_obs;
 
+                        bool is_tele = (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region);
+                        if (is_tele){
+                            syn_time = syn_time + IP.rec_map[name_rec].sta_correct; // station correction for teleseismic data
+                        }
+
                         // contribute misfit of specific type of data
                         res     += 1.0 *          (syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                         res_sq  += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
 
-                        if (IP.get_src_point(name_src).is_out_of_region || IP.get_rec_point(name_rec).is_out_of_region){
+                        if (is_tele){
                             obj_tele        +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
                             res_tele        +=  1.0 *          (syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                             res_tele_sq     +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
+
+                            if(!IP.get_use_abs())
+                                continue;   // if we do not use abs data, ignore to consider the total obj
+                            obj     += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
                         } else{
                             obj_abs         +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
                             res_abs         +=  1.0 *          (syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
                             res_abs_sq      +=  1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt);
+
+                            if (!IP.get_use_abs())
+                                continue;   // if we do not use abs data, ignore to consider the total obj
+                            obj     += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
                         }
 
-                        if (!IP.get_use_abs())
-                            continue;   // if we do not use abs data, ignore to consider the total obj
 
-                        obj     += 1.0 * my_square(syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight;
+                        
                     } else if (data.is_src_pair) {
 
                         std::string name_src1 = data.name_src_pair[0];
@@ -360,28 +375,34 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                         CUSTOMREAL syn_dif_time   = data.cr_dif_travel_time;
                         CUSTOMREAL obs_dif_time   = data.cr_dif_travel_time_obs;
 
+                        bool is_tele = (IP.get_src_point(name_src1).is_out_of_region || \
+                                        IP.get_src_point(name_src2).is_out_of_region || \
+                                        IP.get_rec_point(name_rec).is_out_of_region);
+
                         // contribute misfit of specific type of data
                         res     += 0.5 *          (syn_dif_time - obs_dif_time);
                         res_sq  += 0.5 * my_square(syn_dif_time - obs_dif_time);
 
-                        if (IP.get_src_point(name_src1).is_out_of_region || \
-                            IP.get_src_point(name_src2).is_out_of_region || \
-                            IP.get_rec_point(name_rec).is_out_of_region){
+                        if (is_tele){
                             obj_tele        += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                             res_tele        += 0.5 *          (syn_dif_time - obs_dif_time);
                             res_tele_sq     += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                            // because a pair of sources are counted twice, thus * 0.5
+                            if(!IP.get_use_cr())
+                                continue;   // if we do not use cr data, ignore to consider the total obj
+                            obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         } else{
                             obj_cr_dif      += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                             res_cr_dif      += 0.5 *          (syn_dif_time - obs_dif_time);
                             res_cr_dif_sq   += 0.5 * my_square(syn_dif_time - obs_dif_time);
+
+                            if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))
+                                continue;   // if we do not use this data (cr + not swap) or (cs + swap), ignore to consider the total obj and adjoint source
+                            // because a pair of sources are counted twice, thus * 0.5
+                            obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
                         }
 
-                        if (!((IP.get_use_cr() && !IP.get_is_srcrec_swap()) || (IP.get_use_cs() && IP.get_is_srcrec_swap())))
-                            continue;   // if we do not use this data (cr + not swap) or (cs + swap), ignore to consider the total obj and adjoint source
-
-                        // because a pair of sources are counted twice, thus * 0.5
-                        obj     += 0.5 * my_square(syn_dif_time - obs_dif_time)*data.weight;
-                        
                     } else if (data.is_rec_pair) {
 
                         std::string name_src  = data.name_src;
@@ -391,28 +412,35 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
                         CUSTOMREAL syn_dif_time = data.cs_dif_travel_time;
                         CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
 
-                        // contribute misfit of specific type of data (TODO: separate this when consider teleseismic tomography)
+                        bool is_tele = (IP.get_src_point(name_src).is_out_of_region || \
+                                        IP.get_rec_point(name_rec1).is_out_of_region || \
+                                        IP.get_rec_point(name_rec2).is_out_of_region);
+                        if(is_tele){
+                            syn_dif_time = syn_dif_time + IP.rec_map[name_rec1].sta_correct - IP.rec_map[name_rec2].sta_correct; // station correction for teleseismic data
+                        }
 
+                        // contribute misfit of specific type of data
                         res     += 1.0 *          (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                         res_sq  += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
 
-                        if (IP.get_src_point(name_src).is_out_of_region || \
-                            IP.get_rec_point(name_rec1).is_out_of_region || \
-                            IP.get_rec_point(name_rec2).is_out_of_region){
+                        if (is_tele){
                             obj_tele        += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt)*data.weight;
                             res_tele        += 1.0 *          (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_tele_sq     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
+                            
+                            if(!IP.get_use_cs())
+                                continue;   // if we do not use cs data, ignore to consider the total obj
+                            obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
+                        
                         } else{
                             obj_cs_dif      += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt)*data.weight;
                             res_cs_dif      += 1.0 *          (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
                             res_cs_dif_sq   += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt);
-                        }
-
-                        if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))
-                            continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
-
-                        obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
                         
+                            if (!((IP.get_use_cs() && !IP.get_is_srcrec_swap()) || (IP.get_use_cr() && IP.get_is_srcrec_swap())))
+                                continue; // if we do not use this data (cs + not swap) or (cr + swap), ignore to consider the total obj and adjoint source
+                            obj     += 1.0 * my_square(syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight;
+                        }
                     }
 
                 } // end of loop over data

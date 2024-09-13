@@ -141,8 +141,8 @@ InputParams::InputParams(std::string& input_file){
             if (config["output_setting"]["output_source_field"])
                 getNodeValue(config["output_setting"], "output_source_field", output_source_field);
 
-            if (config["output_setting"]["output_model_dat"])
-                getNodeValue(config["output_setting"], "output_model_dat", output_model_dat);
+            if (config["output_setting"]["output_kernel"])
+                getNodeValue(config["output_setting"], "output_kernel", output_kernel);
 
             if (config["output_setting"]["verbose_output_level"]){
                 getNodeValue(config["output_setting"], "verbose_output_level", verbose_output_level);
@@ -203,6 +203,10 @@ InputParams::InputParams(std::string& input_file){
             }
         }
 
+        if (config["have_tele_data"]) {
+            getNodeValue(config, "have_tele_data", have_tele_data);
+        }
+
         //
         // model update
         //
@@ -250,10 +254,10 @@ InputParams::InputParams(std::string& input_file){
                         std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.0 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
-                    if (Kdensity_coe > 1.0){
-                        Kdensity_coe = 1.0;
+                    if (Kdensity_coe > 0.95){
+                        Kdensity_coe = 0.95;
                         std::cout << std::endl;
-                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 1.0 in the inversion." << std::endl;
+                        std::cout << "Kdensity_coe: " << Kdensity_coe << " is out of range, which is set to be 0.95 in the inversion." << std::endl;
                         std::cout << std::endl;
                     }
                 }
@@ -437,8 +441,8 @@ InputParams::InputParams(std::string& input_file){
                 getNodeValue(config["model_update"], "use_sta_correction", use_sta_correction);
             }
             // sta_correction_file
-            if (config["model_update"]["sta_correction_file"]) {
-                getNodeValue(config["model_update"], "sta_correction_file", sta_correction_file);
+            if (config["model_update"]["initial_sta_correction_file"]) {
+                getNodeValue(config["model_update"], "initial_sta_correction_file", sta_correction_file);
                 if (use_sta_correction) {
                     sta_correction_file_exist = true;
                 }
@@ -515,6 +519,16 @@ InputParams::InputParams(std::string& input_file){
             if (config["model_update"]["depth_taper"]){
                 getNodeValue(config["model_update"], "depth_taper", depth_taper[0], 0);
                 getNodeValue(config["model_update"], "depth_taper", depth_taper[1], 1);
+            }
+
+            // station correction (now only for teleseismic data)
+            if (config["model_update"]["use_sta_correction"]){
+                getNodeValue(config["model_update"], "use_sta_correction", use_sta_correction);
+            }
+
+            // station correction step length
+            if (config["model_update"]["step_length_sta_correction"]){
+                getNodeValue(config["model_update"], "step_length_sta_correction", step_length_init_sc);
             }
         } // end of model_update
 
@@ -743,7 +757,7 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_str(output_dir, 0);
     broadcast_bool_single(output_source_field, 0);
-    broadcast_bool_single(output_model_dat, 0);
+    broadcast_bool_single(output_kernel, 0);
     broadcast_i_single(verbose_output_level, 0);
     broadcast_bool_single(output_final_model, 0);
     broadcast_bool_single(output_middle_model, 0);
@@ -753,6 +767,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_i_single(output_format, 0);
 
     broadcast_i_single(run_mode, 0);
+    broadcast_bool_single(have_tele_data, 0);
 
     broadcast_i_single(max_iter_inv, 0);
     broadcast_i_single(optim_method, 0);
@@ -763,7 +778,6 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr_single(step_length_down, 0);
     broadcast_cr_single(step_length_up, 0);
     broadcast_cr_single(Kdensity_coe, 0);
-    broadcast_cr_single(step_length_init_sc, 0);
     broadcast_i_single(max_sub_iterations, 0);
     broadcast_cr_single(regularization_weight, 0);
     broadcast_cr_single(regul_lr, 0);
@@ -807,6 +821,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_bool_single(invgrid_volume_rescale, 0);
 
     broadcast_bool_single(use_sta_correction, 0);
+    broadcast_cr_single(step_length_init_sc, 0);
     broadcast_bool_single(sta_correction_file_exist, 0);
     broadcast_str(sta_correction_file, 0);
 
@@ -971,14 +986,14 @@ void InputParams::write_params_to_file() {
     fout << "############################################" << std::endl;
     fout << "output_setting:" << std::endl;
     fout << "  output_dir: "              << output_dir << " # path to output director (default is ./OUTPUT_FILES/)" << std::endl;
-    fout << "  output_source_field:     " << output_source_field         << " # output the calculated field of all sources                       " << std::endl;
-    fout << "  output_model_dat:        " << output_model_dat            << " # output model_parameters_inv_0000.dat (data in text format) or not.                     " << std::endl;
-    fout << "  output_final_model:      " << output_final_model          << " # output merged final model (final_model.h5) or not.                                " << std::endl;
-    fout << "  output_middle_model:     " << output_middle_model         << " # output merged moddle model (middle_model_stepX.h5) or not.                                " << std::endl;
-    fout << "  output_in_process:       " << output_in_process           << " # output model at each inv iteration or not.                       " << std::endl;
-    fout << "  output_in_process_data:  " << output_in_process_data      << " # output src_rec_file at each inv iteration or not.                       " << std::endl;
-    fout << "  single_precision_output: " << single_precision_output     << " # output results in single precision or not.                       " << std::endl;
-    fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, if no, only model parameters are out." << std::endl;
+    fout << "  output_source_field:     " << output_source_field         << " # True: output the traveltime field and adjoint field of all sources at each iteration. Default: false. File: 'out_data_sim_group_X'." << std::endl;
+    fout << "  output_kernel:           " << output_kernel               << " # True: output sensitivity kernel and kernel density. Default: false. File: 'out_data_sim_group_X'." << std::endl;
+    fout << "  output_final_model:      " << output_final_model          << " # True: output merged final model. This file can be used as the input model for TomoATT. Default: true. File: 'model_final.h5'." << std::endl;
+    fout << "  output_middle_model:     " << output_middle_model         << " # True: output merged intermediate models during inversion. This file can be used as the input model for TomoATT. Default: false. File: 'middle_model_step_XXXX.h5'" << std::endl;
+    fout << "  output_in_process:       " << output_in_process           << " # True: output at each inv iteration, otherwise, only output step 0, Niter-1, Niter. Default: true. File: 'out_data_sim_group_0'." << std::endl;
+    fout << "  output_in_process_data:  " << output_in_process_data      << " # True: output src_rec_file at each inv iteration, otherwise, only output step 0, Niter-2, Niter-1. Default: true. File: 'src_rec_file_step_XXXX.dat'" << std::endl;
+    fout << "  single_precision_output: " << single_precision_output     << " # True: output results in single precision. Default: false.   " << std::endl;
+    fout << "  verbose_output_level:    " << verbose_output_level        << " # output internal parameters, (to do)." << std::endl;
     int ff_flag=0;
     if (output_format == OUTPUT_FORMAT_HDF5) ff_flag = 0;
     else if (output_format == OUTPUT_FORMAT_ASCII) ff_flag = 1;
@@ -987,8 +1002,38 @@ void InputParams::write_params_to_file() {
         exit(1);
     }
     fout << "  output_file_format: " << ff_flag << " # 0: hdf5, 1: ascii" << std::endl;
-
-
+    fout << std::endl;
+    fout << "# output files:" << std::endl;
+    fout << "# File: 'out_data_grid.h5'. Keys: ['Mesh']['elem_conn'], element index; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_p'], phi coordinates of nodes; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_t'], theta coordinates of nodes; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_r'], r coordinates of nodes;" << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_x'], phi coordinates of elements; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_y'], theta coordinates of elements; " << std::endl;
+    fout << "#                                 ['Mesh']['node_coords_z'], r coordinates of elements; " << std::endl;
+    fout << "# File: 'out_data_sim_group_0'. Keys: ['model']['vel_inv_XXXX'], velocity model; " << std::endl;
+    fout << "#                                     ['model']['xi_inv_XXXX'], xi model; " << std::endl;
+    fout << "#                                     ['model']['eta_inv_XXXX'], eta model" << std::endl;
+    fout << "#                                     ['model']['Ks_inv_XXXX'], sensitivity kernel related to slowness" << std::endl;
+    fout << "#                                     ['model']['Kxi_inv_XXXX'], sensitivity kernel related to xi" << std::endl;
+    fout << "#                                     ['model']['Keta_inv_XXXX'], sensitivity kernel related to eta" << std::endl;
+    fout << "#                                     ['model']['Ks_density_inv_XXXX'], kernel density of Ks " << std::endl;
+    fout << "#                                     ['model']['Kxi_density_inv_XXXX'], kernel density of Kxi " << std::endl;
+    fout << "#                                     ['model']['Keta_density_inv_XXXX'], kernel density of Keta " << std::endl;
+    fout << "#                                     ['model']['Ks_over_Kden_inv_XXXX'], slowness kernel over kernel density" << std::endl;
+    fout << "#                                     ['model']['Kxi_over_Kden_inv_XXXX'], xi kernel over kernel density" << std::endl;
+    fout << "#                                     ['model']['Keta_over_Kden_inv_XXXX'], eta kernel over kernel density" << std::endl;
+    fout << "#                                     ['model']['Ks_update_inv_XXXX'], slowness kernel over kernel density, smoothed by inversion grid" << std::endl;
+    fout << "#                                     ['model']['Kxi_update_inv_XXXX'], xi kernel over kernel density, smoothed by inversion grid" << std::endl;
+    fout << "#                                     ['model']['Keta_update_inv_XXXX'], eta kernel over kernel density, smoothed by inversion grid" << std::endl;
+    fout << "# File: 'src_rec_file_step_XXXX.dat' or 'src_rec_file_forward.dat'. The synthetic traveltime data file." << std::endl;
+    fout << "# File: 'final_model.h5'. Keys: ['eta'], ['xi'], ['vel'], the final model." << std::endl;
+    fout << "# File: 'middle_model_step_XXXX.h5'. Keys: ['eta'], ['xi'], ['vel'], the model at step XXXX." << std::endl;
+    fout << "# File: 'inversion_grid.txt'. The location of inversion grid nodes" << std::endl;
+    fout << "# File: 'objective_function.txt'. The objective function value at each iteration" << std::endl;
+    fout << "# File: 'out_data_sim_group_X'. Keys: ['src_$src_name']['T_res_inv_XXXX'], traveltime field for source $src_name at iteration XXXX;" << std::endl;
+    fout << "#                                     ['src_$src_name']['adjoint_field_inv_XXXX'], adjoint field for source $src_name at iteration XXXX;" << std::endl;
+    fout << std::endl;
     fout << std::endl;
 
     fout << "#################################################" << std::endl;
@@ -1002,6 +1047,10 @@ void InputParams::write_params_to_file() {
     fout << "run_mode: " << run_mode << std::endl;
     fout << std::endl;
 
+    fout << "have_tele_data: " << have_tele_data << " # An error will be reported if false but source out of study region is used. Default: false." << std::endl;
+    fout << std::endl;
+    fout << std::endl;
+    
     fout << "###################################################" << std::endl;
     fout << "#          model update parameters setting        #" << std::endl;
     fout << "###################################################" << std::endl;
@@ -1022,8 +1071,8 @@ void InputParams::write_params_to_file() {
     fout << "    step_length_gradient_angle: " <<  step_length_gradient_angle << " # default: 120.0 " << std::endl;
     fout << "    step_length_change: [" <<  step_length_down << ", " << step_length_up << "] # default: [0.5,1.2] " << std::endl;
     fout << "    # Kdensity_coe is used to rescale the final kernel:  kernel -> kernel / pow(density of kernel, Kdensity_coe).  if Kdensity_coe > 0, the region with less data will be enhanced during the inversion" << std::endl;
-    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is normalized. 0.5 or less is recommended if really required." << std::endl;
-    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  range: 0.0 - 1.0 " << std::endl;
+    fout << "    #  e.g., if Kdensity_coe = 0, kernel remains upchanged; if Kdensity_coe = 1, kernel is fully normalized. 0.5 or less is recommended if really required." << std::endl;
+    fout << "    Kdensity_coe: " <<  Kdensity_coe << " # default: 0.0,  limited range: 0.0 - 0.95 " << std::endl;
     fout << std::endl;
     fout << "  # parameters for optim_method 1 (halve-stepping) or 2 (lbfgs)" << std::endl;
     fout << "  optim_method_1_2:" << std::endl;
@@ -1170,11 +1219,11 @@ void InputParams::write_params_to_file() {
     fout << "  # path to station correction file (under development)" << std::endl;
     fout << "  use_sta_correction: " << use_sta_correction << std::endl;
     if (sta_correction_file_exist)
-        fout << "  sta_correction_file: " << sta_correction_file;
+        fout << "  initial_sta_correction_file: " << sta_correction_file;
     else
-        fout << "  # sta_correction_file: " << "dummy_sta_correction_file";
-    fout << "  # station correction file path" << std::endl;
-    fout << "  step_length_sc: " << step_length_init_sc << " # step length relate to the update of station correction terms" << std::endl;
+        fout << "  # initial_sta_correction_file: " << "dummy_sta_correction_file";
+    fout << "  # the path of initial station correction " << std::endl;
+    fout << "  step_length_sta_correction: " << step_length_init_sc << " # step length relate to the update of station correction terms" << std::endl;
     fout << std::endl;
 
     fout << std::endl;
@@ -1782,7 +1831,8 @@ void InputParams::prepare_src_map(){
                                               N_cs_dif_local_data,
                                               N_teleseismic_data,
                                               N_data,
-                                              min_lat, max_lat, min_lon, max_lon, min_dep, max_dep);
+                                              min_lat, max_lat, min_lon, max_lon, min_dep, max_dep, 
+                                              have_tele_data);
 
         if (swap_src_rec) {
             // we swap the source and receviver for regional earthquakes. After that, we have new data structure:
@@ -2139,7 +2189,7 @@ void InputParams::gather_rec_info_to_main(){
     } // end of proc_store_srcrec
 }
 
-// gather traveltimes and calculate differences of synthetic data
+// gather traveltimes and calculate synthetic common receiver differential traveltime
 void InputParams::gather_traveltimes_and_calc_syn_diff(){
 
     if (!src_pair_exists) return; // nothing to share
@@ -2288,11 +2338,14 @@ void InputParams::write_station_correction_file(int i_inv){
                 SrcRecInfo  rec      = iter->second;
                 std::string name_rec = rec.name;
 
+                // do not consider swap for teleseismic data
+                CUSTOMREAL sta_correct = rec_map_all[name_rec].sta_correct;
+
                 ofs << rec.name << " "
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec.lat << " "
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec.lon << " "
                     << std::fixed << std::setprecision(4) << std::setw(9) << std::right << std::setfill(' ') << rec.dep * -1000.0 << " "
-                    << std::fixed << std::setprecision(6) << std::setw(9) << std::right << std::setfill(' ') << rec.sta_correct << " "
+                    << std::fixed << std::setprecision(6) << std::setw(9) << std::right << std::setfill(' ') << sta_correct << " "
                     << std::endl;
             }
 
@@ -2777,8 +2830,9 @@ void InputParams::check_contradictions(){
 
 
 
-// station correction kernel (need revise)
+// station correction kernel
 void InputParams::station_correction_update(CUSTOMREAL stepsize){
+
     if (!use_sta_correction)
         return;
 
@@ -2787,13 +2841,15 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
     // step 1, gather all arrival time info to the main process
     gather_all_arrival_times_to_main();
 
-    // do it in the main processor
+    // update station correction in rank0 (proc_read_srcrec = (id_sim = 0 && id_subdomain = 0 && subdom_main = true && ))
+    // update rec_map_full, which comprises all the receivers
     if (proc_read_srcrec){
 
         // step 2 initialize the kernel K_{\hat T_i}
-        for (auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
+        for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
             iter->second.sta_correct_kernel = 0.0;
         }
+
         CUSTOMREAL max_kernel = 0.0;
 
         // step 3, calculate the kernel
@@ -2816,15 +2872,15 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
                         std::string name_rec1  = data.name_rec_pair[0];
                         std::string name_rec2  = data.name_rec_pair[1];
 
-                        CUSTOMREAL syn_dif_time = data_map_all[name_src][name_rec1].at(0).travel_time \
-                                                - data_map_all[name_src][name_rec2].at(0).travel_time;
+                        CUSTOMREAL syn_dif_time = data.cs_dif_travel_time;
                         CUSTOMREAL obs_dif_time = data.cs_dif_travel_time_obs;
-                        rec_map[name_rec1].sta_correct_kernel += _2_CR *(syn_dif_time - obs_dif_time \
-                                    + rec_map[name_rec1].sta_correct - rec_map[name_rec2].sta_correct)*data.weight;
-                        rec_map[name_rec2].sta_correct_kernel -= _2_CR *(syn_dif_time - obs_dif_time \
-                                    + rec_map[name_rec1].sta_correct - rec_map[name_rec2].sta_correct)*data.weight;
-                        max_kernel = std::max(max_kernel,rec_map[name_rec1].sta_correct_kernel);
-                        max_kernel = std::max(max_kernel,rec_map[name_rec2].sta_correct_kernel);
+                        rec_map_all[name_rec1].sta_correct_kernel += _2_CR *(syn_dif_time - obs_dif_time \
+                                    + rec_map_all[name_rec1].sta_correct - rec_map_all[name_rec2].sta_correct)*data.weight;
+                        rec_map_all[name_rec2].sta_correct_kernel -= _2_CR *(syn_dif_time - obs_dif_time \
+                                    + rec_map_all[name_rec1].sta_correct - rec_map_all[name_rec2].sta_correct)*data.weight;
+
+                        max_kernel = std::max(max_kernel,std::abs(rec_map_all[name_rec1].sta_correct_kernel));
+                        max_kernel = std::max(max_kernel,std::abs(rec_map_all[name_rec2].sta_correct_kernel));
                     }
 
                 }
@@ -2832,15 +2888,41 @@ void InputParams::station_correction_update(CUSTOMREAL stepsize){
         }
 
         // step 4, update station correction
-        for (auto iter = rec_map.begin(); iter!=rec_map.end(); iter++){
-            iter->second.sta_correct += iter->second.sta_correct_kernel / (-max_kernel) * stepsize;
+        for (auto iter = rec_map_all.begin(); iter!=rec_map_all.end(); iter++){
+            iter->second.sta_correct -= iter->second.sta_correct_kernel / max_kernel * stepsize;
         }
+
     } // end of if (proc_read_srcrec)
 
-    // step 5, broadcast the station correction all all procesors
+    // step 5, send the station correction to all procesors. So they can consider station correction when calculating obj and adj source.
     if (proc_store_srcrec){
-        for (auto iter = rec_map.begin(); iter!=rec_map.end(); iter++){
-            broadcast_cr_single_inter_sim(iter->second.sta_correct,0);
+        CUSTOMREAL sta_correct = 0.0;
+        std::vector<std::string> rec_map_all_name;
+        std::string sta_name;
+        int Nsta = 0;
+        // for rank0, who has rec_map_all
+        if (id_sim == 0){
+            Nsta = rec_map_all.size();
+            for (auto iter = rec_map_all.begin(); iter != rec_map_all.end(); iter++){
+                rec_map_all_name.push_back(iter->first);
+            }
+        }
+        broadcast_i_single_inter_sim(Nsta,0);
+
+        // loop over all receivers
+        for (int i = 0; i < Nsta; i++){
+            // broadcast sta_name and sta_correction to all processors
+            if (id_sim == 0){
+                sta_name = rec_map_all_name[i];
+                sta_correct = rec_map_all[sta_name].sta_correct;
+            }
+            broadcast_str_inter_sim(sta_name,0);
+            broadcast_cr_single_inter_sim(sta_correct,0);
+
+            // update rec_map
+            if (rec_map.find(sta_name) != rec_map.end()){
+                rec_map[sta_name].sta_correct = sta_correct;
+            }
         }
     }
 }
