@@ -501,14 +501,15 @@ void parse_sta_correction_file(std::string& sta_correction_file, \
 
             if (rec_map.find(tmp_sta_name) == rec_map.end()){
                 // new station
-                SrcRecInfo tmp_rec;
-                tmp_rec.name = tmp_sta_name;
-                tmp_rec.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
-                tmp_rec.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
-                tmp_rec.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
-                tmp_rec.sta_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
-                tmp_rec.sta_correct_kernel = 0.0;
-                rec_map[tmp_sta_name] = tmp_rec;
+                // SrcRecInfo tmp_rec;
+                // tmp_rec.name = tmp_sta_name;
+                // tmp_rec.lat  = static_cast<CUSTOMREAL>(std::stod(tokens[1])); // in degree
+                // tmp_rec.lon  = static_cast<CUSTOMREAL>(std::stod(tokens[2])); // in degree
+                // tmp_rec.dep  = static_cast<CUSTOMREAL>(-1.0*std::stod(tokens[3])/1000.0); // convert elevation in meter to depth in km
+                // tmp_rec.sta_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
+                // tmp_rec.sta_correct_kernel = 0.0;
+                // rec_map[tmp_sta_name] = tmp_rec;
+                std::cout << "Did not find station " << tmp_sta_name << " in the src_rec file. Omit this station correction." << std::endl;
             } else {
                 // pre exist station
                 rec_map[tmp_sta_name].sta_correct = static_cast<CUSTOMREAL>(std::stod(tokens[4]));
