@@ -11,7 +11,7 @@ build*
 *.dat
 *.pyc
 *.sif
-
+__pycache__/
 
 external_libs/hdf5*
 external_libs/openmpi*
