@@ -17,10 +17,10 @@ class BuildInitialModel():
         Build initial model for tomography inversion
         """
         for ir, dep in enumerate(self.am.depths):
-            if (dep > 0):
+            if (dep < 0):
                 self.am.vel[ir, :, :] = 6.0
             elif (0 <= dep < 40.0):
-                self.am.vel[ir, :, :] = 6.0 - dep/40*2.0
+                self.am.vel[ir, :, :] = 6.0 + dep/40*2.0
             else:
                 self.am.vel[ir, :, :] = 8.0
 
