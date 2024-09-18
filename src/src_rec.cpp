@@ -925,7 +925,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.name_src = data.name_rec;
                     tmp_data.id_rec   = data.id_src;
                     tmp_data.name_rec = data.name_src;
-
+                    tmp_data.dual_data = false; // is not a dual data. contribute both objective function and kernel
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
 
 
@@ -951,6 +951,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.name_rec_pair          = {"unknown", "unknown"};
 
                     // one data
+                    tmp_data.dual_data = false; // one is not a dual data. contribute both objective function and kernel
                     tmp_data.name_src = tmp_data.name_src_pair[0];
                     tmp_data.id_src   = tmp_data.id_src_pair[0];
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
@@ -958,6 +959,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     // the other data
                     // Note: name_src = cr_dif time always represent time(src, rec1) - time(src,rec2). Thus, -1.0 is necessary
                     // Meanwhile, name_src(key) must equal data.name_src_pair[0] and data.name_src
+                    tmp_data.dual_data = true; // the other is a dual data. contribute kernel only
                     tmp_data.name_src_pair = {data.name_rec_pair[1],data.name_rec_pair[0]};
                     tmp_data.cr_dif_travel_time_obs = -1.0 * data.cs_dif_travel_time_obs;
                     tmp_data.name_src = tmp_data.name_src_pair[0];
@@ -987,6 +989,7 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     tmp_data.name_src_pair          = {"unknown", "unknown"};
 
                     // only need one data for common source dif
+                    tmp_data.dual_data = false; // one is not a dual data. contribute both objective function and kernel
                     tmp_data.name_rec = tmp_data.name_rec_pair[0];
                     tmp_data.id_rec   = tmp_data.id_rec_pair[0];
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
@@ -1097,11 +1100,13 @@ void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     // |   s0 - r3     |    ->      |   s0 - r3     s1 - r3     |
                     // |        |      |            |        |           |      |
                     // |        s1     |            |        s1          s0     |
+                    tmp_data.dual_data = false; // one is not a dual data. contribute both objective function and kernel
                     tmp_data_map[tmp_data.name_src_pair[0]][tmp_data.name_rec].push_back(tmp_data);     // original data
 
                     // the other data with the other source.
                     // Note: name_src = cr_dif time always represent time(src1, rec) - time(src2,rec). Thus, -1 is necessary
                     // Meanwhile, name_src(key) must equal name_src_pair[0]
+                    tmp_data.dual_data = true; // the other is a dual data. contribute kernel only
                     tmp_data.name_src       = data.name_src_pair[1];
                     tmp_data.id_src         = data.id_src_pair[1];
                     tmp_data.name_src_pair  = {data.name_src_pair[1],data.name_src_pair[0]};
@@ -1115,6 +1120,7 @@ void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &src_map, \
                     // |  s0 - r0   |   s0 - r1     |
                     // |            |   |           |
                     // |            |   r2          |
+                    tmp_data.dual_data = false; // one is not a dual data. contribute both objective function and kernel
                     tmp_data_map[tmp_data.name_src][tmp_data.name_rec].push_back(tmp_data);
                 }
 
