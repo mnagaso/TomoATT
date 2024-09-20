@@ -56,14 +56,21 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const
         is_teleseismic = is_teleseismic_in;
     }
 
-    // set initial and end indices of level set
-    if (!is_teleseismic) {
-        st_level = 6;
-        ed_level = nr+nt+np-3;
-    } else {
-        st_level = 0;
-        ed_level = nr+nt+np;
-    }
+    // // set initial and end indices of level set
+    // if (!is_teleseismic) {
+    //     st_level = 6;
+    //     ed_level = nr+nt+np-3;
+    // } else {
+    //     st_level = 0;
+    //     ed_level = nr+nt+np;
+    // }
+    // if (IP.get_stencil_type() == UPWIND) {
+    //     st_level = 0;
+    //     ed_level = nr+nt+np-3;
+    // }
+
+    st_level = 0;
+    ed_level = nr+nt+np-3;
 
     // initialize factors etc.
     initialize_arrays(IP, io, grid, src, src_name);
@@ -186,32 +193,28 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
     // allocate memory for process range
     std::vector<int> n_nodes_of_levels;
 
-    // teleseismic case need to iterate outermost layer
-    int st_id, st_id2;
-    if (!is_teleseismic){
-        st_id  = 2;
-        st_id2 = 1;
-    } else {
-        st_id  = 1;
-        st_id2 = 0;
-    }
-
+    // count the number of nodes on each level
     for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(st_id, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
+        int count_n_nodes = 0; // the number of nodes in this level
 
-        int count_n_nodes = 0;
+        // the range of index k (rr)
+        int kleft  = std::max(0, level - (np-1) - (nt-1));
+        int kright = std::min(nr-1, level);
 
         for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(st_id, level-kk-np+st_id2);
-            int jright = std::min(level-kk-2, nt-1);
 
+            // the range of index j (tt)
+            int jleft  = std::max(0, level - kk - (np-1));
+            int jright = std::min(nt-1, level-kk);
+
+            // now i = level - kk - jj
             int n_jlines = jright - jleft + 1;
             count_n_nodes += n_jlines;
         } // end loop kk
 
         n_nodes_of_levels.push_back(count_n_nodes); // store the number of nodes of each level
     } // end loop level
+
 
     // find max in n_nodes_of_levels
     max_n_nodes_plane = 0;
@@ -224,31 +227,50 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
     // assign nodes on each level plane to processes
     for (int level = st_level; level <= ed_level; level++) {
-        int kleft  = std::max(st_id, level-np-nt+2);
-        int kright = std::min(level-4, nr-1)   ;
+
+        // the range of index k (rr)
+        int kleft  = std::max(0, level - (np-1) - (nt-1));
+        int kright = std::min(nr-1, level);
+
 
         std::vector<int> asigned_nodes_on_this_level;
         int grid_count = 0;
 
-        // n grids calculated by each subproc
-        int n_grids_each = static_cast<int>(n_nodes_of_levels[level-st_level] / n_subprocs);
-        int n_grids_by_this = n_grids_each;
-        int i_grid_start = n_grids_each*sub_rank;
+        // // n grids calculated by each subproc
+        // int n_grids_each = static_cast<int>(n_nodes_of_levels[level] / n_subprocs);
+        // int n_grids_by_this = n_grids_each;
+        // int i_grid_start = n_grids_each*sub_rank;
 
-        // add modulo for last sub_rank
-        if (sub_rank == n_subprocs-1)
-            n_grids_by_this += static_cast<int>(n_nodes_of_levels[level-st_level] % n_subprocs);
+        // // add modulo for last sub_rank
+        // if (sub_rank == n_subprocs-1)
+        //     n_grids_by_this += static_cast<int>(n_nodes_of_levels[level] % n_subprocs);
 
+        // determine the beginnig index and the number of node for each subproc
+        int n_grids_each = static_cast<int>(n_nodes_of_levels[level] / n_subprocs);
+        int remainder = n_nodes_of_levels[level] % n_subprocs;
+
+        int n_grids_by_this = 0; // the number of grids calculated by this subproc
+        int i_grid_start    = 0; // the starting index of grids calculated by this subproc
+        if(sub_rank < remainder){ 
+            n_grids_by_this = n_grids_each + 1;
+            i_grid_start    = n_grids_each*sub_rank + sub_rank;
+        } else{
+            n_grids_by_this = n_grids_each;
+            i_grid_start    = n_grids_each*sub_rank + remainder;
+        }
+
+        // std::cout << "sub_rank " << sub_rank << ", n_grids_by_this: " << n_grids_by_this << ", idx: " << i_grid_start << std::endl;
 
         for (int kk = kleft; kk <= kright; kk++) {
-            int jleft  = std::max(st_id, level-kk-np+st_id2);
-            int jright = std::min(level-kk-2, nt-1);
+
+            // the range of index j (tt)
+            int jleft  = std::max(0, level - kk - (np-1));
+            int jright = std::min(nt-1, level-kk);
 
             for (int jj = jleft; jj <= jright; jj++) {
                 int ii = level - kk - jj;
 
                 // check if this node should be assigned to this process
-                //if (grid_count%n_subprocs == sub_rank) {
                 if (grid_count >= i_grid_start && grid_count < i_grid_start+n_grids_by_this) {
                     int tmp_ijk = I2V(ii,jj,kk);
                     asigned_nodes_on_this_level.push_back(tmp_ijk);
@@ -266,6 +288,8 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
     if(if_verbose)
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
+
+    // std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
 #if defined USE_SIMD || defined USE_CUDA
 

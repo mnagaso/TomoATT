@@ -697,9 +697,6 @@ InputParams::InputParams(std::string& input_file){
         std::cout << "n_subprocs: " << n_subprocs << std::endl;
         std::cout << "n_sims: " << n_sims << std::endl;
 
-        // write parameter file to output directory
-        write_params_to_file();
-
     }
 
     stdout_by_rank_zero("parameter file read done.");
@@ -892,6 +889,10 @@ InputParams::InputParams(std::string& input_file){
 
     // check contradictory settings
     check_contradictions();
+
+    // write parameter file to output directory
+    if (world_rank == 0)
+        write_params_to_file();
 
     // broadcast the values to all processes
     stdout_by_rank_zero("read input file successfully.");
@@ -2797,11 +2798,9 @@ void InputParams::check_contradictions(){
         max_iter_inv = 1;
     }
 
-    // upwind scheme cannot use with level nor 3rd order nor sweep parallelization
-    if (stencil_type == UPWIND && (sweep_type != SWEEP_TYPE_LEGACY || n_subprocs != 1)){
-        std::cout << "Warning: upwind scheme cannot use with level nor 3rd order nor sweep parallelization" << std::endl;
-        MPI_Finalize();
-        exit(1);
+    if (n_subprocs > 1 && sweep_type != SWEEP_TYPE_LEVEL){
+        std::cout << "Warning: n_subprocs > 1 but do not use SWEEP_TYPE_LEVEL, sweep_type changes to SWEEP_TYPE_LEVEL" << std::endl;
+        sweep_type = SWEEP_TYPE_LEVEL;
     }
 
 #ifdef USE_CUDA

@@ -741,48 +741,48 @@ void Iterator_level_3rd_order::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
 }
 
-// Iterator_level_1st_order_upwind::Iterator_level_1st_order_upwind(InputParams& IP, Grid& grid, Source& src, IO_utils& io, bool first_init, bool is_teleseismic_in)
-//                                 : Iterator_level(IP, grid, src, io, first_init, is_teleseismic_in) {
-//     // initialization is done in the base class
-// }
 
-// void Iterator_level_1st_order_upwind::do_sweep(int iswp, Grid& grid, InputParams& IP){
-//     // set sweep direction
-//     set_sweep_direction(iswp);
+Iterator_level_1st_order_upwind::Iterator_level_1st_order_upwind(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
+                         : Iterator_level(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
+    // initialization is done in the base class
+}
 
-//     int iip, jjt, kkr;
+void Iterator_level_1st_order_upwind::do_sweep(int iswp, Grid& grid, InputParams& IP){
 
-//     for (int i_level = st_level; i_level <= ed_level; i_level++) {
-//         for (auto& ijk : ijk_for_this_subproc[i_level-st_level]) {
-//             int kk = ijk.at(2);
-//             int jj = ijk.at(1);
-//             int ii = ijk.at(0);
+    // set sweep direction
+    set_sweep_direction(iswp);
 
-//             if (r_dirc < 0) kkr = nr-kk; //kk-1;
-//             else            kkr = kk-1;  //nr-kk;
-//             if (t_dirc < 0) jjt = nt-jj; //jj-1;
-//             else            jjt = jj-1;  //nt-jj;
-//             if (p_dirc < 0) iip = np-ii; //ii-1;
-//             else            iip = ii-1;  //np-ii;
+    int iip, jjt, kkr;
+    int n_levels = ijk_for_this_subproc.size();
 
-//             //
-//             // calculate stencils
-//             //
-//             if (grid.is_changed[I2V(iip, jjt, kkr)]) {
-//                 calculate_stencil_3rd_order(grid, iip, jjt, kkr);
-//             } // is_changed == true
-//         } // end ijk
+    for (int i_level = 0; i_level < n_levels; i_level++) {
+        size_t n_nodes = ijk_for_this_subproc[i_level].size();
 
-//         // mpi synchronization
-//         synchronize_all_sub();
+        for (size_t i_node = 0; i_node < n_nodes; i_node++) {
 
-//     } // end loop i_level
+            V2I(ijk_for_this_subproc[i_level][i_node], iip, jjt, kkr);
 
-//     // update boundary
-//     if (subdom_main) {
-//         calculate_boundary_nodes(grid);
-//     }
-// }
+            if (r_dirc < 0) kkr = nr-1-kkr; 
+            else            kkr = kkr;
+            if (t_dirc < 0) jjt = nt-1-jjt; 
+            else            jjt = jjt;  
+            if (p_dirc < 0) iip = np-1-iip; 
+            else            iip = iip;  
+
+            //
+            // calculate stencils
+            //
+            if (grid.is_changed[I2V(iip, jjt, kkr)]) {
+                calculate_stencil_1st_order_upwind(grid, iip, jjt, kkr);
+            } // is_changed == true
+        } // end ijk
+
+        // mpi synchronization
+        synchronize_all_sub();
+
+    } // end loop i_level
+}
+
 
 Iterator_level_1st_order_tele::Iterator_level_1st_order_tele(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
                          : Iterator_level_tele(IP, grid, src, io, src_name, first_init, is_teleseismic_in, is_second_run_in) {
