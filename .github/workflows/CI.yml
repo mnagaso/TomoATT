@@ -315,7 +315,8 @@ jobs:
 
     - name: Run test
       env:
-        TESTDIR: examples/inversion_small/
+        TESTDIR: ${{github.workspace}}/examples/6_checkerboard_inversion_test/
+        PREDIR: ${{github.workspace}}/examples/0_generate_files_for_TomoATT/
       run: ./.github/scripts/run_test.sh
       shell: bash
 

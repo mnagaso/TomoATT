@@ -1,12 +1,14 @@
-import sys
-sys.path.append('../utils')
-import functions_for_data as tools
+from pytomoatt.src_rec import SrcRec
 
-fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward.dat"
-ev_info, st_info = tools.read_src_rec_file(fname)
 
-sigma = 0.1
-ev_info = tools.assign_gaussian_noise(ev_info,sigma)
+def assign_noise_to_src_rec_file(in_fname, out_fname, noise_level=0.1):
+    sr = SrcRec.read(in_fname)
+    sr.add_noise(noise_level)
+    sr.write(out_fname)
 
-fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_noisy.dat"
-tools.write_src_rec_file(fname, ev_info, st_info)
+
+if __name__ == "__main__":
+    in_fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward.dat" # input source receiver file
+    out_fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_noisy.dat" # output source receiver file
+    sigma = 0.1 # noise level in seconds
+    assign_noise_to_src_rec_file(in_fname, out_fname, noise_level=sigma)

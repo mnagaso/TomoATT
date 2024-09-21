@@ -11,7 +11,7 @@ build*
 *.dat
 *.pyc
 *.sif
-
+__pycache__/
 
 external_libs/hdf5*
 external_libs/openmpi*
@@ -49,6 +49,7 @@ examples/*/params_log.yaml
 examples/*/time.txt
 examples/*/*.dat
 examples/6_checkerboard_inversion_test/input_params/
+examples/6_checkerboard_inversion_test/img/*.png
 examples/10_data_process_practice/input_data
 examples/10_data_process_practice/output_data
 examples/0_generate_files_for_TomoATT/src_ref_file_instruction.psd*
