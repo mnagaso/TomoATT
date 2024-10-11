@@ -378,6 +378,20 @@ def data_lon_lat_dep_wt_ev(ev_info):
     return [np.array(lon),np.array(lat),np.array(dep),np.array(weight)]
 
 # %%
+# 函数：data_ev_loc(ev_info) 输出地震的 [lon, lat, dep, ortime]. function: output the [lon, lat, dep, ortime] of the earthquake
+def data_ev_loc(ev_info):
+    lat = []
+    lon = []
+    dep = []
+    ortime = []
+    for key in ev_info:
+        lat.append(ev_info[key].lat)
+        lon.append(ev_info[key].lon)
+        dep.append(ev_info[key].dep)
+        ortime.append(ev_info[key].ortime.timestamp)
+    return [np.array(lon),np.array(lat),np.array(dep),np.array(ortime)]
+
+# %%
 # 函数: data_lon_lat_ele_wt_st(ev_info,st_info) 输出台站的 [lon,lat,dep,weight]. function: output the [lon,lat,dep,weight] of the station
 def data_lon_lat_ele_wt_st(ev_info,st_info):
     names = {}
@@ -425,25 +439,6 @@ def data_dis_time(ev_info,st_info):
             lon_st = st_info[ev_info[key_ev].t[key_t][0]].lon
             ele_st = st_info[ev_info[key_ev].t[key_t][0]].ele
             dis = math.sqrt(cal_dis(lat_ev,lon_ev,lat_st,lon_st)**2 + (dep_ev+ele_st/1000)**2)
-            all_dis.append(dis)
-
-    return [np.array(all_dis),np.array(all_time)]
-
-# %%
-# 函数：data_epidis_time(ev_info) 输出 [震中距,到时]. function: output the [epidis,time] of all data
-def data_epidis_time(ev_info,st_info):
-    all_dis = []
-    all_time = []
-    for key_ev in ev_info:
-        lat_ev = ev_info[key_ev].lat
-        lon_ev = ev_info[key_ev].lon
-        dep_ev = ev_info[key_ev].dep
-        for key_t in ev_info[key_ev].t:
-            all_time.append(ev_info[key_ev].t[key_t][2])
-            lat_st = st_info[ev_info[key_ev].t[key_t][0]].lat
-            lon_st = st_info[ev_info[key_ev].t[key_t][0]].lon
-            ele_st = st_info[ev_info[key_ev].t[key_t][0]].ele
-            dis = cal_dis(lat_ev,lon_ev,lat_st,lon_st)
             all_dis.append(dis)
 
     return [np.array(all_dis),np.array(all_time)]
@@ -1115,10 +1110,11 @@ def geographical_weighting_st(ev_info,st_info,coefficient = 0.5):
 def assign_gaussian_noise(ev_info,sigma):
 
     # 记录一下对应台站有哪些震相
-    st2phase = {}
+    st2phase = {}   # 台站名字 -> [与这个台站有关的绝对到时数据的键值]
 
-    # 绝对到时噪声
+    
     for key_ev in ev_info:
+        # 绝对到时噪声
         for key_t in ev_info[key_ev].t:
             stname = ev_info[key_ev].t[key_t][0]
             ev_info[key_ev].t[key_t][2] = ev_info[key_ev].t[key_t][2] + np.random.normal(0,sigma)
@@ -1127,9 +1123,8 @@ def assign_gaussian_noise(ev_info,sigma):
             else:
                 st2phase[stname] = [key_t]
     
-
-    # 共源双差到时噪声
     for key_ev in ev_info:
+        # 共源双差到时噪声
         for key_dt in ev_info[key_ev].cs_dt:
             stname1 = ev_info[key_ev].cs_dt[key_dt][0]
             stname2 = ev_info[key_ev].cs_dt[key_dt][1]
@@ -1150,11 +1145,90 @@ def assign_gaussian_noise(ev_info,sigma):
             if (t1 == -999 or t2 == -999):
                 # 没有绝对到时数据，，共源双差数据残差增加 sqrt(2)倍的噪声
                 ev_info[key_ev].cs_dt[key_dt][3] = ev_info[key_ev].cs_dt[key_dt][3] + np.random.normal(0,sigma*np.sqrt(2))
+                print('no data: ', key_ev, key_dt)
             else:
                 # 有绝对到时数据，共源双差数据由相减得的
                 ev_info[key_ev].cs_dt[key_dt][3] = t1 - t2
 
-    # 共台站双差到时 - to do
+        # 共台站双差到时
+        for key_dt in ev_info[key_ev].cr_dt:
+            stname  = ev_info[key_ev].cr_dt[key_dt][0]
+            key_ev2 = ev_info[key_ev].cr_dt[key_dt][1]
+
+            t1 = -999
+            t2 = -999
+            # 寻找有没有该数据的到时
+            if (stname in st2phase):
+                for key_t in st2phase[stname]:
+                    if (key_t in ev_info[key_ev].t):
+                        t1 = ev_info[key_ev].t[key_t][2]
+                        break
+                    else:
+                        print('not found 1: ', key_ev, key_t)
+
+                for key_t in st2phase[stname]:
+                    if (key_t in ev_info[key_ev2].t):
+                        t2 = ev_info[key_ev2].t[key_t][2]
+                        break
+                    else:
+                        print('not found 2: ', key_ev, key_t)
+
+            if (t1 == -999 or t2 == -999):
+                # 没有绝对到时数据，，共源双差数据残差增加 sqrt(2)倍的噪声
+                ev_info[key_ev].cr_dt[key_dt][3] = ev_info[key_ev].cr_dt[key_dt][3] + np.random.normal(0,sigma*np.sqrt(2))
+                print('no data: ', key_ev, key_dt)
+            else:
+                # 有绝对到时数据，共源双差数据由相减得的
+                ev_info[key_ev].cr_dt[key_dt][3] = t1 - t2
+
+    return ev_info
+
+# %%
+# 函数：assign_uniform_noise_to_ev():
+def assign_uniform_noise_to_ev(ev_info, range_lat, range_lon, range_dep, range_time):
+
+    # 循环所有地震，给这些地震赋予噪声
+    ev_noise = {}   # 地震名字 -> noise of [lat,lon,dep,ortime]
+    # loop 地震列表
+    for key_ev in ev_info:
+        evname = key_ev
+        if (evname in ev_noise):
+            print("error: repeated earthquake name")
+            exit()
+        else:
+            # 生成噪声
+            ev_noise[evname] = np.random.uniform(-1,1,4) * np.array([range_lat,range_lon,range_dep,range_time])
+
+    # 给每个 数据 添加噪声
+    for key_ev in ev_info:
+
+        # 绝对到时噪声
+        for key_t in ev_info[key_ev].t:
+
+            ev_info[key_ev].t[key_t][2] = ev_info[key_ev].t[key_t][2] - ev_noise[key_ev][3]
+
+    
+        # 共源双差到时噪声 (双差到时没有变化)
+
+        # 共台站双差到时
+        for key_dt in ev_info[key_ev].cr_dt:
+            key_ev2 = ev_info[key_ev].cr_dt[key_dt][1]
+
+            if (key_ev2 in ev_noise):
+                ev_info[key_ev].cr_dt[key_dt][3] = ev_info[key_ev].cr_dt[key_dt][3] - ev_noise[key_ev][3] + ev_noise[key_ev2][3]
+            else:
+                print("earthquake %s is not included in ev_list"%(key_ev2))
+                ev_noise[key_ev2] = np.random.uniform(-1,1,4) * np.array([range_lat,range_lon,range_dep,range_time])
+                ev_info[key_ev].cr_dt[key_dt][3] = ev_info[key_ev].cr_dt[key_dt][3] - ev_noise[key_ev][3] + ev_noise[key_ev2][3]
+
+
+    # 给每个地震添加噪声
+    for key_ev in ev_noise:
+        ev_info[key_ev].lat = ev_info[key_ev].lat + ev_noise[key_ev][0]
+        ev_info[key_ev].lon = ev_info[key_ev].lon + ev_noise[key_ev][1]
+        ev_info[key_ev].dep = abs(ev_info[key_ev].dep + ev_noise[key_ev][2])
+        ev_info[key_ev].ortime = ev_info[key_ev].ortime + ev_noise[key_ev][3]
+
 
     return ev_info
 
@@ -1391,6 +1465,8 @@ def read_src_rec_file(fname):
     ev_info = {}
     st_info = {}
 
+    tmp_ev_info = {}
+
     doc = open(fname,'r')
     doc_input = doc.readlines()
     doc.close()
@@ -1478,14 +1554,15 @@ def read_src_rec_file(fname):
                         st_info[name_st1] = st
                     
                     name_ev2 = tmp[7]
-                    if (not name_ev2 in ev_info):   # add station to the station list 把台站加入到台站列表中
-                        ev2 = Event()
-                        ev2.name = name_ev2
-                        ev2.id   = float(tmp[6])
-                        ev2.lat  = float(tmp[8])
-                        ev2.lon  = float(tmp[9])
-                        ev2.dep  = float(tmp[10])
-                        ev_info[name_ev2] = ev2
+                                                    # add earthquake to the temp earthquake list 把地震加入到地震列表中
+                    ev2 = Event()   
+                    ev2.name = name_ev2
+                    ev2.id   = float(tmp[6])
+                    ev2.lat  = float(tmp[8])
+                    ev2.lon  = float(tmp[9])
+                    ev2.dep  = float(tmp[10])
+                    tmp_ev_info[name_ev2] = ev2 
+
 
                     dif_time = float(tmp[12])
                     if(len(tmp) == 14):
@@ -1531,6 +1608,12 @@ def read_src_rec_file(fname):
                 ev_info[name_ev] = ev
             else:
                 cc += 1
+
+    # 将临时地震列表中的地震加入到地震列表中
+    for key_ev in tmp_ev_info:
+        if (not key_ev in ev_info):
+            ev_info[key_ev] = tmp_ev_info[key_ev]
+
     return [ev_info,st_info]
 
 # %%
@@ -1605,7 +1688,7 @@ def write_src_rec_file(fname,ev_info,st_info):
                 weight_data = data[3]
             except:
                 weight_data = 1.0
-            doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %s %8.3f %7.3f \n'%(evid,stid,name_st,lat_st,lon_st,ele_st,phase,time,weight_data))
+            doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %s %8.4f %7.3f \n'%(evid,stid,name_st,lat_st,lon_st,ele_st,phase,time,weight_data))
 
             min_lat =  min(min_lat, lat_st)
             max_lat =  max(max_lat, lat_st)
@@ -1636,7 +1719,7 @@ def write_src_rec_file(fname,ev_info,st_info):
                 weight_data = data[4]
             except:
                 weight_data = 1.0
-            doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %7d %6s %9.4f %9.4f %9.4f %s %8.3f %7.3f \n'%(\
+            doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %7d %6s %9.4f %9.4f %9.4f %s %8.4f %7.3f \n'%(\
                 evid,stid1,name_st1,lat_st1,lon_st1,ele_st1,stid2,name_st2,lat_st2,lon_st2,ele_st2,phase,time,weight_data))
             
             min_lat =  min(min_lat, lat_st1)
@@ -1676,7 +1759,7 @@ def write_src_rec_file(fname,ev_info,st_info):
                 weight_data = data[4]
             except:
                 weight_data = 1.0
-            doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %7d %6s %9.4f %9.4f %9.4f %s %8.3f %7.3f \n'%(\
+            doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %7d %6s %9.4f %9.4f %9.4f %s %8.4f %7.3f \n'%(\
                 evid,stid,name_st,lat_st,lon_st,ele_st,evid2,name_ev2,lat_ev2,lon_ev2,dep_ev2,phase,time,weight_data))
             
             min_lat =  min(min_lat, lat_st)
