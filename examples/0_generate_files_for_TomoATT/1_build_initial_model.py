@@ -26,6 +26,7 @@ class BuildInitialModel():
 
 
 if __name__ == "__main__":
+    os.mkdir("2_models")
     bim = BuildInitialModel()
     bim.build_initial_model()
     bim.am.write('{}/model_init_N{:d}_{:d}_{:d}.h5'.format(bim.output_dir, *bim.am.n_rtp))
