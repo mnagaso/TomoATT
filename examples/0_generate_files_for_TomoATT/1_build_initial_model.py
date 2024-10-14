@@ -54,6 +54,7 @@ class BuildInitialModel():
 
 
 if __name__ == "__main__":
+    os.mkdir("2_models")
     bim = BuildInitialModel()
     bim.build_initial_model()
     bim.write()
