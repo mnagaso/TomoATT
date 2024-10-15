@@ -488,40 +488,44 @@ void Grid::memory_allocation() {
     }
 
     // arrays for data output
-    int nnodes_loc_vis =  loc_I_vis    *  loc_J_vis    *  loc_K_vis;
-    int nelms_loc_vis  = (loc_I_vis-1) * (loc_J_vis-1) * (loc_K_vis-1);
-    x_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 75);
-    y_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 76);
-    z_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 77);
-    p_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 78);
-    t_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 79);
-    r_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 80);
-    elms_conn    = allocateMemory<int>(nelms_loc_vis*9, 81);
-    my_proc_dump = allocateMemory<int>(nnodes_loc_vis, 82); // DEBUG
-    vis_data     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 83); // temp array for visuzulization
+    if (subdom_main){   // only accessible by the main process of each subdomain, which store the field data
+        int nnodes_loc_vis =  loc_I_vis    *  loc_J_vis    *  loc_K_vis;
+        int nelms_loc_vis  = (loc_I_vis-1) * (loc_J_vis-1) * (loc_K_vis-1);
+        x_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 75);
+        y_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 76);
+        z_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 77);
+        p_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 78);
+        t_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 79);
+        r_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 80);
+        elms_conn    = allocateMemory<int>(nelms_loc_vis*9, 81);
+        my_proc_dump = allocateMemory<int>(nnodes_loc_vis, 82); // DEBUG
+        vis_data     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 83); // temp array for visuzulization
+    }
 
     // arrays for inversion
     if (inverse_flag) {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
         int n_total_loc_inv_grid_ani = n_inv_I_loc_ani * n_inv_J_loc_ani * n_inv_K_loc_ani;
 
-        Ks_loc                   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
-        Kxi_loc                  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
-        Keta_loc                 = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 92);
-        Ks_density_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 93);
-        Kxi_density_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 94);
-        Keta_density_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 95);
-        Ks_inv_loc               = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 96);
-        Kxi_inv_loc              = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 97);
-        Keta_inv_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 98);
-        // Kdensity_inv_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 97);
-        Ks_update_loc            = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
-        Kxi_update_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
-        Keta_update_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
-        // Kdensity_update_loc      = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
-        Ks_update_loc_previous   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
-        Kxi_update_loc_previous  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
-        Keta_update_loc_previous = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
+        if (subdom_main){   // only accessible by the main process of each subdomain, which store the field data
+            Ks_loc                   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
+            Kxi_loc                  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
+            Keta_loc                 = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 92);
+            Ks_density_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 93);
+            Kxi_density_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 94);
+            Keta_density_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 95);
+            Ks_inv_loc               = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 96);
+            Kxi_inv_loc              = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 97);
+            Keta_inv_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 98);
+            
+            Ks_update_loc            = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
+            Kxi_update_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
+            Keta_update_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
+            
+            Ks_update_loc_previous   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
+            Kxi_update_loc_previous  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
+            Keta_update_loc_previous = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
+        }
 
         if (sub_nprocs <= 1){
             Tadj_loc = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 105);
@@ -791,37 +795,41 @@ void Grid::memory_deallocation() {
     delete[] nnodes_vis;
     delete[] nelms_vis;
 
-    delete[] x_loc_3d;
-    delete[] y_loc_3d;
-    delete[] z_loc_3d;
-    delete[] p_loc_3d;
-    delete[] t_loc_3d;
-    delete[] r_loc_3d;
-    delete[] elms_conn;
-    delete[] my_proc_dump;
-    delete[] vis_data;
+    if (subdom_main){
+        delete[] x_loc_3d;
+        delete[] y_loc_3d;
+        delete[] z_loc_3d;
+        delete[] p_loc_3d;
+        delete[] t_loc_3d;
+        delete[] r_loc_3d;
+        delete[] elms_conn;
+        delete[] my_proc_dump;
+        delete[] vis_data;
+    }
 
     // inversion arrays
     if (inverse_flag){
         delete inv_grid;
 
-        delete[] Ks_loc;
-        delete[] Kxi_loc;
-        delete[] Keta_loc;
-        delete[] Ks_density_loc;
-        delete[] Kxi_density_loc;
-        delete[] Keta_density_loc;
-        delete[] Ks_inv_loc;
-        delete[] Kxi_inv_loc;
-        delete[] Keta_inv_loc;
-        // delete[] Kdensity_inv_loc;
-        delete[] Ks_update_loc;
-        delete[] Kxi_update_loc;
-        delete[] Keta_update_loc;
-        // delete[] Kdensity_update_loc;
-        delete[] Ks_update_loc_previous;
-        delete[] Kxi_update_loc_previous;
-        delete[] Keta_update_loc_previous;
+        if (subdom_main){
+            delete[] Ks_loc;
+            delete[] Kxi_loc;
+            delete[] Keta_loc;
+            delete[] Ks_density_loc;
+            delete[] Kxi_density_loc;
+            delete[] Keta_density_loc;
+            delete[] Ks_inv_loc;
+            delete[] Kxi_inv_loc;
+            delete[] Keta_inv_loc;
+            // delete[] Kdensity_inv_loc;
+            delete[] Ks_update_loc;
+            delete[] Kxi_update_loc;
+            delete[] Keta_update_loc;
+            // delete[] Kdensity_update_loc;
+            delete[] Ks_update_loc_previous;
+            delete[] Kxi_update_loc_previous;
+            delete[] Keta_update_loc_previous;
+        }
 
        if (sub_nprocs <= 1){
             delete[] Tadj_loc;

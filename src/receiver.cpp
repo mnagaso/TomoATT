@@ -322,6 +322,7 @@ std::vector<CUSTOMREAL> Receiver:: calculate_obj_and_residual(InputParams& IP) {
             for (auto it_src = IP.data_map[name_sim_src].begin(); it_src != IP.data_map[name_sim_src].end(); ++it_src) {
                 for (auto& data: it_src->second){
                     
+
                     if (data.dual_data) continue; // dual data is not used for calculating obj and residual
 
                     //

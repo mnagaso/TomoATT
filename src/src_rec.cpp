@@ -1660,6 +1660,8 @@ void send_data_info_inter_sim(DataInfo &data, int dest){
     send_bool_single_sim(&data.is_rec_pair, dest);
     send_bool_single_sim(&data.is_src_pair, dest);
 
+    send_bool_single_sim(&data.dual_data, dest);
+
     if (data.is_src_rec){
        send_cr_single_sim(&data.travel_time_obs, dest);
     }
@@ -1701,6 +1703,8 @@ void recv_data_info_inter_sim(DataInfo &data, int orig){
     recv_bool_single_sim(&data.is_src_rec, orig);
     recv_bool_single_sim(&data.is_rec_pair, orig);
     recv_bool_single_sim(&data.is_src_pair, orig);
+
+    recv_bool_single_sim(&data.dual_data, orig);
 
     if (data.is_src_rec){
        recv_cr_single_sim(&data.travel_time_obs, orig);

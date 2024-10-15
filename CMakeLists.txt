@@ -81,7 +81,7 @@ add_definitions(-DUSE_HDF5_IO_COLLECTIVE)
 #add_definitions(-DSINGLE_PRECISION)
 
 # use SIMD (SSE/AVX/AVX2/AVX512) for vectorization, which is faster than the default but use a little more memory.
-add_definitions(-DUSE_SIMD)
+# add_definitions(-DUSE_SIMD)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)
