@@ -15,13 +15,12 @@ output_fname=./input_params/input_params_signal.yaml
 cp $input_fname $output_fname
 
 # update src_rec_file
-pta setpar $output_fname source src_rec_file ../0_generate_files_for_TomoATT/1_src_rec_files/src_rec_config.dat
-
+pta setpar $output_fname source.src_rec_file ../0_generate_files_for_TomoATT/1_src_rec_files/src_rec_config.dat
 # update init_model_path
-pta setpar $output_fname model init_model_path ../0_generate_files_for_TomoATT/2_models/model_ckb_N61_61_61.h5
+pta setpar $output_fname model.init_model_path ../0_generate_files_for_TomoATT/2_models/model_ckb_N61_61_61.h5
 
 # update_output_path
-pta setpar $output_fname output_setting output_dir ./OUTPUT_FILES/OUTPUT_FILES_signal
+pta setpar $output_fname output_setting.output_dir ./OUTPUT_FILES/OUTPUT_FILES_signal
 
 # --------- STEP 1.2 generate input_params_inv_abs.yaml ---------
 
@@ -31,13 +30,13 @@ output_fname=./input_params/input_params_inv_abs.yaml
 cp $input_fname $output_fname
 
 # update src_rec_file
-pta setpar $output_fname source src_rec_file OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_noisy.dat
+pta setpar $output_fname source.src_rec_file OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_noisy.dat
 
 # update init_model_path
-pta setpar $output_fname model init_model_path ../0_generate_files_for_TomoATT/2_models/model_init_N61_61_61.h5
+pta setpar $output_fname model.init_model_path ../0_generate_files_for_TomoATT/2_models/model_init_N61_61_61.h5
 
 # update_output_path
-pta setpar $output_fname output_setting output_dir OUTPUT_FILES/OUTPUT_FILES_inv_abs
+pta setpar $output_fname output_setting.output_dir OUTPUT_FILES/OUTPUT_FILES_inv_abs
 
 # --------- STEP 2, ckb inversion --------- 
 # compute synthetic traveltime in the ckb model

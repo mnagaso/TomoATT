@@ -75,6 +75,8 @@ Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const
     // initialize factors etc.
     initialize_arrays(IP, io, grid, src, src_name);
 
+
+
 }
 
 
