@@ -8,7 +8,6 @@ Iterator_legacy:: Iterator_legacy(InputParams& IP, Grid& grid, Source& src, IO_u
 }
 
 void Iterator_legacy::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
-
     if (subdom_main) {
         // set sweep direction
         set_sweep_direction(iswp);
@@ -46,6 +45,7 @@ void Iterator_legacy::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
                 }
             }
         }
+
    } // end if subdom_main
 
 }
@@ -97,7 +97,7 @@ void Iterator_legacy_tele::do_sweep_adj(int iswp, Grid& grid, InputParams& IP) {
                         // calculate stencils
                         calculate_stencil_adj(grid, iip, jjt, kkr);
                     } else {
-                        calculate_boundary_nodes_tele_adj(grid, iip, jjt, kkr);
+                        calculate_boundary_nodes_adj(grid, iip, jjt, kkr);
                     }
                 }
             }

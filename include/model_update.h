@@ -35,6 +35,19 @@ void smooth_kernels(Grid& grid, InputParams& IP) {
                 }
             }
 
+            // check kernel
+            CUSTOMREAL max_kernel = _0_CR;
+            for (int k = 0; k < loc_K; k++) {
+                for (int j = 0; j < loc_J; j++) {
+                    for (int i = 0; i < loc_I; i++) {
+                        max_kernel = std::max(max_kernel, std::abs(grid.Ks_loc[I2V(i,j,k)]));
+                    }
+                }
+            }
+            if (max_kernel <= eps) {    
+                std::cout << "Error: max_kernel is near zero (less than 10^-12), check data residual and whether no data is used" << std::endl;
+                exit(1);
+            }
 
             if (smooth_method == 0) {
                 // Ks_loc, Keta_loc, Kxi_loc to be 0 for ghost layers to eliminate the effect of overlapping boundary

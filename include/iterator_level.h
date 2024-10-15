@@ -55,4 +55,11 @@ private:
     void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
 };
 
+class Iterator_level_1st_order_upwind_tele : public Iterator_level_tele {
+public:
+    Iterator_level_1st_order_upwind_tele(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
+private:
+    void do_sweep(int, Grid&, InputParams&) override ; // do sweeping
+};
+
 #endif // ITERATOR_LEVEL_H
