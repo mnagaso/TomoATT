@@ -74,7 +74,7 @@ inline void prepare_header_line(InputParams &IP, std::ofstream &out_main) {
 inline void write_objective_function(InputParams& IP, int i_inv, std::vector<CUSTOMREAL>& v_misfit_inout, std::ofstream& out_main, std::string type) {
     // output objective function
     if (myrank==0 && id_sim==0) {
-        out_main << std::setw(5) << i_inv << ",";
+        out_main << std::setw(8) << std::to_string(i_inv)+",";
         out_main << std::setw(13) << type;
         out_main << "," << std::setw(19) << v_misfit_inout[0];
         out_main << "," << std::setw(19) << v_misfit_inout[1];

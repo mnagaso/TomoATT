@@ -9,6 +9,7 @@ if [ -f $HOME/.tmprc ]; then
 fi
 
 WORKDIR=`pwd`
+predir=${predir}
 dir=${TESTDIR}
 
 # print info
@@ -17,6 +18,7 @@ echo `date`
 echo
 echo "******************************************************************"
 echo
+echo "Data directory: $predir"
 echo "test directory: $dir"
 echo
 echo "******************************************************************"
@@ -56,13 +58,18 @@ my_test_forward_2(){
 }
 
 
+# prepare the test example
+cd $predir
+
+sh run_this_example.sh
+
 # test example
 cd $dir
 
 echo "Running test case in a work directory: $WORKDIR"
 
 # run the test
-./run_this_example.sh
+sh run_this_example.sh
 
 # check the exit code
 if [[ $? -ne 0 ]]; then

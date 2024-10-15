@@ -16,6 +16,7 @@ cp $input_fname $output_fname
 
 # update src_rec_file
 pta setpar $output_fname source.src_rec_file ../0_generate_files_for_TomoATT/1_src_rec_files/src_rec_config.dat
+
 # update init_model_path
 pta setpar $output_fname model.init_model_path ../0_generate_files_for_TomoATT/2_models/model_ckb_N61_61_61.h5
 
@@ -44,19 +45,20 @@ NPROC=8
 
 # For Linux and Mac
 # do forward simulation
-# mpirun -np $NPROC ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
-
-# do ckb inversion using abs data
-# mpirun -np $NPROC ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yaml
+mpirun -np $NPROC ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
 
 # For WSL
 # do forward simulation
-mpirun -n $NPROC --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
+# mpirun -n $NPROC --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_signal.yaml
 
+# add gaussian noise to the data
 python assign_gaussian_noise.py
 
 # do ckb inversion using abs data
-mpirun -n $NPROC --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yaml
+mpirun -np $NPROC ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yaml
+
+# do ckb inversion using abs data
+# mpirun -n $NPROC --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i input_params/input_params_inv_abs.yaml
 
 # --------- STEP 3, plot result --------- 
-# run all cells of '3_plot_ckb_model.ipynb' and '4_plot_inversion_result.ipynb' to show the results
+# run all cells of 'P3_plot_final_model.ipynb' to plot the final model

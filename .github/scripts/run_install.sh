@@ -23,6 +23,7 @@ echo
 pip install --user --upgrade pip setuptools wheel
 pip install --user --only-binary=numpy numpy
 pip install --user --only-binary=h5py h5py
+pip install --user pytomoatt
 
 # checks exit code
 if [[ $? -ne 0 ]]; then exit 1; fi

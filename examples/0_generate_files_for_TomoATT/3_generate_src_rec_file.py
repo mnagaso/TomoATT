@@ -19,24 +19,23 @@ class GenerateSrcRecFile():
         self.nrec_x = nrec_x
         self.nrec_y = nrec_y
 
-    def generate_src_rec(self, dep_range=[2, 35]):
+    def generate_src_rec(self, n_depth_layers=3):
+        src_depths = np.linspace(10, 30, n_depth_layers)
         srcs = []
-        count = 0
         for i in range(self.nsrc_x):
             for j in range(self.nsrc_y):
-                for k in range(3):
+                for k, srcdep in enumerate(src_depths):
                     src = {
                         "origin_time": OTIME,
                         "evla": self.ip.input_params['domain']['min_max_lat'][0] + 0.2 + i/(self.nsrc_x-1)*1.6,
                         "evlo": self.ip.input_params['domain']['min_max_lat'][0] + 0.2 + j/(self.nsrc_y-1)*1.6,
-                        "evdp": 10 + k*10,
+                        "evdp": srcdep,
                         "mag": 2.0,
                         "num_rec": 0,
-                        "event_id": f"MX{count:04d}",
+                        "event_id": f"MX{i*self.nsrc_y*len(src_depths)+j*len(src_depths)+k:04d}",
                         "weight": 1.0,
                     }
                     srcs.append(src)
-                    count += 1
         self.sr.src_points = pd.DataFrame(srcs)
 
         recs = []
@@ -82,6 +81,6 @@ class GenerateSrcRecFile():
 
 if __name__ == "__main__":
     gsr = GenerateSrcRecFile(nsrc_x=17, nsrc_y=17, nrec_x=5, nrec_y=5)
-    gsr.generate_src_rec()
+    gsr.generate_src_rec(n_depth_layers=3)
     gsr.generate_double_diff_data()
     gsr.write()

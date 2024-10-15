@@ -1,8 +1,5 @@
 import pygmt
-from pygmt.clib import Session
-with pygmt.clib.Session() as session:
-    session.call_module('gmtset', 'FONT 16p')
-pygmt.config(IO_SEGMENT_MARKER="<<<")
+pygmt.config(FONT="16p")
 
 import numpy as np
 
@@ -72,7 +69,7 @@ def plot_map(x,y,value,dx,dy,
 
     if fig_size is None:
         x_size = 10
-        y_size = 10* (np.max(y) - np.min(y))/(np.max(x) - np.min(x))
+        y_size = x_size* (np.max(y) - np.min(y))/(np.max(x) - np.min(x))
     else:
         x_size = fig_size[0]
         y_size = fig_size[1]
@@ -97,11 +94,11 @@ def plot_map(x,y,value,dx,dy,
 
     # plot earthquake
     if earthquake is not None:
-        fig.plot(x=earthquake_x, y=earthquake_y, style='c0.3c', fill='red', pen='0.1p,white',label='Earthquake')
+        fig.plot(x=earthquake_x, y=earthquake_y, style='c0.3c', fill='red', pen='0.1p,white',label='Earthquake', no_clip=True)
 
     # plot station
     if station is not None:
-        fig.plot(x=station_x, y=station_y, style='t0.3c', fill='blue', pen='0.5p,white', label='Station')    
+        fig.plot(x=station_x, y=station_y, style='t0.3c', fill='blue', pen='0.5p,white', label='Station', no_clip=True)    
 
     # plot contour
     if contour:
@@ -131,8 +128,7 @@ def plot_profile(x, y, value,
                  cpt_range,
                  cpt_gap = None,
                  colorbar = "value",
-                 cmap = "seis"
-                          ):
+                 cmap = "seis"):
     """
     Plot the profile of data (X,Y,VALUE) with pygmt
     x: 1D array of x coordinates
@@ -146,7 +142,7 @@ def plot_profile(x, y, value,
         cpt_gap = (cpt_range[1] - cpt_range[0])/2
 
     fig = pygmt.Figure()
-    pygmt.makecpt(cmap="seis", series=cpt_range, background=True, reverse=False)
+    pygmt.makecpt(cmap=cmap, series=cpt_range, background=True, reverse=False)
     grid = pygmt.surface(x=x, y=y, z=value, spacing=spacing, region=region,)
 
     fig.grdimage(frame=frame,grid = grid, projection=projection, region=region) # nan_transparent may work
