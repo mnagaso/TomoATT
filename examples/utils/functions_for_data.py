@@ -1857,6 +1857,63 @@ def write_rec_list_file(fname,ev_info,st_info):
     doc_st_list.close()
 
 # %% [markdown]
+# 函数类：读取反演网格文件
+# 
+# Functions: read inversion grid file
+
+# %%
+def read_inversion_grid_file(path):
+    
+    inv_grid_vel = []
+    inv_grid_ani = []
+
+    switch = False
+    igrid = -1
+    with open('%s/inversion_grid.txt'%(path)) as f:
+        tmp_inv_grid = []
+        for i,line in enumerate(f):
+
+            # read the number of inversion grid in dep, lat, lon directions
+            if(i==0):
+                tmp = line.split()
+                ndep = int(tmp[1])
+                nlines = 3*ndep+1   # 每组反演网格的行数为 3*ndep+1
+            
+            iline = i % nlines
+
+            if(iline == 0):    # info: number of inversion grid
+                tmp = line.split()
+                if (int(tmp[0]) > igrid):
+                    igrid = int(tmp[0])
+                else:   # change from vel to ani
+                    switch = True
+                    igrid = int(tmp[0])
+
+            else:               # info location of inversion grid
+                iline_sub = (iline-1) % 3
+                if(iline_sub == 0): # dep
+                    tmp = line.split()
+                    dep = float(tmp[0])
+                if(iline_sub == 1): # list of lat 
+                    lat_list = line.split()
+                if(iline_sub == 2): # list of lon
+                    lon_list = line.split()
+                    
+                    # add inversion grid
+                    for lat in lat_list:
+                        for lon in lon_list:
+                            tmp_inv_grid.append([float(lon), float(lat), dep])
+                
+                if(iline == nlines-1): # the last line of inversion grid
+                    if(switch):
+                        inv_grid_ani.append(tmp_inv_grid)
+                    else:
+                        inv_grid_vel.append(tmp_inv_grid)
+                    tmp_inv_grid = []
+    
+    return [np.array(inv_grid_vel),np.array(inv_grid_ani)]
+
+# %% [markdown]
 # 函数类：包含画图函数
 # 
 # Functions: for plotting
