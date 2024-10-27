@@ -67,7 +67,9 @@ model_update:
   # inversion grid can be viewed in OUTPUT_FILES/inversion_grid.txt
   n_inversion_grid: 5 # number of inversion grid sets
 
-  uniform_inv_grid: true # true for using uniform inversion grid; false for using flexible inversion grid
+  uniform_inv_grid_dep: true # true for using uniform inversion grid; false for using flexible inversion grid
+  uniform_inv_grid_lat: true # true for using uniform inversion grid; false for using flexible inversion grid
+  uniform_inv_grid_lon: true # true for using uniform inversion grid; false for using flexible inversion grid
   
   # settings for uniform inversion grid
   n_inv_dep_lat_lon: [12, 11, 11] # number of inversion grid in depth, latitude, and longitude direction

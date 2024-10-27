@@ -90,7 +90,6 @@ public:
     // invgrid for vel
     int get_n_inversion_grid(){return n_inversion_grid;};
 
-    bool       get_uniform_inv_grid() {return uniform_inv_grid;};
     int        get_n_inv_r()    {return n_inv_r;};
     int        get_n_inv_t()    {return n_inv_t;};
     int        get_n_inv_p()    {return n_inv_p;};
@@ -325,7 +324,9 @@ private:
     // variables for type = 0: uniform inversion grid
     //
 
-    bool uniform_inv_grid = false; // automatically generate inversion grid or not
+    bool uniform_inv_grid_dep = false; // automatically generate inversion grid for dep or not
+    bool uniform_inv_grid_lat = false; // automatically generate inversion grid for lat or not
+    bool uniform_inv_grid_lon = false; // automatically generate inversion grid for lon or not
     // number of uniform inversion grid nodes in r, t, p direction
     int n_inv_r=0;
     int n_inv_t=0;

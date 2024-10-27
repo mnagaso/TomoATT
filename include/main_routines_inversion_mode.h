@@ -44,6 +44,7 @@ inline void calculate_or_read_traveltime_field(InputParams& IP, Grid& grid, IO_u
                     << ", lon: " << IP.src_map[name_sim_src].lon << ", dep: " << IP.src_map[name_sim_src].dep
                     << std::endl;
         }
+
         // solve travel time field on grid.T_loc
         It->run_iteration_forward(IP, grid, io, first_init);
 
@@ -116,7 +117,6 @@ inline void pre_run_forward_only(InputParams& IP, Grid& grid, IO_utils& io, int 
 // run forward and adjoint simulation and calculate current objective function value and sensitivity kernel if requested
 inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& grid, IO_utils& io, int i_inv, bool& first_src, bool line_search_mode, bool is_save_T){
 
-
     // initialize kernel arrays
     if (IP.get_run_mode() == DO_INVERSION || IP.get_run_mode() == INV_RELOC)
         grid.initialize_kernels();
@@ -187,6 +187,7 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
 
             // if traveltime field has been wriiten into the file, we choose to read the traveltime data.
             calculate_or_read_traveltime_field(IP, grid, io, i_src, IP.n_src_this_sim_group, first_init, It, name_sim_src, is_save_T);
+
         } else {
             // hybrid stencil mode
             std::cout << "\nrunnning in hybrid stencil mode\n" << std::endl;
@@ -223,7 +224,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
             //if (if_test)
             //    io.write_residual(grid); // this will over write the u_loc, so we need to call write_u_h5 first
         }
-        
         // calculate the arrival times at each receivers
         recs.interpolate_and_store_arrival_times_at_rec_position(IP, grid, name_sim_src);
 
@@ -239,21 +239,16 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         // }
         
         if (IP.get_run_mode()==DO_INVERSION || IP.get_run_mode()==INV_RELOC){
-
             // calculate adjoint source
             recs.calculate_adjoint_source(IP, name_sim_src);
-
             // run iteration for adjoint field calculation
             int adj_type = 0;   // compute adjoint field
             It->run_iteration_adjoint(IP, grid, io, adj_type);
-
             // run iteration for density of the adjoint field
             adj_type = 1;   // compute adjoint field
             It->run_iteration_adjoint(IP, grid, io, adj_type);
-
             // calculate sensitivity kernel
             calculate_sensitivity_kernel(grid, IP, name_sim_src);
-
             if (subdom_main && !line_search_mode && IP.get_if_output_source_field()) {
                 // adjoint field will be output only at the end of subiteration
                 // output the result of adjoint simulation
@@ -276,7 +271,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         //synchronize_all_world();
 
     } // end for i_src
-
     // synchronize all processes
     synchronize_all_world();
 
@@ -287,7 +281,6 @@ inline std::vector<CUSTOMREAL> run_simulation_one_step(InputParams& IP, Grid& gr
         (!IP.get_use_cs() &&  IP.get_is_srcrec_swap())){     // case 2-2, we do inversion, but we do not use cr data (cs +    swap)
         IP.gather_traveltimes_and_calc_syn_diff();
     }
-
     // compute all residual and obj
     std::vector<CUSTOMREAL> obj_residual = recs.calculate_obj_and_residual(IP);
 

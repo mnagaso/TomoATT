@@ -46,7 +46,8 @@ protected:
     void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&);        // calculate stencil for 3rd order
     void calculate_stencil_1st_order_upwind_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
     void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);           // calculate boundary values for teleseismic source
-    void calculate_boundary_nodes_tele_adj(Grid&, int&, int&, int&);       // calculate boundary values for teleseismic adjoint source
+
+    void calculate_boundary_nodes_adj(Grid&, int&, int&, int&);       // calculate boundary values for adjoint source (all zeros)
 
     // Hamiltonian calculation
     inline CUSTOMREAL calc_LF_Hamiltonian(Grid&, CUSTOMREAL& ,CUSTOMREAL& , \

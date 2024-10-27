@@ -473,49 +473,59 @@ void Grid::memory_allocation() {
     }
 
     // array for mpi request
-    mpi_reqs = allocateMemory<MPI_Request>(6, 73);
-    for (int i = 0; i < 6; i++)
-        mpi_reqs[i] = MPI_REQUEST_NULL;
+    mpi_send_reqs = allocateMemory<MPI_Request>(6, 731);
+    mpi_recv_reqs = allocateMemory<MPI_Request>(6, 732);
+    for (int i = 0; i < 6; i++){
+        mpi_send_reqs[i] = MPI_REQUEST_NULL;
+        mpi_recv_reqs[i] = MPI_REQUEST_NULL;
+    }
 
-    mpi_reqs_kosumi = allocateMemory<MPI_Request>(20, 74);
-    for (int i = 0; i < 20; i++)
-        mpi_reqs_kosumi[i] = MPI_REQUEST_NULL;
+    mpi_send_reqs_kosumi = allocateMemory<MPI_Request>(20, 741);
+    mpi_recv_reqs_kosumi = allocateMemory<MPI_Request>(20, 742);
+    for (int i = 0; i < 20; i++){
+        mpi_send_reqs_kosumi[i] = MPI_REQUEST_NULL;
+        mpi_recv_reqs_kosumi[i] = MPI_REQUEST_NULL;
+    }
 
     // arrays for data output
-    int nnodes_loc_vis =  loc_I_vis    *  loc_J_vis    *  loc_K_vis;
-    int nelms_loc_vis  = (loc_I_vis-1) * (loc_J_vis-1) * (loc_K_vis-1);
-    x_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 75);
-    y_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 76);
-    z_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 77);
-    p_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 78);
-    t_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 79);
-    r_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 80);
-    elms_conn    = allocateMemory<int>(nelms_loc_vis*9, 81);
-    my_proc_dump = allocateMemory<int>(nnodes_loc_vis, 82); // DEBUG
-    vis_data     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 83); // temp array for visuzulization
+    if (subdom_main){   // only accessible by the main process of each subdomain, which store the field data
+        int nnodes_loc_vis =  loc_I_vis    *  loc_J_vis    *  loc_K_vis;
+        int nelms_loc_vis  = (loc_I_vis-1) * (loc_J_vis-1) * (loc_K_vis-1);
+        x_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 75);
+        y_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 76);
+        z_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 77);
+        p_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 78);
+        t_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 79);
+        r_loc_3d     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 80);
+        elms_conn    = allocateMemory<int>(nelms_loc_vis*9, 81);
+        my_proc_dump = allocateMemory<int>(nnodes_loc_vis, 82); // DEBUG
+        vis_data     = allocateMemory<CUSTOMREAL>(nnodes_loc_vis, 83); // temp array for visuzulization
+    }
 
     // arrays for inversion
     if (inverse_flag) {
         int n_total_loc_inv_grid = n_inv_I_loc * n_inv_J_loc * n_inv_K_loc;
         int n_total_loc_inv_grid_ani = n_inv_I_loc_ani * n_inv_J_loc_ani * n_inv_K_loc_ani;
 
-        Ks_loc                   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
-        Kxi_loc                  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
-        Keta_loc                 = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 92);
-        Ks_density_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 93);
-        Kxi_density_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 94);
-        Keta_density_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 95);
-        Ks_inv_loc               = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 96);
-        Kxi_inv_loc              = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 97);
-        Keta_inv_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 98);
-        // Kdensity_inv_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 97);
-        Ks_update_loc            = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
-        Kxi_update_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
-        Keta_update_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
-        // Kdensity_update_loc      = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
-        Ks_update_loc_previous   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
-        Kxi_update_loc_previous  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
-        Keta_update_loc_previous = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
+        if (subdom_main){   // only accessible by the main process of each subdomain, which store the field data
+            Ks_loc                   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 90);
+            Kxi_loc                  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 91);
+            Keta_loc                 = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 92);
+            Ks_density_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 93);
+            Kxi_density_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 94);
+            Keta_density_loc         = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 95);
+            Ks_inv_loc               = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 96);
+            Kxi_inv_loc              = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 97);
+            Keta_inv_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 98);
+            
+            Ks_update_loc            = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
+            Kxi_update_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
+            Keta_update_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
+            
+            Ks_update_loc_previous   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
+            Kxi_update_loc_previous  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
+            Keta_update_loc_previous = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
+        }
 
         if (sub_nprocs <= 1){
             Tadj_loc = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 105);
@@ -774,8 +784,10 @@ void Grid::memory_deallocation() {
         delete[] bijk_ppp_r;
     }
 
-    delete[] mpi_reqs;
-    delete[] mpi_reqs_kosumi;
+    delete[] mpi_send_reqs;
+    delete[] mpi_recv_reqs;
+    delete[] mpi_send_reqs_kosumi;
+    delete[] mpi_recv_reqs_kosumi;
 
     // delete arrays
     delete[] nnodes;
@@ -783,37 +795,41 @@ void Grid::memory_deallocation() {
     delete[] nnodes_vis;
     delete[] nelms_vis;
 
-    delete[] x_loc_3d;
-    delete[] y_loc_3d;
-    delete[] z_loc_3d;
-    delete[] p_loc_3d;
-    delete[] t_loc_3d;
-    delete[] r_loc_3d;
-    delete[] elms_conn;
-    delete[] my_proc_dump;
-    delete[] vis_data;
+    if (subdom_main){
+        delete[] x_loc_3d;
+        delete[] y_loc_3d;
+        delete[] z_loc_3d;
+        delete[] p_loc_3d;
+        delete[] t_loc_3d;
+        delete[] r_loc_3d;
+        delete[] elms_conn;
+        delete[] my_proc_dump;
+        delete[] vis_data;
+    }
 
     // inversion arrays
     if (inverse_flag){
         delete inv_grid;
 
-        delete[] Ks_loc;
-        delete[] Kxi_loc;
-        delete[] Keta_loc;
-        delete[] Ks_density_loc;
-        delete[] Kxi_density_loc;
-        delete[] Keta_density_loc;
-        delete[] Ks_inv_loc;
-        delete[] Kxi_inv_loc;
-        delete[] Keta_inv_loc;
-        // delete[] Kdensity_inv_loc;
-        delete[] Ks_update_loc;
-        delete[] Kxi_update_loc;
-        delete[] Keta_update_loc;
-        // delete[] Kdensity_update_loc;
-        delete[] Ks_update_loc_previous;
-        delete[] Kxi_update_loc_previous;
-        delete[] Keta_update_loc_previous;
+        if (subdom_main){
+            delete[] Ks_loc;
+            delete[] Kxi_loc;
+            delete[] Keta_loc;
+            delete[] Ks_density_loc;
+            delete[] Kxi_density_loc;
+            delete[] Keta_density_loc;
+            delete[] Ks_inv_loc;
+            delete[] Kxi_inv_loc;
+            delete[] Keta_inv_loc;
+            // delete[] Kdensity_inv_loc;
+            delete[] Ks_update_loc;
+            delete[] Kxi_update_loc;
+            delete[] Keta_update_loc;
+            // delete[] Kdensity_update_loc;
+            delete[] Ks_update_loc_previous;
+            delete[] Kxi_update_loc_previous;
+            delete[] Keta_update_loc_previous;
+        }
 
        if (sub_nprocs <= 1){
             delete[] Tadj_loc;
@@ -1675,50 +1691,51 @@ void Grid::send_recev_boundary_data(CUSTOMREAL* arr){
     // i-direction negative
     if (neighbors_id[0] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bin_s, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_reqs[0]);
+        isend_cr(bin_s, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_send_reqs[0]);
         // receive boundary layer from neighbor
-        irecv_cr(bin_r, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_reqs[0]);
+        irecv_cr(bin_r, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_recv_reqs[0]);
     }
     // i-direction positive
     if (neighbors_id[1] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bip_s, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_reqs[1]);
+        isend_cr(bip_s, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_send_reqs[1]);
         // receive boundary layer from neighbor
-        irecv_cr(bip_r, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_reqs[1]);
+        irecv_cr(bip_r, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_recv_reqs[1]);
     }
     // j-direction negative
     if (neighbors_id[2] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bjn_s, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_reqs[2]);
+        isend_cr(bjn_s, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_send_reqs[2]);
         // receive boundary layer from neighbor
-        irecv_cr(bjn_r, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_reqs[2]);
+        irecv_cr(bjn_r, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_recv_reqs[2]);
     }
     // j-direction positive
     if (neighbors_id[3] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bjp_s, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_reqs[3]);
+        isend_cr(bjp_s, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_send_reqs[3]);
         // receive boundary layer from neighbor
-        irecv_cr(bjp_r, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_reqs[3]);
+        irecv_cr(bjp_r, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_recv_reqs[3]);
     }
     // k-direction negative
     if (neighbors_id[4] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bkn_s, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_reqs[4]);
+        isend_cr(bkn_s, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_send_reqs[4]);
         // receive boundary layer from neighbor
-        irecv_cr(bkn_r, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_reqs[4]);
+        irecv_cr(bkn_r, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_recv_reqs[4]);
     }
     // k-direction positive
     if (neighbors_id[5] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bkp_s, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_reqs[5]);
+        isend_cr(bkp_s, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_send_reqs[5]);
         // receive boundary layer from neighbor
-        irecv_cr(bkp_r, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_reqs[5]);
+        irecv_cr(bkp_r, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_recv_reqs[5]);
     }
 
     // wait for finishing communication
     for (int i = 0; i < 6; i++) {
         if (neighbors_id[i] != -1) {
-            wait_req(mpi_reqs[i]);
+            wait_req(mpi_send_reqs[i]);
+            wait_req(mpi_recv_reqs[i]);
         }
     }
 
@@ -1736,50 +1753,51 @@ void Grid::send_recev_boundary_data_av(CUSTOMREAL* arr){
     // i-direction negative
     if (neighbors_id[0] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bin_s, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_reqs[0]);
+        isend_cr(bin_s, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_send_reqs[0]);
         // receive boundary layer from neighbor
-        irecv_cr(bin_r, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_reqs[0]);
+        irecv_cr(bin_r, n_grid_bound_i*n_ghost_layers, neighbors_id[0], mpi_recv_reqs[0]);
     }
     // i-direction positive
     if (neighbors_id[1] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bip_s, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_reqs[1]);
+        isend_cr(bip_s, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_send_reqs[1]);
         // receive boundary layer from neighbor
-        irecv_cr(bip_r, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_reqs[1]);
+        irecv_cr(bip_r, n_grid_bound_i*n_ghost_layers, neighbors_id[1], mpi_recv_reqs[1]);
     }
     // j-direction negative
     if (neighbors_id[2] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bjn_s, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_reqs[2]);
+        isend_cr(bjn_s, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_send_reqs[2]);
         // receive boundary layer from neighbor
-        irecv_cr(bjn_r, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_reqs[2]);
+        irecv_cr(bjn_r, n_grid_bound_j*n_ghost_layers, neighbors_id[2], mpi_recv_reqs[2]);
     }
     // j-direction positive
     if (neighbors_id[3] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bjp_s, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_reqs[3]);
+        isend_cr(bjp_s, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_send_reqs[3]);
         // receive boundary layer from neighbor
-        irecv_cr(bjp_r, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_reqs[3]);
+        irecv_cr(bjp_r, n_grid_bound_j*n_ghost_layers, neighbors_id[3], mpi_recv_reqs[3]);
     }
     // k-direction negative
     if (neighbors_id[4] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bkn_s, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_reqs[4]);
+        isend_cr(bkn_s, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_send_reqs[4]);
         // receive boundary layer from neighbor
-        irecv_cr(bkn_r, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_reqs[4]);
+        irecv_cr(bkn_r, n_grid_bound_k*n_ghost_layers, neighbors_id[4], mpi_recv_reqs[4]);
     }
     // k-direction positive
     if (neighbors_id[5] != -1) {
         // send boundary layer to neighbor
-        isend_cr(bkp_s, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_reqs[5]);
+        isend_cr(bkp_s, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_send_reqs[5]);
         // receive boundary layer from neighbor
-        irecv_cr(bkp_r, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_reqs[5]);
+        irecv_cr(bkp_r, n_grid_bound_k*n_ghost_layers, neighbors_id[5], mpi_recv_reqs[5]);
     }
 
     // wait for finishing communication
     for (int i = 0; i < 6; i++) {
         if (neighbors_id[i] != -1) {
-            wait_req(mpi_reqs[i]);
+            wait_req(mpi_send_reqs[i]);
+            wait_req(mpi_recv_reqs[i]);
         }
     }
 
@@ -1948,205 +1966,245 @@ void Grid::send_recev_boundary_data_kosumi(CUSTOMREAL* arr){
     // ij nn
     if (neighbors_id_ij[0] != -1){
         // send boundary layer to neighbor
-        isend_cr(bij_nn_s, loc_K_vis, neighbors_id_ij[0], mpi_reqs_kosumi[0]);
+        isend_cr(bij_nn_s, loc_K_vis, neighbors_id_ij[0], mpi_send_reqs_kosumi[0]);
         // receive boundary layer from neighbor
-        irecv_cr(bij_nn_r, loc_K_vis, neighbors_id_ij[0], mpi_reqs_kosumi[0]);
+        irecv_cr(bij_nn_r, loc_K_vis, neighbors_id_ij[0], mpi_recv_reqs_kosumi[0]);
     }
     // ij np
     if (neighbors_id_ij[1] != -1){
         // send boundary layer to neighbor
-        isend_cr(bij_np_s, loc_K_vis, neighbors_id_ij[1], mpi_reqs_kosumi[1]);
+        isend_cr(bij_np_s, loc_K_vis, neighbors_id_ij[1], mpi_send_reqs_kosumi[1]);
         // receive boundary layer from neighbor
-        irecv_cr(bij_np_r, loc_K_vis, neighbors_id_ij[1], mpi_reqs_kosumi[1]);
+        irecv_cr(bij_np_r, loc_K_vis, neighbors_id_ij[1], mpi_recv_reqs_kosumi[1]);
     }
     // ij pn
     if (neighbors_id_ij[2] != -1){
         // send boundary layer to neighbor
-        isend_cr(bij_pn_s, loc_K_vis, neighbors_id_ij[2], mpi_reqs_kosumi[2]);
+        isend_cr(bij_pn_s, loc_K_vis, neighbors_id_ij[2], mpi_send_reqs_kosumi[2]);
         // receive boundary layer from neighbor
-        irecv_cr(bij_pn_r, loc_K_vis, neighbors_id_ij[2], mpi_reqs_kosumi[2]);
+        irecv_cr(bij_pn_r, loc_K_vis, neighbors_id_ij[2], mpi_recv_reqs_kosumi[2]);
     }
     // ij pp
     if (neighbors_id_ij[3] != -1){
         // send boundary layer to neighbor
-        isend_cr(bij_pp_s, loc_K_vis, neighbors_id_ij[3], mpi_reqs_kosumi[3]);
+        isend_cr(bij_pp_s, loc_K_vis, neighbors_id_ij[3], mpi_send_reqs_kosumi[3]);
         // receive boundary layer from neighbor
-        irecv_cr(bij_pp_r, loc_K_vis, neighbors_id_ij[3], mpi_reqs_kosumi[3]);
+        irecv_cr(bij_pp_r, loc_K_vis, neighbors_id_ij[3], mpi_recv_reqs_kosumi[3]);
     }
     // jk nn
     if (neighbors_id_jk[0] != -1){
         // send boundary layer to neighbor
-        isend_cr(bjk_nn_s, loc_I_vis, neighbors_id_jk[0], mpi_reqs_kosumi[4]);
+        isend_cr(bjk_nn_s, loc_I_vis, neighbors_id_jk[0], mpi_send_reqs_kosumi[4]);
         // receive boundary layer from neighbor
-        irecv_cr(bjk_nn_r, loc_I_vis, neighbors_id_jk[0], mpi_reqs_kosumi[4]);
+        irecv_cr(bjk_nn_r, loc_I_vis, neighbors_id_jk[0], mpi_recv_reqs_kosumi[4]);
     }
     // jk np
     if (neighbors_id_jk[1] != -1){
         // send boundary layer to neighbor
-        isend_cr(bjk_np_s, loc_I_vis, neighbors_id_jk[1], mpi_reqs_kosumi[5]);
+        isend_cr(bjk_np_s, loc_I_vis, neighbors_id_jk[1], mpi_send_reqs_kosumi[5]);
         // receive boundary layer from neighbor
-        irecv_cr(bjk_np_r, loc_I_vis, neighbors_id_jk[1], mpi_reqs_kosumi[5]);
+        irecv_cr(bjk_np_r, loc_I_vis, neighbors_id_jk[1], mpi_recv_reqs_kosumi[5]);
     }
     // jk pn
     if (neighbors_id_jk[2] != -1){
         // send boundary layer to neighbor
-        isend_cr(bjk_pn_s, loc_I_vis, neighbors_id_jk[2], mpi_reqs_kosumi[6]);
+        isend_cr(bjk_pn_s, loc_I_vis, neighbors_id_jk[2], mpi_send_reqs_kosumi[6]);
         // receive boundary layer from neighbor
-        irecv_cr(bjk_pn_r, loc_I_vis, neighbors_id_jk[2], mpi_reqs_kosumi[6]);
+        irecv_cr(bjk_pn_r, loc_I_vis, neighbors_id_jk[2], mpi_recv_reqs_kosumi[6]);
     }
     // jk pp
     if (neighbors_id_jk[3] != -1){
         // send boundary layer to neighbor
-        isend_cr(bjk_pp_s, loc_I_vis, neighbors_id_jk[3], mpi_reqs_kosumi[7]);
+        isend_cr(bjk_pp_s, loc_I_vis, neighbors_id_jk[3], mpi_send_reqs_kosumi[7]);
         // receive boundary layer from neighbor
-        irecv_cr(bjk_pp_r, loc_I_vis, neighbors_id_jk[3], mpi_reqs_kosumi[7]);
+        irecv_cr(bjk_pp_r, loc_I_vis, neighbors_id_jk[3], mpi_recv_reqs_kosumi[7]);
     }
     // ik nn
     if (neighbors_id_ik[0] != -1){
         // send boundary layer to neighbor
-        isend_cr(bik_nn_s, loc_J_vis, neighbors_id_ik[0], mpi_reqs_kosumi[8]);
+        isend_cr(bik_nn_s, loc_J_vis, neighbors_id_ik[0], mpi_send_reqs_kosumi[8]);
         // receive boundary layer from neighbor
-        irecv_cr(bik_nn_r, loc_J_vis, neighbors_id_ik[0], mpi_reqs_kosumi[8]);
+        irecv_cr(bik_nn_r, loc_J_vis, neighbors_id_ik[0], mpi_recv_reqs_kosumi[8]);
     }
     // ik np
     if (neighbors_id_ik[1] != -1){
         // send boundary layer to neighbor
-        isend_cr(bik_np_s, loc_J_vis, neighbors_id_ik[1], mpi_reqs_kosumi[9]);
+        isend_cr(bik_np_s, loc_J_vis, neighbors_id_ik[1], mpi_send_reqs_kosumi[9]);
         // receive boundary layer from neighbor
-        irecv_cr(bik_np_r, loc_J_vis, neighbors_id_ik[1], mpi_reqs_kosumi[9]);
+        irecv_cr(bik_np_r, loc_J_vis, neighbors_id_ik[1], mpi_recv_reqs_kosumi[9]);
     }
     // ik pn
     if (neighbors_id_ik[2] != -1){
         // send boundary layer to neighbor
-        isend_cr(bik_pn_s, loc_J_vis, neighbors_id_ik[2], mpi_reqs_kosumi[10]);
+        isend_cr(bik_pn_s, loc_J_vis, neighbors_id_ik[2], mpi_send_reqs_kosumi[10]);
         // receive boundary layer from neighbor
-        irecv_cr(bik_pn_r, loc_J_vis, neighbors_id_ik[2], mpi_reqs_kosumi[10]);
+        irecv_cr(bik_pn_r, loc_J_vis, neighbors_id_ik[2], mpi_recv_reqs_kosumi[10]);
     }
     // ik pp
     if (neighbors_id_ik[3] != -1){
         // send boundary layer to neighbor
-        isend_cr(bik_pp_s, loc_J_vis, neighbors_id_ik[3], mpi_reqs_kosumi[11]);
+        isend_cr(bik_pp_s, loc_J_vis, neighbors_id_ik[3], mpi_send_reqs_kosumi[11]);
         // receive boundary layer from neighbor
-        irecv_cr(bik_pp_r, loc_J_vis, neighbors_id_ik[3], mpi_reqs_kosumi[11]);
+        irecv_cr(bik_pp_r, loc_J_vis, neighbors_id_ik[3], mpi_recv_reqs_kosumi[11]);
     }
     // ijk nnn
     if (neighbors_id_ijk[0] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_nnn_s, 1, neighbors_id_ijk[0], mpi_reqs_kosumi[12]);
+        isend_cr(bijk_nnn_s, 1, neighbors_id_ijk[0], mpi_send_reqs_kosumi[12]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_nnn_r, 1, neighbors_id_ijk[0], mpi_reqs_kosumi[12]);
+        irecv_cr(bijk_nnn_r, 1, neighbors_id_ijk[0], mpi_recv_reqs_kosumi[12]);
     }
     // ijk nnp
     if (neighbors_id_ijk[1] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_nnp_s, 1, neighbors_id_ijk[1], mpi_reqs_kosumi[13]);
+        isend_cr(bijk_nnp_s, 1, neighbors_id_ijk[1], mpi_send_reqs_kosumi[13]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_nnp_r, 1, neighbors_id_ijk[1], mpi_reqs_kosumi[13]);
+        irecv_cr(bijk_nnp_r, 1, neighbors_id_ijk[1], mpi_recv_reqs_kosumi[13]);
     }
     // ijk npn
     if (neighbors_id_ijk[2] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_npn_s, 1, neighbors_id_ijk[2], mpi_reqs_kosumi[14]);
+        isend_cr(bijk_npn_s, 1, neighbors_id_ijk[2], mpi_send_reqs_kosumi[14]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_npn_r, 1, neighbors_id_ijk[2], mpi_reqs_kosumi[14]);
+        irecv_cr(bijk_npn_r, 1, neighbors_id_ijk[2], mpi_recv_reqs_kosumi[14]);
     }
     // ijk npp
     if (neighbors_id_ijk[3] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_npp_s, 1, neighbors_id_ijk[3], mpi_reqs_kosumi[15]);
+        isend_cr(bijk_npp_s, 1, neighbors_id_ijk[3], mpi_send_reqs_kosumi[15]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_npp_r, 1, neighbors_id_ijk[3], mpi_reqs_kosumi[15]);
+        irecv_cr(bijk_npp_r, 1, neighbors_id_ijk[3], mpi_recv_reqs_kosumi[15]);
     }
     // ijk pnn
     if (neighbors_id_ijk[4] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_pnn_s, 1, neighbors_id_ijk[4], mpi_reqs_kosumi[16]);
+        isend_cr(bijk_pnn_s, 1, neighbors_id_ijk[4], mpi_send_reqs_kosumi[16]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_pnn_r, 1, neighbors_id_ijk[4], mpi_reqs_kosumi[16]);
+        irecv_cr(bijk_pnn_r, 1, neighbors_id_ijk[4], mpi_recv_reqs_kosumi[16]);
     }
     // ijk pnp
     if (neighbors_id_ijk[5] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_pnp_s, 1, neighbors_id_ijk[5], mpi_reqs_kosumi[17]);
+        isend_cr(bijk_pnp_s, 1, neighbors_id_ijk[5], mpi_send_reqs_kosumi[17]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_pnp_r, 1, neighbors_id_ijk[5], mpi_reqs_kosumi[17]);
+        irecv_cr(bijk_pnp_r, 1, neighbors_id_ijk[5], mpi_recv_reqs_kosumi[17]);
     }
     // ijk ppn
     if (neighbors_id_ijk[6] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_ppn_s, 1, neighbors_id_ijk[6], mpi_reqs_kosumi[18]);
+        isend_cr(bijk_ppn_s, 1, neighbors_id_ijk[6], mpi_send_reqs_kosumi[18]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_ppn_r, 1, neighbors_id_ijk[6], mpi_reqs_kosumi[18]);
+        irecv_cr(bijk_ppn_r, 1, neighbors_id_ijk[6], mpi_recv_reqs_kosumi[18]);
     }
     // ijk ppp
     if (neighbors_id_ijk[7] != -1){
         // send boundary layer to neighbor
-        isend_cr(bijk_ppp_s, 1, neighbors_id_ijk[7], mpi_reqs_kosumi[19]);
+        isend_cr(bijk_ppp_s, 1, neighbors_id_ijk[7], mpi_send_reqs_kosumi[19]);
         // receive boundary layer from neighbor
-        irecv_cr(bijk_ppp_r, 1, neighbors_id_ijk[7], mpi_reqs_kosumi[19]);
+        irecv_cr(bijk_ppp_r, 1, neighbors_id_ijk[7], mpi_recv_reqs_kosumi[19]);
     }
 
     // wait for all communication to finish
     // ij nn
-    if (neighbors_id_ij[0] != -1)
-        wait_req(mpi_reqs_kosumi[0]);
+    if (neighbors_id_ij[0] != -1){
+        wait_req(mpi_send_reqs_kosumi[0]);
+        wait_req(mpi_recv_reqs_kosumi[0]);
+    }
     // ij np
-    if (neighbors_id_ij[1] != -1)
-        wait_req(mpi_reqs_kosumi[1]);
+    if (neighbors_id_ij[1] != -1){
+        wait_req(mpi_send_reqs_kosumi[1]);
+        wait_req(mpi_recv_reqs_kosumi[1]);
+    }
     // ij pn
-    if (neighbors_id_ij[2] != -1)
-        wait_req(mpi_reqs_kosumi[2]);
+    if (neighbors_id_ij[2] != -1){
+        wait_req(mpi_send_reqs_kosumi[2]);
+        wait_req(mpi_recv_reqs_kosumi[2]);
+    }
     // ij pp
-    if (neighbors_id_ij[3] != -1)
-        wait_req(mpi_reqs_kosumi[3]);
+    if (neighbors_id_ij[3] != -1){
+        wait_req(mpi_send_reqs_kosumi[3]);
+        wait_req(mpi_recv_reqs_kosumi[3]);
+    }
     // jk nn
-    if (neighbors_id_jk[0] != -1)
-        wait_req(mpi_reqs_kosumi[4]);
+    if (neighbors_id_jk[0] != -1){
+        wait_req(mpi_send_reqs_kosumi[4]);
+        wait_req(mpi_recv_reqs_kosumi[4]);
+    }
     // jk np
-    if (neighbors_id_jk[1] != -1)
-        wait_req(mpi_reqs_kosumi[5]);
+    if (neighbors_id_jk[1] != -1){
+        wait_req(mpi_send_reqs_kosumi[5]);
+        wait_req(mpi_recv_reqs_kosumi[5]);
+    }
     // jk pn
-    if (neighbors_id_jk[2] != -1)
-        wait_req(mpi_reqs_kosumi[6]);
+    if (neighbors_id_jk[2] != -1){
+        wait_req(mpi_send_reqs_kosumi[6]);
+        wait_req(mpi_recv_reqs_kosumi[6]);
+    }
     // jk pp
-    if (neighbors_id_jk[3] != -1)
-        wait_req(mpi_reqs_kosumi[7]);
+    if (neighbors_id_jk[3] != -1){
+        wait_req(mpi_send_reqs_kosumi[7]);
+        wait_req(mpi_recv_reqs_kosumi[7]);
+    }
     // ik nn
-    if (neighbors_id_ik[0] != -1)
-        wait_req(mpi_reqs_kosumi[8]);
+    if (neighbors_id_ik[0] != -1){
+        wait_req(mpi_send_reqs_kosumi[8]);
+        wait_req(mpi_recv_reqs_kosumi[8]);
+    }
     // ik np
-    if (neighbors_id_ik[1] != -1)
-        wait_req(mpi_reqs_kosumi[9]);
+    if (neighbors_id_ik[1] != -1){
+        wait_req(mpi_send_reqs_kosumi[9]);
+        wait_req(mpi_recv_reqs_kosumi[9]);
+    }
     // ik pn
-    if (neighbors_id_ik[2] != -1)
-        wait_req(mpi_reqs_kosumi[10]);
+    if (neighbors_id_ik[2] != -1){
+        wait_req(mpi_send_reqs_kosumi[10]);
+        wait_req(mpi_recv_reqs_kosumi[10]);
+    }
     // ik pp
-    if (neighbors_id_ik[3] != -1)
-        wait_req(mpi_reqs_kosumi[11]);
+    if (neighbors_id_ik[3] != -1){
+        wait_req(mpi_send_reqs_kosumi[11]);
+        wait_req(mpi_recv_reqs_kosumi[11]);
+    }
     // ijk nnn
-    if (neighbors_id_ijk[0] != -1)
-        wait_req(mpi_reqs_kosumi[12]);
+    if (neighbors_id_ijk[0] != -1){
+        wait_req(mpi_send_reqs_kosumi[12]);
+        wait_req(mpi_recv_reqs_kosumi[12]);
+    }
     // ijk nnp
-    if (neighbors_id_ijk[1] != -1)
-        wait_req(mpi_reqs_kosumi[13]);
+    if (neighbors_id_ijk[1] != -1){
+        wait_req(mpi_send_reqs_kosumi[13]);
+        wait_req(mpi_recv_reqs_kosumi[13]);
+    }
     // ijk npn
-    if (neighbors_id_ijk[2] != -1)
-        wait_req(mpi_reqs_kosumi[14]);
+    if (neighbors_id_ijk[2] != -1){
+        wait_req(mpi_send_reqs_kosumi[14]);
+        wait_req(mpi_recv_reqs_kosumi[14]);
+    }
     // ijk npp
-    if (neighbors_id_ijk[3] != -1)
-        wait_req(mpi_reqs_kosumi[15]);
+    if (neighbors_id_ijk[3] != -1){
+        wait_req(mpi_send_reqs_kosumi[15]);
+        wait_req(mpi_recv_reqs_kosumi[15]);
+    }
     // ijk pnn
-    if (neighbors_id_ijk[4] != -1)
-        wait_req(mpi_reqs_kosumi[16]);
+    if (neighbors_id_ijk[4] != -1){
+        wait_req(mpi_send_reqs_kosumi[16]);
+        wait_req(mpi_recv_reqs_kosumi[16]);
+    }
     // ijk pnp
-    if (neighbors_id_ijk[5] != -1)
-        wait_req(mpi_reqs_kosumi[17]);
+    if (neighbors_id_ijk[5] != -1){
+        wait_req(mpi_send_reqs_kosumi[17]);
+        wait_req(mpi_recv_reqs_kosumi[17]);
+    }
     // ijk ppn
-    if (neighbors_id_ijk[6] != -1)
-        wait_req(mpi_reqs_kosumi[18]);
+    if (neighbors_id_ijk[6] != -1){
+        wait_req(mpi_send_reqs_kosumi[18]);
+        wait_req(mpi_recv_reqs_kosumi[18]);
+    }
     // ijk ppp
-    if (neighbors_id_ijk[7] != -1)
-        wait_req(mpi_reqs_kosumi[19]);
+    if (neighbors_id_ijk[7] != -1){
+        wait_req(mpi_send_reqs_kosumi[19]);
+        wait_req(mpi_recv_reqs_kosumi[19]);
+    }
 
     assign_received_data_to_ghost_kosumi(arr);
 

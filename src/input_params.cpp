@@ -310,8 +310,14 @@ InputParams::InputParams(std::string& input_file){
             }
 
             // auto inversion grid
-            if (config["model_update"]["uniform_inv_grid"]) {
-                getNodeValue(config["model_update"], "uniform_inv_grid", uniform_inv_grid);
+            if (config["model_update"]["uniform_inv_grid_dep"]) {
+                getNodeValue(config["model_update"], "uniform_inv_grid_dep", uniform_inv_grid_dep);
+            }
+            if (config["model_update"]["uniform_inv_grid_lat"]) {
+                getNodeValue(config["model_update"], "uniform_inv_grid_lat", uniform_inv_grid_lat);
+            }
+            if (config["model_update"]["uniform_inv_grid_lon"]) {
+                getNodeValue(config["model_update"], "uniform_inv_grid_lon", uniform_inv_grid_lon);
             }
 
             // number of inversion grid for regular grid
@@ -697,9 +703,6 @@ InputParams::InputParams(std::string& input_file){
         std::cout << "n_subprocs: " << n_subprocs << std::endl;
         std::cout << "n_sims: " << n_sims << std::endl;
 
-        // write parameter file to output directory
-        write_params_to_file();
-
     }
 
     stdout_by_rank_zero("parameter file read done.");
@@ -790,7 +793,9 @@ InputParams::InputParams(std::string& input_file){
 
     broadcast_i_single(n_inversion_grid, 0);
 
-    broadcast_bool_single(uniform_inv_grid, 0);
+    broadcast_bool_single(uniform_inv_grid_dep, 0);
+    broadcast_bool_single(uniform_inv_grid_lon, 0);
+    broadcast_bool_single(uniform_inv_grid_lat, 0);
 
     broadcast_i_single(n_inv_r_flex, 0);
     broadcast_i_single(n_inv_t_flex, 0);
@@ -892,6 +897,10 @@ InputParams::InputParams(std::string& input_file){
 
     // check contradictory settings
     check_contradictions();
+
+    // write parameter file to output directory
+    if (world_rank == 0)
+        write_params_to_file();
 
     // broadcast the values to all processes
     stdout_by_rank_zero("read input file successfully.");
@@ -1093,7 +1102,9 @@ void InputParams::write_params_to_file() {
     fout << "  n_inversion_grid: "   << n_inversion_grid << " # number of inversion grid sets" << std::endl;
     fout << std::endl;
 
-    fout << "  uniform_inv_grid: " << uniform_inv_grid << " # true if use uniform inversion grid, false if use flexible inversion grid" << std::endl;
+    fout << "  uniform_inv_grid_dep: " << uniform_inv_grid_dep << " # true if use uniform inversion grid for dep, false if use flexible inversion grid" << std::endl;
+    fout << "  uniform_inv_grid_lat: " << uniform_inv_grid_lat << " # true if use uniform inversion grid for lat, false if use flexible inversion grid" << std::endl;
+    fout << "  uniform_inv_grid_lon: " << uniform_inv_grid_lon << " # true if use uniform inversion grid for lon, false if use flexible inversion grid" << std::endl;
     fout << std::endl;
 
     fout << "  # -------------- uniform inversion grid setting -------------- " << std::endl;
@@ -1441,7 +1452,7 @@ void InputParams::write_params_to_file() {
 
 void InputParams::setup_uniform_inv_grid() {
     // set the number of inversion grid points
-    if (uniform_inv_grid){
+    if (uniform_inv_grid_dep){
         if (min_dep_inv == -9999.0 || max_dep_inv == -9999.0){
             std::cout << "Error: please setup min_max_dep_inv" << std::endl;
             exit(1);
@@ -1450,46 +1461,17 @@ void InputParams::setup_uniform_inv_grid() {
             std::cout << "Error: max_dep_inv should be larger than min_dep_inv" << std::endl;
             exit(1);
         }
-        if (min_lat_inv == -9999.0 || max_lat_inv == -9999.0){
-            std::cout << "Error: please setup min_max_lat_inv_ani" << std::endl;
-            exit(1);
-        }
-        if (max_lat_inv < min_lat_inv){
-            std::cout << "Error: max_lat_inv should be larger than min_lat_inv" << std::endl;
-            exit(1);
-        }
-        if (min_lon_inv == -9999.0 || max_lon_inv == -9999.0){
-            std::cout << "Error: please setup min_max_lon_inv_ani" << std::endl;
-            exit(1);
-        }
-        if (max_lon_inv < min_lon_inv){
-            std::cout << "Error: max_lon_inv should be larger than min_lon_inv" << std::endl;
-            exit(1);
-        }
+    
         n_inv_r_flex = n_inv_r;
-        n_inv_t_flex = n_inv_t;
-        n_inv_p_flex = n_inv_p;
         
         std::vector<CUSTOMREAL> tmp_dep_inv = linspace(min_dep_inv, max_dep_inv, n_inv_r_flex);
-        std::vector<CUSTOMREAL> tmp_lat_inv = linspace(min_lat_inv, max_lat_inv, n_inv_t_flex);
-        std::vector<CUSTOMREAL> tmp_lon_inv = linspace(min_lon_inv, max_lon_inv, n_inv_p_flex);
 
         if (dep_inv != nullptr) delete[] dep_inv;
-        if (lat_inv != nullptr) delete[] lat_inv;
-        if (lon_inv != nullptr) delete[] lon_inv;
 
         dep_inv = allocateMemory<CUSTOMREAL>(n_inv_r_flex, 5000);
-        lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
-        lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5002);
 
         for (int i = 0; i < n_inv_r_flex; i++){
             dep_inv[i] = tmp_dep_inv[i];
-        }
-        for (int i = 0; i < n_inv_t_flex; i++){
-            lat_inv[i] = tmp_lat_inv[i];
-        }
-        for (int i = 0; i < n_inv_p_flex; i++){
-            lon_inv[i] = tmp_lon_inv[i];
         }
 
         if (invgrid_ani) {
@@ -1501,6 +1483,46 @@ void InputParams::setup_uniform_inv_grid() {
                 std::cout << "Error: max_dep_inv_ani should be larger than min_dep_inv_ani" << std::endl;
                 exit(1);
             }
+            
+            n_inv_r_flex_ani = n_inv_r_ani;
+        
+            if (dep_inv_ani != nullptr) delete[] dep_inv_ani;
+
+            dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
+
+            tmp_dep_inv = linspace(min_dep_inv_ani, max_dep_inv_ani, n_inv_r_flex_ani);
+
+            for (int i = 0; i < n_inv_r_flex_ani; i++){
+                dep_inv_ani[i] = tmp_dep_inv[i];
+            }  
+        }
+        tmp_dep_inv.clear();
+
+    }
+
+
+    if (uniform_inv_grid_lat){
+        if (min_lat_inv == -9999.0 || max_lat_inv == -9999.0){
+            std::cout << "Error: please setup min_max_lat_inv_ani" << std::endl;
+            exit(1);
+        }
+        if (max_lat_inv < min_lat_inv){
+            std::cout << "Error: max_lat_inv should be larger than min_lat_inv" << std::endl;
+            exit(1);
+        }
+        n_inv_t_flex = n_inv_t;
+        
+        std::vector<CUSTOMREAL> tmp_lat_inv = linspace(min_lat_inv, max_lat_inv, n_inv_t_flex);
+
+        if (lat_inv != nullptr) delete[] lat_inv;
+
+        lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
+        
+        for (int i = 0; i < n_inv_t_flex; i++){
+            lat_inv[i] = tmp_lat_inv[i];
+        }
+
+        if (invgrid_ani) {
             if (min_lat_inv_ani == -9999.0 || max_lat_inv_ani == -9999.0){
                 std::cout << "Error: please setup min_max_lat_inv_ani" << std::endl;
                 exit(1);
@@ -1509,6 +1531,44 @@ void InputParams::setup_uniform_inv_grid() {
                 std::cout << "Error: max_lat_inv_ani should be larger than min_lat_inv_ani" << std::endl;
                 exit(1);
             }
+            
+            n_inv_t_flex_ani = n_inv_t_ani;
+            
+            if (lat_inv_ani != nullptr) delete[] lat_inv_ani;
+
+            lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
+
+            tmp_lat_inv = linspace(min_lat_inv_ani, max_lat_inv_ani, n_inv_t_flex_ani);
+
+            for (int i = 0; i < n_inv_t_flex_ani; i++){
+                lat_inv_ani[i] = tmp_lat_inv[i];
+            }
+        }
+        tmp_lat_inv.clear();
+    }
+
+    if (uniform_inv_grid_lon){
+        if (min_lon_inv == -9999.0 || max_lon_inv == -9999.0){
+            std::cout << "Error: please setup min_max_lon_inv_ani" << std::endl;
+            exit(1);
+        }
+        if (max_lon_inv < min_lon_inv){
+            std::cout << "Error: max_lon_inv should be larger than min_lon_inv" << std::endl;
+            exit(1);
+        }
+        n_inv_p_flex = n_inv_p;
+
+        std::vector<CUSTOMREAL> tmp_lon_inv = linspace(min_lon_inv, max_lon_inv, n_inv_p_flex);
+
+        if (lon_inv != nullptr) delete[] lon_inv;
+
+        lon_inv = allocateMemory<CUSTOMREAL>(n_inv_p_flex, 5002);
+
+        for (int i = 0; i < n_inv_p_flex; i++){
+            lon_inv[i] = tmp_lon_inv[i];
+        }
+
+        if (invgrid_ani) {
             if (min_lon_inv_ani == -9999.0 || max_lon_inv_ani == -9999.0){
                 std::cout << "Error: please setup min_max_lon_inv_ani" << std::endl;
                 exit(1);
@@ -1518,35 +1578,19 @@ void InputParams::setup_uniform_inv_grid() {
                 exit(1);
             }
             
-            n_inv_r_flex_ani = n_inv_r_ani;
-            n_inv_t_flex_ani = n_inv_t_ani;
             n_inv_p_flex_ani = n_inv_p_ani;
             
-            if (dep_inv_ani != nullptr) delete[] dep_inv_ani;
-            if (lat_inv_ani != nullptr) delete[] lat_inv_ani;
             if (lon_inv_ani != nullptr) delete[] lon_inv_ani;
 
-            dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
-            lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
             lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5005);
             
-            tmp_dep_inv = linspace(min_dep_inv_ani, max_dep_inv_ani, n_inv_r_flex_ani);
-            tmp_lat_inv = linspace(min_lat_inv_ani, max_lat_inv_ani, n_inv_t_flex_ani);
             tmp_lon_inv = linspace(min_lon_inv_ani, max_lon_inv_ani, n_inv_p_flex_ani);
 
-            for (int i = 0; i < n_inv_r_flex_ani; i++){
-                dep_inv_ani[i] = tmp_dep_inv[i];
-            }
-            for (int i = 0; i < n_inv_t_flex_ani; i++){
-                lat_inv_ani[i] = tmp_lat_inv[i];
-            }
             for (int i = 0; i < n_inv_p_flex_ani; i++){
                 lon_inv_ani[i] = tmp_lon_inv[i];
             }
         
         }
-        tmp_dep_inv.clear();
-        tmp_lat_inv.clear();
         tmp_lon_inv.clear();
     }
 }
@@ -2797,11 +2841,9 @@ void InputParams::check_contradictions(){
         max_iter_inv = 1;
     }
 
-    // upwind scheme cannot use with level nor 3rd order nor sweep parallelization
-    if (stencil_type == UPWIND && (sweep_type != SWEEP_TYPE_LEGACY || n_subprocs != 1)){
-        std::cout << "Warning: upwind scheme cannot use with level nor 3rd order nor sweep parallelization" << std::endl;
-        MPI_Finalize();
-        exit(1);
+    if (n_subprocs > 1 && sweep_type != SWEEP_TYPE_LEVEL){
+        std::cout << "Warning: n_subprocs > 1 but do not use SWEEP_TYPE_LEVEL, sweep_type changes to SWEEP_TYPE_LEVEL" << std::endl;
+        sweep_type = SWEEP_TYPE_LEVEL;
     }
 
 #ifdef USE_CUDA

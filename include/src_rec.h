@@ -80,6 +80,8 @@ public:
 
     std::string phase = "unknown";
 
+    bool dual_data   = false;   // if true, this data is a dual data, used for generating kernel, but not for obj estimation (if true, data type = 2 or 3)
+
     bool is_src_rec = false; // absolute traveltime, single source - receiver
 
     // source information

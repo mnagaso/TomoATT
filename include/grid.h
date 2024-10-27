@@ -369,8 +369,10 @@ private:
     CUSTOMREAL *bijk_pnp_s,*bijk_pnp_r;
 
     // store MPI_Request for sending and receiving
-    MPI_Request *mpi_reqs;
-    MPI_Request *mpi_reqs_kosumi;
+    MPI_Request *mpi_send_reqs;
+    MPI_Request *mpi_recv_reqs;
+    MPI_Request *mpi_send_reqs_kosumi;
+    MPI_Request *mpi_recv_reqs_kosumi;
     //
     // domain definition
     //
