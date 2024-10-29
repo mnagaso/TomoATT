@@ -9,7 +9,7 @@ if [ -f $HOME/.tmprc ]; then
 fi
 
 WORKDIR=`pwd`
-predir=${predir}
+predir=${PREDIR}
 dir=${TESTDIR}
 
 # print info
