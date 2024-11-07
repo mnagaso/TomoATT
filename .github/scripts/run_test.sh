@@ -66,7 +66,7 @@ my_test_inversion_small(){
 # prepare the test example
 cd $predir
 
-sh run_this_example.sh
+sh run_this_example.sh $nproc_sweep $nproc_dd
 
 # test example
 cd $dir
