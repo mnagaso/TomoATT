@@ -11,14 +11,14 @@ nproc_total=$((nproc_sweep*nproc_dd*nproc_dd*nproc_dd))
 
 # modify the input_params_pre.yml file
 #  nproc_sub: (integer) # number of processors for sweep parallelization (parallel the fast sweep method)
-sed -i "s/nproc_sub: [0-9]\+/nproc_sub: $nproc_sweep/g" input_params_pre.yml
+sed -i "s/^\([[:space:]]*nproc_sub: *\)[0-9]*/\1${nproc_sweep}/" input_params_pre.yml
 #   ndiv_rtp: [1, 1, 1] # number of subdivision on each direction (parallel the computional domain)
-sed -i "s/ndiv_rtp: \[[0-9]\+, [0-9]\+, [0-9]\+\]/ndiv_rtp: \[$nproc_dd, $nproc_dd, $nproc_dd\]/g" input_params_pre.yml
+sed -i "s/^\([[:space:]]*ndiv_rtp: *\)\[.*\]/\1[${nproc_dd}, ${nproc_dd}, ${nproc_dd}]/" input_params_pre.yml
 
 #  nproc_sub: (integer) # number of processors for sweep parallelization (parallel the fast sweep method)
-sed -i "s/nproc_sub: [0-9]\+/nproc_sub: $nproc_sweep/g" input_params.yml
+sed -i "s/^\([[:space:]]*nproc_sub: *\)[0-9]*/\1${nproc_sweep}/" input_params.yml
 #   ndiv_rtp: [1, 1, 1] # number of subdivision on each direction (parallel the computional domain)
-sed -i "s/ndiv_rtp: \[[0-9]\+, [0-9]\+, [0-9]\+\]/ndiv_rtp: \[$nproc_dd, $nproc_dd, $nproc_dd\]/g" input_params.yml
+sed -i "s/^\([[:space:]]*ndiv_rtp: *\)\[.*\]/\1[${nproc_dd}, ${nproc_dd}, ${nproc_dd}]/" input_params.yml
 
 # run for preparing true travel times
 mpirun --oversubscribe -n $nproc_total ../../build/bin/TOMOATT -i input_params_pre.yml
