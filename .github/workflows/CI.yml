@@ -294,7 +294,7 @@ jobs:
 
 
   linuxTest_0:
-    name: Test run example 0 - inversion small
+    name: Test run example 0 - inversion small serial
     runs-on: ubuntu-latest
     needs: [linuxCheck]
 
@@ -315,10 +315,68 @@ jobs:
 
     - name: Run test
       env:
-        TESTDIR: ${{github.workspace}}/examples/6_checkerboard_inversion_test/
-        PREDIR: ${{github.workspace}}/examples/0_generate_files_for_TomoATT/
+        TESTDIR: test/inversion_small/
+        nproc_sweep: 1
+        nproc_dd: 1
       run: ./.github/scripts/run_test.sh
       shell: bash
+
+  linuxTest_1:
+    name: Test run example 1 - inversion small sweep parallel
+    runs-on: ubuntu-latest
+    needs: [linuxCheck]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+    - name: Run test
+      env:
+        TESTDIR: test/inversion_small/
+        nproc_sweep: 8
+        nproc_dd: 1
+      run: ./.github/scripts/run_test.sh
+      shell: bash
+
+  linuxTest_2:
+    name: Test run example 2 - inversion small domain decomposition parallel
+    runs-on: ubuntu-latest
+    needs: [linuxCheck]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
+
+    - name: Run test
+      env:
+        TESTDIR: test/inversion_small/
+        nproc_sweep: 1
+        nproc_dd: 2
+      run: ./.github/scripts/run_test.sh
+      shell: bash
+
 
   # linuxTest_1:
   #   name: Test run example 1 - 1_forward_accuracy_1st_upwind_isotropic
@@ -423,7 +481,7 @@ jobs:
   #       TESTDIR: examples/4_forward_accuracy_3rd_cuthill_isotropic/
   #     run: ./.github/scripts/run_test.sh
   #     shell: bash
-      
+
   # linuxTest_5:
   #   name: Test run example 5 - 5_use_different_types_of_data_in_model_update
   #   runs-on: ubuntu-latest
