@@ -63,10 +63,6 @@ my_test_inversion_small(){
 #}
 
 
-# prepare the test example
-cd $predir
-
-sh run_this_example.sh $nproc_sweep $nproc_dd
 
 # test example
 cd $dir
@@ -74,7 +70,7 @@ cd $dir
 echo "Running test case in a work directory: $WORKDIR"
 
 # run the test
-sh run_this_example.sh
+sh run_this_example.sh $nproc_sweep $nproc_dd
 
 # check the exit code
 if [[ $? -ne 0 ]]; then
