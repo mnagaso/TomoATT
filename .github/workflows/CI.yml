@@ -316,8 +316,8 @@ jobs:
     - name: Run test
       env:
         TESTDIR: test/inversion_small/
-        nproc_sweep: 1
-        nproc_dd: 1
+        NPROC_SWEEP: 1
+        NPROC_DD: 1
       run: ./.github/scripts/run_test.sh
       shell: bash
 
@@ -344,8 +344,8 @@ jobs:
     - name: Run test
       env:
         TESTDIR: test/inversion_small/
-        nproc_sweep: 8
-        nproc_dd: 1
+        NPROC_SWEEP: 8
+        NPROC_DD: 1
       run: ./.github/scripts/run_test.sh
       shell: bash
 
@@ -372,8 +372,8 @@ jobs:
     - name: Run test
       env:
         TESTDIR: test/inversion_small/
-        nproc_sweep: 1
-        nproc_dd: 2
+        NPROC_SWEEP: 1
+        NPROC_DD: 2
       run: ./.github/scripts/run_test.sh
       shell: bash
 

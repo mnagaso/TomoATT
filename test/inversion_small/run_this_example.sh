@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python make_test_model.py
+#python make_test_model.py
 
 # get number of sweep parallel processes from input variable
 nproc_sweep=$1
@@ -8,6 +8,11 @@ nproc_sweep=$1
 nproc_dd=$2
 # calculate the total number of processes
 nproc_total=$((nproc_sweep*nproc_dd*nproc_dd*nproc_dd))
+
+# echo the number of processes
+echo "Number of sweep parallel processes: $nproc_sweep"
+echo "Number of processes for domain decomposition: $nproc_dd"
+echo "Total number of processes: $nproc_total"
 
 # modify the input_params_pre.yml file
 #  nproc_sub: (integer) # number of processors for sweep parallelization (parallel the fast sweep method)
