@@ -8,18 +8,16 @@ project(${CMAKE_PROJECT_NAME} C CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # check compiler type
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND "${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "arm64")
   #set flag
-  #set(CMAKE_CXX_COMPILER "/usr/bin/clang++") # probably depends on your system
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
-  MESSAGE("Compiler type: Clang")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -mcpu=native -ftree-vectorize")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize")
+  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -lstdc++fs")
   #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
-  set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -O3 -funroll-loops -ffast-math -lm -march=native -mfma -ftree-vectorize")
+  set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -O3 -funroll-loops -ffast-math -lm -march=native -mfma -ftree-vectorize -lstdc++fs")
   # check fujitsu compiler
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu") # this may not work... in that case, please comment out this elif
   # not supported
@@ -36,6 +34,8 @@ endif()
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
+
+set(BUILD_TESTING OFF)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_ADDITIONAL_FLAGS}")
 
@@ -72,11 +72,16 @@ if(HDF5_FOUND)
   endif()
 endif()
 
+# use collective io for HDF5: should be faster than independent io,
+#but there will be a memory overhead and may not work on some systems.
+#If you have a problem, please comment out this line.
+add_definitions(-DUSE_HDF5_IO_COLLECTIVE)
+
 # precision setting (uncomment for single precision. default is double precision.)
 #add_definitions(-DSINGLE_PRECISION)
 
-# use SIMD
-add_definitions(-DUSE_SIMD)
+# use SIMD (SSE/AVX/AVX2/AVX512) for vectorization, which is faster than the default but use a little more memory.
+# add_definitions(-DUSE_SIMD)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)
@@ -126,7 +131,17 @@ add_definitions(-DFREQ_SYNC_GHOST)
 
 # submodules
 # yaml parser
-add_subdirectory(external_libs)
+find_package(yaml-cpp QUIET)
+if (yaml-cpp_FOUND)
+  message(STATUS "yaml-cpp found")
+  message(STATUS "YAML_CPP_INCLUDE_DIR: ${YAML_CPP_INCLUDE_DIR}")
+  message(STATUS "YAML_CPP_LIBRARIES: ${YAML_CPP_LIBRARIES}")
+else()
+  message(STATUS "yaml-cpp not found. Using external_libs/yaml-cpp ...")
+  add_subdirectory(external_libs)
+  set(YAML_CPP_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  set(YAML_CPP_LIBRARIES yaml-cpp)
+endif()
 
 # add include directory
 include_directories(include cuda)
@@ -144,7 +159,7 @@ file(GLOB SOURCES_EXT_XML "external_libs/tinyxml2/*.cpp")
 if (CUDA_FOUND)
   include_directories(${CUDA_INCLUDE_DIRS})
   add_library(${CUDA_LIBRARY_NAME} STATIC ${SOURCES_CUDA} ${HEADERS_CUDA} )
-  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${YAML_CPP_INCLUDE_DIR})
   target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${HDF5_INCLUDE_DIRS})
   target_include_directories(${CUDA_LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/tinyxml2)
 endif()
@@ -164,6 +179,17 @@ set(APP_SOURCES
   #src/SrcRecWeight.cxx
   )
 
+# if BUILD_TESTING is defined, make APP_TEST and append to APP_SOURCES list
+if(BUILD_TESTING)
+  # use all the cxx files in tests/ directory
+  file( GLOB APP_TEST tests/*.cxx)
+  # or you can specify the test files one by one
+  #set(APP_TEST
+  #  tests/read_write_srcrec.cxx
+  #)
+  list(APPEND APP_SOURCES ${APP_TEST})
+endif()
+
 foreach( execsourcefile ${APP_SOURCES} )
   # get app name from file name
   get_filename_component(EXEC_NAME ${execsourcefile} NAME_WE)
@@ -181,8 +207,8 @@ foreach( execsourcefile ${APP_SOURCES} )
   target_link_libraries(${EXEC_NAME} PUBLIC MPI::MPI_CXX)
 
   # link yaml-app:
-  target_link_libraries(${EXEC_NAME} PUBLIC yaml-cpp)
-  target_include_directories(${EXEC_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/external_libs/yaml-cpp/include)
+  target_link_libraries(${EXEC_NAME} PUBLIC ${YAML_CPP_LIBRARIES})
+  target_include_directories(${EXEC_NAME} PUBLIC ${YAML_CPP_INCLUDE_DIR})
 
   # link HDF5
   if(HDF5_FOUND)
@@ -213,3 +239,19 @@ foreach( execsourcefile ${APP_SOURCES} )
 
 endforeach( execsourcefile ${APP_SOURCES} )
 
+
+# test
+
+# We check if this is the main file
+# you don't usually want users of your library to
+# execute tests as part of their build
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR} AND BUILD_TESTING)
+    include(CTest)
+
+    # loop over APP_TEST
+    foreach( execsourcefile ${APP_TEST} )
+      add_test(NAME ${execsourcefile} COMMAND ${EXEC_NAME} ${execsourcefile})
+    endforeach( execsourcefile ${APP_TEST} )
+endif ()
+
+enable_testing()

@@ -7,6 +7,7 @@
 #define USE_AVX     __AVX__
 #define USE_AVX512  __AVX512F__
 #define USE_ARM_SVE __ARM_FEATURE_SVE
+#define USE_NEON __ARM_NEON__
 
 // forcely make USE_AVX and USE_AVX512 to be false if USE_ARM_SVE is true
 #if USE_ARM_SVE
@@ -20,6 +21,8 @@
 #include <immintrin.h>
 #elif USE_ARM_SVE
 #include <arm_sve.h>
+#elif USE_NEON
+#include <arm_neon.h>
 #endif
 
 
@@ -77,6 +80,20 @@ const int NSIMD = svcntd(); // Vector Length
 //#define _mmT_min_pT svmin_f64_m
 //#define _mmT_sqrt_pT svsqrt_f64_m
 //#define _mmT_store_pT svst1_f64
+
+#elif USE_NEON
+const int ALIGN = 16;
+const int NSIMD = 4;
+#define __mT float32x4_t
+#define _mmT_set1_pT vdupq_n_f32
+#define _mmT_loadu_pT vld1q_f32
+#define _mmT_mul_pT vmulq_f32
+#define _mmT_sub_pT vsubq_f32
+#define _mmT_add_pT vaddq_f32
+#define _mmT_div_pT vdivq_f32
+#define _mmT_min_pT vminq_f32
+#define _mmT_sqrt_pT vsqrtq_f32
+#define _mmT_store_pT vst1q_f32
 
 #endif // __ARM_FEATURE_SVE
 
@@ -136,6 +153,20 @@ const int NSIMD = svcntd(); // Vector Length
 //#define _mmT_sqrt_pT svsqrt_f64_m
 //#define _mmT_store_pT svst1_f64
 
+#elif USE_NEON
+const int ALIGN = 16;
+const int NSIMD = 2;
+#define __mT float64x2_t
+#define _mmT_set1_pT vdupq_n_f64
+#define _mmT_loadu_pT vld1q_f64
+#define _mmT_mul_pT vmulq_f64
+#define _mmT_sub_pT vsubq_f64
+#define _mmT_add_pT vaddq_f64
+#define _mmT_div_pT vdivq_f64
+#define _mmT_min_pT vminq_f64
+#define _mmT_sqrt_pT vsqrtq_f64
+#define _mmT_store_pT vst1q_f64
+
 #endif // __ARM_FEATURE_SVE
 
 #endif // DOUBLE_PRECISION
@@ -148,6 +179,8 @@ inline void print_simd_type() {
     std::cout << "AVX512" << std::endl;
 #elif USE_ARM_SVE
     std::cout << "ARM SVE" << std::endl;
+#elif USE_NEON
+    std::cout << "NEON" << std::endl;
 #endif // __ARM_FEATURE_SVE
 }
 

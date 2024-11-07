@@ -15,6 +15,7 @@
 #include "iterator.h"
 #include "iterator_selector.h"
 #include "eikonal_solver_2d.h"
+#include "main_routines_inversion_mode.h"
 
 #ifdef USE_CUDA
 #include "cuda_initialize.cuh"
@@ -87,26 +88,26 @@ int main(int argc, char *argv[])
     ///////////////////////
     // loop for each source
     ///////////////////////
+    Source src;
 
-    for (long unsigned int i_src = 0; i_src < IP.src_ids_this_sim.size(); i_src++) {
+    for (long unsigned int i_src = 0; i_src < IP.n_src_comm_rec_this_sim_group; i_src++) {
 
-        // load the global id of this src
-        id_sim_src = IP.src_ids_this_sim[i_src]; // local src id to global src id
+        // check if this is the first source
+        bool first_init = (i_src==0);
+
+        // check source info
+        std::string name_sim_src   = IP.get_src_name_comm(i_src);             // source name
+        int         id_sim_src     = IP.get_src_id(name_sim_src);             // global source id
+        bool        is_teleseismic = IP.get_if_src_teleseismic(name_sim_src); // get is_teleseismic flag
+
+        // set simu group id and source name for output files/dataset names
+        io.reset_source_info(id_sim_src, name_sim_src);
 
         if (myrank == 0)
             std::cout << "source id: " << id_sim_src << ", forward modeling starting..." << std::endl;
 
-        // set group name to be used for output in h5
-        io.change_group_name_for_source();
-
-        // get is_teleseismic flag
-        bool is_teleseismic = IP.get_if_src_teleseismic(id_sim_src);
-
         // (re) initialize source object and set to grid
-        Source src(IP, grid, is_teleseismic);
-
-        // initialize iterator object
-        bool first_init = (i_src==0);
+        src.set_source_position(IP, grid, is_teleseismic, name_sim_src);
 
         /////////////////////////
         // run forward simulation
@@ -116,7 +117,7 @@ int main(int argc, char *argv[])
         std::unique_ptr<Iterator> It;
 
         if (!hybrid_stencil_order){
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, false);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, false);
             It->run_iteration_forward(IP, grid, io, first_init);
         } else {
             // hybrid stencil mode
@@ -126,22 +127,19 @@ int main(int argc, char *argv[])
             std::unique_ptr<Iterator> It_pre;
             IP.set_stencil_order(1);
             IP.set_conv_tol(IP.get_conv_tol()*100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It_pre, false);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It_pre, false);
             It_pre->run_iteration_forward(IP, grid, io, first_init);
 
             // run 3rd order forward simulation
             IP.set_stencil_order(3);
             IP.set_conv_tol(IP.get_conv_tol()/100.0);
-            select_iterator(IP, grid, src, io, first_init, is_teleseismic, It, true);
+            select_iterator(IP, grid, src, io, name_sim_src, first_init, is_teleseismic, It, true);
             It->run_iteration_forward(IP, grid, io, first_init);
         }
 
         // output the result of forward simulation
         // ignored for inversion mode.
-        if (subdom_main){
-            // output T (result timetable)
-            io.write_T_merged(grid, IP, i_inv);
-        }
+        io.write_T_merged(grid, IP, i_inv);
 
     } // end loop sources
 

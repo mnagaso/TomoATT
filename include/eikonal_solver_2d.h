@@ -16,10 +16,11 @@
 class PlainGrid {
 
 public:
-    PlainGrid(SrcRecInfo& src, InputParams& IP);
+    PlainGrid(Source& src, InputParams& IP);
     ~PlainGrid();
 
     void run_iteration(InputParams& IP);
+    void run_iteration_upwind(InputParams& IP);
 
 //private:
     // grid parameters
@@ -29,13 +30,22 @@ public:
     CUSTOMREAL max_degree;
     int nr_2d, nt_2d;
 
+    // for eikonal solver
+    int count_cand;
+    int ii,ii_nr,ii_n2r,ii_pr,ii_p2r,ii_nt,ii_n2t,ii_pt,ii_p2t;
+    CUSTOMREAL ar,br,at,bt,ar1,ar2,at1,at2,br1,br2,bt1,bt2;
+    CUSTOMREAL eqn_a, eqn_b, eqn_c, eqn_Delta;
+    CUSTOMREAL tmp_tau, T_r, T_t, charact_r, charact_t;
+    bool is_causality;
+    std::vector<CUSTOMREAL> canditate = std::vector<CUSTOMREAL>(60);
+
     // arrays
     // azimuth
     CUSTOMREAL *azimuth_2d;
     // epicentral distance
     CUSTOMREAL *epicentral_distance_2d;
     // activated boundaries
-    bool *activated_boundaries;
+    //bool *activated_boundaries;
     // grid
     CUSTOMREAL *r_2d, *t_2d; // coordinates
     CUSTOMREAL *fun_2d, *fac_a_2d, *fac_b_2d, *u_2d, *T_2d; // functions
@@ -48,6 +58,7 @@ public:
     void load_1d_model(std::string);
     void select_1d_model(std::string);
     void calculate_stencil_2d(int&, int&);
+    void calculate_stencil_upwind_2d(int&, int&);
     CUSTOMREAL eps_2d = 1e-12;
 
 private:
@@ -60,9 +71,9 @@ private:
 };
 
 void prepare_teleseismic_boundary_conditions(InputParams&, Grid&, IO_utils&);
-void run_2d_solver(InputParams&, SrcRecInfo&, IO_utils&);
+void run_2d_solver(InputParams&, Source&, IO_utils&);
 void interp2d(PlainGrid&, CUSTOMREAL, CUSTOMREAL, CUSTOMREAL&);
-void load_2d_traveltime(InputParams&, SrcRecInfo&, Grid&, IO_utils&);
-std::string get_2d_tt_filename(const std::string&, SrcRecInfo&);
+void load_2d_traveltime(InputParams&, Source&, Grid&, IO_utils&);
+std::string get_2d_tt_filename(const std::string&, Source&);
 
 #endif // EIKONAL_SOLVER_2D_H

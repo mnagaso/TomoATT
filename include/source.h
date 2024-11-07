@@ -13,23 +13,26 @@
 
 class Source {
 public:
-    Source(InputParams &, Grid &, bool&, const std::string&);
+    Source(){};
     ~Source();
 
+    // set source information
+    void set_source_position(InputParams &, Grid &, bool&, const std::string&, bool for_2d_solver=false);
     //
     // getters
     //
     CUSTOMREAL get_ds_lat(){return dis_src_lat;};
     CUSTOMREAL get_ds_lon(){return dis_src_lon;};
     CUSTOMREAL get_ds_r  (){return dis_src_r;};
-    CUSTOMREAL get_src_r(){return src_r;};
-    CUSTOMREAL get_src_t(){return src_lat;};
-    CUSTOMREAL get_src_p(){return src_lon;};
+    CUSTOMREAL get_src_r(){return src_r;};   // radius
+    CUSTOMREAL get_src_t(){return src_lat;}; // radian
+    CUSTOMREAL get_src_p(){return src_lon;}; // radian
+    CUSTOMREAL get_src_dep(){return radius2depth(src_r);}; // km
 
     //
     // parallel getters
     //
-    CUSTOMREAL get_fac_at_source(CUSTOMREAL*);
+    CUSTOMREAL get_fac_at_source(CUSTOMREAL*, bool check=false);
     CUSTOMREAL get_fac_at_point(CUSTOMREAL*, int, int, int);
 
 private:
@@ -56,6 +59,7 @@ private:
     bool is_in_subdomain = false;
     int  src_rank;
     bool *src_flags;
+    int n_dom_src = 0;
 
     // position error by discretization for each direction
     CUSTOMREAL error_lon, error_lat, error_r;

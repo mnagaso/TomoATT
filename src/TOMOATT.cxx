@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     initialize_mpi();
 
     stdout_by_rank_zero("------------------------------------------------------");
-    stdout_by_rank_zero("start TOMOATT forward or inversion calculation.");
+    stdout_by_rank_zero("TOMOATT calculation starting...");
     stdout_by_rank_zero("------------------------------------------------------");
 
     // read input file
@@ -69,10 +69,7 @@ int main(int argc, char *argv[])
     Grid grid(IP, io); // member objects are created in only the main process of subdomain groups
 
     // output inversion grid file (by main process)
-    grid.write_inversion_grid_file();
-
-    // initialize inversion grids (by other process)
-    grid.setup_inversion_grids(IP);
+    grid.inv_grid->write_inversion_grid_to_file();
 
     if (subdom_main) {
         // output grid data (grid data is only output in the main simulation)
@@ -94,14 +91,16 @@ int main(int argc, char *argv[])
         // because prepare_teleseismic_boundary_conditions is already called.
     } else if (IP.get_run_mode() == SRC_RELOCATION) {
         run_earthquake_relocation(IP, grid, io);
+    } else if (IP.get_run_mode() == INV_RELOC) {
+        run_inversion_and_relocation(IP,grid,io);
     } else {
         std::cerr << "Error: invalid run mode is specified." << std::endl;
         exit(1);
     }
 
     // output final state of the model
-    if (IP.get_is_output_final_model()) {
-        io.write_final_model(grid, IP);
+    if (IP.get_if_output_final_model()) {
+        io.write_merged_model(grid, IP, "final_model.h5");
     }
 
 
@@ -114,7 +113,7 @@ int main(int argc, char *argv[])
     finalize_mpi();
 
     stdout_by_rank_zero("------------------------------------------------------");
-    stdout_by_rank_zero("end TOMOATT solver.");
+    stdout_by_rank_zero("TOMOATT calculation end.");
     stdout_by_rank_zero("------------------------------------------------------");
 
     return 0;

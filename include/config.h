@@ -24,6 +24,7 @@ inline int loc_I_vis, loc_J_vis, loc_K_vis;
 inline int loc_I_excl_ghost, loc_J_excl_ghost, loc_K_excl_ghost;
 inline int n_inv_grids;
 inline int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc;
+inline int n_inv_I_loc_ani, n_inv_J_loc_ani, n_inv_K_loc_ani;
 
 // 3d indices to 1d index
 #define I2V(A,B,C) ((C)*loc_I*loc_J + (B)*loc_I + A)
@@ -35,12 +36,20 @@ inline void V2I(const int& ijk, int& i, int& j, int& k) {
 
 #define I2V_INV_GRIDS(A,B,C,D) ((D)*n_inv_I_loc*n_inv_J_loc*n_inv_K_loc + (C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
 #define I2V_INV_KNL(A,B,C)     ((C)*n_inv_I_loc*n_inv_J_loc + (B)*n_inv_I_loc + A)
-#define I2V_INV_GRIDS_1DK(A,B)  ((B)*n_inv_K_loc + (A))
-#define I2V_INV_GRIDS_1DJ(A,B)  ((B)*n_inv_J_loc + (A))
-#define I2V_INV_GRIDS_1DI(A,B)  ((B)*n_inv_I_loc + (A))
+#define I2V_INV_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc + (A))
+#define I2V_INV_GRIDS_2DJ(A,B,C)  ((C)*n_inv_J_loc*n_inv_K_loc + (B)*n_inv_J_loc + (A))
+#define I2V_INV_GRIDS_2DI(A,B,C)  ((C)*n_inv_I_loc*n_inv_K_loc + (B)*n_inv_I_loc + (A))
+
+#define I2V_INV_ANI_GRIDS(A,B,C,D) ((D)*n_inv_I_loc_ani*n_inv_J_loc_ani*n_inv_K_loc_ani + (C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
+#define I2V_INV_ANI_KNL(A,B,C)     ((C)*n_inv_I_loc_ani*n_inv_J_loc_ani + (B)*n_inv_I_loc_ani + A)
+#define I2V_INV_ANI_GRIDS_1DK(A,B)    ((B)*n_inv_K_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DJ(A,B,C)  ((C)*n_inv_J_loc_ani*n_inv_K_loc_ani + (B)*n_inv_J_loc_ani + (A))
+#define I2V_INV_ANI_GRIDS_1DI(A,B,C)  ((C)*n_inv_I_loc_ani*n_inv_K_loc_ani + (B)*n_inv_I_loc_ani + (A))
+
+#define I2V_INV_GRIDS_1D_GENERIC(A,B,C_ninv) ((B)*C_ninv + (A))
+#define I2V_INV_GRIDS_2D_GENERIC(A,B,C,D_ninv,E_inv)  ((C)*D_ninv*E_inv + (B)*D_ninv + (A))
 
 #define I2V_EXCL_GHOST(A,B,C)  ((C)* loc_I_excl_ghost   * loc_J_excl_ghost +    (B)* loc_I_excl_ghost    + A)
-//#define I2V_ELM_CONN(A,B,C)   ((C)*(loc_I_excl_ghost-1)*(loc_J_excl_ghost-1) + (B)*(loc_I_excl_ghost-1) + A)
 #define I2V_VIS(A,B,C)         ((C)* loc_I_vis   * loc_J_vis +    (B)* loc_I_vis    + A)
 #define I2V_3D(A,B,C)          ((C)* loc_I_excl_ghost*loc_J_excl_ghost + (B)* loc_I_excl_ghost + A)
 #define I2V_ELM_CONN(A,B,C)    ((C)*(loc_I_vis-1)*(loc_J_vis-1) + (B)*(loc_I_vis-1) + A)
@@ -88,26 +97,37 @@ inline const int        ASCII_OUTPUT_PRECISION = dbl::max_digits10;
 inline CUSTOMREAL       R_earth        = 6371.0; // for compatibility with fortran code
 inline const CUSTOMREAL GAMMA          = 0.0;
 inline const CUSTOMREAL r_kermel_mask  = 40.0;
-inline CUSTOMREAL       step_size_init = 0.01; // update step size limit
-inline CUSTOMREAL       step_size_init_sc = 0.001; // update step size limit (for station correction)
-inline CUSTOMREAL       step_size_decay = 0.9;
-inline CUSTOMREAL       step_size_lbfgs;
+inline CUSTOMREAL       step_length_init = 0.01; // update step size limit
+inline CUSTOMREAL       step_length_init_sc = 0.001; // update step size limit (for station correction)
+inline CUSTOMREAL       step_length_decay = 0.9;
+inline CUSTOMREAL       step_length_down = 0.5;
+inline CUSTOMREAL       step_length_up = 1.2;
+inline CUSTOMREAL       step_length_lbfgs;
+inline int              step_method         = 1; // 0：modulate according to obj, 1: modulate according to gradient direction.
+inline CUSTOMREAL       step_length_gradient_angle = 120.0;
+inline const int        OBJ_DEFINED         = 0;
+inline const int        GRADIENT_DEFINED    = 1;
 
 // halve steping params
 inline const CUSTOMREAL HALVE_STEP_RATIO = 0.7;
-inline const CUSTOMREAL MAX_DIFF_RATIO_VOBJ = 0.02; // maximum difference ratio between vobj_t+1 and vobj_t
+inline const CUSTOMREAL MAX_DIFF_RATIO_VOBJ = 0.8; // maximum difference ratio between vobj_t+1 and vobj_t
 inline const CUSTOMREAL HALVE_STEP_RESTORAION_RATIO = 0.7; // no restoration if == HALVE_STEP_RATIO
 
 // RUN MODE TYPE FLAG
 inline const int ONLY_FORWARD        = 0;
 inline const int DO_INVERSION        = 1;
-inline const int TELESEIS_PREPROCESS = 2;
-inline const int SRC_RELOCATION      = 3;
+inline const int SRC_RELOCATION      = 2;
+inline const int INV_RELOC           = 3;
+inline const int TELESEIS_PREPROCESS = 4; // hiden function
 
 // SWEEPING TYPE FLAG
 inline const int SWEEP_TYPE_LEGACY = 0;
 inline const int SWEEP_TYPE_LEVEL  = 1;
 inline      bool hybrid_stencil_order = false; // if true, code at first run 1st order, then change to 3rd order (Dong Cui 2020)
+
+// STENCIL TYPE
+inline const int NON_UPWIND = 0;
+inline const int UPWIND     = 1;
 
 // convert depth <-> radius
 inline CUSTOMREAL depth2radius(CUSTOMREAL depth) {
@@ -122,9 +142,17 @@ inline CUSTOMREAL radius2depth(CUSTOMREAL radius) {
 inline int ngrid_i     = 0; // number of grid points in i direction
 inline int ngrid_j     = 0; // number of grid points in j direction
 inline int ngrid_k     = 0; // number of grid points in k direction
-inline int ngrid_i_inv = 0; // number of inversion grid points in i direction
-inline int ngrid_j_inv = 0; // number of inversion grid points in j direction
-inline int ngrid_k_inv = 0; // number of inversion grid points in k direction
+//inline int ngrid_i_inv = 0; // number of inversion grid points in i direction # DUPLICATED with n_inv_I_loc as all the subdomains have the same number of inversion grid points
+//inline int ngrid_j_inv = 0; // number of inversion grid points in j direction # DUPLICATED with n_inv_J_loc
+//inline int ngrid_k_inv = 0; // number of inversion grid points in k direction # DUPLICATED with n_inv_K_loc
+//inline int ngrid_i_inv_ani = 0; // number of inversion grid points in i direction for anisotropy # DUPLICATED with n_inv_I_loc_ani
+//inline int ngrid_j_inv_ani = 0; // number of inversion grid points in j direction for anisotropy # DUPLICATED with n_inv_J_loc_ani
+//inline int ngrid_k_inv_ani = 0; // number of inversion grid points in k direction for anisotropy # DUPLICATED with n_inv_K_loc_ani
+
+// inversion grid type flags
+#define INV_GRID_REGULAR 0
+#define INV_GRID_FLEX    1
+#define INV_GRID_TRAPE   2
 
 // mpi parameters
 inline int      world_nprocs;     // total number of processes (all groups)
@@ -150,6 +178,10 @@ inline int      id_sim           = 0; // simultaneous run id  (not equal to src 
 inline int      id_subdomain     = 0; // subdomain id
 inline bool     subdom_main      = false; // true if this process is main process in subdomain
 
+// flags for explaining the process's role
+inline bool proc_read_srcrec = false;  // true if this process is reading source file
+inline bool proc_store_srcrec = false; // true if this process is storing srcrec file
+
 // MNMN stop using these global variable for avoiding misleadings during the sources' iteration loop
 //inline int      id_sim_src       = 0; // id of current target source
 //inline std::string name_sim_src  = "unknown";   //name of current target source
@@ -169,31 +201,41 @@ inline std::string output_dir="./OUTPUT_FILES/";
 //#define OUTPUT_FORMAT_BINARY 33333 //#TODO: add
 inline int output_format = OUTPUT_FORMAT_HDF5; // 0 - ascii, 1 - hdf5, 2 - binary
 
+// HDF5 io mode (independent or collective)
+#ifdef USE_HDF5_IO_COLLECTIVE
+#define HDF5_IO_MODE H5FD_MPIO_COLLECTIVE
+#else
+#define HDF5_IO_MODE H5FD_MPIO_INDEPENDENT
+#endif
+
 // smooth parameters
-inline int smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
+inline int        smooth_method = 0; // 0: multi grid parametrization, 1: laplacian smoothing
 inline CUSTOMREAL smooth_lp = 1.0;
 inline CUSTOMREAL smooth_lt = 1.0;
 inline CUSTOMREAL smooth_lr = 1.0;
-inline const int GRADIENT_DESCENT    = 0;
-inline const int HALVE_STEPPING_MODE = 1;
-inline const int LBFGS_MODE          = 2;
-inline int optim_method              = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
+inline CUSTOMREAL regul_lp  = 1.0;
+inline CUSTOMREAL regul_lt  = 1.0;
+inline CUSTOMREAL regul_lr  = 1.0;
+inline const int  GRADIENT_DESCENT    = 0;
+inline const int  HALVE_STEPPING_MODE = 1;
+inline const int  LBFGS_MODE          = 2;
+inline int        optim_method        = 0; // 0: gradient descent, 1: halve_stepping, 2: LBFGS
 inline const CUSTOMREAL wolfe_c1     = 1e-4;
 inline const CUSTOMREAL wolfe_c2     = 0.9;
 inline const int        Mbfgs        = 5;            // number of gradients/models stored in memory
 inline CUSTOMREAL       regularization_weight = 0.5; // regularization weight
 inline int              max_sub_iterations    = 20;  // maximum number of sub-iterations
-inline const CUSTOMREAL LBFGS_RELATIVE_STEP_SIZE = 0.3; // relative step size for the second and later iteration
-
+inline const CUSTOMREAL LBFGS_RELATIVE_step_length = 3.0; // relative step size for the second and later iteration
+inline CUSTOMREAL       Kdensity_coe  = 0.0;          // a preconditioner \in [0,1], kernel -> kernel / pow(kernel density, Kdensity_coe)
 // variables for test
 inline bool if_test = false;
 
 // verboose mode
 inline bool if_verbose = false;
-// inline bool if_verbose = true;
+//inline bool if_verbose = true;
 
 // if use gpu
-inline int use_gpu = 0; // 0: no, 1: yes
+inline bool use_gpu;
 
 // total number of sources in the srcrec file
 inline int nsrc_total = 0;
@@ -201,17 +243,28 @@ inline int nsrc_total = 0;
 // flag if common receiver double difference data is used
 inline bool src_pair_exists = false;
 
+
 // weight of different typs of data
 inline CUSTOMREAL abs_time_local_weight    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
 inline CUSTOMREAL cr_dif_time_local_weight = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
 inline CUSTOMREAL cs_dif_time_local_weight = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0    (not ready)
 inline CUSTOMREAL teleseismic_weight       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+inline CUSTOMREAL abs_time_local_weight_reloc    = 1.0;    // weight of absolute traveltime data for local earthquake,                        default: 1.0
+inline CUSTOMREAL cs_dif_time_local_weight_reloc = 1.0;    // weight of common source differential traveltime data for local earthquake,      default: 1.0
+inline CUSTOMREAL cr_dif_time_local_weight_reloc = 1.0;    // weight of common receiver differential traveltime data for local earthquake,    default: 1.0
+inline CUSTOMREAL teleseismic_weight_reloc       = 1.0;    // weight of teleseismic data                                                      default: 1.0    (not ready)
+
 // misfit balance
-inline int        is_balance_data_weight         = 0;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
+inline bool       balance_data_weight      = false;    // add the weight to normalize the initial objective function of different types of data. 1 for yes and 0 for no
 inline CUSTOMREAL total_abs_local_data_weight    = 0.0;
 inline CUSTOMREAL total_cr_dif_local_data_weight = 0.0;
 inline CUSTOMREAL total_cs_dif_local_data_weight = 0.0;
 inline CUSTOMREAL total_teleseismic_data_weight  = 0.0;
+inline bool       balance_data_weight_reloc      = false;    // add the weight to normalize the initial objective function of different types of data for relocation. 1 for yes and 0 for no
+inline CUSTOMREAL total_abs_local_data_weight_reloc    = 0.0;
+inline CUSTOMREAL total_cr_dif_local_data_weight_reloc = 0.0;
+inline CUSTOMREAL total_cs_dif_local_data_weight_reloc = 0.0;
+inline CUSTOMREAL total_teleseismic_data_weight_reloc  = 0.0;
 
 // 2d solver parameters
 // use fixed domain size for all 2d simulations
@@ -229,19 +282,32 @@ inline       CUSTOMREAL DIST_SRC_DDT        = 2.5*DEG2RAD; // distance threshold
 inline const std::string OUTPUT_DIR_2D      = "/2D_TRAVEL_TIME_FIELD/"; // output directory for 2d solver
 
 // earthquake relocation
-inline CUSTOMREAL       step_length_src_reloc      = 2.0;  // step length for source relocation
-inline CUSTOMREAL       step_length_decay          = 0.9;
-inline const int        N_ITER_MAX_SRC_RELOC       = 501;  // max iteration for source location
-inline CUSTOMREAL       TOL_SRC_RELOC              = 1e-3; // threshold of the norm of gradient for stopping single earthquake location
-inline const CUSTOMREAL TOL_STEP_SIZE              = 1e-2; // threshold of the max step size for stopping single earthquake location
-inline CUSTOMREAL       max_change_dep             = 10.0;
-inline CUSTOMREAL       max_change_lat             = 1.0;
-inline CUSTOMREAL       max_change_lon             = 1.0;
-inline int              is_ortime_local_search     = 0;
-inline CUSTOMREAL       ref_ortime_change          = 5.0;
-inline CUSTOMREAL       max_change_ortime          = 0.5;
-inline CUSTOMREAL       step_length_ortime_rescale = 0.1;
+inline CUSTOMREAL       step_length_src_reloc       = 2.0;  // step length for source relocation
+inline CUSTOMREAL       step_length_decay_src_reloc = 0.9;
+inline int              N_ITER_MAX_SRC_RELOC        = 501;  // max iteration for source location
+inline CUSTOMREAL       TOL_SRC_RELOC               = 1e-3; // threshold of the norm of gradient for stopping single earthquake location
+inline const CUSTOMREAL TOL_step_length             = 1e-4; // threshold of the max step size for stopping single earthquake location
+inline CUSTOMREAL       rescaling_dep               = 10.0;
+inline CUSTOMREAL       rescaling_lat               = 1.0;
+inline CUSTOMREAL       rescaling_lon               = 1.0;
+inline CUSTOMREAL       rescaling_ortime            = 0.5;
+inline CUSTOMREAL       max_change_dep              = 10.0;
+inline CUSTOMREAL       max_change_lat              = 1.0;
+inline CUSTOMREAL       max_change_lon              = 1.0;
+inline CUSTOMREAL       max_change_ortime           = 0.5;
+inline bool             ortime_local_search         = true;
+inline int              min_Ndata_reloc             = 4;    // if an earthquake is recorded by less than <min_Ndata> times, relocation is not allowed.
 
+// inversion strategy parameters
+inline int inv_mode                     = 1;
+inline int model_update_N_iter          = 1;
+inline int relocation_N_iter            = 1;
+inline int max_loop_mode0               = 10;
+inline int max_loop_mode1               = 10;
+
+// INV MODE TYPE FLAG
+inline const int ITERATIVE        = 0;
+inline const int SIMULTANEOUS     = 1;
 
 // source receiver weight calculation
 inline CUSTOMREAL ref_value = 1.0; // reference value for source receiver weight calculation

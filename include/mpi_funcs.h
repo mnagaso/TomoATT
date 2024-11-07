@@ -40,6 +40,8 @@ inline void send_cr_single_sim(CUSTOMREAL *, int);
 inline void recv_cr_single_sim(CUSTOMREAL *, int);
 inline void send_str_sim(std::string,  int);
 inline void recv_str_sim(std::string&, int);
+inline void send_str(std::string,  int);
+inline void recv_str(std::string&, int);
 inline void allreduce_i_single(int&, int&);
 inline void allreduce_cr_single(CUSTOMREAL&, CUSTOMREAL&);
 inline void allreduce_i_inplace(int*, int);
@@ -63,6 +65,7 @@ inline void broadcast_bool_inter_and_intra_sim(bool&, int);
 inline void broadcast_i_single(int&, int);
 inline void broadcast_i_single_inter_sim(int&, int);
 inline void broadcast_i_single_sub(int&, int);
+inline void broadcast_i_single_intra_sim(int&, int);
 inline void broadcast_i_single_inter_and_intra_sim(int&, int);
 inline void broadcast_f_single(float&, int);
 inline void broadcast_cr(CUSTOMREAL* , int, int);
@@ -107,8 +110,8 @@ inline void initialize_mpi(){
         exit(1);
     }
 
-    if (world_rank == 0)
-        std::cout << "Number of threads = " << nthreads << std::endl;
+    //if (world_rank == 0)
+    //    std::cout << "Number of threads = " << nthreads << std::endl;
 #endif
     // Get the number of processes
     MPI_Comm_size(MPI_COMM_WORLD, &world_nprocs);
@@ -413,7 +416,28 @@ inline void split_mpi_comm(){
                                                        << ", sub_rank/total: "  << sub_rank     << "/" << sub_nprocs \
             << std::endl;
     }
+
     synchronize_all_world();
+
+    // // check processors
+    // for (int irank = 0; irank < world_nprocs; irank++){
+    //     synchronize_all_world();
+    //     if (irank == world_rank) {
+    //         std::cout   << "global rank: " << world_rank << ", node name: " << mpi_node_names[world_rank]
+    //                     << ", world_rank: " << world_rank << ", world_nprocs: " << world_nprocs
+    //                     << ", sim_rank: " << sim_rank << ", sim_nprocs: " << sim_nprocs
+    //                     << ", sub_rank: " << sub_rank << ", sub_nprocs: " << sub_nprocs
+    //                     << ", inter_sim_rank: " << inter_sim_rank
+    //                     << ", inter_sub_rank: " << inter_sub_rank << ", inter_sub_nprocs: " << inter_sub_nprocs
+    //                     << ", id_sim: " << id_sim << ", id_subdomain: " << id_subdomain
+    //                     << ", subdom_main: " << subdom_main
+    //                     << ", id_proc_in_subdomain: " << id_proc_in_subdomain
+    //                     << ", id_subdomain: " << id_subdomain
+    //                     << std::endl;
+    //         std::cout << std::endl;
+    //     }
+    // }
+    // synchronize_all_world();
 
 }
 
@@ -518,6 +542,28 @@ inline void recv_str_sim(std::string& str, int src){
     MPI_Get_count(&status, MPI_CHAR, &n);
     char* cstr = new char[n+1];
     MPI_Recv(cstr, n, MPI_CHAR, src, MPI_DUMMY_TAG, inter_sim_comm, MPI_STATUS_IGNORE);
+    cstr[n] = '\0';
+    str = std::string(cstr);
+    delete[] cstr;
+}
+
+
+inline void send_str(std::string str, int dest){
+    const int n = str.size();
+    char* cstr = new char[n+1];
+    strcpy(cstr, str.c_str());
+    MPI_Send(cstr, n, MPI_CHAR, dest, MPI_DUMMY_TAG, inter_sub_comm);
+    delete[] cstr;
+}
+
+
+inline void recv_str(std::string& str, int src){
+    MPI_Status status;
+    int n;
+    MPI_Probe(src, MPI_DUMMY_TAG, inter_sub_comm, &status);
+    MPI_Get_count(&status, MPI_CHAR, &n);
+    char* cstr = new char[n+1];
+    MPI_Recv(cstr, n, MPI_CHAR, src, MPI_DUMMY_TAG, inter_sub_comm, MPI_STATUS_IGNORE);
     cstr[n] = '\0';
     str = std::string(cstr);
     delete[] cstr;
@@ -669,6 +715,11 @@ inline void broadcast_i_single(int& value, int root){
 inline void broadcast_i_single_inter_sim(int& value, int root){
     int count = 1;
     MPI_Bcast(&value, count, MPI_INT, root, inter_sim_comm);
+}
+
+inline void broadcast_i_single_intra_sim(int& value, int root){
+    broadcast_i_single(value, root);           // broadcast among subdomain group
+    broadcast_i_single_sub(value, root);       // broadcast within subdomain group
 }
 
 inline void broadcast_i_single_inter_and_intra_sim(int& value, int root){

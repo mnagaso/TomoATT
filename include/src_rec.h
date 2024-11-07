@@ -38,12 +38,12 @@ public:
 
     // arrays for storing arrival times on boundary surfaces, calculated by 2D Eikonal solver
     bool        is_out_of_region    = false;   // is the source or receiver in the region; false: in the refion; true: teleseismic
-    CUSTOMREAL* arr_times_bound_N   = nullptr; // arrival time of the receiver at the north boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_E   = nullptr; // arrival time of the receiver at the east boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_W   = nullptr; // arrival time of the receiver at the west boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_S   = nullptr; // arrival time of the receiver at the south boundary of the subdomain
-    CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
-    bool*       is_bound_src;                  // true if the source is on the boundary surface
+    //CUSTOMREAL* arr_times_bound_N   = nullptr; // arrival time of the receiver at the north boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_E   = nullptr; // arrival time of the receiver at the east boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_W   = nullptr; // arrival time of the receiver at the west boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_S   = nullptr; // arrival time of the receiver at the south boundary of the subdomain
+    //CUSTOMREAL* arr_times_bound_Bot = nullptr; // arrival time of the receiver at the bottom boundary of the subdomain
+    //bool*       is_bound_src;                  // true if the source is on the boundary surface
 
     // kernel
     CUSTOMREAL sta_correct = 0.0;
@@ -60,23 +60,27 @@ public:
     CUSTOMREAL vobj_src_reloc_old       = 99999999.9;
     CUSTOMREAL vobj_src_reloc           = 0.0;
     CUSTOMREAL vobj_grad_norm_src_reloc = 0.0;
-    //CUSTOMREAL DTi          = 0.0;
-    //CUSTOMREAL DTj          = 0.0;
-    //CUSTOMREAL DTk          = 0.0;
+
     CUSTOMREAL step_length_max  = step_length_src_reloc;  // 2 km default, step length for relocation
     CUSTOMREAL change_dep = 0.0;
     CUSTOMREAL change_lat = 0.0;
     CUSTOMREAL change_lon = 0.0;
     CUSTOMREAL change_tau = 0.0;
+    int        Ndata      = 0.0;
+
+    bool       is_T_written_into_file = false; 
 };
 
 class DataInfo {
 public:
 
-    CUSTOMREAL data_weight = 1.0;   // the weight in the src_rec file
-    CUSTOMREAL weight      = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+    CUSTOMREAL data_weight  = 1.0;   // the weight in the src_rec file
+    CUSTOMREAL weight       = 1.0;   // the actual weight in the inversion, equal   data_weight * weight about the data type;
+    CUSTOMREAL weight_reloc = 1.0;   // the actual weight for relocation,   equal   data_weight * weight about the data type;
 
     std::string phase = "unknown";
+
+    bool dual_data   = false;   // if true, this data is a dual data, used for generating kernel, but not for obj estimation (if true, data type = 2 or 3)
 
     bool is_src_rec = false; // absolute traveltime, single source - receiver
 
@@ -92,10 +96,6 @@ public:
     CUSTOMREAL travel_time     = -999.0;
     CUSTOMREAL travel_time_obs = -999.0;
 
-    // source infomation
-    //int         id_src_single   = -1; // use id_src instead
-    //std::string name_src_single = "unknown"; // use name_src instead
-
     // receiver pair infomation
     bool is_rec_pair                       = false;   // common source differential traveltime
     std::vector<int>         id_rec_pair   = {-1,-1};
@@ -110,10 +110,6 @@ public:
     std::vector<int>         id_src_pair   = {-1,-1};
     std::vector<std::string> name_src_pair = {"unknown","unknown"};
 
-    // receiver infomation
-    //int id_rec_single           = -1;  // use id_rec instead
-    //std::string name_rec_single = "unknown"; // use name_rec instead
-
     // common receiver differential travel time
     CUSTOMREAL cr_dif_travel_time     = -999.0;
     CUSTOMREAL cr_dif_travel_time_obs = -999.0;
@@ -122,6 +118,10 @@ public:
     CUSTOMREAL DTi          = 0.0;
     CUSTOMREAL DTj          = 0.0;
     CUSTOMREAL DTk          = 0.0;
+
+    std::vector<CUSTOMREAL> DTi_pair = {0.0, 0.0};
+    std::vector<CUSTOMREAL> DTj_pair = {0.0, 0.0};
+    std::vector<CUSTOMREAL> DTk_pair = {0.0, 0.0};
 
 };
 
@@ -147,6 +147,12 @@ void do_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
                      std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &, \
                      std::vector<std::string>&);
 
+// do not swap the sources and receivers
+void do_not_swap_src_rec(std::map<std::string, SrcRecInfo> &, \
+                     std::map<std::string, SrcRecInfo> &, \
+                     std::map<std::string, std::map<std::string, std::vector<DataInfo>>> &, \
+                     std::vector<std::string>&);
+
 // tele seismic source management
 void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
                                            std::map<std::string, SrcRecInfo> &,
@@ -165,11 +171,13 @@ void separate_region_and_tele_src_rec_data(std::map<std::string, SrcRecInfo> &,
                                            int                               &,
                                            const CUSTOMREAL, const CUSTOMREAL,
                                            const CUSTOMREAL, const CUSTOMREAL,
-                                           const CUSTOMREAL, const CUSTOMREAL);
+                                           const CUSTOMREAL, const CUSTOMREAL,
+                                           bool);
 
 void merge_region_and_tele_src(std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&,
+                               std::vector<std::string>&,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, SrcRecInfo> &,
                                std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&);
@@ -182,16 +190,20 @@ void distribute_src_rec_data(std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, SrcRecInfo>&, \
                              std::map<std::string, std::map<std::string,std::vector<DataInfo>>>&, \
+                             std::vector<std::string>&, \
                              std::vector<std::string>&);
 
 void prepare_src_map_for_2d_solver(std::map<std::string, SrcRecInfo>&, \
+                                   std::map<std::string, SrcRecInfo>&, \
                                    std::vector<std::string>&, \
                                    std::map<std::string, SrcRecInfo>&);
 
 void send_src_info_inter_sim(SrcRecInfo&, int);
 void recv_src_info_inter_sim(SrcRecInfo&, int);
+void broadcast_src_info_intra_sim(SrcRecInfo&, int);
 void send_rec_info_inter_sim(SrcRecInfo&, int);
 void recv_rec_info_inter_sim(SrcRecInfo&, int);
+void broadcast_rec_info_intra_sim(SrcRecInfo&, int);
 void send_data_info_inter_sim(DataInfo&, int);
 void recv_data_info_inter_sim(DataInfo&, int);
 

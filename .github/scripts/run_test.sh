@@ -9,6 +9,7 @@ if [ -f $HOME/.tmprc ]; then
 fi
 
 WORKDIR=`pwd`
+predir=${PREDIR}
 dir=${TESTDIR}
 
 # print info
@@ -17,6 +18,7 @@ echo `date`
 echo
 echo "******************************************************************"
 echo
+echo "Data directory: $predir"
 echo "test directory: $dir"
 echo
 echo "******************************************************************"
@@ -24,7 +26,7 @@ echo
 
 
 # test script for checking the result
-my_test(){
+my_test_inversion_small(){
     echo "Checking the result..."
     ln -s ../../utils/compare_models.py
     python compare_models.py -t ./test_model_true.h5 -r ./OUTPUT_FILES/final_model.h5
@@ -35,15 +37,39 @@ my_test(){
     echo "Test passed!"
 }
 
+my_test_forward(){
+    echo "Checking the result..."
+    python compare_src_rec.py
+    if [[ $? -ne 0 ]]; then
+        echo "Test failed!"
+        exit 1
+    fi
+    echo "Test passed!"
+}
+
+my_test_forward_2(){
+    echo "Checking the result..."
+    python compare_src_rec_obj.py
+    if [[ $? -ne 0 ]]; then
+        echo "Test failed!"
+        exit 1
+    fi
+    echo "Test passed!"
+}
+
+
+# prepare the test example
+cd $predir
+
+sh run_this_example.sh
+
 # test example
 cd $dir
 
-if [ "$TESTDIR" == "examples/inversion_small/" ]; then
-    echo "Running inversion_small example..."
-fi
+echo "Running test case in a work directory: $WORKDIR"
 
 # run the test
-./run_this_example.sh
+sh run_this_example.sh
 
 # check the exit code
 if [[ $? -ne 0 ]]; then
@@ -58,12 +84,35 @@ echo `date`
 echo
 
 # check the result
-my_test
+# if [ "$TESTDIR" == "examples/inversion_small/" ]; then
+#     my_test_inversion_small
+#     # clean up
+#     rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
+# elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
+#     my_test_forward
+#     # clean up
+#     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+# elif [ "$TESTDIR" == "examples/2_src_rec_data_read/" ]; then
+#     # clean up
+#     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+# elif [ "$TESTDIR" == "examples/3_forward_accuracy_1st_cuthill_isotropic/" ]; then
+#     my_test_forward
+#     # clean up
+#     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+# elif [ "$TESTDIR" == "examples/4_forward_accuracy_3rd_cuthill_isotropic/" ]; then
+#     my_test_forward
+#     # clean up
+#     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+# elif [ "$TESTDIR" == "examples/5_use_different_types_of_data_in_model_update/" ]; then
+#     my_test_forward_2
+#     # clean up
+#     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
+# else
+#     echo "No test script for this example!"
+#     exit 1
+# fi
 
-# clean up
-rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
-
-echo
-echo "test finished successfully!"
-echo `date`
-echo
+# echo
+# echo "test finished successfully!"
+# echo `date`
+# echo

@@ -11,20 +11,21 @@ build*
 *.dat
 *.pyc
 *.sif
-
+__pycache__/
 
 external_libs/hdf5*
 external_libs/openmpi*
-external_libs/local_mpi_hdf5
-external_libs/local_mpi_hdf5_intel
-external_libs/local_mpi_hdf5_clang
-
+external_libs/local_mpi_hdf5*
 
 base_proj
 
 include_copy*
 src_copy_*
 jchen_work
+jchen_paper
+debug
+
+figures
 
 # result for comparison
 test/inversion_2_one_src/fortran_code/ega5/output/*
@@ -41,4 +42,15 @@ test/solver_performance/bench_fugaku
 
 
 # examples
-examples/*/OUTPUT_FILES
+examples/*/OUTPUT_FILES*
+examples/*/*.dat
+examples/*/models
+examples/*/params_log.yaml
+examples/*/time.txt
+examples/*/*.dat
+examples/6_checkerboard_inversion_test/input_params/
+examples/6_checkerboard_inversion_test/img/*.png
+examples/10_data_process_practice/input_data
+examples/10_data_process_practice/output_data
+examples/0_generate_files_for_TomoATT/src_ref_file_instruction.psd*
+examples/1_output_visualization/img

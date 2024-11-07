@@ -11,6 +11,7 @@
 #include "source.h"
 #include "io.h"
 #include "timer.h"
+#include "eikonal_solver_2d.h"
 
 #ifdef USE_CUDA
 #include "grid_wrapper.cuh"
@@ -26,10 +27,10 @@ public:
     Iterator(InputParams&, Grid&, Source&, IO_utils&, const std::string&, bool, bool, bool);
     virtual ~Iterator();
     // regional source
-    void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteratiom till convergence
-    void run_iteration_adjoint(InputParams&, Grid&, IO_utils&);        // run adjoint iteratiom till convergence
+    void run_iteration_forward(InputParams&, Grid&, IO_utils&, bool&); // run forward iteration till convergence
+    void run_iteration_adjoint(InputParams&, Grid&, IO_utils&, int);        // run adjoint iteration till convergence
 
-    void initialize_arrays(InputParams&, Grid&, Source&, const std::string&); // initialize factors etc.
+    void initialize_arrays(InputParams&, IO_utils&, Grid&, Source&, const std::string&); // initialize factors etc.
 
 protected:
     void assign_processes_for_levels(Grid&, InputParams&); // assign intra-node processes for each sweeping level
@@ -40,12 +41,13 @@ protected:
     void calculate_stencil_3rd_order(Grid&, int&, int&, int&);        // calculate stencil for 3rd order
     void calculate_stencil_1st_order_upwind(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
     void calculate_boundary_nodes(Grid&);                             // calculate boundary values
-//    // teleseismic source
+    // teleseismic source
     void calculate_stencil_1st_order_tele(Grid&, int&, int&, int&);        // calculate stencil for 1st order
     void calculate_stencil_3rd_order_tele(Grid&, int&, int&, int&);        // calculate stencil for 3rd order
     void calculate_stencil_1st_order_upwind_tele(Grid&, int&, int&, int&); // calculate stencil for 1st order in upwind form
     void calculate_boundary_nodes_tele(Grid&, int&, int&, int&);           // calculate boundary values for teleseismic source
-    void calculate_boundary_nodes_tele_adj(Grid&, int&, int&, int&);       // calculate boundary values for teleseismic adjoint source
+
+    void calculate_boundary_nodes_adj(Grid&, int&, int&, int&);       // calculate boundary values for adjoint source (all zeros)
 
     // Hamiltonian calculation
     inline CUSTOMREAL calc_LF_Hamiltonian(Grid&, CUSTOMREAL& ,CUSTOMREAL& , \
@@ -59,6 +61,7 @@ protected:
 
     // methods for adjoint field calculation
     void init_delta_and_Tadj(Grid&, InputParams&);                     // initialize delta and Tadj
+    void init_delta_and_Tadj_density(Grid&, InputParams&);             // initialize delta and Tadj_density
     void fix_boundary_Tadj(Grid&);                                     // fix boundary values for Tadj
     virtual void do_sweep_adj(int, Grid&, InputParams&){};             // do sweeping with ordinal method for adjoint field
     void calculate_stencil_adj(Grid&, int&, int&, int&);               // calculate stencil for 1st order for adjoint field
@@ -82,7 +85,7 @@ protected:
     // first orders
     CUSTOMREAL *dump_c__;// center of C
     // all grid data expect tau pre-load strategy (iswap, ilevel, inodes)
-#if USE_AVX512 || USE_AVX || defined USE_CUDA
+#if USE_AVX512 || USE_AVX || USE_NEON || defined USE_CUDA
     std::vector<std::vector<int*>> vv_i__j__k__, vv_ip1j__k__, vv_im1j__k__, vv_i__jp1k__, vv_i__jm1k__, vv_i__j__kp1, vv_i__j__km1;
     std::vector<std::vector<int*>>               vv_ip2j__k__, vv_im2j__k__, vv_i__jp2k__, vv_i__jm2k__, vv_i__j__kp2, vv_i__j__km2;
 #elif USE_ARM_SVE

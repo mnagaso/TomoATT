@@ -9,16 +9,75 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
+#include <new> // for std::bad_alloc
+#include <cstdlib> // for std::exit
+
+
+// chec if compiler is gcc 7.5 or older
+//#if __GNUC__ == 7 && __GNUC_MINOR__ <= 5
+//#include <experimental/filesystem>
+//#define GNUC_7_5
+//#elif __cplusplus > 201402L // compilers supporting c++17
+//#include <filesystem>
+//#endif
 
 #include "config.h"
 
 
-inline void create_output_dir(std::string dir_path){
-    // create output directory
-    if (mkdir(dir_path.c_str(), 0777) == -1){
-        if (world_rank==0)
-            std::cout << "Warning : directory " << dir_path << " can not be created. Maybe already exists (no problem in this case)." << std::endl;
+inline int mkpath(std::string s,mode_t mode) {
+    size_t pos=0;
+    std::string dir;
+    int mdret = 0;
+
+    if(s[s.size()-1]!='/'){
+        // force trailing / so we can handle everything in loop
+        s+='/';
     }
+
+    while((pos=s.find_first_of('/',pos))!=std::string::npos){
+        dir=s.substr(0,pos++);
+        if(dir.size()==0) continue; // if leading / first time is 0 length
+        if((mdret=mkdir(dir.c_str(),mode)) && errno!=EEXIST){
+            return mdret;
+        }
+    }
+    return mdret;
+}
+
+
+
+inline void create_output_dir(std::string dir_path){
+
+    // create output directory if not exists (directories tree)
+    if (world_rank == 0) {
+
+//#if __cplusplus > 201402L && !defined(GNUC_7_5)
+//        // this function requires c++17
+//        if (!std::filesystem::exists(dir_path)){
+//            std::filesystem::create_directories(dir_path);
+//        } else {
+//            std::cout << "Output directory already exists. Overwriting..." << std::endl;
+//        }
+//#else // compilers not supporting std++17
+        // check if directory exists
+        struct stat info;
+        if (stat(dir_path.c_str(), &info) != 0){
+            // directory does not exist
+            // create directory
+            int status = mkpath(dir_path, 0755);
+            if (status != 0){
+                std::cout << "Error: cannot create output directory" << std::endl;
+                std::cout << "Exiting..." << std::endl;
+                exit(1);
+            }
+        } else {
+            // directory exists
+            std::cout << "Output directory already exists. Overwriting..." << std::endl;
+        }
+//#endif
+
+    }
+
 }
 
 
@@ -115,6 +174,19 @@ inline T my_square(T const& a){
 
 // defined function is more than 2 times slower than inline function
 //#define my_square(a) (a * a)
+
+
+template <typename T>
+T* allocateMemory(size_t size, int allocationID) {
+    try {
+        T* ptr = new T[size];
+        return ptr;
+    } catch (const std::bad_alloc& e) {
+        // Handle memory allocation failure
+        std::cerr << "Memory allocation failed for ID " << allocationID << ": " << e.what() << std::endl;
+        std::exit(EXIT_FAILURE); // Exit the program on allocation failure
+    }
+}
 
 
 inline void RLonLat2xyz(CUSTOMREAL lon, CUSTOMREAL lat, CUSTOMREAL R, CUSTOMREAL& x, CUSTOMREAL& y, CUSTOMREAL& z){
@@ -249,5 +321,50 @@ inline std::string int2string_zero_fill(int i) {
 }
 
 
+inline bool in_between(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c){
+    // check if a is between b and c
+    if ((a-b)*(a-c) <= _0_CR){
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+inline CUSTOMREAL calc_ratio_between(CUSTOMREAL const& a, CUSTOMREAL const& b, CUSTOMREAL const& c){
+    // calculate ratio of a between b and c
+    //if (b < c)
+        return (a - b) / (c - b);
+    //else
+    //    return (a - b) / (b - c);
+}
+
+template<typename T>
+std::vector<CUSTOMREAL> linspace(T start_in, T end_in, int num_in)
+{
+
+  std::vector<CUSTOMREAL> linspaced;
+
+  double start = static_cast<CUSTOMREAL>(start_in);
+  double end = static_cast<CUSTOMREAL>(end_in);
+  double num = static_cast<CUSTOMREAL>(num_in);
+
+  if (num == 0) { return linspaced; }
+  if (num == 1) 
+    {
+      linspaced.push_back(start);
+      return linspaced;
+    }
+
+  double delta = (end - start) / (num - 1);
+
+  for(int i=0; i < num-1; ++i)
+    {
+      linspaced.push_back(start + delta * i);
+    }
+  linspaced.push_back(end); // I want to ensure that start and end
+                            // are exactly the same as the input
+  return linspaced;
+}
 
 #endif // UTILS_H

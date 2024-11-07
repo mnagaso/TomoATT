@@ -19,6 +19,7 @@
 #include "input_params.h"
 #include "source.h"
 #include "io.h"
+#include "inv_grid.h"
 
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
@@ -39,7 +40,7 @@ public:
     // calculate initial fields T0 T0r T0t T0p and initialize tau
     void initialize_fields(Source &, InputParams&);
     // calculate initial fields T0 T0r T0t T0p and initialize tau for teleseismic source
-    void initialize_fields_teleseismic(Source &, SrcRecInfo&);
+    void initialize_fields_teleseismic();
     // calculate L1 and Linf diff (sum of value change on the nodes)
     void calc_L1_and_Linf_diff(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for teleseismic source (sum of value change on the nodes)
@@ -48,6 +49,8 @@ public:
     void calc_L1_and_Linf_error(CUSTOMREAL&, CUSTOMREAL&);
     // calculate L1 and Linf diff for adjoint field
     void calc_L1_and_Linf_diff_adj(CUSTOMREAL&, CUSTOMREAL&);
+    // calculate L1 and Linf diff for density of adjoint field
+    void calc_L1_and_Linf_diff_adj_density(CUSTOMREAL&, CUSTOMREAL&);
 
     // send and receive data to/from other subdomains
     void send_recev_boundary_data(CUSTOMREAL*);
@@ -61,11 +64,11 @@ public:
     void assign_received_data_to_ghost_kosumi(CUSTOMREAL*);
 
     // inversion methods
-    void setup_inversion_grids(InputParams&);
-    void setup_inv_grid_params(InputParams&);
+    InvGrid* inv_grid; // inversion grid definitions
 
-    void reinitialize_abcf();                // reinitialize factors
-    void initialize_kernels();               // fill 0 to kernels
+    void reinitialize_abcf();   // reinitialize factors
+    void rejuvenate_abcf();     // reinitialize factors for earthquake relocation
+    void initialize_kernels();  // fill 0 to kernels
 
     //
     // getters
@@ -119,9 +122,16 @@ public:
     CUSTOMREAL* get_Ks()           {return get_array_for_vis(Ks_loc,   false);}; // Ks
     CUSTOMREAL* get_Kxi()          {return get_array_for_vis(Kxi_loc,         false);}; // Kxi
     CUSTOMREAL* get_Keta()         {return get_array_for_vis(Keta_loc,        false);}; // Keta
+    CUSTOMREAL* get_Ks_density()   {return get_array_for_vis(Ks_density_loc,    false);}; // Ks_density
+    CUSTOMREAL* get_Kxi_density()  {return get_array_for_vis(Kxi_density_loc,   false);}; // Kxi_density
+    CUSTOMREAL* get_Keta_density() {return get_array_for_vis(Keta_density_loc,  false);}; // Keta_density
     CUSTOMREAL* get_Ks_update()    {return get_array_for_vis(Ks_update_loc,   false);}; // Ks_update
     CUSTOMREAL* get_Kxi_update()   {return get_array_for_vis(Kxi_update_loc,  false);}; // Kxi_update
     CUSTOMREAL* get_Keta_update()  {return get_array_for_vis(Keta_update_loc, false);}; // Keta_update
+    // CUSTOMREAL* get_Kdensity_update(){return get_array_for_vis(Kdensity_update_loc,false);}; // Kdensity_update
+    CUSTOMREAL* get_Ks_descent_dir() {return get_array_for_vis(Ks_descent_dir_loc, false);}; // Ks_descent_dir
+    CUSTOMREAL* get_Kxi_descent_dir(){return get_array_for_vis(Kxi_descent_dir_loc,false);}; // Kxi_descent_dir
+    CUSTOMREAL* get_Keta_descent_dir(){return get_array_for_vis(Keta_descent_dir_loc,false);}; // Keta_descent_dir
 
     // get physical parameters
     CUSTOMREAL get_r_min()       {return r_min;};
@@ -163,12 +173,6 @@ public:
     int get_j_end_loc()          {return j_end_loc;};
     int get_i_start_loc()        {return i_start_loc;};
     int get_i_end_loc()          {return i_end_loc;};
-    int get_k_start_loc_inv()    {return k_start_loc_inv;};
-    int get_k_end_loc_inv()      {return k_end_loc_inv;};
-    int get_j_start_loc_inv()    {return j_start_loc_inv;};
-    int get_j_end_loc_inv()      {return j_end_loc_inv;};
-    int get_i_start_loc_inv()    {return i_start_loc_inv;};
-    int get_i_end_loc_inv()      {return i_end_loc_inv;};
 
     // copy tau to tau old
     void tau2tau_old();
@@ -176,6 +180,8 @@ public:
     void T2tau_old();
     // copy tau to Tadj
     void update_Tadj();
+    // copy tau to Tadj
+    void update_Tadj_density();
     // back up fun xi eta
     void back_up_fun_xi_eta_bcf();
     // restore fun xi eta
@@ -185,9 +191,7 @@ public:
     void write_inversion_grid_file();
 
 private:
-    std::string inversion_grid_file_out;     // inversion grid file to be output
 
-private:
     //
     // member variables
     //
@@ -199,16 +203,6 @@ private:
     int i_start_loc=0, j_start_loc=0, k_start_loc=0;
     // end node id for each direction expect the boundary
     int i_end_loc=0, j_end_loc=0, k_end_loc=0;
-
-    // for inversion grid
-public:
-    // starting node id for each direction expect the boundary
-    int i_start_loc_inv=0, j_start_loc_inv=0, k_start_loc_inv=0;
-    // end node id for each direction expect the boundary
-    int i_end_loc_inv=0, j_end_loc_inv=0, k_end_loc_inv=0;
-    // number of grids ecxluding the ghost grids
-    int loc_I_excl_ghost_inv, loc_J_excl_ghost_inv, loc_K_excl_ghost_inv;
-private:
 
     // neighbors domain_id (-1 if no neighbor)
     // order of directions: -i,+i,-j,+j,-k,+k
@@ -272,7 +266,8 @@ public:
     CUSTOMREAL *Ks_model_store_loc, *Keta_model_store_loc, *Kxi_model_store_loc;
     CUSTOMREAL *Ks_descent_dir_loc, *Keta_descent_dir_loc, *Kxi_descent_dir_loc;
     CUSTOMREAL *fun_regularization_penalty_loc, *eta_regularization_penalty_loc, *xi_regularization_penalty_loc;
-    CUSTOMREAL *Ks_regularization_penalty_loc, *Keta_regularization_penalty_loc, *Kxi_regularization_penalty_loc;
+    CUSTOMREAL *fun_gradient_regularization_penalty_loc, *eta_gradient_regularization_penalty_loc, *xi_gradient_regularization_penalty_loc;
+    CUSTOMREAL *fun_prior_loc, *eta_prior_loc, *xi_prior_loc; // *zeta_prior_loc; TODO
     // tmp array for file IO
     CUSTOMREAL *vis_data;
 
@@ -305,26 +300,35 @@ private:
     bool inverse_flag = false;
     //int n_inv_grids; // in config.h
     //int n_inv_I_loc, n_inv_J_loc, n_inv_K_loc; // in config.h
-    CUSTOMREAL dinv_r, dinv_t, dinv_p;
-    CUSTOMREAL dinv_lr, dinv_lt, dinv_lp;
 public:
-    CUSTOMREAL *r_loc_inv;
-    CUSTOMREAL *t_loc_inv;
-    CUSTOMREAL *p_loc_inv;
     CUSTOMREAL *Ks_loc;
     CUSTOMREAL *Kxi_loc;
     CUSTOMREAL *Keta_loc;
+    CUSTOMREAL *Ks_density_loc;
+    CUSTOMREAL *Kxi_density_loc;
+    CUSTOMREAL *Keta_density_loc;
     CUSTOMREAL *Tadj_loc; // timetable for adjoint source
+    CUSTOMREAL *Tadj_density_loc; // timetable for density of adjoint source
     CUSTOMREAL *Ks_inv_loc;
     CUSTOMREAL *Kxi_inv_loc;
     CUSTOMREAL *Keta_inv_loc;
+    // CUSTOMREAL *Ks_density_inv_loc;
+    // CUSTOMREAL *Kxi_density_inv_loc;
+    // CUSTOMREAL *Keta_density_inv_loc;
     // model update para
     CUSTOMREAL *Ks_update_loc;
     CUSTOMREAL *Kxi_update_loc;
     CUSTOMREAL *Keta_update_loc;
+    // CUSTOMREAL *Ks_density_update_loc;
+    // CUSTOMREAL *Kxi_density_update_loc;
+    // CUSTOMREAL *Keta_density_update_loc;
+    // model update para of the previous step
+    CUSTOMREAL *Ks_update_loc_previous;
+    CUSTOMREAL *Kxi_update_loc_previous;
+    CUSTOMREAL *Keta_update_loc_previous;
 private:
     MPI_Win     win_Tadj_loc;
-
+    MPI_Win     win_Tadj_density_loc;
     // boundary layer for mpi communication
     // storing not the value but the pointers for the elements of arrays
     // to send
@@ -365,8 +369,10 @@ private:
     CUSTOMREAL *bijk_pnp_s,*bijk_pnp_r;
 
     // store MPI_Request for sending and receiving
-    MPI_Request *mpi_reqs;
-    MPI_Request *mpi_reqs_kosumi;
+    MPI_Request *mpi_send_reqs;
+    MPI_Request *mpi_recv_reqs;
+    MPI_Request *mpi_send_reqs_kosumi;
+    MPI_Request *mpi_recv_reqs_kosumi;
     //
     // domain definition
     //
