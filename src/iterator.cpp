@@ -253,7 +253,7 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
 
         int n_grids_by_this = 0; // the number of grids calculated by this subproc
         int i_grid_start    = 0; // the starting index of grids calculated by this subproc
-        if(sub_rank < remainder){ 
+        if(sub_rank < remainder){
             n_grids_by_this = n_grids_each + 1;
             i_grid_start    = n_grids_each*sub_rank + sub_rank;
         } else{
@@ -292,6 +292,12 @@ void Iterator::assign_processes_for_levels(Grid& grid, InputParams& IP) {
         std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
 
     // std::cout << "n total grids calculated by sub_rank " << sub_rank << ": " << n_grids_this_subproc << std::endl;
+
+    //
+    // TODO: upwind scheme + sweep parallelization does not support SIMD yet
+    //
+    return;
+
 
 #if defined USE_SIMD || defined USE_CUDA
 
