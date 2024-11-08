@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#python make_test_model.py
+python make_test_model.py
 
-# get number of sweep parallel processes from input variable
-nproc_sweep=$1
+# get number of sweep parallel processes from input variable (default 1)
+nproc_sweep=${1:-1}
 # get number of processes for domain decomposition
-nproc_dd=$2
+nproc_dd=${1:-1}
 # calculate the total number of processes
 nproc_total=$((nproc_sweep*nproc_dd*nproc_dd*nproc_dd))
 
