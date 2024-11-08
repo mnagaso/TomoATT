@@ -190,14 +190,6 @@ jobs:
       run: |
         cmake --build ${{github.workspace}}/build -j2
 
-    - name: Cache build artifacts
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/build
-        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-build-
-
   linuxCheck-Intel:
     name: Test Intel on ubuntu-20.04
     runs-on: ubuntu-20.04
@@ -313,11 +305,13 @@ jobs:
       run: ./.github/scripts/run_install.sh
       shell: bash
 
-    - name: Restore build artifacts
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/build
-        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
 
     - name: Run test
       env:
@@ -339,11 +333,13 @@ jobs:
       run: ./.github/scripts/run_install.sh
       shell: bash
 
-    - name: Restore build artifacts
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/build
-        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
 
     - name: Run test
       env:
@@ -365,11 +361,13 @@ jobs:
       run: ./.github/scripts/run_install.sh
       shell: bash
 
-    - name: Restore build artifacts
-      uses: actions/cache@v3
-      with:
-        path: ${{ github.workspace }}/build
-        key: ${{ runner.os }}-build-${{ hashFiles('**/CMakeLists.txt') }}
+    - name: Configure
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: |
+        cmake --build ${{github.workspace}}/build -j2
 
     - name: Run test
       env:
