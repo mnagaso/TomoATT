@@ -9,8 +9,13 @@ if [ -f $HOME/.tmprc ]; then
 fi
 
 WORKDIR=`pwd`
-predir=${predir}
+predir=${PREDIR}
 dir=${TESTDIR}
+
+# get number of sweep parallelization if exists, or 1 by default
+nproc_sweep=${NPROC_SWEEP:-1}
+# get number of processes for domain decomposition if exists, or 1 by default
+nproc_dd=${NPROC_DD:-1}
 
 # print info
 echo "Running test case in a work directory: $WORKDIR"
@@ -37,31 +42,27 @@ my_test_inversion_small(){
     echo "Test passed!"
 }
 
-my_test_forward(){
-    echo "Checking the result..."
-    python compare_src_rec.py
-    if [[ $? -ne 0 ]]; then
-        echo "Test failed!"
-        exit 1
-    fi
-    echo "Test passed!"
-}
+#my_test_forward(){
+#    echo "Checking the result..."
+#    python compare_src_rec.py
+#    if [[ $? -ne 0 ]]; then
+#        echo "Test failed!"
+#        exit 1
+#    fi
+#    echo "Test passed!"
+#}
+#
+#my_test_forward_2(){
+#    echo "Checking the result..."
+#    python compare_src_rec_obj.py
+#    if [[ $? -ne 0 ]]; then
+#        echo "Test failed!"
+#        exit 1
+#    fi
+#    echo "Test passed!"
+#}
 
-my_test_forward_2(){
-    echo "Checking the result..."
-    python compare_src_rec_obj.py
-    if [[ $? -ne 0 ]]; then
-        echo "Test failed!"
-        exit 1
-    fi
-    echo "Test passed!"
-}
 
-
-# prepare the test example
-cd $predir
-
-sh run_this_example.sh
 
 # test example
 cd $dir
@@ -69,7 +70,7 @@ cd $dir
 echo "Running test case in a work directory: $WORKDIR"
 
 # run the test
-sh run_this_example.sh
+sh run_this_example.sh $nproc_sweep $nproc_dd
 
 # check the exit code
 if [[ $? -ne 0 ]]; then
@@ -84,10 +85,10 @@ echo `date`
 echo
 
 # check the result
-# if [ "$TESTDIR" == "examples/inversion_small/" ]; then
-#     my_test_inversion_small
-#     # clean up
-#     rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
+if [ "$TESTDIR" == "examples/inversion_small/" ]; then
+    my_test_inversion_small
+    # clean up
+    rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
 # elif [ "$TESTDIR" == "examples/1_forward_accuracy_1st_upwind_isotropic/" ]; then
 #     my_test_forward
 #     # clean up
@@ -107,12 +108,12 @@ echo
 #     my_test_forward_2
 #     # clean up
 #     rm -rf OUTPUT_FILES* src_rec_true.dat time.txt *h5 models
-# else
-#     echo "No test script for this example!"
-#     exit 1
-# fi
+else
+    echo "No test script for this example!"
+    exit 1
+fi
 
-# echo
-# echo "test finished successfully!"
-# echo `date`
-# echo
+echo
+echo "test finished successfully!"
+echo `date`
+echo
