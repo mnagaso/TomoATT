@@ -425,7 +425,7 @@ def data_lon_lat_ele_wt_st(ev_info,st_info):
     return [np.array(lon),np.array(lat),np.array(ele),np.array(weight)]
 
 # %%
-# 函数：data_dis_time(ev_info) 输出 [震中距,到时]. function: output the [dis,time] of all data
+# 函数：data_dis_time(ev_info) 输出 [距离,到时]. function: output the [dis,time] of all data
 def data_dis_time(ev_info,st_info):
     all_dis = []
     all_time = []
@@ -439,6 +439,23 @@ def data_dis_time(ev_info,st_info):
             lon_st = st_info[ev_info[key_ev].t[key_t][0]].lon
             ele_st = st_info[ev_info[key_ev].t[key_t][0]].ele
             dis = math.sqrt(cal_dis(lat_ev,lon_ev,lat_st,lon_st)**2 + (dep_ev+ele_st/1000)**2)
+            all_dis.append(dis)
+
+    return [np.array(all_dis),np.array(all_time)]
+
+# %%
+# 函数：data_epidis_time(ev_info) 输出 [震中距,到时]. function: output the [epidis,time] of all data
+def data_epidis_time(ev_info,st_info):
+    all_dis = []
+    all_time = []
+    for key_ev in ev_info:
+        lat_ev = ev_info[key_ev].lat
+        lon_ev = ev_info[key_ev].lon
+        for key_t in ev_info[key_ev].t:
+            all_time.append(ev_info[key_ev].t[key_t][2])
+            lat_st = st_info[ev_info[key_ev].t[key_t][0]].lat
+            lon_st = st_info[ev_info[key_ev].t[key_t][0]].lon
+            dis = cal_dis(lat_ev,lon_ev,lat_st,lon_st)**2
             all_dis.append(dis)
 
     return [np.array(all_dis),np.array(all_time)]
