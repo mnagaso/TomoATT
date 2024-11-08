@@ -85,7 +85,7 @@ echo `date`
 echo
 
 # check the result
-if [ "$TESTDIR" == "examples/inversion_small/" ]; then
+if [ "$TESTDIR" == "test/inversion_small/" ]; then
     my_test_inversion_small
     # clean up
     rm -rf OUTPUT_FILES* src_rec_test.dat time.txt *h5
