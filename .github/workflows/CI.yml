@@ -309,6 +309,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
     - name: Restore build artifacts
       uses: actions/cache@v3
       with:
@@ -331,6 +335,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
+
     - name: Restore build artifacts
       uses: actions/cache@v3
       with:
@@ -352,6 +360,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./.github/scripts/run_install.sh
+      shell: bash
 
     - name: Restore build artifacts
       uses: actions/cache@v3
