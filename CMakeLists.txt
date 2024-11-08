@@ -47,14 +47,14 @@ message(STATUS "MPI_FOUND: ${MPI_FOUND}")
 message(STATUS "MPI_VERSION: ${MPI_VERSION}")
 
 # find openmp ## WE DO NOT USE OPENMP BUT KEEP THIS FOR FUTURE USE
-find_package(OpenMP)
-if(OPENMP_FOUND)
-  message(STATUS "OpenMP found")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  add_definitions(-DUSE_OMP)
-endif()
+###find_package(OpenMP)
+###if(OPENMP_FOUND)
+###  message(STATUS "OpenMP found")
+###  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+###  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+###  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+###  add_definitions(-DUSE_OMP)
+###endif()
 
 # find HDF5 parallel TODO: check parallel io is enable or not
 message(STATUS "Running CMAKE FindHDF5.cmake...")
