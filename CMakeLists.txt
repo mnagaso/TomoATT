@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.8)
 
 # set the project name
 set(CMAKE_PROJECT_NAME "TOMOATT")
-project(${CMAKE_PROJECT_NAME} C CXX)
+project(${CMAKE_PROJECT_NAME} VERSION 1.0.0 LANGUAGES C CXX )
 
 # set install directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -162,6 +162,11 @@ endif()
 
 # add include directory
 include_directories(include cuda)
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/include/version.h.in
+  ${PROJECT_SOURCE_DIR}/include/version.h
+)
 
 # list of source files
 file(GLOB SOURCES "src/*.cpp")
