@@ -14,7 +14,7 @@ import numpy as np
 
 Ngrid = [61,61,61]
 data_file = '2_models/model_init_N%d_%d_%d.h5'%(Ngrid[0],Ngrid[1],Ngrid[2])
-par_file = '3_input_params/input_params_signal.yaml'  
+par_file = '3_input_params/input_params_signal.yaml'
 model = ATTModel.read(data_file, par_file)
 initial_model = model.to_xarray()
 
@@ -31,7 +31,7 @@ start = [1.25,0]; end = [1.25,2]
 vel_init_sec = initial_model.interp_sec(start, end, field='vel', val = 1)
 
 # checkerboard model
-vel_ckb = ckb_model.interp_dep(depth, field='vel') # lon = [:,0], lat = [:,1], vel = [:,2]  
+vel_ckb = ckb_model.interp_dep(depth, field='vel') # lon = [:,0], lat = [:,1], vel = [:,2]
 xi_ckb  = ckb_model.interp_dep(depth, field='xi')
 eta_ckb = ckb_model.interp_dep(depth, field='eta')
 epsilon_ckb = ckb_model.interp_dep(depth, field='epsilon')
@@ -121,7 +121,7 @@ fig.plot(x = earthquake[2,ev_idx3], y = earthquake[1,ev_idx3], style = "c0.1c", 
 
 # ------------------- colorbar -------------------
 fig.shift_origin(xshift=-11, yshift=-1.5)
-fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") # +e,默认是双箭头，f表示forward，b表示background ，w表示长宽，h表示水平
+fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") # +e indicates double-headed arrows by default. f stands for forward, b stands for background, w stands for width, and h stands for height.
 
 fig.shift_origin(xshift=6, yshift=-1)
 fig.basemap(region=[0,1,0,1], frame=["wesn"], projection="X6c/1.5c")
@@ -145,7 +145,7 @@ tag = "inv"
 data_file = "OUTPUT_FILES/OUTPUT_FILES_%s/final_model.h5"%(tag)
 model = ATTModel.read(data_file, par_file)
 inv_model = model.to_xarray()
-vel_inv = inv_model.interp_dep(depth, field='vel') # lon = [:,0], lat = [:,1], vel = [:,2]  
+vel_inv = inv_model.interp_dep(depth, field='vel') # lon = [:,0], lat = [:,1], vel = [:,2]
 x = vel_inv[:,0]; y = vel_inv[:,1]; value = (vel_inv[:,2] - vel_init[:,2])/vel_init[:,2] * 100
 vel_inv_sec = inv_model.interp_sec(start, end, field='vel', val = 1)
 x_sec = vel_inv_sec[:,3]; y_sec = vel_inv_sec[:,1]; value_sec = (vel_inv_sec[:,4] - vel_init_sec[:,4])/vel_init_sec[:,4] * 100
@@ -199,7 +199,7 @@ fig.grdimage(grid = grid)
 
 # ------------------- colorbar -------------------
 fig.shift_origin(xshift=-11, yshift=-1.5)
-fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") # +e,默认是双箭头，f表示forward，b表示background ，w表示长宽，h表示水平
+fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") # +e indicates double-headed arrows by default. f stands for forward, b stands for background, w stands for width, and h stands for height.
 
 fig.shift_origin(xshift=6, yshift=-1)
 fig.basemap(region=[0,1,0,1], frame=["wesn"], projection="X6c/1.5c")
