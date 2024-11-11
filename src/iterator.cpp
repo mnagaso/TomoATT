@@ -1,5 +1,7 @@
 #include "iterator.h"
 
+// test no valence anymore
+
 Iterator::Iterator(InputParams& IP, Grid& grid, Source& src, IO_utils& io, const std::string& src_name, \
                    bool first_init, bool is_teleseismic_in, bool is_second_run_in) \
          : is_second_run(is_second_run_in) {

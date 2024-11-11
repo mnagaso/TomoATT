@@ -14,6 +14,7 @@
 #include "model_update.h"
 #include "main_routines_calling.h"
 #include "eikonal_solver_2d.h"
+#include "version.h"
 
 #ifdef USE_CUDA
 #include "cuda_initialize.cuh"
@@ -34,6 +35,8 @@ int main(int argc, char *argv[])
 
     stdout_by_rank_zero("------------------------------------------------------");
     stdout_by_rank_zero("TOMOATT calculation starting...");
+    std::string version = "TOMOATT version: " + std::string(TOMOATT_VERSION);
+    stdout_by_rank_zero(version.c_str());
     stdout_by_rank_zero("------------------------------------------------------");
 
     // read input file
