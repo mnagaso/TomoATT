@@ -61,6 +61,9 @@ examples/utils/functions_for_data.ipynb
 examples/eg1*/*.ipynb
 examples/eg2*/*.ipynb
 examples/eg3*/*.ipynb
+
+examples/realcase1*/*.ipynb
+
 examples/*/img
 
 include/version.h

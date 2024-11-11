@@ -25,17 +25,11 @@ ckb_model = model.to_xarray()
 # initial model
 depth = 20.0
 vel_init = initial_model.interp_dep(depth, field='vel')
-xi_init  = initial_model.interp_dep(depth, field='xi')
-eta_init = initial_model.interp_dep(depth, field='eta')
 start = [1.25,0]; end = [1.25,2]
 vel_init_sec = initial_model.interp_sec(start, end, field='vel', val = 1)
 
 # checkerboard model
 vel_ckb = ckb_model.interp_dep(depth, field='vel') # lon = [:,0], lat = [:,1], vel = [:,2]  
-xi_ckb  = ckb_model.interp_dep(depth, field='xi')
-eta_ckb = ckb_model.interp_dep(depth, field='eta')
-epsilon_ckb = ckb_model.interp_dep(depth, field='epsilon')
-phi_ckb = ckb_model.interp_dep(depth, field='phi')
 vel_ckb_sec = ckb_model.interp_sec(start, end, field='vel', val = 1)
 
 # anisotropic arrow
