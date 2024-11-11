@@ -5,9 +5,17 @@ This is a toy model to invert traveltimes for Vp and anisotropy (Paper XXX, Figu
 Reference:
 citation
 
-2. Run bash script `bash run_this_example.sh` to execute the test.
+Python modules are required to initiate the inversion and to plot final results:
+- h5py
+- PyTomoAT
+- Pygmt
+- gmt
 
-3. After inversion, run `plot_output.py` to plot the results.
+Run this example:
+
+1. Run bash script `bash run_this_example.sh` to execute the test.
+
+2. After inversion, run `plot_output.py` to plot the results.
 
 The target model:
 
