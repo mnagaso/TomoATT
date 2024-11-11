@@ -19,11 +19,11 @@ model:
 parallel: # parameters for parallel computation
   n_sims: 1           # number of simultaneous run
   ndiv_rtp: [1, 1, 1] # number of subdomains
-  nproc_sub: 2        # number of subprocess used for each subdomain
+  nproc_sub: 1        # number of subprocess used for each subdomain
 
 output_setting:
   output_dir: ./OUTPUT_FILES/    # path to output director (default is ./OUTPUT_FILES/)
-  output_source_field: false     # output the calculated field of all sources
+  output_source_field: true     # output the calculated field of all sources
   output_model_dat: false        # output model_parameters_inv_0000.dat or not.
   output_final_model: true       # output merged final model or not.
   output_in_process: true        # output model at each inv iteration or not.

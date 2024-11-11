@@ -2,34 +2,51 @@ cmake_minimum_required(VERSION 3.8)
 
 # set the project name
 set(CMAKE_PROJECT_NAME "TOMOATT")
-project(${CMAKE_PROJECT_NAME} C CXX)
+project(${CMAKE_PROJECT_NAME} VERSION 1.0.0 LANGUAGES C CXX )
 
 # set install directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# check debug or release
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  message(STATUS "Build type: Debug")
+else()
+  message(STATUS "Build type: Release")
+endif()
+
 # check compiler type
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND "${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "arm64")
-  #set flag
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -mcpu=native -ftree-vectorize")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -g -O0")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -mcpu=native -ftree-vectorize")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -lstdc++fs")
-  #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -g -O0 -lm -lstdc++fs")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -lstdc++fs")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
-  set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -O3 -funroll-loops -ffast-math -lm -march=native -mfma -ftree-vectorize -lstdc++fs")
-  # check fujitsu compiler
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu") # this may not work... in that case, please comment out this elif
-  # not supported
-  #MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
-  # fujitsu clang
-  #elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -g -O0 -lm -lstdc++fs")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -O3 -funroll-loops -ffast-math -lm -march=native -mfma -ftree-vectorize -lstdc++fs")
+  endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu")
+  MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
   MESSAGE("Compiler type: FujitsuClang")
-  set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-Nclang -g -O0 -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
+  endif()
 else()
   MESSAGE(FATAL_ERROR "Compiler type: Unknown")
 endif()
-
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -145,6 +162,11 @@ endif()
 
 # add include directory
 include_directories(include cuda)
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/include/version.h.in
+  ${PROJECT_SOURCE_DIR}/include/version.h
+)
 
 # list of source files
 file(GLOB SOURCES "src/*.cpp")

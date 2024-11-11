@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#python make_test_model.py
+python make_test_model.py
 
-# get number of sweep parallel processes from input variable
-nproc_sweep=$1
+# get number of sweep parallel processes from input variable (default 1)
+nproc_sweep=${1:-1}
 # get number of processes for domain decomposition
-nproc_dd=$2
+nproc_dd=${2:-1}
 # calculate the total number of processes
 nproc_total=$((nproc_sweep*nproc_dd*nproc_dd*nproc_dd))
 
@@ -16,14 +16,14 @@ echo "Total number of processes: $nproc_total"
 
 # modify the input_params_pre.yml file
 #  nproc_sub: (integer) # number of processors for sweep parallelization (parallel the fast sweep method)
-sed -i "s/^\([[:space:]]*nproc_sub: *\)[0-9]*/\1${nproc_sweep}/" input_params_pre.yml
+pta setpar input_params_pre.yml parallel.nproc_sub ${nproc_sweep}
 #   ndiv_rtp: [1, 1, 1] # number of subdivision on each direction (parallel the computional domain)
-sed -i "s/^\([[:space:]]*ndiv_rtp: *\)\[.*\]/\1[${nproc_dd}, ${nproc_dd}, ${nproc_dd}]/" input_params_pre.yml
+pta setpar input_params_pre.yml parallel.ndiv_rtp ${nproc_dd},${nproc_dd},${nproc_dd}
 
 #  nproc_sub: (integer) # number of processors for sweep parallelization (parallel the fast sweep method)
-sed -i "s/^\([[:space:]]*nproc_sub: *\)[0-9]*/\1${nproc_sweep}/" input_params.yml
+pta setpar input_params.yml parallel.nproc_sub ${nproc_sweep}
 #   ndiv_rtp: [1, 1, 1] # number of subdivision on each direction (parallel the computional domain)
-sed -i "s/^\([[:space:]]*ndiv_rtp: *\)\[.*\]/\1[${nproc_dd}, ${nproc_dd}, ${nproc_dd}]/" input_params.yml
+pta setpar input_params.yml parallel.ndiv_rtp ${nproc_dd},${nproc_dd},${nproc_dd}
 
 # run for preparing true travel times
 mpirun --oversubscribe -n $nproc_total ../../build/bin/TOMOATT -i input_params_pre.yml

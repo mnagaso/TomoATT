@@ -54,3 +54,11 @@ examples/10_data_process_practice/input_data
 examples/10_data_process_practice/output_data
 examples/0_generate_files_for_TomoATT/src_ref_file_instruction.psd*
 examples/1_output_visualization/img
+
+old
+
+examples/utils/functions_for_data.ipynb
+examples/eg1*/*.ipynb
+examples/*/img
+
+include/version.h

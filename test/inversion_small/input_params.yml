@@ -29,7 +29,7 @@ model:
 parallel: # parameters for parallel computation
   n_sims: 1 # number of simultanoues runs (parallel the sources)
   ndiv_rtp: [1, 1, 1] # number of subdivision on each direction (parallel the computional domain)
-  nproc_sub: 2 # number of processors for sweep parallelization (parallel the fast sweep method)
+  nproc_sub: 1 # number of processors for sweep parallelization (parallel the fast sweep method)
   use_gpu: false # true if use gpu (EXPERIMENTAL)
 
 ############################################
