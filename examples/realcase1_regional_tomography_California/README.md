@@ -1,4 +1,4 @@
-# joint inversion
+# Real case of regional tomography in central California near Parkfield
 
 This is a real case to invert traveltimes for velocity heterogeneity and azimuthal anisotropy in central California near Parkfield
 

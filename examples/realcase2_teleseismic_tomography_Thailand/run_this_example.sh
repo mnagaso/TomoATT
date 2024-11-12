@@ -9,6 +9,6 @@ mpirun -n 8 --allow-run-as-root --oversubscribe ../../build/bin/TOMOATT -i 3_inp
 # for Linux
 # mpirun -n 8 ../../build/bin/TOMOATT -i 3_input_params/input_params_real.yaml
 
-# Step 3 (Optional): Plot the results
-python plot_output.py
+# # Step 3 (Optional): Plot the results
+# python plot_output.py
 

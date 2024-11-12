@@ -63,6 +63,7 @@ examples/eg2*/*.ipynb
 examples/eg3*/*.ipynb
 
 examples/realcase1*/*.ipynb
+examples/realcase2*/*.ipynb
 
 examples/*/img
 
