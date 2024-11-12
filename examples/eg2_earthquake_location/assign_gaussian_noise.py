@@ -1,40 +1,30 @@
-# %%
-# from pytomoatt.src_rec import SrcRec
+from pytomoatt.src_rec import SrcRec
 
-# def assign_noise_to_src_rec_file(in_fname, out_fname, noise_level=0.1):
-#     sr = SrcRec.read(in_fname)
-#     sr.add_noise(noise_level)
-#     sr.write(out_fname)
+class AssignNoise:
+    def __init__(self, in_fname, out_fname):
+        self.in_fname = in_fname
+        self.out_fname = out_fname
+        self.sr = SrcRec.read(self.in_fname)
 
-# if __name__ == "__main__":
-#     in_fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward.dat" # input source receiver file
-#     out_fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_noisy.dat" # output source receiver file
-#     sigma = 0.1 # noise level in seconds
-#     assign_noise_to_src_rec_file(in_fname, out_fname, noise_level=sigma)
+    def assign_noise_for_tt(self, noise_level=0.1):
+        self.sr.add_noise(noise_level)
 
+    def assign_noise_for_src(self, lat_pert=0.1, lon_pert=0.1, dep_pert=10, tau_pert=0.5):
+        self.sr.add_noise_to_source(lat_pert, lon_pert, dep_pert, tau_pert)
 
-# %%
-import sys
-sys.path.append('../utils')
-import functions_for_data as ffd
-
-# read src_rec_file
-ev, st = ffd.read_src_rec_file('OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward.dat')
-
-# assign gaussian noise to the data
-ffd.assign_gaussian_noise(ev, 0.1)
-
-# # output file
-# ffd.write_src_rec_file('OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_noisy.dat', ev, st)
-
-# perturbate earthquake locations
-lat_pert = 0.1 # degrees
-lon_pert = 0.1 # degrees
-dep_pert = 10  # km
-tau_pert = 0.5 # seconds
-ffd.assign_uniform_noise_to_ev(ev, lat_pert, lon_pert, dep_pert, tau_pert)
-
-# output file
-ffd.write_src_rec_file('OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_errloc.dat', ev, st)
-
-
+if __name__ == "__main__":
+    in_fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward.dat" # input source receiver file
+    out_fname = "OUTPUT_FILES/OUTPUT_FILES_signal/src_rec_file_forward_errloc.dat" # output source receiver file
+    sigma = 0.1 # noise level in seconds
+    lat_pert = 0.1 # assign noise for latitude in degrees
+    lon_pert = 0.1 # assign noise for longitude in degrees
+    dep_pert = 10 # assign noise for depth in km
+    tau_pert = 0.5 # assign noise for origin time in seconds
+    # Initialize the instance
+    an = AssignNoise(in_fname, out_fname)
+    # Assign noise for travel time
+    an.assign_noise_for_tt(sigma)
+    # Assign noise for source
+    an.assign_noise_for_src(lat_pert, lon_pert, dep_pert, tau_pert)
+    # Write the output file
+    an.sr.write(out_fname)
