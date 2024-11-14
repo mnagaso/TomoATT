@@ -65,6 +65,11 @@ examples/eg3*/*.ipynb
 examples/realcase1*/*.ipynb
 examples/realcase2*/*.ipynb
 
+examples/scripts_of_plotting/*.ipynb
+examples/scripts_of_plotting/generate_file
+examples/scripts_of_plotting/OUTPUT_FILES
+examples/scripts_of_plotting/input_files
+examples/scripts_of_plotting/files_for_plotting.tar.gz
 examples/*/img
 
 include/version.h

@@ -1871,9 +1871,58 @@ def write_rec_list_file(fname,ev_info,st_info):
     doc_st_list.close()
 
 # %% [markdown]
+# Functions: read objective function file
+
+# %%
+# Function: read_objective_function_file(path)
+def read_objective_function_file(path):
+
+    full_curve = []
+    location_curve = []
+    model_curve = []
+
+    with open('%s/objective_function.txt'%(path)) as f:
+        for i,line in enumerate(f):
+            tmp = line.split(',')
+            if (tmp[0].__contains__("#")):
+                continue   # skip the comment line
+        
+            iter        = int(tmp[0])
+            tag         = tmp[1]
+            obj         = float(tmp[2])
+            obj_abs     = float(tmp[3])
+            obj_cs      = float(tmp[4])
+            obj_cr      = float(tmp[5])
+            obj_tele    = float(tmp[6])
+            tmp2        = tmp[7].split('/')
+            mean        = float(tmp2[0])
+            std         = float(tmp2[1])
+            tmp2        = tmp[8].split('/')
+            mean_abs    = float(tmp2[0])
+            std_abs     = float(tmp2[1])
+            tmp2        = tmp[9].split('/')
+            mean_cs     = float(tmp2[0])
+            std_cs      = float(tmp2[1])
+            tmp2        = tmp[10].split('/')
+            mean_cr     = float(tmp2[0])
+            std_cr      = float(tmp2[1])
+            tmp2        = tmp[11].split('/')
+            mean_tele   = float(tmp2[0])
+            std_tele    = float(tmp2[1])
+
+            full_curve.append([obj,obj_abs,obj_cs,obj_cr,obj_tele,mean,std,mean_abs,std_abs,mean_cs,std_cs,mean_cr,std_cr,mean_tele,std_tele])
+            if tag.__contains__("relocation"):
+                location_curve.append([obj,obj_abs,obj_cs,obj_cr,obj_tele,mean,std,mean_abs,std_abs,mean_cs,std_cs,mean_cr,std_cr,mean_tele,std_tele])
+            if tag.__contains__("model"):
+                model_curve.append([obj,obj_abs,obj_cs,obj_cr,obj_tele,mean,std,mean_abs,std_abs,mean_cs,std_cs,mean_cr,std_cr,mean_tele,std_tele])
+
+    return np.array(full_curve),np.array(location_curve),np.array(model_curve)
+
+# %% [markdown]
 # Functions: read inversion grid file
 
 # %%
+# Function: read the inversion grid file
 def read_inversion_grid_file(path):
 
     inv_grid_vel = []

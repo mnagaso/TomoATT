@@ -250,7 +250,7 @@ for iprof in range(len(start_list)):
         fig.shift_origin(xshift=13, yshift=6.5)
 
 fig.shift_origin(xshift= 2, yshift=-2.5)
-fig.colorbar(frame = ["a%f"%(2),"y+ldlnVp (%)"], position="+w4c/0.3c+h") # +e,默认是双箭头，f表示forward，b表示background ，w表示长宽，h表示水平
+fig.colorbar(frame = ["a%f"%(2),"y+ldlnVp (%)"], position="+w4c/0.3c+h")
 fig.shift_origin(xshift=-2, yshift=+2.5)
 
 fig.show()

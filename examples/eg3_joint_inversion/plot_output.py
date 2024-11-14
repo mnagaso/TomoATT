@@ -153,7 +153,7 @@ fig.plot(x = true_loc[2,ev_idx3], y = true_loc[1,ev_idx3], style = "c0.1c", fill
 
 # ------------------- colorbar -------------------
 fig.shift_origin(xshift=-11, yshift=-1.5)
-fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") # +e,默认是双箭头，f表示forward，b表示background ，w表示长宽，h表示水平
+fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h")
 
 fig.shift_origin(xshift=6, yshift=-1)
 fig.basemap(region=[0,1,0,1], frame=["wesn"], projection="X6c/1.5c")
@@ -266,7 +266,7 @@ for itag, tag in enumerate(tag_list):
 fig.shift_origin(xshift=-4)
 
 fig.shift_origin(xshift=-11, yshift=-1.5)
-fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") # +e,默认是双箭头，f表示forward，b表示background ，w表示长宽，h表示水平
+fig.colorbar(frame = ["a%f"%(vel_range),"x+ldlnVp (%)"], position="+e+w4c/0.3c+h") 
 
 fig.shift_origin(xshift=6, yshift=-1)
 fig.basemap(region=[0,1,0,1], frame=["wesn"], projection="X6c/1.5c")
