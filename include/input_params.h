@@ -147,7 +147,7 @@ public:
     // void insertAtFront(CUSTOMREAL*&, int&, CUSTOMREAL);
     // void insertAtBack(CUSTOMREAL*&, int&, CUSTOMREAL);
 
-    bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
+    // bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
 
     int  get_max_iter_inv() {return max_iter_inv;};
 
@@ -379,7 +379,7 @@ private:
     bool invgrid_ani = false;
 
     // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
-    bool invgrid_volume_rescale = false;
+    // bool invgrid_volume_rescale = false;
 
     // date usage setting and weights
     bool use_abs = false; // use absolute travel time or not

@@ -438,9 +438,9 @@ InputParams::InputParams(std::string& input_file){
 
             setup_uniform_inv_grid();
 
-            if (config["model_update"]["invgrid_volume_rescale"]) {
-                getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
-            }
+            // if (config["model_update"]["invgrid_volume_rescale"]) {
+            //     getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
+            // }
 
             // station correction (now only for teleseismic data)
             if (config["model_update"]["use_sta_correction"]){
@@ -823,7 +823,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr(trapezoid_ani,n_trapezoid, 0);
 
     broadcast_bool_single(invgrid_ani, 0);
-    broadcast_bool_single(invgrid_volume_rescale, 0);
+    // broadcast_bool_single(invgrid_volume_rescale, 0);
 
     broadcast_bool_single(use_sta_correction, 0);
     broadcast_cr_single(step_length_init_sc, 0);
@@ -1222,9 +1222,9 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
 
 
-    fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
-    fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
-    fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
+    // fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
+    // fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
+    // fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
     fout << std::endl;
 
     fout << "  # path to station correction file (under development)" << std::endl;
