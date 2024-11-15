@@ -1040,7 +1040,7 @@ void InputParams::write_params_to_file() {
     fout << "# File: 'middle_model_step_XXXX.h5'. Keys: ['eta'], ['xi'], ['vel'], the model at step XXXX." << std::endl;
     fout << "# File: 'inversion_grid.txt'. The location of inversion grid nodes" << std::endl;
     fout << "# File: 'objective_function.txt'. The objective function value at each iteration" << std::endl;
-    fout << "# File: 'out_data_sim_group_X'. Keys: ['src_$src_name']['T_res_inv_XXXX'], traveltime field for source $src_name at iteration XXXX;" << std::endl;
+    fout << "# File: 'out_data_sim_group_X'. Keys: ['src_$src_name']['time_field_inv_XXXX'], traveltime field for source $src_name at iteration XXXX;" << std::endl;
     fout << "#                                     ['src_$src_name']['adjoint_field_inv_XXXX'], adjoint field for source $src_name at iteration XXXX;" << std::endl;
     fout << std::endl;
     fout << std::endl;

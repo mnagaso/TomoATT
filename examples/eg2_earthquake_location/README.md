@@ -1,6 +1,6 @@
-# seismic tomography
+# earthquake location
 
-This is a toy model to invert traveltimes for Vp and anisotropy (Paper XXX, Figure 8c.)
+This is a toy model to invert traveltimes for locating earthquakes (Paper XXX, Figure 8a.)
 
 Reference:
 citation
@@ -21,8 +21,8 @@ The initial and true models:
 
 ![](img/model_setting.jpg)
 
-The inversion result:
+The location results:
 
-![](img/model_inv.jpg)
+![](img/model_loc.jpg)
 
 

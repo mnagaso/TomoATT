@@ -934,14 +934,14 @@ void IO_utils::write_T(Grid& grid, int i_inv) {
 
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "T_res";
+        std::string h5_dset_name = "time_field";
         write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T(), i_inv, src_data);
 #else
         std::cout << "ERROR: HDF5 is not enabled" << std::endl;
         exit(1);
 #endif
     } else if(output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "T_res_inv_" + int2string_zero_fill(i_inv);
+        std::string dset_name = "time_field_inv_" + int2string_zero_fill(i_inv);
         std::string fname = create_fname_ascii(dset_name);
         write_data_ascii(grid, fname, grid.get_T());
     }
@@ -1455,8 +1455,8 @@ void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
 
     if (output_format==OUTPUT_FORMAT_HDF5){
 #ifdef USE_HDF5
-        std::string h5_dset_name = "T_res";
-        std::string h5_dset_name_merged = "T_res_merged_inv_" + int2string_zero_fill(i_inv);
+        std::string h5_dset_name = "time_field";
+        std::string h5_dset_name_merged = "time_field_merged_inv_" + int2string_zero_fill(i_inv);
         bool inverse_field = false;
         write_data_merged_h5(grid, h5_output_fname, h5_group_name_data, h5_dset_name_merged, grid.get_T(), i_inv, inverse_field);
         write_data_h5(grid, h5_group_name_data, h5_dset_name, grid.get_T(), i_inv, src_data);
@@ -1465,7 +1465,7 @@ void IO_utils::write_T_merged(Grid& grid, InputParams& IP, int i_inv) {
         exit(1);
 #endif
     } else if(output_format==OUTPUT_FORMAT_ASCII){
-        std::string dset_name = "T_res_inv_" + int2string_zero_fill(i_inv);
+        std::string dset_name = "time_field_inv_" + int2string_zero_fill(i_inv);
         std::string fname = create_fname_ascii(dset_name);
         write_data_ascii(grid, fname, grid.get_T());
     }
@@ -1677,7 +1677,7 @@ void IO_utils::read_T(Grid& grid) {
 #ifdef USE_HDF5
         // h5_group_name_data = "src_" + std::to_string(id_sim_src);
         h5_group_name_data = "src_" + name_sim_src;
-        std::string h5_dset_name = "T_res_inv_" + int2string_zero_fill(0);
+        std::string h5_dset_name = "time_field_inv_" + int2string_zero_fill(0);
         read_data_h5(grid, grid.vis_data, h5_group_name_data, h5_dset_name);
 #else
         std::cerr << "Error: HDF5 is not enabled." << std::endl;
@@ -1685,7 +1685,7 @@ void IO_utils::read_T(Grid& grid) {
 #endif
     } else if (output_format == OUTPUT_FORMAT_ASCII) {
         // read traveltime field from ASCII file
-        std::string dset_name = "T_res_inv_" + int2string_zero_fill(0);
+        std::string dset_name = "time_field_inv_" + int2string_zero_fill(0);
         std::string filename = create_fname_ascii(dset_name);
 
         read_data_ascii(grid, filename);

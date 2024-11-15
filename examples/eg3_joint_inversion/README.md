@@ -1,6 +1,6 @@
-# seismic tomography
+# joint inversion
 
-This is a toy model to invert traveltimes for Vp and anisotropy (Paper XXX, Figure 8c.)
+This is a toy model to simultaneously update model parameters and locate earthquakes (Paper XXX, Figure 8e.)
 
 Reference:
 citation
@@ -21,8 +21,8 @@ The initial and true models:
 
 ![](img/model_setting.jpg)
 
-The inversion result:
+The inversion results:
 
-![](img/model_inv.jpg)
+![](img/model_joint.jpg)
 
 
