@@ -2045,6 +2045,7 @@ void InputParams::initialize_adjoint_source(){
 
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
         iter->second.adjoint_source = _0_CR;
+        iter->second.adjoint_source_density = _0_CR;
     }
 }
 
@@ -2063,6 +2064,20 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
     }
 }
 
+void InputParams::set_adjoint_source_density(std::string name_rec, CUSTOMREAL adjoint_source_density){
+
+    // this funtion should be called by proc_store_srcrec
+    if (!proc_store_srcrec){
+        std::cout << "set_adjoint_source_density function is called non-proc_store_srcrec process. aborting." << std::endl;
+        exit(1);
+    }
+
+    if (rec_map.find(name_rec) != rec_map.end()){
+        rec_map[name_rec].adjoint_source_density = adjoint_source_density;
+    } else {
+        std::cout << "error !!!, undefined receiver name when adding adjoint source: " << name_rec << std::endl;
+    }
+}
 
 // gather all arrival times to main simultaneous run group
 // common source double difference traveltime is also gathered here

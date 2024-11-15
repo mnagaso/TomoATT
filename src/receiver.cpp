@@ -106,7 +106,7 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
     // #TODO: run this function only by proc_store_srcrec
     if (proc_store_srcrec) {
 
-        // rec.adjoint_source = 0
+        // rec.adjoint_source = 0 && rec.adjoint_source_density = 0
         IP.initialize_adjoint_source();
 
         // loop all data related to this source MNMN: use reference(auto&) to avoid copy
@@ -154,6 +154,9 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_time - obs_time + IP.rec_map[name_rec].tau_opt) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec, adjoint_source); // set adjoint source to rec_map[name_rec]
 
+                    // assign adjoint source density
+                    CUSTOMREAL adjoint_source_density = IP.get_rec_point(name_rec).adjoint_source_density + _1_CR;
+                    IP.set_adjoint_source_density(name_rec, adjoint_source_density);
 
                 //
                 // common receiver differential traveltime && we use this data
@@ -204,8 +207,11 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
 
                     // assign adjoint source
                     CUSTOMREAL adjoint_source = IP.get_rec_point(name_rec).adjoint_source + (syn_dif_time - obs_dif_time) * data.weight * local_weight;
-
                     IP.set_adjoint_source(name_rec, adjoint_source);
+
+                    // assign adjoint source density
+                    CUSTOMREAL adjoint_source_density = IP.get_rec_point(name_rec).adjoint_source_density + _1_CR;
+                    IP.set_adjoint_source_density(name_rec, adjoint_source_density);
 
 
                     // DEGUG: error check
@@ -281,6 +287,13 @@ void Receiver::calculate_adjoint_source(InputParams& IP, const std::string& name
                     adjoint_source = IP.get_rec_point(name_rec2).adjoint_source - (syn_dif_time - obs_dif_time + IP.rec_map[name_rec1].tau_opt - IP.rec_map[name_rec2].tau_opt) * data.weight * local_weight;
                     IP.set_adjoint_source(name_rec2, adjoint_source);
 
+                    // assign adjoint source density
+                    CUSTOMREAL adjoint_source_density;
+                    adjoint_source_density = IP.get_rec_point(name_rec1).adjoint_source_density + _1_CR;
+                    IP.set_adjoint_source_density(name_rec1, adjoint_source_density);
+
+                    adjoint_source_density = IP.get_rec_point(name_rec2).adjoint_source_density + _1_CR;
+                    IP.set_adjoint_source_density(name_rec2, adjoint_source_density);
                 }
 
             } // end of loop over data

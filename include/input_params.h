@@ -263,8 +263,9 @@ public:
 
     // initialize_adjoint_source
     void initialize_adjoint_source();
-    // set adjoint source
+    // set adjoint source && adjoint source density
     void set_adjoint_source(std::string, CUSTOMREAL);
+    void set_adjoint_source_density(std::string, CUSTOMREAL);
 
     // gather traveltimes and calculate differences of synthetic data
     void gather_traveltimes_and_calc_syn_diff();
