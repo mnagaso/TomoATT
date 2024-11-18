@@ -901,10 +901,10 @@ void Iterator::init_delta_and_Tadj_density(Grid& grid, InputParams& IP) {
         std::string rec_name = IP.get_rec_name(irec);
         auto rec = IP.get_rec_point_bcast(rec_name);
 
-        // // "iter->second" is the receiver, with the class SrcRecInfo
-        // if (rec.adjoint_source == 0){
-        //     continue;
-        // }
+        // "iter->second" is the receiver, with the class SrcRecInfo
+        if (rec.adjoint_source_density == 0){
+            continue;
+        }
 
         CUSTOMREAL delta_lon = grid.get_delta_lon();
         CUSTOMREAL delta_lat = grid.get_delta_lat();
@@ -2039,9 +2039,9 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
     // }
 
     // coe
-    CUSTOMREAL coe = (a2p-a1m)/dr + (b2p-b1m)/dt + (c2p-c1m)/dp + d;
-
-    if (isZeroAdj(coe)) {
+    CUSTOMREAL coe = (a2p-a1m)/dr + (b2p-b1m)/dt + (c2p-c1m)/dp;
+ 
+    if (isZeroAdj(coe)) {   // here the traveltime is larger than surrounding
         grid.tau_loc[I2V(iip,jjt,kkr)] = _0_CR;
     } else {
         // hamiltonian
@@ -2049,7 +2049,7 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
                         + (b1p*grid.tau_loc[I2V(iip,jjt-1,kkr)] - b2m*grid.tau_loc[I2V(iip,jjt+1,kkr)]) / dt \
                         + (c1p*grid.tau_loc[I2V(iip-1,jjt,kkr)] - c2m*grid.tau_loc[I2V(iip+1,jjt,kkr)]) / dp;
 
-        grid.tau_loc[I2V(iip,jjt,kkr)] = (grid.tau_old_loc[I2V(iip,jjt,kkr)] + Hadj) / coe;
+        grid.tau_loc[I2V(iip,jjt,kkr)] = (grid.tau_old_loc[I2V(iip,jjt,kkr)] + Hadj) / (coe + d);
     }
 }
 
