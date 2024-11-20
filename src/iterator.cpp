@@ -2024,7 +2024,7 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
     CUSTOMREAL c2m = (c2 - std::abs(c2))/_2_CR;
     CUSTOMREAL c2p = (c2 + std::abs(c2))/_2_CR;
 
-    // additional terms of divergence in spherical cooridinate 
+    // additional terms of divergence in spherical cooridinate
     CUSTOMREAL d   = - _2_CR * (_1_CR+_2_CR*grid.zeta_loc[I2V(iip,jjt,kkr)]) / grid.r_loc_1d[kkr] \
                      * (grid.T_loc[I2V(iip,jjt,kkr+1)]-grid.T_loc[I2V(iip,jjt,kkr-1)]) / _2_CR / dr \
                      + (_1_CR-_2_CR*grid.xi_loc[I2V(iip,jjt,kkr)]) * std::sin(grid.t_loc_1d[jjt]) / (my_square(grid.r_loc_1d[kkr])*std::cos(grid.t_loc_1d[jjt])) \
@@ -2040,7 +2040,7 @@ void Iterator::calculate_stencil_adj(Grid& grid, int& iip, int& jjt, int& kkr){
 
     // coe
     CUSTOMREAL coe = (a2p-a1m)/dr + (b2p-b1m)/dt + (c2p-c1m)/dp;
- 
+
     if (isZeroAdj(coe)) {   // here the traveltime is larger than surrounding
         grid.tau_loc[I2V(iip,jjt,kkr)] = _0_CR;
     } else {
@@ -3148,9 +3148,9 @@ void Iterator::calculate_boundary_nodes_adj(Grid& grid, int& iip, int& jjt, int&
     }
 
     // Top
-    if (kkr == nr-1 && grid.k_last())
+    if (kkr == nr-1 && grid.k_last()) {
         grid.tau_loc[I2V(iip,jjt,nr-1)] = _0_CR;
-
+    }
 }
 
 
