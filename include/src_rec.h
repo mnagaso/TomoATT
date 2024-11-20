@@ -33,6 +33,7 @@ public:
     CUSTOMREAL mag       = -1.0;
 
     CUSTOMREAL adjoint_source = 0.0;
+    CUSTOMREAL adjoint_source_density = 0.0;
 
     int n_data = 0;
 

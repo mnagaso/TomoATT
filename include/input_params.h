@@ -147,7 +147,7 @@ public:
     // void insertAtFront(CUSTOMREAL*&, int&, CUSTOMREAL);
     // void insertAtBack(CUSTOMREAL*&, int&, CUSTOMREAL);
 
-    bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
+    // bool get_invgrid_volume_rescale(){return invgrid_volume_rescale;}
 
     int  get_max_iter_inv() {return max_iter_inv;};
 
@@ -263,8 +263,9 @@ public:
 
     // initialize_adjoint_source
     void initialize_adjoint_source();
-    // set adjoint source
+    // set adjoint source && adjoint source density
     void set_adjoint_source(std::string, CUSTOMREAL);
+    void set_adjoint_source_density(std::string, CUSTOMREAL);
 
     // gather traveltimes and calculate differences of synthetic data
     void gather_traveltimes_and_calc_syn_diff();
@@ -378,7 +379,7 @@ private:
     bool invgrid_ani = false;
 
     // inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)
-    bool invgrid_volume_rescale = false;
+    // bool invgrid_volume_rescale = false;
 
     // date usage setting and weights
     bool use_abs = false; // use absolute travel time or not

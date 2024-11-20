@@ -39,13 +39,13 @@ void calculate_sensitivity_kernel(Grid& grid, InputParams& IP, const std::string
                     
                     // density of kxi
                     grid.Kxi_density_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_density_loc[I2V(iip,jjt,kkr)]; 
-                    // grid.Kxi_density_loc[I2V(iip,jjt,kkr)]   += std::abs(weight * grid.Tadj_density_loc[I2V(iip,jjt,kkr)] \
-                    //                                         * (my_square(Ttheta) / my_square(grid.r_loc_1d[kkr]) \
+                    // grid.Kxi_density_loc[I2V(iip,jjt,kkr)]   += std::abs(weight * grid.Tadj_density_loc[I2V(iip,jjt,kkr)] 
+                    //                                         * (my_square(Ttheta) / my_square(grid.r_loc_1d[kkr]) 
                     //                                         - my_square(Tphi) /(my_square(grid.r_loc_1d[kkr])*my_square(std::cos(grid.t_loc_1d[jjt])))));
 
                     // density of keta
                     grid.Keta_density_loc[I2V(iip,jjt,kkr)] += weight * grid.Tadj_density_loc[I2V(iip,jjt,kkr)]; 
-                    // grid.Keta_density_loc[I2V(iip,jjt,kkr)]   += std::abs(weight * grid.Tadj_density_loc[I2V(iip,jjt,kkr)] \
+                    // grid.Keta_density_loc[I2V(iip,jjt,kkr)]   += std::abs(weight * grid.Tadj_density_loc[I2V(iip,jjt,kkr)] 
                     //                                         * ( -_2_CR * Ttheta * Tphi / (my_square(grid.r_loc_1d[kkr])*std::cos(grid.t_loc_1d[jjt]))));
 
                     // mask within one grid around the source
