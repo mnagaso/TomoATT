@@ -18,7 +18,7 @@ par_file = '3_input_params/input_params_real.yaml'
 model = ATTModel.read(data_file, par_file)
 init_model = model.to_xarray()
 
-data_file = 'OUTPUT_FILES/OUTPUT_FILES_real_noshared/final_model.h5'
+data_file = 'OUTPUT_FILES/OUTPUT_FILES_real/final_model.h5'
 model = ATTModel.read(data_file, par_file)
 inv_model = model.to_xarray()
 
@@ -250,14 +250,11 @@ for iprof in range(len(start_list)):
         fig.shift_origin(xshift=13, yshift=6.5)
 
 fig.shift_origin(xshift= 2, yshift=-2.5)
-fig.colorbar(frame = ["a%f"%(2),"y+ldlnVp (%)"], position="+w4c/0.3c+h")
+fig.colorbar(frame = ["a%f"%(2),"y+ldlnVp (%)"], position="+w4c/0.3c+h") 
 fig.shift_origin(xshift=-2, yshift=+2.5)
 
 fig.show()
 
-fig.savefig("../img/imaging_result.png")
-
-# %%
-print(np.max(vel_init_sec[:,2]))
+fig.savefig("img/imaging_result.png")
 
 
