@@ -1,5 +1,5 @@
 # %%
-# initilization 初始化，类的定义和声明
+# Initialization, class definition, and declaration.
 
 import os
 import math
@@ -7,52 +7,50 @@ from obspy import UTCDateTime
 import numpy as np
 import copy
 
-class Event():      # class of earthquake 地震事件类
+class Event():      # class of earthquake
     def __init__(self):
-        self.name = "nan"       # evname1 地震名称，推荐为地震
+        self.name = "nan"       # evname1 Earthquake name, recommended as "earthquake".
         self.id = -1
         self.lat = 0.0
         self.lon = 0.0
         self.dep = 0.0
         self.mag = 0.0
         self.ortime = UTCDateTime(1999,1,1,0,0,0)
-        self.Nt = 0             # Number of the abs traveltime of earthquake 每个地震的 绝对到时 数量
-        self.Ncs_dt = 0         # Number of the commmon source differential traveltime of earthquake   每个地震的 共源双差到时 数量
-        self.Ncr_dt = 0         # Number of the commmon receiver differential traveltime of earthquake 每个地震的 共台站双差到时 数量
+        self.Nt = 0             # Number of the absolute traveltime of earthquake
+        self.Ncs_dt = 0         # Number of the commmon source differential traveltime of earthquake
+        self.Ncr_dt = 0         # Number of the commmon receiver differential traveltime of earthquake
         self.t = {}             # stname1+phase -> (stname1, phase, time, data_weight)
         self.cs_dt = {}         # stname1 + stname2 + phase -> (stname1, stname2, phase, dif_time, data_weight)
         self.cr_dt = {}         # stname1 + evname2 + phase -> (stname1, evname2, phase, dif_time, data_weight)
-        self.azi_gap = 360.0    # the max azimuthal gap of this earthquake 该地震的最大方位角间隔
-        self.misfit = {}        # traveltime residual of the data 走时残差，真实数据和合成数据只差，用于评估。  stname or stname1+stname2 or stname1+evname2 -> residual
+        self.azi_gap = 360.0    # the max azimuthal gap of each earthquake
+        self.misfit = {}        # traveltime residual of the data, the difference between real data and synthetic data, used for evaluation. stname or stname1+stname2 or stname1+evname2 -> residual
         self.tag    = {}        # additional tags for the earthquake, e.g., azi_gap, weight. (azimuthal gap, weight of the earthquake)
-     
+
 class Station():
     def __init__(self):
-        self.name = "nan"       # stname1, recommend: network.stname 台站名称, 推荐为 台网.台站名
+        self.name = "nan"       # stname1, recommend: network.stname
         self.id = -1
         self.lat = 0.0
         self.lon = 0.0
         self.ele = 0.0
-        self.tag = {}           # additional tags for the station, e.g., wright, 用于描述台站本身的属性，例如 台站权重：weight
+        self.tag = {}           # additional tags for the station, e.g., wright
 
 
 
 
 # %% [markdown]
-# 函数类：一些数学上的基本函数，用于辅助处理数据
-# 
 # Functions: some basic auxiliary functions for processing data
 
 # %%
-# 函数： cal_dis(lat1, lon1,lat2, lon2) (千米)， cal_azimuth(lat1, lon1, lat2, lon2) (°) 计算震中距和方位角 compute epicentral distance (km) and azimuth (degree)
+# function： cal_dis(lat1, lon1,lat2, lon2) (in kilometers)， cal_azimuth(lat1, lon1, lat2, lon2) (degree) calculate epicentral distance (km) and azimuth (degree)
 
 def cal_dis(lat1, lon1,lat2, lon2, R = 6371):
     latitude1 = (math.pi/180)*lat1
     latitude2 = (math.pi/180)*lat2
     longitude1 = (math.pi/180)*lon1
     longitude2= (math.pi/180)*lon2
-    #因此AB两点的球面距离为:{arccos[sinb*siny+cosb*cosy*cos(a-x)]}*R
-    #地球半径
+    # Therefore, the spherical distance between points A and B is:{arccos[sinb*siny+cosb*cosy*cos(a-x)]}*R
+    # Radius of the earth
     if((lat1-lat2)**2+(lon1-lon2)**2<0.000001):
         return 0
 
@@ -74,8 +72,8 @@ def cal_azimuth(lat1, lon1, lat2, lon2):
 
 
 # %%
-# 函数: 坐标旋转 rotate_src_rec(ev_info,st_info,theta0,phi0,psi): rotate to the new coordinate, satisfying the center r0,t0,p0 -> r0,0,0 and a anticlockwise angle psi
-# 满足中心点 r0,t0,p0 -> r0,0,0 以及 逆时针旋转角度 psi
+# Function: Coordinate rotation rotate_src_rec(ev_info, st_info, theta0, phi0, psi): rotate to the new coordinate system, satisfying the center point transformation r0, t0, p0 -> r0, 0, 0 and an anticlockwise rotation angle psi.
+# Satisfying the center point transformation r0, t0, p0 -> r0, 0, 0 and an anticlockwise rotation angle psi.
 
 import numpy as np
 
@@ -102,23 +100,23 @@ def xyz2rtp(x,y,z):
     phi[idx] = np.pi - phi[idx]
     idx = np.where((phi < 0) & (x*y > 0))
     phi[idx] = -np.pi - phi[idx]
-        
+
 
     # for i in range(phi.size):
     #     if(phi[i] > 0 and x[i]*y[i] < 0):
     #         phi[i] = np.pi - phi[i]
     #     if(phi[i] < 0 and x[i]*y[i] > 0):
     #         phi[i] = -np.pi - phi[i]
-    
+
     return (r,theta*RAD2DEG,phi*RAD2DEG)
 
 # anti-clockwise rotation along x-axis
 def rotate_x(x,y,z,theta):
-    new_x = x 
+    new_x = x
     new_y = y *  np.cos(theta*DEG2RAD) + z * -np.sin(theta*DEG2RAD)
     new_z = y *  np.sin(theta*DEG2RAD) + z *  np.cos(theta*DEG2RAD)
     return (new_x,new_y,new_z)
-    
+
 # anti-clockwise rotation along y-axis
 def rotate_y(x,y,z,theta):
     new_x = x *  np.cos(theta*DEG2RAD) + z *  np.sin(theta*DEG2RAD)
@@ -130,7 +128,7 @@ def rotate_y(x,y,z,theta):
 def rotate_z(x,y,z,theta):
     new_x = x *  np.cos(theta*DEG2RAD) + y * -np.sin(theta*DEG2RAD)
     new_y = x *  np.sin(theta*DEG2RAD) + y *  np.cos(theta*DEG2RAD)
-    new_z = z 
+    new_z = z
     return (new_x,new_y,new_z)
 
 # spherical Rotation
@@ -151,7 +149,7 @@ def rtp_rotation(t,p,theta0,phi0,psi):
 
     # step 5: x,y,z -> r,t,p
     (new_r,new_t,new_p) = xyz2rtp(x,y,z)
-    
+
     return (new_t,new_p)
 
 
@@ -162,15 +160,15 @@ def rtp_rotation_reverse(new_t,new_p,theta0,phi0,psi):
     # step 2: anti-clockwise rotation with -psi along x-axis
     (x,y,z) = rotate_x(x,y,z,-psi)
 
-    # step 3: anti-clockwise rotation with -theta0 along y-axis:  r0,0,0 -> r0,t0,0 
+    # step 3: anti-clockwise rotation with -theta0 along y-axis:  r0,0,0 -> r0,t0,0
     (x,y,z) = rotate_y(x,y,z,-theta0)
 
-    # step 4: anti-clockwise rotation with phi0 along z-axis:   r0,t0,0 -> r0,t0,p0 
+    # step 4: anti-clockwise rotation with phi0 along z-axis:   r0,t0,0 -> r0,t0,p0
     (x,y,z) = rotate_z(x,y,z,phi0)
 
     # step 5: x,y,z -> r,t,p
     (r,t,p) = xyz2rtp(x,y,z)
-    
+
     return (t,p)
 
 def rotate_src_rec(ev_info,st_info,theta0,phi0,psi):
@@ -192,7 +190,7 @@ def rotate_src_rec(ev_info,st_info,theta0,phi0,psi):
         (st_lat,st_lon) = rtp_rotation(st_lat,st_lon,theta0,phi0,psi)
         st.lat = st_lat[0]; st.lon = st_lon[0]
         st_info_rotate[key_st] = st
-    
+
     return (ev_info_rotate,st_info_rotate)
 
 def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
@@ -214,12 +212,12 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
         (st_lat,st_lon) = rtp_rotation_reverse(st_lat,st_lon,theta0,phi0,psi)
         st.lat = st_lat[0]; st.lon = st_lon[0]
         st_info[key_st] = st
-    
+
     return (ev_info,st_info)
 
 # %%
-# # 函数: 坐标旋转 rotate_src_rec(ev_info,st_info,theta0,phi0,psi): rotate to the new coordinate, satisfying the center r0,t0,p0 -> r0,0,0 and a anticlockwise angle psi
-# # 满足中心点 r0,t0,p0 -> r0,0,0 以及 逆时针旋转角度 psi
+# # Function: Coordinate rotation rotate_src_rec(ev_info, st_info, theta0, phi0, psi): rotate to the new coordinate system, satisfying the center point transformation r0, t0, p0 -> r0, 0, 0 and an anticlockwise rotation angle psi.
+# # Satisfying the center point transformation r0, t0, p0 -> r0, 0, 0 and an anticlockwise rotation angle psi.
 
 # import numpy as np
 
@@ -246,16 +244,16 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
 #         phi = np.pi - phi
 #     if(phi < 0 and x*y > 0):
 #         phi = -np.pi - phi
-    
+
 #     return (r,theta*RAD2DEG,phi*RAD2DEG)
 
 # # anti-clockwise rotation along x-axis
 # def rotate_x(x,y,z,theta):
-#     new_x = x 
+#     new_x = x
 #     new_y = y *  np.cos(theta*DEG2RAD) + z * -np.sin(theta*DEG2RAD)
 #     new_z = y *  np.sin(theta*DEG2RAD) + z *  np.cos(theta*DEG2RAD)
 #     return (new_x,new_y,new_z)
-    
+
 # # anti-clockwise rotation along y-axis
 # def rotate_y(x,y,z,theta):
 #     new_x = x *  np.cos(theta*DEG2RAD) + z *  np.sin(theta*DEG2RAD)
@@ -267,7 +265,7 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
 # def rotate_z(x,y,z,theta):
 #     new_x = x *  np.cos(theta*DEG2RAD) + y * -np.sin(theta*DEG2RAD)
 #     new_y = x *  np.sin(theta*DEG2RAD) + y *  np.cos(theta*DEG2RAD)
-#     new_z = z 
+#     new_z = z
 #     return (new_x,new_y,new_z)
 
 # # spherical Rotation
@@ -288,7 +286,7 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
 
 #     # step 5: x,y,z -> r,t,p
 #     (new_r,new_t,new_p) = xyz2rtp(x,y,z)
-    
+
 #     return (new_t,new_p)
 
 
@@ -299,15 +297,15 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
 #     # step 2: anti-clockwise rotation with -psi along x-axis
 #     (x,y,z) = rotate_x(x,y,z,-psi)
 
-#     # step 3: anti-clockwise rotation with -theta0 along y-axis:  r0,0,0 -> r0,t0,0 
+#     # step 3: anti-clockwise rotation with -theta0 along y-axis:  r0,0,0 -> r0,t0,0
 #     (x,y,z) = rotate_y(x,y,z,-theta0)
 
-#     # step 4: anti-clockwise rotation with phi0 along z-axis:   r0,t0,0 -> r0,t0,p0 
+#     # step 4: anti-clockwise rotation with phi0 along z-axis:   r0,t0,0 -> r0,t0,p0
 #     (x,y,z) = rotate_z(x,y,z,phi0)
 
 #     # step 5: x,y,z -> r,t,p
 #     (r,t,p) = xyz2rtp(x,y,z)
-    
+
 #     return (t,p)
 
 # def rotate_src_rec(ev_info,st_info,theta0,phi0,psi):
@@ -325,7 +323,7 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
 #         st = st_info[key_st]
 #         (st.lat,st.lon) = rtp_rotation(st.lat,st.lon,theta0,phi0,psi)
 #         st_info_rotate[key_st] = st
-    
+
 #     return (ev_info_rotate,st_info_rotate)
 
 # def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
@@ -343,11 +341,11 @@ def rotate_src_rec_reverse(ev_info_rotate,st_info_rotate,theta0,phi0,psi):
 #         st = st_info_rotate[key_st]
 #         (st.lat,st.lon) = rtp_rotation_reverse(st.lat,st.lon,theta0,phi0,psi)
 #         st_info[key_st] = st
-    
+
 #     return (ev_info,st_info)
 
 # %%
-# 函数：最小二乘线性回归 linear_regression(X,Y)
+# linear_regression(X,Y)
 def linear_regression(X,Y):
     slope,intercept = np.polyfit(X,Y,deg=1)
     fitted_values = slope * X + intercept
@@ -356,12 +354,11 @@ def linear_regression(X,Y):
     return (slope,intercept,SEE)
 
 # %% [markdown]
-# 函数类：从地震数据 ev_info 和台站数据 st_info 中获得指定信息
 # 
 # Functions: obtain target information from ev_info and st_info
 
 # %%
-# 函数：data_lon_lat_dep_wt_ev(ev_info) 输出地震的 [lon,lat,dep,weight]. function: output the [lon,lat,dep,weight] of the earthquake
+# function: output the [lon,lat,dep,weight] of the earthquake
 def data_lon_lat_dep_wt_ev(ev_info):
     lat = []
     lon = []
@@ -378,7 +375,7 @@ def data_lon_lat_dep_wt_ev(ev_info):
     return [np.array(lon),np.array(lat),np.array(dep),np.array(weight)]
 
 # %%
-# 函数：data_ev_loc(ev_info) 输出地震的 [lon, lat, dep, ortime]. function: output the [lon, lat, dep, ortime] of the earthquake
+# function: output the [lon, lat, dep, ortime] of the earthquake
 def data_ev_loc(ev_info):
     lat = []
     lon = []
@@ -392,29 +389,29 @@ def data_ev_loc(ev_info):
     return [np.array(lon),np.array(lat),np.array(dep),np.array(ortime)]
 
 # %%
-# 函数: data_lon_lat_ele_wt_st(ev_info,st_info) 输出台站的 [lon,lat,dep,weight]. function: output the [lon,lat,dep,weight] of the station
+# function: output the [lon,lat,dep,weight] of the station
 def data_lon_lat_ele_wt_st(ev_info,st_info):
     names = {}
-    lat = [] 
-    lon = [] 
+    lat = []
+    lon = []
     ele = []
     weight  = []
     for key_ev in ev_info:
-        for key_t in ev_info[key_ev].t:     # absolute traveltime data 绝对走时数据
+        for key_t in ev_info[key_ev].t:     # absolute traveltime data
             name_st = ev_info[key_ev].t[key_t][0]
             names[name_st] = name_st
 
-        for key_t in ev_info[key_ev].cs_dt: # common source differential traveltime data 共源双差走时数据
+        for key_t in ev_info[key_ev].cs_dt: # common source differential traveltime data
             name_st = ev_info[key_ev].cs_dt[key_t][0]
             names[name_st] = name_st
             name_st = ev_info[key_ev].cs_dt[key_t][1]
             names[name_st] = name_st
 
-        for key_t in ev_info[key_ev].cr_dt: # common receiver differential traveltime data 共台站双差走时数据
+        for key_t in ev_info[key_ev].cr_dt: # common receiver differential traveltime data
             name_st = ev_info[key_ev].cr_dt[key_t][0]
             names[name_st] = name_st
-            
-    for name in names:  # only output the station which has data 只输出有数据的台站
+
+    for name in names:  # only output the station which has data
         lat.append(st_info[name].lat)
         lon.append(st_info[name].lon)
         ele.append(st_info[name].ele)
@@ -425,7 +422,7 @@ def data_lon_lat_ele_wt_st(ev_info,st_info):
     return [np.array(lon),np.array(lat),np.array(ele),np.array(weight)]
 
 # %%
-# 函数：data_dis_time(ev_info) 输出 [震中距,到时]. function: output the [dis,time] of all data
+# function: output the [dis,time] of all data
 def data_dis_time(ev_info,st_info):
     all_dis = []
     all_time = []
@@ -444,7 +441,24 @@ def data_dis_time(ev_info,st_info):
     return [np.array(all_dis),np.array(all_time)]
 
 # %%
-# 函数：data_dis_time(ev_info) 输出 [双差到时]. function: output the [cs_dt] of all data
+# function: output the [epidis,time] of all data
+def data_epidis_time(ev_info,st_info):
+    all_dis = []
+    all_time = []
+    for key_ev in ev_info:
+        lat_ev = ev_info[key_ev].lat
+        lon_ev = ev_info[key_ev].lon
+        for key_t in ev_info[key_ev].t:
+            all_time.append(ev_info[key_ev].t[key_t][2])
+            lat_st = st_info[ev_info[key_ev].t[key_t][0]].lat
+            lon_st = st_info[ev_info[key_ev].t[key_t][0]].lon
+            dis = cal_dis(lat_ev,lon_ev,lat_st,lon_st)**2
+            all_dis.append(dis)
+
+    return [np.array(all_dis),np.array(all_time)]
+
+# %%
+# function: output the [cs_dt] of all data
 def data_cs_dt(ev_info):
     all_time = []
     for key_ev in ev_info:
@@ -454,14 +468,14 @@ def data_cs_dt(ev_info):
     return np.array(all_time)
 
 # %%
-# 函数: data_dis_time_phase(ev_info,st_info,phase_list) 给定震相列表，分别输出每个震相对应数据的 [震中距,到时] # output (dis,time) of each given phase
+# Function: data_dis_time_phase(ev_info, st_info, phase_list) Given a list of seismic phases, output the [epicentral distance, arrival time] for each phase.
 def data_dis_time_phase(ev_info,st_info,phase_list):
     all_dis  = {}
     all_time = {}
     for phase in phase_list:
         all_dis[phase] = []
         all_time[phase] = []
-    
+
     for key_ev in ev_info:
         lat_ev = ev_info[key_ev].lat
         lon_ev = ev_info[key_ev].lon
@@ -482,11 +496,12 @@ def data_dis_time_phase(ev_info,st_info,phase_list):
     for phase in phase_list:
         all_dis[phase] = np.array(all_dis[phase])
         all_time[phase] = np.array(all_time[phase])
-        
+
     return [all_dis,all_time]
 
 # %%
-# 函数：data_lon_lat_dep_wt_ev(ev_info) 输出数据连线的 [line_x,line_y] # output the lines connecting station and earthquake for traveltime data
+# Function: data_lon_lat_dep_wt_ev(ev_info) Outputs the lines connecting station and earthquake for traveltime data as [line_x, line_y].
+
 def data_line(ev_info,st_info):
     line_x = []
     line_y = []
@@ -504,12 +519,11 @@ def data_line(ev_info,st_info):
     return [line_x,line_y]
 
 # %% [markdown]
-# 函数类：使用一些筛选原则，删除 ev_info 和 st_info 里面的部分数据
-# 
 # Functions: discard some data in ev_info and st_info based on selection criteria
 
 # %%
-# 函数：limit_ev_region(ev_info,lat1,lat2,lon1,lon2,dep1,dep2) 地震限制在研究范围内，删除地震. function: delete the earthquake out of the region
+# Function: limit_ev_region(ev_info, lat1, lat2, lon1, lon2, dep1, dep2) Delete the earthquakes that are out of the specified region.
+
 def limit_ev_region(ev_info,lat_min,lat_max,lon_min,lon_max,dep_min,dep_max):
     count_delete = 0
 
@@ -550,7 +564,8 @@ def limit_ev_region(ev_info,lat_min,lat_max,lon_min,lon_max,dep_min,dep_max):
     return ev_info
 
 # %%
-# 函数: limit_st_region(ev_info,st_info,lat1,lat2,lon1,lon2) 台站限制在研究范围内，删除台站. function: delete the station out of the region
+# Function: limit_st_region(ev_info, st_info, lat1, lat2, lon1, lon2) Delete the stations that are out of the specified region.
+
 def limit_st_region(ev_info,st_info,lat1,lat2,lon1,lon2):
 
     for key_ev in ev_info:
@@ -562,7 +577,7 @@ def limit_st_region(ev_info,st_info,lat1,lat2,lon1,lon2):
             lon_st = st_info[name_st].lon
             if(lat_st < min(lat1,lat2) or lat_st > max(lat1,lat2) or lon_st < min(lon1,lon2) or lon_st > max(lon1,lon2)):
                 del_key_t.append(key_t)
-                
+
         for key_t in del_key_t:
             del ev_info[key_ev].t[key_t]
         ev_info[key_ev].Nt = len(ev_info[key_ev].t)
@@ -603,12 +618,13 @@ def limit_st_region(ev_info,st_info,lat1,lat2,lon1,lon2):
 
 
 # %%
-# 函数：limit_epi_dis(ev_info,st_info,epi_dis1,epi_dis2) 删除震中距范围在 dis1 - dis2 之间的数据. function: delete the station with epicentral distance from epi_dis1 to epi_dis2
+# Function: limit_epi_dis(ev_info, st_info, epi_dis1, epi_dis2) Delete the stations with epicentral distance in the range from epi_dis1 to epi_dis2.
+
 def limit_epi_dis(ev_info,st_info,epi_dis1,epi_dis2):
 
     for key_ev in ev_info:
         ev = ev_info[key_ev]
-        
+
         lat_ev = ev.lat
         lon_ev = ev.lon
 
@@ -633,7 +649,7 @@ def limit_epi_dis(ev_info,st_info,epi_dis1,epi_dis2):
                 lat_st = st_info[stname].lat
                 lon_st = st_info[stname].lon
                 dis = cal_dis(lat_ev, lon_ev, lat_st, lon_st)
-            
+
                 if (dis > epi_dis1 and dis < epi_dis2):
                     del_key_t.append(key_t)
                     break
@@ -656,18 +672,19 @@ def limit_epi_dis(ev_info,st_info,epi_dis1,epi_dis2):
             dis = cal_dis(lat_ev2, lon_ev2, lat_st, lon_st)
             if (dis > epi_dis1 and dis < epi_dis2):
                 del_key_t.append(key_t)
-        
+
         for key_t in del_key_t:
             del ev.cr_dt[key_t]
         ev.Ncr_dt = len(ev.cr_dt)
-        
-        
+
+
         ev_info[key_ev] = ev
 
     return ev_info
 
 # %%
-# 函数: limit_data_residual(ev_info,st_info,slope,intercept,up,down)  将数据限制在 直线 time = dis * slope + intercept 的两侧， up and down 的范围里面
+# Function: limit_data_residual(ev_info, st_info, slope, intercept, up, down) Limit the data within the range defined by the line time = dis * slope + intercept and the bounds up and down.
+
 # remove outliers, only retain data satisfying:     slope * dis + intercept + down < time < slope * dis + intercept + up
 def limit_data_residual(ev_info,st_info,slope,intercept,up,down):
     for key_ev in ev_info:
@@ -697,7 +714,8 @@ def limit_data_residual(ev_info,st_info,slope,intercept,up,down):
 
 
 # %%
-# 函数：limit_data_phase(ev_info,phase_list)   仅保留指定震相
+# Function: limit_data_phase(ev_info, phase_list) Retain only the specified seismic phases.
+
 def limit_data_phase(ev_info,phase_list):
     for key_ev in ev_info:
         # process the absolute traveltime data
@@ -706,7 +724,7 @@ def limit_data_phase(ev_info,phase_list):
             phase = ev_info[key_ev].t[key_t][1]
             if phase in phase_list:
                 new_t[key_t] = ev_info[key_ev].t[key_t]
-        
+
         ev_info[key_ev].t = new_t
         ev_info[key_ev].Nt = len(ev_info[key_ev].t)
 
@@ -735,7 +753,8 @@ def limit_data_phase(ev_info,phase_list):
     return ev_info
 
 # %%
-# 函数：limit_min_Nt(min_Nt_thd, ev_info) 删除到时数量小于阈值的地震 function: delete the earthquake with the number of data less than min_Nt_thd
+# Function: limit_min_Nt(min_Nt_thd, ev_info) Delete the earthquakes with the number of data less than min_Nt_thd.
+
 def limit_min_Nt(min_Nt_thd, ev_info):
     Nev = len(ev_info)
 
@@ -743,7 +762,7 @@ def limit_min_Nt(min_Nt_thd, ev_info):
     for key_ev in ev_info:
         if(ev_info[key_ev].Nt < min_Nt_thd):
             del_key_ev.append(key_ev)
-    
+
     for key_ev in del_key_ev:
         del ev_info[key_ev]
 
@@ -752,7 +771,7 @@ def limit_min_Nt(min_Nt_thd, ev_info):
     return ev_info
 
 # %%
-# 函数：limit_azi_gap(gap_thd) # 计算所有地震的方位角gap，并删除 gap > gap_thd 的地震. function: calculate azimuthal gap for all events and delete events with gap > gap_thd. 
+# Function: limit_azi_gap(gap_thd) Calculate the azimuthal gap for all events and delete events with a gap greater than gap_thd.
 def limit_azi_gap(gap_thd,ev_info,st_info):
     Nev = len(ev_info)
 
@@ -771,7 +790,7 @@ def limit_azi_gap(gap_thd,ev_info,st_info):
 
     return ev_info
 
-# 函数：cal_azi_gap(ev,st_info) 计算单个地震的方位角空缺 calculate the azimuthal gap of the earthquake
+# Function: cal_azi_gap(ev, st_info) Calculate the azimuthal gap of a single earthquake.
 def cal_azi_gap(ev,st_info):
     azi_all = []
     lat_ev = ev.lat
@@ -799,23 +818,25 @@ def cal_azi_gap(ev,st_info):
 
 
 # %%
-# 函数：limit_earthquake_decluster_Nt(ev_info,dlat,dlon,ddep,Top_N) 将区域划分为若干个subdomain，按照到时数量排序，每个box内仅保留到时数量最多的Top_N个地震，
+# Function: limit_earthquake_decluster_Nt(ev_info, dlat, dlon, ddep, Top_N) Divide the region into several subdomains, sort by the number of arrival times, and retain only the top Top_N earthquakes with the most arrival times in each box.
 # option 3, declustering. Divide the region into several subdomains, retain the Top N earthquakes in terms of the number of arrival times in each subdomain.
 def limit_earthquake_decluster_Nt(ev_info,dlat,dlon,ddep,Top_N):
-    # catagrate earthquakes into different subdomains 细分地震
+    # subdivide earthquakes into different subdomains
     [ev_info,tag2name] = tag_event_cluster(dlat,dlon,ddep,ev_info)
 
-    # sort earthquakes in the same subdomain 在每个tag中，根据接收数量，对地震质量进行排序
+    # sort earthquakes in the same subdomain
+    # Sort the quality of earthquakes within each tag based on the number of arrivals.
     tag2name = sort_cluster_Nt(ev_info, tag2name)
 
-    # only retain Top_N earthquakes in each subdomain 在每个tag中，优先选择 Top_N 个地震
+    # only retain Top_N earthquakes in each subdomain
+    # Within each tag, prioritize selecting the top Top_N earthquakes.
     [ev_info,tag2name] = limit_decluster(ev_info, tag2name,Top_N)
 
     return ev_info
 
 
 
-# 函数： tag_event_cluster(size_lat,size_lon,size_dep,ev_info)细分研究区域，每个地震属于一个子区域，放在tag里面
+# Function: tag_event_cluster(size_lat, size_lon, size_dep, ev_info) Subdivide the study area, assign each earthquake to a subregion, and place it in a tag.
 def tag_event_cluster(size_lat,size_lon,size_dep,ev_info):
     tag2name = {}
     for key_ev in ev_info:
@@ -834,50 +855,48 @@ def tag_event_cluster(size_lat,size_lon,size_dep,ev_info):
 
     return [ev_info,tag2name]
 
-# 函数： sort_cluster_Nt(ev_info, tag2name) 在每个tag中，根据接收数量，对地震质量进行排序
+# Function: sort_cluster_Nt(ev_info, tag2name) Sort the quality of earthquakes within each tag based on the number of arrivals.
 def sort_cluster_Nt(ev_info, tag2name):
     for key_tag in tag2name:
         names_ev = tag2name[key_tag]
         Nt = []
         for key_ev in names_ev:
             Nt.append(len(ev_info[key_ev].t))
-        
-        # 根据地震到时数量，给该tag下的地震排序
+
+        # Sort the earthquakes within each tag based on the number of arrivals.
         sorted_Nt = sorted(enumerate(Nt), key=lambda x: x[1], reverse=True)
         tag2name[key_tag] = []
         for index, Nt in sorted_Nt:
             tag2name[key_tag].append(names_ev[index])
-        
+
     return tag2name
-        
-# 函数： limit_cluster(ev_info, tag2name, Max) 在每个tag中，优先选择 threshold 个地震
+
+# Function: limit_cluster(ev_info, tag2name, Max) Prioritize selecting the top Max earthquakes within each tag.
 def limit_decluster(ev_info, tag2name, Max):
     del_key_ev = []
     for key_tag in tag2name:
         names_ev = tag2name[key_tag]
-        
+
         if(len(names_ev) > Max):
             tag2name[key_tag] = names_ev[0:Max]
-            for i in range(Max,len(names_ev)):    # 删除排序超过 threshold 的地震
+            for i in range(Max,len(names_ev)):    # Delete earthquakes that exceed the threshold in the sorted list.
                 del_key_ev.append(names_ev[i])
-    
+
     for key_ev in del_key_ev:
         del ev_info[key_ev]
-    
+
     return [ev_info,tag2name]
 
 
 
 # %% [markdown]
-# 函数类：给地震、台站、数据添加权重
-# 
 # Functions: assign weights to earthquakes, stations, and data
 
 # %%
-# 函数：box_weighting_ev (ev_info,dlat,dlon,ddep) 赋予地震权重. Assign box-weight to the earthquakes 
+# Function: box_weighting_ev(ev_info, dlat, dlon, ddep) Assign box-weight to the earthquakes.
 def box_weighting_ev(ev_info,dlon,dlat,ddep):
 
-    # 归类
+    # categorization
     distribute = {}
     all_tag_wt = {}
 
@@ -901,17 +920,18 @@ def box_weighting_ev(ev_info,dlon,dlat,ddep):
         lat_id = math.floor((ev_info[key_ev].lat) / dlat)
         lon_id = math.floor((ev_info[key_ev].lon) / dlon)
         dep_id = math.floor((ev_info[key_ev].dep) / ddep)
-        
+
         tag = '%d_%d_%d'%(lat_id,lon_id,dep_id)
-        
+
         ev_info[key_ev].tag["weight"] = all_tag_wt[tag]/max_weight
 
     return ev_info
 
 # %%
-# 函数：geographical_weighting_ev_rough(ev_info,dlat,dlon,ddep) 赋予地震权重 Assign geographical_weighting to the earthquakes roughly
+# Function: geographical_weighting_ev_rough(ev_info, dlat, dlon, ddep) Assign geographical weighting to the earthquakes roughly.
 def geographical_weighting_ev_rough(ev_info,dlat,dlon,ddep,coefficient = 0.5):
-    # 归类
+
+    # categorization
     distribute = {}
     all_tag_wt = {}
 
@@ -926,8 +946,8 @@ def geographical_weighting_ev_rough(ev_info,dlat,dlon,ddep,coefficient = 0.5):
             distribute[tag] += 1
         else:
             distribute[tag] = 1
-    
-    # 计算 每一类的 weight
+
+    # Calculate the weight of each category.
     delta0 = 0
     for tag1 in distribute:
         tmp1 = tag1.split('_')
@@ -940,7 +960,7 @@ def geographical_weighting_ev_rough(ev_info,dlat,dlon,ddep,coefficient = 0.5):
             # distance of id
             delta_tp = math.sqrt((int(tmp1[0]) - int(tmp2[0]))**2 + (int(tmp1[1]) - int(tmp2[1]))**2 + (int(tmp1[2]) - int(tmp2[2]))**2)
             delta0 = delta0 + distribute[tag1] * distribute[tag2] * delta_tp
-            
+
     delta0 = delta0/(len(ev_info)**2) * coefficient
 
     max_weight = 0.0
@@ -959,25 +979,25 @@ def geographical_weighting_ev_rough(ev_info,dlat,dlon,ddep,coefficient = 0.5):
         all_tag_wt[tag1] = (1.0/weight)
         max_weight = max(max_weight,1.0/weight)
 
-    # 根据地震的tag，给每个地震添加权重
+    # Assign weights to each earthquake based on its tag.
     for key_ev in ev_info:
         lat_id = int(ev_info[key_ev].lat/dlat)
         lon_id = int(ev_info[key_ev].lon/dlon)
         dep_id = int(ev_info[key_ev].dep/ddep)
-        
+
         tag = '%d_%d_%d'%(lat_id,lon_id,dep_id)
-        
+
         ev_info[key_ev].tag["weight"] = all_tag_wt[tag]/max_weight
     return ev_info
 
 
 # %%
-# 函数：box_weighting_st(ev_info,st_info,dlat,dlon) 赋予台站权重 Assign geographical_weighting to the stations roughly
+# Function: box_weighting_st(ev_info, st_info, dlat, dlon) Assign geographical weighting to the stations roughly.
 def box_weighting_st(ev_info,st_info,dlon,dlat):
 
     [lon_ev,lat_ev,dep_ev,wt_ev] = data_lon_lat_dep_wt_ev(ev_info)
 
-    # 整合所有涉及到的台站
+    # Integrate all involved stations.
     wt_st = {}
     name_st = {}
     for key_ev in ev_info:
@@ -986,11 +1006,11 @@ def box_weighting_st(ev_info,st_info,dlon,dlat):
             wt_st[name_rec] = -1.0
             name_st[name_rec] = 1
 
-    # 归类
+    # categorization
     distribute = {}
     all_tag_wt = {}
 
-    # 统计每个小subdomain内的台站数量
+    # Count the number of stations in each subdomain.
     for key_st in name_st:
         lat_id = math.floor((st_info[key_st].lat) / dlat)
         lon_id = math.floor((st_info[key_st].lon) / dlon)
@@ -1006,11 +1026,11 @@ def box_weighting_st(ev_info,st_info,dlon,dlat):
         all_tag_wt[tag] = 1.0/math.sqrt(distribute[tag])
         max_weight = max(max_weight,all_tag_wt[tag])
 
-    # 赋予台站权重
+    # Assign weights to each station based on its tag.
     for key_st in name_st:
         lat_id = math.floor((st_info[key_st].lat) / dlat)
         lon_id = math.floor((st_info[key_st].lon) / dlon)
-        tag = '%d_%d'%(lat_id,lon_id)       
+        tag = '%d_%d'%(lat_id,lon_id)
         wt_st[key_st] = all_tag_wt[tag]/max_weight
 
     # modify weight tag in st_info
@@ -1021,16 +1041,16 @@ def box_weighting_st(ev_info,st_info,dlon,dlat):
     for key_ev in ev_info:
         for key_t in ev_info[key_ev].t:
             name_rec = ev_info[key_ev].t[key_t][0]
-            ev_info[key_ev].t[key_t][3] = wt_st[name_rec]    
+            ev_info[key_ev].t[key_t][3] = wt_st[name_rec]
 
     return [ev_info,st_info]
 
 
 # %%
-# 函数：geographical_weighting_st(ev_info,st_info,) 赋予台站权重 Assign geographical_weighting to the stations roughly
+# Function: geographical_weighting_st(ev_info,st_info) Assign geographical weighting to the stations roughly.
 def geographical_weighting_st(ev_info,st_info,coefficient = 0.5):
 
-    # 整合所有涉及到的台站
+    # Integrate all involved stations.
     wt_st = {}
     name_st = {}
     for key_ev in ev_info:
@@ -1039,7 +1059,7 @@ def geographical_weighting_st(ev_info,st_info,coefficient = 0.5):
             wt_st[name_rec] = -1.0
             name_st[name_rec] = 1
 
-    # 计算每个台站的weight
+    # Calculate the weight of each station.
     delta0 = 0
     for key_st1 in name_st:
         stlat1 = st_info[key_st1].lat
@@ -1051,7 +1071,7 @@ def geographical_weighting_st(ev_info,st_info,coefficient = 0.5):
 
             delta_tp = cal_dis(stlat1,stlon1,stlat2,stlon2)
             delta0 = delta0 + delta_tp
-            
+
     delta0 = delta0/(len(wt_st)**2)*coefficient
 
     max_weight = 0.0
@@ -1073,19 +1093,19 @@ def geographical_weighting_st(ev_info,st_info,coefficient = 0.5):
     for key_st1 in wt_st:
         wt_st[key_st1] = wt_st[key_st1]/max_weight
 
-    # 给每个地震中的数据添加weight
+    # Add weight to each data point in the earthquakes.
     for key_ev in ev_info:
         for key_t in ev_info[key_ev].t:
             name_rec = ev_info[key_ev].t[key_t][0]
             if (not name_rec in wt_st):
-                ValueError("数据的台站不在计算列表中 station is excluded in the list")
-            
+                ValueError("The station of the data is not in the calculation list")
+
             if (len(ev_info[key_ev].t[key_t])==3):
                 ev_info[key_ev].t[key_t].append(wt_st[name_rec])
             elif (len(ev_info[key_ev].t[key_t])==4):
                 ev_info[key_ev].t[key_t][3] = wt_st[name_rec]
             else:
-                ValueError("数据的权重信息有误, error in the weight information of the absoulte traveltime")
+                ValueError("Error in the weight information of the absolute traveltime data")
 
     # modify weight tag in st_info
     for key_t in wt_st:
@@ -1095,26 +1115,24 @@ def geographical_weighting_st(ev_info,st_info,coefficient = 0.5):
     for key_ev in ev_info:
         for key_t in ev_info[key_ev].t:
             name_rec = ev_info[key_ev].t[key_t][0]
-            ev_info[key_ev].t[key_t][3] = wt_st[name_rec] 
-            
+            ev_info[key_ev].t[key_t][3] = wt_st[name_rec]
+
     return [ev_info,st_info]
 
 
 # %% [markdown]
-# 函数类：数据添加噪声
-# 
 # Function: add noise into data
 
 # %%
-# 函数：assign_gaussian_noise():
+# Function：assign_gaussian_noise():
 def assign_gaussian_noise(ev_info,sigma):
 
-    # 记录一下对应台站有哪些震相
-    st2phase = {}   # 台站名字 -> [与这个台站有关的绝对到时数据的键值]
+    # Record which seismic phases correspond to each station.
+    st2phase = {}   # Station name -> [Keys of absolute arrival time data related to this station]
 
-    
+
     for key_ev in ev_info:
-        # 绝对到时噪声
+        # Absolute arrival time noise
         for key_t in ev_info[key_ev].t:
             stname = ev_info[key_ev].t[key_t][0]
             ev_info[key_ev].t[key_t][2] = ev_info[key_ev].t[key_t][2] + np.random.normal(0,sigma)
@@ -1122,15 +1140,15 @@ def assign_gaussian_noise(ev_info,sigma):
                 st2phase[stname].append(key_t)
             else:
                 st2phase[stname] = [key_t]
-    
+
     for key_ev in ev_info:
-        # 共源双差到时噪声
+        # Double-difference arrival time noise
         for key_dt in ev_info[key_ev].cs_dt:
             stname1 = ev_info[key_ev].cs_dt[key_dt][0]
             stname2 = ev_info[key_ev].cs_dt[key_dt][1]
             t1 = -999
             t2 = -999
-            # 寻找有没有该数据的到时
+            # Search for the arrival time of the data.
             if (stname1 in st2phase):
                 for key_t in st2phase[stname1]:
                     if (key_t in ev_info[key_ev].t):
@@ -1141,23 +1159,23 @@ def assign_gaussian_noise(ev_info,sigma):
                     if (key_t in ev_info[key_ev].t):
                         t2 = ev_info[key_ev].t[key_t][2]
                         break
-            
+
             if (t1 == -999 or t2 == -999):
-                # 没有绝对到时数据，，共源双差数据残差增加 sqrt(2)倍的噪声
+                # If there is no absolute arrival time data, the double-difference data residuals increase by a factor of sqrt(2) in noise.
                 ev_info[key_ev].cs_dt[key_dt][3] = ev_info[key_ev].cs_dt[key_dt][3] + np.random.normal(0,sigma*np.sqrt(2))
                 print('no data: ', key_ev, key_dt)
             else:
-                # 有绝对到时数据，共源双差数据由相减得的
+                # If there is absolute arrival time data, the double-difference data is obtained by subtraction.
                 ev_info[key_ev].cs_dt[key_dt][3] = t1 - t2
 
-        # 共台站双差到时
+        # Common station double-difference arrival time
         for key_dt in ev_info[key_ev].cr_dt:
             stname  = ev_info[key_ev].cr_dt[key_dt][0]
             key_ev2 = ev_info[key_ev].cr_dt[key_dt][1]
 
             t1 = -999
             t2 = -999
-            # 寻找有没有该数据的到时
+            # Search for the arrival time of the data.
             if (stname in st2phase):
                 for key_t in st2phase[stname]:
                     if (key_t in ev_info[key_ev].t):
@@ -1174,43 +1192,43 @@ def assign_gaussian_noise(ev_info,sigma):
                         print('not found 2: ', key_ev, key_t)
 
             if (t1 == -999 or t2 == -999):
-                # 没有绝对到时数据，，共源双差数据残差增加 sqrt(2)倍的噪声
+                # If there is no absolute arrival time data, the double-difference data residuals increase by a factor of sqrt(2) in noise.
                 ev_info[key_ev].cr_dt[key_dt][3] = ev_info[key_ev].cr_dt[key_dt][3] + np.random.normal(0,sigma*np.sqrt(2))
                 print('no data: ', key_ev, key_dt)
             else:
-                # 有绝对到时数据，共源双差数据由相减得的
+                # If there is absolute arrival time data, the double-difference data is obtained by subtraction.
                 ev_info[key_ev].cr_dt[key_dt][3] = t1 - t2
 
     return ev_info
 
 # %%
-# 函数：assign_uniform_noise_to_ev():
+# Function：assign_uniform_noise_to_ev():
 def assign_uniform_noise_to_ev(ev_info, range_lat, range_lon, range_dep, range_time):
 
-    # 循环所有地震，给这些地震赋予噪声
-    ev_noise = {}   # 地震名字 -> noise of [lat,lon,dep,ortime]
-    # loop 地震列表
+    # Loop through all earthquakes and assign noise to them.
+    ev_noise = {}   # Name of the earthquake -> noise of [lat,lon,dep,ortime]
+    # loop list of earthquakes
     for key_ev in ev_info:
         evname = key_ev
         if (evname in ev_noise):
             print("error: repeated earthquake name")
             exit()
         else:
-            # 生成噪声
+            # generate noise
             ev_noise[evname] = np.random.uniform(-1,1,4) * np.array([range_lat,range_lon,range_dep,range_time])
 
-    # 给每个 数据 添加噪声
+    # Add noise to each data point.
     for key_ev in ev_info:
 
-        # 绝对到时噪声
+        # Absolute arrival time noise
         for key_t in ev_info[key_ev].t:
 
             ev_info[key_ev].t[key_t][2] = ev_info[key_ev].t[key_t][2] - ev_noise[key_ev][3]
 
-    
-        # 共源双差到时噪声 (双差到时没有变化)
 
-        # 共台站双差到时
+        # Double-difference arrival time noise (double-difference arrival time remains unchanged)
+
+        # Common station double-difference arrival time
         for key_dt in ev_info[key_ev].cr_dt:
             key_ev2 = ev_info[key_ev].cr_dt[key_dt][1]
 
@@ -1222,7 +1240,7 @@ def assign_uniform_noise_to_ev(ev_info, range_lat, range_lon, range_dep, range_t
                 ev_info[key_ev].cr_dt[key_dt][3] = ev_info[key_ev].cr_dt[key_dt][3] - ev_noise[key_ev][3] + ev_noise[key_ev2][3]
 
 
-    # 给每个地震添加噪声
+    # Add noise to each earthquake.
     for key_ev in ev_noise:
         ev_info[key_ev].lat = ev_info[key_ev].lat + ev_noise[key_ev][0]
         ev_info[key_ev].lon = ev_info[key_ev].lon + ev_noise[key_ev][1]
@@ -1233,12 +1251,10 @@ def assign_uniform_noise_to_ev(ev_info, range_lat, range_lon, range_dep, range_t
     return ev_info
 
 # %% [markdown]
-# 函数类：生成差分数据
-# 
 # Functions: generate differential traveltime
 
 # %%
-# 函数：generate_cs_dif(ev_info,st_info,dis_thd,azi_thd): 从绝对到时生成共源双差到时, 台间距小于 dis_thd, 方位差小于 azi_thd
+# Function: generate_cs_dif(ev_info, st_info, dis_thd, azi_thd) Generate double-difference arrival times from absolute arrival times, with inter-station distance less than dis_thd and azimuthal difference less than azi_thd.
 # function: generate common source differential traveltime data from absolute traveltime data, the stations separation is less than dis_thd, the azimuth difference is less than azi_thd
 def generate_cs_dif(ev_info,st_info,dis_thd,azi_thd):
     count_t = 0
@@ -1249,8 +1265,8 @@ def generate_cs_dif(ev_info,st_info,dis_thd,azi_thd):
 
         lat_ev = ev.lat
         lon_ev = ev.lon
-        
-        # 遍历所有的到时
+
+        # traverse all arrival times
         name_st_list = []   # names of stations
         t_list = []         # traveltime
         wt_list = []        # weight
@@ -1259,8 +1275,8 @@ def generate_cs_dif(ev_info,st_info,dis_thd,azi_thd):
             t_list.append(ev.t[key_t][2])
             wt_list.append(ev.t[key_t][3])
             count_t += 1
-            
-        # 寻找可能的双差到时
+
+        # search for possible double-difference arrival times
         for id_st1 in range(len(name_st_list)-1):
             name_st1 = name_st_list[id_st1]
             lat_st1  = st_info[name_st1].lat
@@ -1278,7 +1294,7 @@ def generate_cs_dif(ev_info,st_info,dis_thd,azi_thd):
                 dis = cal_dis(lat_st1,lon_st1,lat_st2,lon_st2)
                 azi_st1 = cal_azimuth(lat_ev,lon_ev,lat_st1,lon_st1)
                 azi_st2 = cal_azimuth(lat_ev,lon_ev,lat_st2,lon_st2)
-                
+
                 azi_dif = abs(azi_st1 - azi_st2)
 
                 if(dis < dis_thd and (azi_dif < azi_thd or (360-azi_dif) < azi_thd )):
@@ -1292,15 +1308,15 @@ def generate_cs_dif(ev_info,st_info,dis_thd,azi_thd):
 
 
 # %%
-# 函数：generate_cr_dif(ev_info,st_info,dis_thd): 从绝对到时生成共台双差到时, 震源间距小于 dis_thd
-# function: generate common receiver differential traveltime data from absolute traveltime data, the earthquake separation is less than dis_thd
+# Function: generate_cr_dif(ev_info, st_info, dis_thd) Generate common station double-difference arrival times from absolute arrival times, with inter-event distance less than dis_thd.
+# Function: generate common receiver differential traveltime data from absolute traveltime data, the earthquake separation is less than dis_thd
 def generate_cr_dif(ev_info,st_info,dis_thd,azi_thd):
-    
-    # 构造映射：rec2src[name_ev] -> {name_st: [name_ev, name_st, t, wt]; name_st: [name_ev, name_st, t, wt]; ...}
+
+    # Construct mapping：rec2src[name_ev] -> {name_st: [name_ev, name_st, t, wt]; name_st: [name_ev, name_st, t, wt]; ...}
     rec2src = build_rec_src_map(ev_info,dis_thd)
     print("rec to src map generation finished")
 
-    # 构造双差数据关联映射：rec2src_pair[key_t]
+    # Construct double-difference data association mapping：rec2src_pair[key_t]
     rec2src_pair = build_rec_src_pair_map(rec2src)
     print("rec to src_pair map generation finished")
 
@@ -1337,11 +1353,12 @@ def generate_cr_dif(ev_info,st_info,dis_thd,azi_thd):
             t_ev2 = ev_info[name_ev2].t[key_t][2]
             wt_ev1 = ev_info[name_ev1].t[key_t][3] * ev_info[name_ev1].tag["weight"]
             wt_ev2 = ev_info[name_ev2].t[key_t][3] * ev_info[name_ev2].tag["weight"]
-            wt = (wt_ev1 + wt_ev2)/2/ev_info[name_ev1].tag["weight"]        # 实际的数据权重是 wt_ev1 + wt_ev2，但是在TomoATT计算中，我们需要将其除以 ev_info[name_ev1].tag["weight"]
-            
+            # The actual data weight is wt_ev1 + wt_ev2, but in TomoATT calculations, we need to divide it by ev_info[name_ev1].tag["weight"].
+            wt = (wt_ev1 + wt_ev2)/2/ev_info[name_ev1].tag["weight"]
+
             ev_info[name_ev1].cr_dt["%s+%s+%s"%(name_st,name_ev2,"P,cr")] = [name_st,name_ev2,"P,cr",t_ev1-t_ev2,wt]
 
-    # 统计双差数量
+    # Count the number of double-difference data points.
     count_cr_dt = 0
     count_t     = 0
     for key_ev in ev_info:
@@ -1353,11 +1370,10 @@ def generate_cr_dif(ev_info,st_info,dis_thd,azi_thd):
 
     return ev_info
 
-
-# 构造映射：rec2src      = {key_t: dict_tag; key_t: dict_tag; ...} 
-#          dict_tag     = {tag: list_name_ev; tag:list_name_ev; ...}
-#          list_name_ev = [name_ev1, name_ev2, ...]
-# 根据地震位置，将其分配进入不同的子区域。子区域大小为 dlat*dlon*ddep. 在做共台站双差的时候，仅在同一个子区域或相邻子区域内的地震对才会被考虑
+# Construct mapping: rec2src = {key_t: dict_tag; key_t: dict_tag; ...}
+# dict_tag = {tag: list_name_ev; tag: list_name_ev; ...}
+# list_name_ev = [name_ev1, name_ev2, ...]
+# Assign earthquakes to different subregions based on their locations. The subregion size is dlat * dlon * ddep. When performing common station double-difference calculations, only earthquake pairs within the same subregion or adjacent subregions will be considered.
 def build_rec_src_map(ev_info,dis_thd):
     rec2src = {}
     for key_ev in ev_info:
@@ -1373,19 +1389,19 @@ def build_rec_src_map(ev_info,dis_thd):
 
         for key_t in ev_info[key_ev].t:
 
-            # 创建 dictionary
+            # create dictionary
             if (not key_t in rec2src):
                 rec2src[key_t] = {tag:[]}
             elif (not tag in rec2src[key_t]):
                 rec2src[key_t][tag] = []
-            
-            # 添加数据
+
+            # Add data
             rec2src[key_t][tag].append(name_ev)
 
     return rec2src
 
-# 函数：generate_adjacent_tag(tag) 生成 tag 周围的 tag
-def generate_adjacent_tag(tag): # 不包含 tag 自己
+# Function: generate_adjacent_tag(tag) Generate tags surrounding the given tag.
+def generate_adjacent_tag(tag): # Excluding the tag itself.
     adjacent_tag_list = []
     tmp = tag.split('_')
     tag_lon = int(tmp[0])
@@ -1402,10 +1418,10 @@ def generate_adjacent_tag(tag): # 不包含 tag 自己
     return adjacent_tag_list
 
 
-# 构造映射：rec2src_pair
+# construct mapping：rec2src_pair
 def build_rec_src_pair_map(rec2src):
     rec2src_pair = {}
-    
+
     for key_t in rec2src:
         rec2src_pair[key_t] = {}
 
@@ -1415,14 +1431,14 @@ def build_rec_src_pair_map(rec2src):
             name_ev_list2 = rec2src[key_t][tag]
             adjacent_tag_list = generate_adjacent_tag(tag)
             for adjacent_tag in adjacent_tag_list:
-                if (adjacent_tag in rec2src[key_t]):      # 如果周围 tag 的区域 有地震，就加入地震列表
+                if (adjacent_tag in rec2src[key_t]):      # If the surrounding tag's region has earthquakes, add them to the earthquake list.
                     name_ev_list2 = name_ev_list2 + rec2src[key_t][adjacent_tag]
 
-            # 寻找可能的地震对
+            # Find possible earthquake pairs.
             for id_ev1 in range(len(name_ev_list1)-1):
                 name_ev1 = name_ev_list1[id_ev1]
 
-                for id_ev2 in range(id_ev1+1,len(name_ev_list2)):   # 从 id_ev1+1 开始，就已经排除了 tag 内部地震的重复
+                for id_ev2 in range(id_ev1+1,len(name_ev_list2)):   # Starting from id_ev1 + 1 already excludes duplicate earthquakes within the tag.
                     name_ev2 = name_ev_list2[id_ev2]
 
                     ev_tag1 = "%s+%s"%(name_ev1,name_ev2)
@@ -1431,20 +1447,18 @@ def build_rec_src_pair_map(rec2src):
                     if(ev_tag1 in rec2src_pair[key_t] or ev_tag2 in rec2src_pair[key_t]):
                         continue
 
-                    rec2src_pair[key_t][ev_tag1] = [name_ev1,name_ev2]        
+                    rec2src_pair[key_t][ev_tag1] = [name_ev1,name_ev2]
 
 
     return rec2src_pair
 
 # %% [markdown]
-# 函数类：读取和输出数据文件
-# 
 # Functions: read and write src_rec.dat file
 
 # %%
-# 函数：reorder_src(ev) 按照顺序给地震重新编号. 如果地震没有数据，则编号为-999. function: reorder the earthquake id. if the earthquake has no data, the id is -999
+# Function: reorder_src(ev) Reorder the earthquake IDs. If the earthquake has no data, the ID is -999.
 def reorder_src(ev_info):
-    
+
     ev_id = 0
     for key_ev in ev_info:
         ev      = ev_info[key_ev]
@@ -1459,8 +1473,8 @@ def reorder_src(ev_info):
 
 
 # %%
-# 函数：read_src_rec_file(fname), 读取到时数据. function:  read src_rec.dat file.  
-# 
+# Function: read_src_rec_file(fname) Read the src_rec.dat file.
+#
 def read_src_rec_file(fname):
     ev_info = {}
     st_info = {}
@@ -1511,7 +1525,7 @@ def read_src_rec_file(fname):
 
         else:   # data line
             #  1      1      MYA       38.3261     38.4253   1050.0000  P   52.46   6.630 weight
-            if(len(tmp) < 10):  # absolue traveltime data  绝对走时数据
+            if(len(tmp) < 10):  # absolue traveltime data
                 name_st = tmp[2]
                 phase   = tmp[6]
                 if (phase == "PG"):
@@ -1519,7 +1533,7 @@ def read_src_rec_file(fname):
                 if (phase == "PB"):
                     phase = "Pb"
                 if (phase == "PN"):
-                    phase = "Pn"    
+                    phase = "Pn"
 
                 if (not name_st in st_info):
                     st = Station()
@@ -1529,7 +1543,7 @@ def read_src_rec_file(fname):
                     st.lon  = float(tmp[4])
                     st.ele  = float(tmp[5])
                     st_info[name_st] = st
-                
+
                 time    = float(tmp[7])
                 if(len(tmp) == 9):
                     weight = float(tmp[8])
@@ -1538,13 +1552,13 @@ def read_src_rec_file(fname):
                 ev.t["%s+%s"%(name_st,phase)] = [name_st,phase,time,weight]
                 ev.Nt += 1
 
-            else:   # differential traveltime data  双差走时数据
+            else:   # differential traveltime data
                 phase = tmp[11]
-                if (phase.__contains__("cr")):  # common receiver differential traveltime 共台站双差
-                    #  evid     stid1      stname1      lat1 lon1 eve1 evid2 evname2 lat2 lon2 dep2 phase,cr diftime weight 
+                if (phase.__contains__("cr")):  # common receiver differential traveltime
+                    #  evid     stid1      stname1      lat1 lon1 eve1 evid2 evname2 lat2 lon2 dep2 phase,cr diftime weight
 
                     name_st1 = tmp[2]
-                    if (not name_st1 in st_info):   # add station to the station list 把台站加入到台站列表中
+                    if (not name_st1 in st_info):   # add station to the station list
                         st = Station()
                         st.name = name_st1
                         st.id   = float(tmp[1])
@@ -1552,16 +1566,16 @@ def read_src_rec_file(fname):
                         st.lon  = float(tmp[4])
                         st.ele  = float(tmp[5])
                         st_info[name_st1] = st
-                    
+
                     name_ev2 = tmp[7]
-                                                    # add earthquake to the temp earthquake list 把地震加入到地震列表中
-                    ev2 = Event()   
+                                                    # add earthquake to the temp earthquake list
+                    ev2 = Event()
                     ev2.name = name_ev2
                     ev2.id   = float(tmp[6])
                     ev2.lat  = float(tmp[8])
                     ev2.lon  = float(tmp[9])
                     ev2.dep  = float(tmp[10])
-                    tmp_ev_info[name_ev2] = ev2 
+                    tmp_ev_info[name_ev2] = ev2
 
 
                     dif_time = float(tmp[12])
@@ -1572,8 +1586,8 @@ def read_src_rec_file(fname):
                     ev.cr_dt["%s+%s+%s"%(name_st1,name_ev2,phase)] = [name_st1,name_ev2,phase,dif_time,weight]
                     ev.Ncr_dt += 1
 
-                else:                           # common source differential traveltime 共台站双差
-                    #  evid     stid1      stname1      lat1 lon1 eve1 stid2 stname2 lat2 lon2 ele2 phase,cs diftime weight 
+                else:                           # common source differential traveltime
+                    #  evid     stid1      stname1      lat1 lon1 eve1 stid2 stname2 lat2 lon2 ele2 phase,cs diftime weight
 
                     name_st1 = tmp[2]
                     if (not name_st1 in st_info):
@@ -1584,7 +1598,7 @@ def read_src_rec_file(fname):
                         st.lon  = float(tmp[4])
                         st.ele  = float(tmp[5])
                         st_info[name_st1] = st
-    
+
                     name_st2 = tmp[7]
                     if (not name_st2 in st_info):
                         st = Station()
@@ -1594,7 +1608,7 @@ def read_src_rec_file(fname):
                         st.lon  = float(tmp[9])
                         st.ele  = float(tmp[10])
                         st_info[name_st2] = st
- 
+
                     dif_time = float(tmp[12])
                     if(len(tmp) == 14):
                         weight = float(tmp[13])
@@ -1609,7 +1623,7 @@ def read_src_rec_file(fname):
             else:
                 cc += 1
 
-    # 将临时地震列表中的地震加入到地震列表中
+    # Add earthquakes from the temporary earthquake list to the main earthquake list.
     for key_ev in tmp_ev_info:
         if (not key_ev in ev_info):
             ev_info[key_ev] = tmp_ev_info[key_ev]
@@ -1617,7 +1631,7 @@ def read_src_rec_file(fname):
     return [ev_info,st_info]
 
 # %%
-# 函数: write_src_rec_file(fname,ev_info,st_info) 输出src_rec到时数据. function: output the src_rec.dat file
+# Function: write_src_rec_file(fname, ev_info, st_info) Output the src_rec.dat file.
 def write_src_rec_file(fname,ev_info,st_info):
     ev_info = reorder_src(ev_info)
     doc_src_rec = open(fname,'w')
@@ -1628,7 +1642,7 @@ def write_src_rec_file(fname,ev_info,st_info):
     max_lon = -9999
     min_dep =  9999
     max_dep = -9999
-    
+
     record_ev = {}
     record_st = {}
     Nt_total  = 0
@@ -1656,12 +1670,12 @@ def write_src_rec_file(fname,ev_info,st_info):
         except:
             weight_ev = 1.0
 
-        if(ndata == 0):     # 如果这个地震没有数据，则不输出这个地震. if the earthquake has no data, do not output it
+        if(ndata == 0):     # if the earthquake has no data, do not output it
             continue
 
         doc_src_rec.write('%7d %6d %2d %2d %2d %2d %5.2f %9.4f %9.4f %9.4f %5.2f %7d %s %7.3f\n'%(\
             evid,year,month,day,hour,minute,second+msec/1000000,lat_ev,lon_ev,dep_ev,mag,ndata,name_ev,weight_ev))
-        
+
         min_lat =  min(min_lat, lat_ev)
         max_lat =  max(max_lat, lat_ev)
         min_lon =  min(min_lon, lon_ev)
@@ -1669,7 +1683,7 @@ def write_src_rec_file(fname,ev_info,st_info):
         min_dep =  min(min_dep, dep_ev)
         max_dep =  max(max_dep, dep_ev)
 
-        record_ev[name_ev] = 1  # record this earthquake 记录下这个地震
+        record_ev[name_ev] = 1  # record this earthquake
         Nt_total += ev.Nt
         Ncs_dt_total += ev.Ncs_dt
         Ncr_dt_total += ev.Ncr_dt
@@ -1697,7 +1711,7 @@ def write_src_rec_file(fname,ev_info,st_info):
             min_dep =  min(min_dep, -ele_st/1000)
             max_dep =  max(max_dep, -ele_st/1000)
 
-            record_st[name_st] = 1  # record this station 记录下这个台站
+            record_st[name_st] = 1  # record this station
 
         for key_t in ev.cs_dt:
             data    = ev.cs_dt[key_t]
@@ -1721,7 +1735,7 @@ def write_src_rec_file(fname,ev_info,st_info):
                 weight_data = 1.0
             doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %7d %6s %9.4f %9.4f %9.4f %s %8.4f %7.3f \n'%(\
                 evid,stid1,name_st1,lat_st1,lon_st1,ele_st1,stid2,name_st2,lat_st2,lon_st2,ele_st2,phase,time,weight_data))
-            
+
             min_lat =  min(min_lat, lat_st1)
             max_lat =  max(max_lat, lat_st1)
             min_lon =  min(min_lon, lon_st1)
@@ -1736,8 +1750,8 @@ def write_src_rec_file(fname,ev_info,st_info):
             min_dep =  min(min_dep, -ele_st2/1000)
             max_dep =  max(max_dep, -ele_st2/1000)
 
-            record_st[name_st1] = 1  # record this station 记录下这个台站
-            record_st[name_st2] = 1  # record this station 记录下这个台站
+            record_st[name_st1] = 1  # record this station
+            record_st[name_st2] = 1  # record this station
 
         for key_t in ev.cr_dt:
             data    = ev.cr_dt[key_t]
@@ -1761,7 +1775,7 @@ def write_src_rec_file(fname,ev_info,st_info):
                 weight_data = 1.0
             doc_src_rec.write('%7d %7d %6s %9.4f %9.4f %9.4f %7d %6s %9.4f %9.4f %9.4f %s %8.4f %7.3f \n'%(\
                 evid,stid,name_st,lat_st,lon_st,ele_st,evid2,name_ev2,lat_ev2,lon_ev2,dep_ev2,phase,time,weight_data))
-            
+
             min_lat =  min(min_lat, lat_st)
             max_lat =  max(max_lat, lat_st)
             min_lon =  min(min_lon, lon_st)
@@ -1775,11 +1789,11 @@ def write_src_rec_file(fname,ev_info,st_info):
             max_lon =  max(max_lon, lon_ev2)
             min_dep =  min(min_dep, dep_ev2)
             max_dep =  max(max_dep, dep_ev2)
-            
-            record_ev[name_ev2] = 1  # record this station 记录下这个台站
-            record_st[name_st] = 1   # record this station 记录下这个台站
 
-    doc_src_rec.close() 
+            record_ev[name_ev2] = 1  # record this station
+            record_st[name_st] = 1   # record this station
+
+    doc_src_rec.close()
 
     print("src_rec.dat has been outputed: %d events, %d stations, %d abs traveltime, %d cs_dif traveltime, %d cr_dif traveltime. " \
           %(len(record_ev),len(record_st),Nt_total,Ncs_dt_total,Ncr_dt_total))
@@ -1787,7 +1801,7 @@ def write_src_rec_file(fname,ev_info,st_info):
 
 
 # %%
-# 函数: write_src_list_file(fname,ev_info) 输出地震列表. function: output the event list file
+# Function: write_src_list_file(fname, ev_info) Output the event list file.
 def write_src_list_file(fname,ev_info):
     doc_ev_list = open(fname,'w')
 
@@ -1799,20 +1813,20 @@ def write_src_list_file(fname,ev_info):
         dep_ev  = ev.dep
         mag     = ev.mag
         name_ev = ev.name
-        if (ev.id == -999):     # 如果这个地震没有数据，则不输出这个地震. if the earthquake has no data, do not output it
+        if (ev.id == -999):     # if the earthquake has no data, do not output it
             continue
         doc_ev_list.write("%7d %s %s %9.4f %9.4f %9.4f %5.2f \n"%(evid,name_ev,ev.ortime,lat_ev,lon_ev,dep_ev,mag))
     doc_ev_list.close()
 
 # %%
-# 函数: write_rec_list_file(fname,ev_info,st_info) 输出台站数据. function: output the station list file
+# Function: write_rec_list_file(fname, ev_info, st_info) Output the station list file.
 def write_rec_list_file(fname,ev_info,st_info):
     doc_st_list = open(fname,'w')
 
     st_list = {}
     for key_ev in ev_info:
         ev      = ev_info[key_ev]
-        
+
         for key_t in ev.t:
             data    = ev.t[key_t]
             st      = st_info[data[0]]
@@ -1857,13 +1871,60 @@ def write_rec_list_file(fname,ev_info,st_info):
     doc_st_list.close()
 
 # %% [markdown]
-# 函数类：读取反演网格文件
-# 
+# Functions: read objective function file
+
+# %%
+# Function: read_objective_function_file(path)
+def read_objective_function_file(path):
+
+    full_curve = []
+    location_curve = []
+    model_curve = []
+
+    with open('%s/objective_function.txt'%(path)) as f:
+        for i,line in enumerate(f):
+            tmp = line.split(',')
+            if (tmp[0].__contains__("#")):
+                continue   # skip the comment line
+        
+            iter        = int(tmp[0])
+            tag         = tmp[1]
+            obj         = float(tmp[2])
+            obj_abs     = float(tmp[3])
+            obj_cs      = float(tmp[4])
+            obj_cr      = float(tmp[5])
+            obj_tele    = float(tmp[6])
+            tmp2        = tmp[7].split('/')
+            mean        = float(tmp2[0])
+            std         = float(tmp2[1])
+            tmp2        = tmp[8].split('/')
+            mean_abs    = float(tmp2[0])
+            std_abs     = float(tmp2[1])
+            tmp2        = tmp[9].split('/')
+            mean_cs     = float(tmp2[0])
+            std_cs      = float(tmp2[1])
+            tmp2        = tmp[10].split('/')
+            mean_cr     = float(tmp2[0])
+            std_cr      = float(tmp2[1])
+            tmp2        = tmp[11].split('/')
+            mean_tele   = float(tmp2[0])
+            std_tele    = float(tmp2[1])
+
+            full_curve.append([obj,obj_abs,obj_cs,obj_cr,obj_tele,mean,std,mean_abs,std_abs,mean_cs,std_cs,mean_cr,std_cr,mean_tele,std_tele])
+            if tag.__contains__("relocation"):
+                location_curve.append([obj,obj_abs,obj_cs,obj_cr,obj_tele,mean,std,mean_abs,std_abs,mean_cs,std_cs,mean_cr,std_cr,mean_tele,std_tele])
+            if tag.__contains__("model"):
+                model_curve.append([obj,obj_abs,obj_cs,obj_cr,obj_tele,mean,std,mean_abs,std_abs,mean_cs,std_cs,mean_cr,std_cr,mean_tele,std_tele])
+
+    return np.array(full_curve),np.array(location_curve),np.array(model_curve)
+
+# %% [markdown]
 # Functions: read inversion grid file
 
 # %%
+# Function: read the inversion grid file
 def read_inversion_grid_file(path):
-    
+
     inv_grid_vel = []
     inv_grid_ani = []
 
@@ -1877,8 +1938,8 @@ def read_inversion_grid_file(path):
             if(i==0):
                 tmp = line.split()
                 ndep = int(tmp[1])
-                nlines = 3*ndep+1   # 每组反演网格的行数为 3*ndep+1
-            
+                nlines = 3*ndep+1   # The number of rows for each inversion grid is 3*ndep+1
+
             iline = i % nlines
 
             if(iline == 0):    # info: number of inversion grid
@@ -1894,49 +1955,47 @@ def read_inversion_grid_file(path):
                 if(iline_sub == 0): # dep
                     tmp = line.split()
                     dep = float(tmp[0])
-                if(iline_sub == 1): # list of lat 
+                if(iline_sub == 1): # list of lat
                     lat_list = line.split()
                 if(iline_sub == 2): # list of lon
                     lon_list = line.split()
-                    
+
                     # add inversion grid
                     for lat in lat_list:
                         for lon in lon_list:
                             tmp_inv_grid.append([float(lon), float(lat), dep])
-                
+
                 if(iline == nlines-1): # the last line of inversion grid
                     if(switch):
                         inv_grid_ani.append(tmp_inv_grid)
                     else:
                         inv_grid_vel.append(tmp_inv_grid)
                     tmp_inv_grid = []
-    
+
     return [np.array(inv_grid_vel),np.array(inv_grid_ani)]
 
 # %% [markdown]
-# 函数类：包含画图函数
-# 
 # Functions: for plotting
 
 # %%
-# 画图：地震和台站分布，按照深度染色 fig_ev_st_distribution_dep(ev_info,st_info) plot: plot the distribution of the earthquake and stations, color-coded by ev depth
+# Function: fig_ev_st_distribution_dep(ev_info, st_info) Plot the distribution of the earthquakes and stations, color-coded by earthquake depth.
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 def fig_ev_st_distribution_dep(ev_info,st_info):
-    
+
     [lon_ev,lat_ev,dep_ev,wt_ev] = data_lon_lat_dep_wt_ev(ev_info)
     [lon_st,lat_st,ele_st,wt_st] = data_lon_lat_ele_wt_st(ev_info,st_info)
 
     min_lon = min(min(lon_ev),min(lon_st))
     max_lon = max(max(lon_ev),max(lon_st))
-    
+
     min_lat = min(min(lat_ev),min(lat_st))
     max_lat = max(max(lat_ev),max(lat_st))
-    
+
     max_dep = max(dep_ev)
 
-    # 插入一个不影响画图的值来使得 colorbar 的范围更好看
+    # Insert a value that does not affect the plot to make the colorbar range look better.
     lon_ev = np.insert(lon_ev, 0, 9999); lat_ev = np.insert(lat_ev, 0, 9999); dep_ev = np.insert(dep_ev, 0, 0);
 
     fig = plt.figure(figsize=(12,12))
@@ -1944,7 +2003,7 @@ def fig_ev_st_distribution_dep(ev_info,st_info):
 
     xrange = max_lon - min_lon + 1.0
     yrange = max_lat - min_lat + 1.0
-    
+
     if (xrange > yrange):
         fig_x_size = 6
         fig_y_size = round(6*yrange/xrange)
@@ -1971,7 +2030,7 @@ def fig_ev_st_distribution_dep(ev_info,st_info):
     ax2 = fig.add_subplot(gridspace[0:fig_y_size, fig_x_size+1 : fig_x_size+3])
 
     ax2.scatter(dep_ev,lat_ev,c=dep_ev,cmap="jet",label = "src",s = 3)
- 
+
     ax2.tick_params(axis='x',labelsize=18)
     ax2.tick_params(axis='y',labelsize=18)
     ax2.set_xlabel('Dep',fontsize=18)
@@ -1983,7 +2042,7 @@ def fig_ev_st_distribution_dep(ev_info,st_info):
     ax3 = fig.add_subplot(gridspace[fig_y_size+1:fig_y_size+3,0:fig_x_size])
 
     ax3.scatter(lon_ev,dep_ev,c=dep_ev,cmap="jet",label = "src",s = 3)
- 
+
     ax3.tick_params(axis='x',labelsize=18)
     ax3.tick_params(axis='y',labelsize=18)
     ax3.set_xlabel('Lon',fontsize=18)
@@ -1992,24 +2051,25 @@ def fig_ev_st_distribution_dep(ev_info,st_info):
     ax3.set_ylim((-max_dep*0.05,max_dep*1.1))
     ax3.invert_yaxis()
 
-    # 将 colorbar 放置在新的轴上
+    # Place the colorbar on a new axis.
     ax4 = fig.add_subplot(gridspace[fig_y_size+2:fig_y_size+3,fig_x_size+1:fig_x_size+3])
     cbar1 = plt.colorbar(bar_ev, ax=ax4,orientation='horizontal')
     cbar1.set_label('Depth of earthquakes',fontsize=16)
-    cbar1.ax.tick_params(axis='x', labelsize=16)    # colorbar的字体大小
-    #隐藏坐标轴的边框
+    cbar1.ax.tick_params(axis='x', labelsize=16)    # Colorbar font size.
+
+    # Hide the borders of the axes.
     ax4.spines['top'].set_visible(False)
     ax4.spines['right'].set_visible(False)
     ax4.spines['bottom'].set_visible(False)
     ax4.spines['left'].set_visible(False)
 
-    # 隐藏坐标轴刻度值
+    # Hide the tick values of the axes.
     ax4.set_xticks([])
     ax4.set_yticks([])
 
 
 # %%
-# 画图：地震和台站分布，按照权重染色 fig_ev_st_distribution_wt(ev_info,st_info) plot: plot the distribution of the earthquake and stations, color-coded by weight
+# Function: fig_ev_st_distribution_wt(ev_info, st_info) Plot the distribution of the earthquakes and stations, color-coded by weight.
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.colors import ListedColormap
@@ -2017,12 +2077,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 
 def fig_ev_st_distribution_wt(ev_info,st_info):
-    
-    
+
+
     [lon_ev,lat_ev,dep_ev,wt_ev] = data_lon_lat_dep_wt_ev(ev_info)
     [lon_st,lat_st,ele_st,wt_st] = data_lon_lat_ele_wt_st(ev_info,st_info)
 
-    # 插入一个不影响画图的值来使得 colorbar 的范围更好看
+    # Insert a value that does not affect the plot to make the colorbar range look better.
     lon_ev = np.insert(lon_ev, 0, lon_ev[0]); lat_ev = np.insert(lat_ev, 0, lat_ev[0]); dep_ev = np.insert(dep_ev, 0, dep_ev[0]); wt_ev = np.insert(wt_ev, 0, 0.0)
     lon_ev = np.insert(lon_ev, 0, lon_ev[0]); lat_ev = np.insert(lat_ev, 0, lat_ev[0]); dep_ev = np.insert(dep_ev, 0, dep_ev[0]); wt_ev = np.insert(wt_ev, 0, 1.0)
     lon_st = np.insert(lon_st, 0, lon_st[0]); lat_st = np.insert(lat_st, 0, lat_st[0]); ele_st = np.insert(ele_st, 0, ele_st[0]); wt_st = np.insert(wt_st, 0, 0.0)
@@ -2030,10 +2090,10 @@ def fig_ev_st_distribution_wt(ev_info,st_info):
 
     min_lon = min(min(lon_ev),min(lon_st))
     max_lon = max(max(lon_ev),max(lon_st))
-    
+
     min_lat = min(min(lat_ev),min(lat_st))
     max_lat = max(max(lat_ev),max(lat_st))
-    
+
     max_dep = max(dep_ev)
 
     fig = plt.figure(figsize=(12,12))
@@ -2054,7 +2114,7 @@ def fig_ev_st_distribution_wt(ev_info,st_info):
 
     bar_ev = ax1.scatter(lon_ev,lat_ev,c=wt_ev,cmap="jet",label = "src",s = 3)
     bar_st = ax1.scatter(lon_st,lat_st,c=wt_st,cmap="jet",label = "rec",s = 100,marker='^',edgecolors='white')
-    
+
     ax1.legend(fontsize = 14)
     ax1.tick_params(axis='x',labelsize=18)
     ax1.tick_params(axis='y',labelsize=18)
@@ -2067,7 +2127,7 @@ def fig_ev_st_distribution_wt(ev_info,st_info):
     ax2 = fig.add_subplot(gridspace[0:fig_y_size, fig_x_size+1 : fig_x_size+3])
 
     ax2.scatter(dep_ev,lat_ev,c=wt_ev,cmap="jet",label = "src",s = 3)
- 
+
     ax2.tick_params(axis='x',labelsize=18)
     ax2.tick_params(axis='y',labelsize=18)
     ax2.set_xlabel('Dep',fontsize=18)
@@ -2079,7 +2139,7 @@ def fig_ev_st_distribution_wt(ev_info,st_info):
     ax3 = fig.add_subplot(gridspace[fig_y_size+1:fig_y_size+3,0:fig_x_size])
 
     ax3.scatter(lon_ev,dep_ev,c=wt_ev,cmap="jet",label = "src",s = 3)
- 
+
     ax3.tick_params(axis='x',labelsize=18)
     ax3.tick_params(axis='y',labelsize=18)
     ax3.set_xlabel('Lon',fontsize=18)
@@ -2088,43 +2148,43 @@ def fig_ev_st_distribution_wt(ev_info,st_info):
     ax3.set_ylim((-max_dep*0.05,max_dep*1.1))
     ax3.invert_yaxis()
 
-    # 将 colorbar 放置在新的轴上
+    # Place the colorbar on a new axis.
     ax4 = fig.add_subplot(gridspace[fig_y_size+2:fig_y_size+3,fig_x_size+1:fig_x_size+3])
     cbar1 = plt.colorbar(bar_st, ax=ax4,orientation='horizontal')
     cbar1.set_label('Weight of stations',fontsize=16)
-    cbar1.ax.tick_params(axis='x', labelsize=16)    # colorbar的字体大小
-    #隐藏坐标轴的边框
+    cbar1.ax.tick_params(axis='x', labelsize=16)    # colorbar font size.
+    # Hide the borders of the axes.
     ax4.spines['top'].set_visible(False)
     ax4.spines['right'].set_visible(False)
     ax4.spines['bottom'].set_visible(False)
     ax4.spines['left'].set_visible(False)
 
-    # 隐藏坐标轴刻度值
+    # Hide the tick values of the axes.
     ax4.set_xticks([])
     ax4.set_yticks([])
 
-    # 将 colorbar 放置在新的轴上
+    # Place the colorbar on a new axis.
     ax5 = fig.add_subplot(gridspace[fig_y_size+1:fig_y_size+2,fig_x_size+1:fig_x_size+3])
     cbar1 = plt.colorbar(bar_ev, ax=ax5,orientation='horizontal')
-    cbar1.set_label('Weight of earthquakes',fontsize=16)    
-    cbar1.ax.tick_params(axis='x', labelsize=16)    # colorbar的字体大小
-    #隐藏坐标轴的边框
+    cbar1.set_label('Weight of earthquakes',fontsize=16)
+    cbar1.ax.tick_params(axis='x', labelsize=16)    # colorbar font size.
+    # Hide the borders of the axes.
     ax5.spines['top'].set_visible(False)
     ax5.spines['right'].set_visible(False)
     ax5.spines['bottom'].set_visible(False)
     ax5.spines['left'].set_visible(False)
 
-    # 隐藏坐标轴刻度值
+    # Hide the tick values of the axes.
     ax5.set_xticks([])
     ax5.set_yticks([])
 
 
 # %%
-# 画图和函数：去除走时数据的异常值，画出走时距离散点图 plot and function: plot the distance-time scatter plot, remove the outliers.
-# 将数据限制在 直线 time = dis * slope + intercept 的两侧， up and down 的范围里面
-# remove outliers, only retain data satisfying:     slope * dis + intercept + down < time < slope * dis + intercept + up
+# Plot and function: plot the distance-time scatter plot, remove the outliers.
+# Limit the data within the range defined by the line time = dis * slope + intercept and the bounds up and down.
+# Remove outliers, only retain data satisfying: slope * dis + intercept + down < time < slope * dis + intercept + up.
 
-def fig_data_plot_remove_outliers(ev_info,st_info,slope,intercept,up,down,dis_min,dis_max):   
+def fig_data_plot_remove_outliers(ev_info,st_info,slope,intercept,up,down,dis_min,dis_max):
 
     fig = plt.figure(figsize=(10,10))
     gridspace = GridSpec(6,6,figure = fig)
@@ -2134,7 +2194,6 @@ def fig_data_plot_remove_outliers(ev_info,st_info,slope,intercept,up,down,dis_mi
     [dis_obs,time_obs] = data_dis_time(ev_info,st_info)
     ax2.plot(dis_obs,time_obs,'r.',markersize=1.5,label = "discarded")
 
-    # 去除异常值，只保留满足条件的数据
     # remove outliers, only retain data satisfying:     slope * dis + intercept + down < time < slope * dis + intercept + up
     ev_info = limit_data_residual(ev_info,st_info,slope,intercept,up,down)
 
@@ -2156,14 +2215,14 @@ def fig_data_plot_remove_outliers(ev_info,st_info,slope,intercept,up,down,dis_mi
     return ev_info
 
 # %%
-# 画图: 画出不同震相的走时距离散点图 plot: distance-time scatter plot of given phases
+# Plot: distance-time scatter plot of given phases.
 
-def fig_data_plot_phase(ev_info,st_info,phase_list,color_list,dis_min,dis_max):   
+def fig_data_plot_phase(ev_info,st_info,phase_list,color_list,dis_min,dis_max):
 
     [dis_obs_phase,time_obs_phase] = data_dis_time_phase(ev_info,st_info,phase_list)
 
     regression = {}
-    # 计算最小二乘 y = ax+b
+    # Calculate the least squares y = ax+b
     for key_phase in phase_list:
         X = dis_obs_phase[key_phase]
         Y = time_obs_phase[key_phase]
@@ -2175,7 +2234,7 @@ def fig_data_plot_phase(ev_info,st_info,phase_list,color_list,dis_min,dis_max):
             regression[key_phase] = [0,0,0]
 
 
-    # 画图
+    # draw
     fig = plt.figure(figsize=(10,10))
     gridspace = GridSpec(6,6,figure = fig)
     ax2 = fig.add_subplot(gridspace[0:6, 0:6])
@@ -2203,7 +2262,7 @@ def fig_data_plot_phase(ev_info,st_info,phase_list,color_list,dis_min,dis_max):
     ax2.set_ylabel('Traveltime (s)',fontsize=18)
     ax2.set_xlim((dis_min,dis_max))
 
-    
+
     for iphase in range(len(phase_list)):
         try:
             y1 = min(y1,min(time_obs_phase[phase]))
@@ -2221,25 +2280,23 @@ def fig_data_plot_phase(ev_info,st_info,phase_list,color_list,dis_min,dis_max):
     print("a is slope, b is intercept, SEE is standard error of estimate")
 
 # %% [markdown]
-# 函数类：结果分析处理
-# 
 # Functions: results analysis and evaluation
 
 # %%
-# 画图：画出初始模型和最终模型的残差直方图 plot: plot the residual histogram of the initial and final model
-def fig_residual_histogram(fn_syn_init,fn_syn_final,fn_obs,range_l,range_r,Nbar,tag1 = "initial",tag2 = "final"):  
-    
-    # 读取初始合成到时数据 read synthetic traveltime data in the initial model
+# plot: plot the residual histogram of the initial and final model
+def fig_residual_histogram(fn_syn_init,fn_syn_final,fn_obs,range_l,range_r,Nbar,tag1 = "initial",tag2 = "final"):
+
+    # read synthetic traveltime data in the initial model
     [ev_info_syn_init, st_info_syn_init] = read_src_rec_file(fn_syn_init)
     time_syn_init = data_dis_time(ev_info_syn_init,st_info_syn_init)[1]
 
-    # 读取最终模型合成到时数据 read synthetic traveltime data in the final model
+    # read synthetic traveltime data in the final model
     [ev_info_syn_final, st_info_syn_final] = read_src_rec_file(fn_syn_final)
     time_syn_final = data_dis_time(ev_info_syn_final,st_info_syn_final)[1]
 
-    # 读取观测到时数据 read observed traveltime data
+    # read observed traveltime data
     [ev_info_obs, st_info_obs] = read_src_rec_file(fn_obs)
-    time_obs = data_dis_time(ev_info_obs,st_info_obs)[1] 
+    time_obs = data_dis_time(ev_info_obs,st_info_obs)[1]
 
     fig = plt.figure(figsize=(6,6))
     gridspace = GridSpec(6,6,figure = fig)
@@ -2252,7 +2309,7 @@ def fig_residual_histogram(fn_syn_init,fn_syn_final,fn_obs,range_l,range_r,Nbar,
 
     hist_init,  _, _ = ax2.hist(error_init,bins=bins,histtype='step', edgecolor = "red", linewidth = 2,
             label = "%s: std = %5.3f s, mean = %5.3f s"%(tag1,np.std(error_init),np.mean(error_init)))
-    
+
     hist_final, _, _ = ax2.hist(error_final,bins=bins,alpha = 0.5, color = "blue",
             label = "%s: std = %5.3f s, mean = %5.3f s"%(tag2,np.std(error_final),np.mean(error_final)))
 
@@ -2272,16 +2329,16 @@ def fig_residual_histogram(fn_syn_init,fn_syn_final,fn_obs,range_l,range_r,Nbar,
 
 
 # %%
-# 画图：画出两组文件的到时数据差别分布直方图 plot: plot the residual histogram of the initial and final model
-def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):  
-      
-    # 读取数据A read data A
+# plot: plot the residual histogram of the initial and final model
+def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):
+
+    # read data A
     [ev_info_A, st_info_A] = read_src_rec_file(fn_A)
 
-    # 读取数据B read data B
+    # read data B
     [ev_info_B, st_info_B] = read_src_rec_file(fn_B)
 
-    # 绝对到时残差 absolute traveltime residual
+    # absolute traveltime residual
     error_t = []
     for key_ev in ev_info_A:
         for key_t in ev_info_A[key_ev].t:
@@ -2290,7 +2347,7 @@ def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):
                 data_B = ev_info_B[key_ev].t[key_t]
                 error_t.append(data_A[2] - data_B[2])
 
-    # 共源双差到时残差 common-source differential traveltime residual
+    # common-source differential traveltime residual
     error_cs_dt = []
     for key_ev in ev_info_A:
         for key_dt in ev_info_A[key_ev].cs_dt:
@@ -2301,7 +2358,7 @@ def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):
             else:
                 print(key_ev,key_dt)
 
-    # 共台双差到时残差 common-receiver differential traveltime residual
+    # common-receiver differential traveltime residual
     error_cr_dt = []
     for key_ev in ev_info_A:
         for key_dt in ev_info_A[key_ev].cr_dt:
@@ -2310,10 +2367,10 @@ def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):
                 data_B = ev_info_B[key_ev].cr_dt[key_dt]
                 error_cr_dt.append(data_A[3] - data_B[3])
 
-    # 画图
+    # plot
     fig = plt.figure(figsize=(14,6))
     gridspace = GridSpec(6,14,figure = fig)
-    
+
 
     ax2 = fig.add_subplot(gridspace[0:6, 0:6])
     bins=np.linspace(range_l,range_r,Nbar)
@@ -2326,7 +2383,7 @@ def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):
     ax2.set_xlim(range_l - abs(range_l)*0.1,range_r + abs(range_r)*0.1)
     try:
         ax2.set_ylim(0,1.3*max(hist_t))
-    except: 
+    except:
         ax2.set_ylim(0,1.0)
     ax2.tick_params(axis='x',labelsize=18)
     ax2.tick_params(axis='y',labelsize=18)
@@ -2346,7 +2403,7 @@ def fig_data_difference_histogram(fn_A,fn_B,range_l,range_r,Nbar):
     ax3.set_xlim(range_l - abs(range_l)*0.1,range_r + abs(range_r)*0.1)
     try:
         ax3.set_ylim(0,1.3*max(hist_cs_dt))
-    except: 
+    except:
         ax3.set_ylim(0,1.0)
     ax3.tick_params(axis='x',labelsize=18)
     ax3.tick_params(axis='y',labelsize=18)

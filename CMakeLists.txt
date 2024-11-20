@@ -2,34 +2,51 @@ cmake_minimum_required(VERSION 3.8)
 
 # set the project name
 set(CMAKE_PROJECT_NAME "TOMOATT")
-project(${CMAKE_PROJECT_NAME} C CXX)
+project(${CMAKE_PROJECT_NAME} VERSION 1.0.0 LANGUAGES C CXX )
 
 # set install directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# check debug or release
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  message(STATUS "Build type: Debug")
+else()
+  message(STATUS "Build type: Release")
+endif()
+
 # check compiler type
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND "${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "arm64")
-  #set flag
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -mcpu=native -ftree-vectorize")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -g -O0")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -O3 -funroll-loops -ffast-math -mcpu=native -ftree-vectorize")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   MESSAGE("Compiler type: GNU")
-  set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -lstdc++fs")
-  #set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -g -funroll-loops -march=native -mfma -ftree-vectorize") # debug
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -g -O0 -lm -lstdc++fs")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-Wall -pedantic -lm -O3 -funroll-loops -ffast-math -march=native -mfma -ftree-vectorize -lstdc++fs")
+  endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   MESSAGE("Compiler type: Intel")
-  set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -O3 -funroll-loops -ffast-math -lm -march=native -mfma -ftree-vectorize -lstdc++fs")
-  # check fujitsu compiler
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu") # this may not work... in that case, please comment out this elif
-  # not supported
-  #MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
-  # fujitsu clang
-  #elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -g -O0 -lm -lstdc++fs")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-diag-disable=10441,2012,2015,2017,2047,2304,2305,3868,10193,10315,11074,11076 -Wall -pedantic -O3 -funroll-loops -ffast-math -lm -march=native -mfma -ftree-vectorize -lstdc++fs")
+  endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Fujitsu")
+  MESSAGE(FATAL_ERROR "Fujitsu trad compiler is not supported. Please use clang mode.")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "FujitsuClang")
   MESSAGE("Compiler type: FujitsuClang")
-  set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
+  if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CXX_ADDITIONAL_FLAGS "-Nclang -g -O0 -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
+  else()
+    set(CXX_ADDITIONAL_FLAGS "-Nclang -Ofast -std=c++17 -mcpu=a64fx+sve -march=armv8-a+sve")
+  endif()
 else()
   MESSAGE(FATAL_ERROR "Compiler type: Unknown")
 endif()
-
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
@@ -47,14 +64,14 @@ message(STATUS "MPI_FOUND: ${MPI_FOUND}")
 message(STATUS "MPI_VERSION: ${MPI_VERSION}")
 
 # find openmp ## WE DO NOT USE OPENMP BUT KEEP THIS FOR FUTURE USE
-find_package(OpenMP)
-if(OPENMP_FOUND)
-  message(STATUS "OpenMP found")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-  add_definitions(-DUSE_OMP)
-endif()
+###find_package(OpenMP)
+###if(OPENMP_FOUND)
+###  message(STATUS "OpenMP found")
+###  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+###  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+###  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+###  add_definitions(-DUSE_OMP)
+###endif()
 
 # find HDF5 parallel TODO: check parallel io is enable or not
 message(STATUS "Running CMAKE FindHDF5.cmake...")
@@ -81,7 +98,7 @@ add_definitions(-DUSE_HDF5_IO_COLLECTIVE)
 #add_definitions(-DSINGLE_PRECISION)
 
 # use SIMD (SSE/AVX/AVX2/AVX512) for vectorization, which is faster than the default but use a little more memory.
-# add_definitions(-DUSE_SIMD)
+add_definitions(-DUSE_SIMD)
 
 # find cuda package if USE_CUDA is defined
 if(USE_CUDA)
@@ -131,7 +148,7 @@ add_definitions(-DFREQ_SYNC_GHOST)
 
 # submodules
 # yaml parser
-find_package(yaml-cpp QUIET)
+find_package(yaml-cpp 1.0 QUIET)
 if (yaml-cpp_FOUND)
   message(STATUS "yaml-cpp found")
   message(STATUS "YAML_CPP_INCLUDE_DIR: ${YAML_CPP_INCLUDE_DIR}")
@@ -145,6 +162,11 @@ endif()
 
 # add include directory
 include_directories(include cuda)
+
+configure_file(
+  ${PROJECT_SOURCE_DIR}/include/version.h.in
+  ${PROJECT_SOURCE_DIR}/include/version.h
+)
 
 # list of source files
 file(GLOB SOURCES "src/*.cpp")

@@ -438,9 +438,9 @@ InputParams::InputParams(std::string& input_file){
 
             setup_uniform_inv_grid();
 
-            if (config["model_update"]["invgrid_volume_rescale"]) {
-                getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
-            }
+            // if (config["model_update"]["invgrid_volume_rescale"]) {
+            //     getNodeValue(config["model_update"], "invgrid_volume_rescale", invgrid_volume_rescale);
+            // }
 
             // station correction (now only for teleseismic data)
             if (config["model_update"]["use_sta_correction"]){
@@ -823,7 +823,7 @@ InputParams::InputParams(std::string& input_file){
     broadcast_cr(trapezoid_ani,n_trapezoid, 0);
 
     broadcast_bool_single(invgrid_ani, 0);
-    broadcast_bool_single(invgrid_volume_rescale, 0);
+    // broadcast_bool_single(invgrid_volume_rescale, 0);
 
     broadcast_bool_single(use_sta_correction, 0);
     broadcast_cr_single(step_length_init_sc, 0);
@@ -1040,7 +1040,7 @@ void InputParams::write_params_to_file() {
     fout << "# File: 'middle_model_step_XXXX.h5'. Keys: ['eta'], ['xi'], ['vel'], the model at step XXXX." << std::endl;
     fout << "# File: 'inversion_grid.txt'. The location of inversion grid nodes" << std::endl;
     fout << "# File: 'objective_function.txt'. The objective function value at each iteration" << std::endl;
-    fout << "# File: 'out_data_sim_group_X'. Keys: ['src_$src_name']['T_res_inv_XXXX'], traveltime field for source $src_name at iteration XXXX;" << std::endl;
+    fout << "# File: 'out_data_sim_group_X'. Keys: ['src_$src_name']['time_field_inv_XXXX'], traveltime field for source $src_name at iteration XXXX;" << std::endl;
     fout << "#                                     ['src_$src_name']['adjoint_field_inv_XXXX'], adjoint field for source $src_name at iteration XXXX;" << std::endl;
     fout << std::endl;
     fout << std::endl;
@@ -1222,9 +1222,9 @@ void InputParams::write_params_to_file() {
     fout << std::endl;
 
 
-    fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
-    fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
-    fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
+    // fout << "  # inversion grid volume rescale (kernel -> kernel / volume of inversion grid mesh)," << std::endl;
+    // fout << "  # this precondition may be carefully applied if the sizes of inversion grids are unbalanced" << std::endl;
+    // fout << "  invgrid_volume_rescale: " << invgrid_volume_rescale << std::endl;
     fout << std::endl;
 
     fout << "  # path to station correction file (under development)" << std::endl;
@@ -2045,6 +2045,7 @@ void InputParams::initialize_adjoint_source(){
 
     for(auto iter = rec_map.begin(); iter != rec_map.end(); iter++){
         iter->second.adjoint_source = _0_CR;
+        iter->second.adjoint_source_density = _0_CR;
     }
 }
 
@@ -2063,6 +2064,20 @@ void InputParams::set_adjoint_source(std::string name_rec, CUSTOMREAL adjoint_so
     }
 }
 
+void InputParams::set_adjoint_source_density(std::string name_rec, CUSTOMREAL adjoint_source_density){
+
+    // this funtion should be called by proc_store_srcrec
+    if (!proc_store_srcrec){
+        std::cout << "set_adjoint_source_density function is called non-proc_store_srcrec process. aborting." << std::endl;
+        exit(1);
+    }
+
+    if (rec_map.find(name_rec) != rec_map.end()){
+        rec_map[name_rec].adjoint_source_density = adjoint_source_density;
+    } else {
+        std::cout << "error !!!, undefined receiver name when adding adjoint source: " << name_rec << std::endl;
+    }
+}
 
 // gather all arrival times to main simultaneous run group
 // common source double difference traveltime is also gathered here
