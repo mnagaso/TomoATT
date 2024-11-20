@@ -1059,7 +1059,7 @@ void InputParams::write_params_to_file() {
     fout << "have_tele_data: " << have_tele_data << " # An error will be reported if false but source out of study region is used. Default: false." << std::endl;
     fout << std::endl;
     fout << std::endl;
-    
+
     fout << "###################################################" << std::endl;
     fout << "#          model update parameters setting        #" << std::endl;
     fout << "###################################################" << std::endl;
@@ -1461,9 +1461,9 @@ void InputParams::setup_uniform_inv_grid() {
             std::cout << "Error: max_dep_inv should be larger than min_dep_inv" << std::endl;
             exit(1);
         }
-    
+
         n_inv_r_flex = n_inv_r;
-        
+
         std::vector<CUSTOMREAL> tmp_dep_inv = linspace(min_dep_inv, max_dep_inv, n_inv_r_flex);
 
         if (dep_inv != nullptr) delete[] dep_inv;
@@ -1483,9 +1483,9 @@ void InputParams::setup_uniform_inv_grid() {
                 std::cout << "Error: max_dep_inv_ani should be larger than min_dep_inv_ani" << std::endl;
                 exit(1);
             }
-            
+
             n_inv_r_flex_ani = n_inv_r_ani;
-        
+
             if (dep_inv_ani != nullptr) delete[] dep_inv_ani;
 
             dep_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_r_flex_ani, 5003);
@@ -1494,7 +1494,7 @@ void InputParams::setup_uniform_inv_grid() {
 
             for (int i = 0; i < n_inv_r_flex_ani; i++){
                 dep_inv_ani[i] = tmp_dep_inv[i];
-            }  
+            }
         }
         tmp_dep_inv.clear();
 
@@ -1511,13 +1511,13 @@ void InputParams::setup_uniform_inv_grid() {
             exit(1);
         }
         n_inv_t_flex = n_inv_t;
-        
+
         std::vector<CUSTOMREAL> tmp_lat_inv = linspace(min_lat_inv, max_lat_inv, n_inv_t_flex);
 
         if (lat_inv != nullptr) delete[] lat_inv;
 
         lat_inv = allocateMemory<CUSTOMREAL>(n_inv_t_flex, 5001);
-        
+
         for (int i = 0; i < n_inv_t_flex; i++){
             lat_inv[i] = tmp_lat_inv[i];
         }
@@ -1531,9 +1531,9 @@ void InputParams::setup_uniform_inv_grid() {
                 std::cout << "Error: max_lat_inv_ani should be larger than min_lat_inv_ani" << std::endl;
                 exit(1);
             }
-            
+
             n_inv_t_flex_ani = n_inv_t_ani;
-            
+
             if (lat_inv_ani != nullptr) delete[] lat_inv_ani;
 
             lat_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_t_flex_ani, 5004);
@@ -1577,19 +1577,19 @@ void InputParams::setup_uniform_inv_grid() {
                 std::cout << "Error: max_lon_inv_ani should be larger than min_lon_inv_ani" << std::endl;
                 exit(1);
             }
-            
+
             n_inv_p_flex_ani = n_inv_p_ani;
-            
+
             if (lon_inv_ani != nullptr) delete[] lon_inv_ani;
 
             lon_inv_ani = allocateMemory<CUSTOMREAL>(n_inv_p_flex_ani, 5005);
-            
+
             tmp_lon_inv = linspace(min_lon_inv_ani, max_lon_inv_ani, n_inv_p_flex_ani);
 
             for (int i = 0; i < n_inv_p_flex_ani; i++){
                 lon_inv_ani[i] = tmp_lon_inv[i];
             }
-        
+
         }
         tmp_lon_inv.clear();
     }
@@ -1863,7 +1863,7 @@ void InputParams::prepare_src_map(){
 
         // check if src positions are within the domain or not (teleseismic source)
         // detected teleseismic source is separated into tele_src_points and tele_rec_points
-        
+
         std::cout << std::endl << "separate regional and teleseismic src/rec points" << std::endl;
 
         separate_region_and_tele_src_rec_data(src_map_back, rec_map_back, data_map_back,
@@ -1875,7 +1875,7 @@ void InputParams::prepare_src_map(){
                                               N_cs_dif_local_data,
                                               N_teleseismic_data,
                                               N_data,
-                                              min_lat, max_lat, min_lon, max_lon, min_dep, max_dep, 
+                                              min_lat, max_lat, min_lon, max_lon, min_dep, max_dep,
                                               have_tele_data);
 
         if (swap_src_rec) {
@@ -1921,7 +1921,7 @@ void InputParams::prepare_src_map(){
 
         std::cout << std::endl << "merge regional and teleseismic src/rec points" << std::endl;
 
-        merge_region_and_tele_src(src_map_all,  rec_map_all,  data_map_all, src_id2name_all, 
+        merge_region_and_tele_src(src_map_all,  rec_map_all,  data_map_all, src_id2name_all,
                                   src_map_tele, rec_map_tele, data_map_tele);
 
         // abort if number of src_points are less than n_sims
@@ -2450,16 +2450,16 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     timeInfo.tm_mday = src.day;
                     timeInfo.tm_hour = src.hour;
                     timeInfo.tm_min  = src.min;
-                    
-                    // std::cout   << "before, src.hour = " <<  src.hour 
+
+                    // std::cout   << "before, src.hour = " <<  src.hour
                     //             << ", src.min = " <<  src.min
                     //             << ", src.sec = " <<  src.sec << std::endl;
-                    
+
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         timeInfo.tm_sec  = static_cast<int>(src.sec) - 1.0;
                     else
                         timeInfo.tm_sec  = static_cast<int>(src.sec);
-                    
+
                     // Convert to time_point
                     std::time_t rawTime = timegm(&timeInfo); // use timegm for UTC
                     std::chrono::system_clock::time_point tp = std::chrono::system_clock::from_time_t(rawTime);
@@ -2474,13 +2474,13 @@ void InputParams::write_src_rec_file(int i_inv, int i_iter) {
                     src_map_back[iter->first].day = newTimeInfo.tm_mday;
                     src_map_back[iter->first].hour = newTimeInfo.tm_hour;
                     src_map_back[iter->first].min = newTimeInfo.tm_min;
-                    
+
                     if (src.sec >= - 1.0 && src.sec < 0.0)
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec + 1.0 - static_cast<int>(src.sec));
                     else
                         src_map_back[iter->first].sec = newTimeInfo.tm_sec + (src.sec       - static_cast<int>(src.sec));
-                    
-                    // std::cout << "after, src.hour = " <<  src_map_back[iter->first].hour 
+
+                    // std::cout << "after, src.hour = " <<  src_map_back[iter->first].hour
                     //           << ", src.min = " <<  src_map_back[iter->first].min
                     //           << ", src.sec = " <<  src_map_back[iter->first].sec << std::endl;
 

@@ -58,7 +58,7 @@ inline void model_optimize(InputParams& IP, Grid& grid, IO_utils& io, int i_inv,
         io.write_Keta_over_Kden(grid, i_inv);
         io.write_Kxi_over_Kden(grid, i_inv);
 
-        // kernel over density with smoothing 
+        // kernel over density with smoothing
         io.write_Ks_update(grid, i_inv);
         io.write_Keta_update(grid, i_inv);
         io.write_Kxi_update(grid, i_inv);

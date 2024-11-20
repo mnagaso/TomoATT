@@ -517,11 +517,11 @@ void Grid::memory_allocation() {
             Ks_inv_loc               = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid, 96);
             Kxi_inv_loc              = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 97);
             Keta_inv_loc             = allocateMemory<CUSTOMREAL>(n_total_loc_inv_grid_ani, 98);
-            
+
             Ks_update_loc            = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 99);
             Kxi_update_loc           = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 100);
             Keta_update_loc          = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 101);
-            
+
             Ks_update_loc_previous   = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 102);
             Kxi_update_loc_previous  = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 103);
             Keta_update_loc_previous = allocateMemory<CUSTOMREAL>(n_total_loc_grid_points, 104);
