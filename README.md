@@ -1,3 +1,5 @@
+# This is an outdated repository. Now TomoATT and related libraries are developed in [here](https://github.com/TomoATT).
+
 # TomoATT 
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
